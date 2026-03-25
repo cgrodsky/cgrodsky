@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  G",
+    " B ",
+    "S  "
+  ],
+  "key": {
+    "G": { "item": "minecraft:gold_block" },
+    "B": { "item": "minecraft:blaze_rod" },
+    "S": { "item": "minecraft:nether_star" }
+  },
+  "result": {
+    "item": "goldstep:golden_step_wand",
+    "count": 1
+  }
+}

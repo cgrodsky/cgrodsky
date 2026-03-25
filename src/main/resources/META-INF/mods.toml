@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "goldstep"
+version = "1.0.0"
+displayName = "Golden Step Mod"
+description = '''
+Adds a Golden Step Wand that turns any block you walk on into gold blocks!
+Right-click to activate for 10 seconds, then wait 10 seconds for cooldown.
+'''
+
+[[dependencies.goldstep]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.goldstep]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "BOTH"
