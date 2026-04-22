@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Quiz</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 460px;
+  }
+  h1 {
+    margin: 0 0 8px;
+    text-align: center;
+    color: #333;
+  }
+  .subtitle {
+    text-align: center;
+    color: #777;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+  .progress-wrap {
+    background: #eee;
+    border-radius: 999px;
+    height: 16px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    transition: width 0.4s ease;
+  }
+  .progress-text {
+    text-align: right;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 24px;
+  }
+  .question {
+    font-size: 42px;
+    text-align: center;
+    margin: 24px 0;
+    color: #222;
+    font-weight: 600;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: #667eea; }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    background: #667eea;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    margin-top: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  button:hover { background: #5568d3; }
+  .feedback {
+    text-align: center;
+    min-height: 24px;
+    margin-top: 12px;
+    font-weight: 600;
+  }
+  .correct { color: #2ecc71; }
+  .wrong { color: #e74c3c; }
+  .score {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+  }
+  .result {
+    text-align: center;
+  }
+  .result h2 { color: #333; margin-bottom: 8px; }
+  .result p { color: #555; font-size: 18px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Math Quiz</h1>
+    <p class="subtitle">Solve 10 simple problems</p>
+
+    <div class="progress-wrap">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+    <div id="progress-text" class="progress-text">0 / 10</div>
+
+    <div id="quiz">
+      <div id="question" class="question">0 + 0</div>
+      <input id="answer" type="number" placeholder="Your answer" autofocus>
+      <button id="submit">Submit</button>
+      <div id="feedback" class="feedback"></div>
+      <div id="score" class="score">Score: 0</div>
+    </div>
+
+    <div id="result" class="result" style="display:none;">
+      <h2>Quiz Complete!</h2>
+      <p id="final-score"></p>
+      <button id="restart">Play Again</button>
+    </div>
+  </div>
+
+<script>
+  const TOTAL = 10;
+  let current = 0;
+  let score = 0;
+  let answer = 0;
+
+  const questionEl = document.getElementById('question');
+  const answerEl = document.getElementById('answer');
+  const submitBtn = document.getElementById('submit');
+  const feedbackEl = document.getElementById('feedback');
+  const scoreEl = document.getElementById('score');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const quizEl = document.getElementById('quiz');
+  const resultEl = document.getElementById('result');
+  const finalScoreEl = document.getElementById('final-score');
+  const restartBtn = document.getElementById('restart');
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function nextQuestion() {
+    if (current >= TOTAL) {
+      finish();
+      return;
+    }
+    const ops = ['+', '-', '*'];
+    const op = ops[randInt(0, 2)];
+    let a, b;
+    if (op === '+') {
+      a = randInt(1, 50); b = randInt(1, 50); answer = a + b;
+    } else if (op === '-') {
+      a = randInt(10, 50); b = randInt(1, a); answer = a - b;
+    } else {
+      a = randInt(2, 12); b = randInt(2, 12); answer = a * b;
+    }
+    questionEl.textContent = `${a} ${op} ${b}`;
+    answerEl.value = '';
+    answerEl.focus();
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = (current / TOTAL) * 100;
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `${current} / ${TOTAL}`;
+  }
+
+  function submitAnswer() {
+    const val = parseInt(answerEl.value, 10);
+    if (isNaN(val)) {
+      feedbackEl.textContent = 'Please enter a number';
+      feedbackEl.className = 'feedback wrong';
+      return;
+    }
+    if (val === answer) {
+      score++;
+      feedbackEl.textContent = 'Correct!';
+      feedbackEl.className = 'feedback correct';
+    } else {
+      feedbackEl.textContent = `Wrong. Answer was ${answer}`;
+      feedbackEl.className = 'feedback wrong';
+    }
+    scoreEl.textContent = `Score: ${score}`;
+    current++;
+    setTimeout(() => {
+      feedbackEl.textContent = '';
+      nextQuestion();
+    }, 800);
+  }
+
+  function finish() {
+    quizEl.style.display = 'none';
+    resultEl.style.display = 'block';
+    finalScoreEl.textContent = `You got ${score} out of ${TOTAL} correct.`;
+    progressBar.style.width = '100%';
+    progressText.textContent = `${TOTAL} / ${TOTAL}`;
+  }
+
+  function restart() {
+    current = 0;
+    score = 0;
+    scoreEl.textContent = 'Score: 0';
+    quizEl.style.display = 'block';
+    resultEl.style.display = 'none';
+    nextQuestion();
+  }
+
+  submitBtn.addEventListener('click', submitAnswer);
+  answerEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitAnswer();
+  });
+  restartBtn.addEventListener('click', restart);
+
+  nextQuestion();
+</script>
+</body>
+</html>
