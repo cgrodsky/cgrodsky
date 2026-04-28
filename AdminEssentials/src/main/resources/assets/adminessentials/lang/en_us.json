@@ -1,0 +1,5 @@
+{
+    "permission.adminessentials.command.sudo": "Run a command as another player",
+    "permission.adminessentials.command.adminchat": "Send a message visible to ops only",
+    "permission.adminessentials.command.xrayalerts": "Receive X-ray ore-mining alerts"
+}
