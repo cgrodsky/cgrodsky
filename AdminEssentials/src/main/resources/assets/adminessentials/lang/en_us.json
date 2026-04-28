@@ -1,5 +1,22 @@
 {
-    "permission.adminessentials.command.sudo": "Run a command as another player",
-    "permission.adminessentials.command.adminchat": "Send a message visible to ops only",
-    "permission.adminessentials.command.xrayalerts": "Receive X-ray ore-mining alerts"
+    "permission.adminessentials.command.sudo":        "Run a command as another player",
+    "permission.adminessentials.command.adminchat":   "Send a message visible to ops only",
+    "permission.adminessentials.command.xrayalerts":  "Receive X-ray ore-mining alerts",
+    "permission.adminessentials.command.vanish":      "Toggle vanish mode",
+    "permission.adminessentials.command.xray":        "Enter spectator-mode X-ray vision",
+    "permission.adminessentials.command.atp":         "Admin teleport (with optional stealth)",
+    "permission.adminessentials.command.heal":        "Heal a player",
+    "permission.adminessentials.command.feed":        "Feed a player",
+    "permission.adminessentials.command.god":         "Toggle invulnerability",
+    "permission.adminessentials.command.fly":         "Toggle flight",
+    "permission.adminessentials.command.speed":       "Adjust walk/fly speed",
+    "permission.adminessentials.command.home":        "Manage personal homes",
+    "permission.adminessentials.command.warp":        "Teleport to a server warp",
+    "permission.adminessentials.command.setwarp":     "Create or remove a server warp",
+    "permission.adminessentials.command.back":        "Return to your previous location",
+    "permission.adminessentials.command.morph":       "Morph into a mob",
+    "permission.adminessentials.command.spawn":       "Teleport to world spawn",
+    "permission.adminessentials.command.spawnw":      "Set the spawn protection region",
+    "permission.adminessentials.protection.bypass":   "Bypass spawn protection",
+    "permission.adminessentials.command.role":        "Grant timed roles to players"
 }
