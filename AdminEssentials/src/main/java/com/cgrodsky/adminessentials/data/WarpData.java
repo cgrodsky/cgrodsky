@@ -38,7 +38,7 @@ public final class WarpData extends SavedData {
 
     public static WarpData get(ServerLevel level) {
         return level.getServer().overworld().getDataStorage().computeIfAbsent(
-                new Factory<>(WarpData::new, WarpData::load, null), NAME);
+                WarpData::load, WarpData::new, NAME);
     }
 
     public void set(String name, Warp w) { warps.put(name.toLowerCase(), w); setDirty(); }

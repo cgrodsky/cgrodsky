@@ -15,7 +15,7 @@ public final class SpawnProtection extends SavedData {
 
     public static SpawnProtection get(ServerLevel level) {
         return level.getServer().overworld().getDataStorage().computeIfAbsent(
-                new Factory<>(SpawnProtection::new, SpawnProtection::load, null), NAME);
+                SpawnProtection::load, SpawnProtection::new, NAME);
     }
 
     public boolean isEnabled() { return enabled; }
