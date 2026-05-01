@@ -1,5 +1,6 @@
 package com.cookingplus.blockentity;
 
+import com.cookingplus.block.OvenBlock;
 import com.cookingplus.menu.OvenMenu;
 import com.cookingplus.recipe.OvenRecipe;
 import com.cookingplus.registry.CPBlockEntities;
@@ -58,29 +59,38 @@ public class OvenBlockEntity extends BlockEntity implements MenuProvider {
     public int getCookTotal() { return cookTotal; }
 
     public void serverTick(Level level, BlockPos pos, BlockState state) {
-        ItemStack input = items.getStackInSlot(INPUT_SLOT);
-        if (input.isEmpty()) {
-            if (cookProgress != 0) { cookProgress = 0; cookTotal = 0; setChanged(level, pos, state); }
-            return;
-        }
-        Optional<OvenRecipe> match = findMatch();
-        if (match.isEmpty()) {
-            if (cookProgress != 0) { cookProgress = 0; cookTotal = 0; setChanged(level, pos, state); }
-            return;
-        }
-        OvenRecipe recipe = match.get();
-        ItemStack result = recipe.getResultItem(level.registryAccess());
-        ItemStack out = items.getStackInSlot(OUTPUT_SLOT);
-        if (!canFitOutput(out, result)) return;
+        boolean wasLit = state.getValue(OvenBlock.LIT);
+        boolean shouldBeLit = false;
 
-        cookTotal = recipe.getCookTime();
-        cookProgress++;
-        if (cookProgress >= cookTotal) {
-            ItemStack copy = result.copy();
-            if (out.isEmpty()) items.setStackInSlot(OUTPUT_SLOT, copy);
-            else out.grow(copy.getCount());
-            input.shrink(1);
+        ItemStack input = items.getStackInSlot(INPUT_SLOT);
+        if (!input.isEmpty()) {
+            Optional<OvenRecipe> match = findMatch();
+            if (match.isPresent()) {
+                OvenRecipe recipe = match.get();
+                ItemStack result = recipe.getResultItem(level.registryAccess());
+                ItemStack out = items.getStackInSlot(OUTPUT_SLOT);
+                if (canFitOutput(out, result)) {
+                    cookTotal = recipe.getCookTime();
+                    cookProgress++;
+                    shouldBeLit = true;
+                    if (cookProgress >= cookTotal) {
+                        ItemStack copy = result.copy();
+                        if (out.isEmpty()) items.setStackInSlot(OUTPUT_SLOT, copy);
+                        else out.grow(copy.getCount());
+                        input.shrink(1);
+                        cookProgress = 0;
+                    }
+                }
+            }
+        }
+
+        if (!shouldBeLit && cookProgress != 0) {
             cookProgress = 0;
+            cookTotal = 0;
+        }
+
+        if (wasLit != shouldBeLit) {
+            level.setBlock(pos, state.setValue(OvenBlock.LIT, shouldBeLit), 3);
         }
         setChanged(level, pos, state);
     }

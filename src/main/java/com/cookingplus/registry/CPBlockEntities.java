@@ -1,6 +1,7 @@
 package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
+import com.cookingplus.blockentity.CuttingBoardBlockEntity;
 import com.cookingplus.blockentity.OvenBlockEntity;
 import com.cookingplus.blockentity.TrashCanBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -19,6 +20,10 @@ public final class CPBlockEntities {
     public static final RegistryObject<BlockEntityType<TrashCanBlockEntity>> TRASH_CAN =
             BLOCK_ENTITIES.register("trash_can",
                     () -> BlockEntityType.Builder.of(TrashCanBlockEntity::new, CPBlocks.TRASH_CAN.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<CuttingBoardBlockEntity>> CUTTING_BOARD =
+            BLOCK_ENTITIES.register("cutting_board",
+                    () -> BlockEntityType.Builder.of(CuttingBoardBlockEntity::new, CPBlocks.CUTTING_BOARD.get()).build(null));
 
     private CPBlockEntities() {}
 }

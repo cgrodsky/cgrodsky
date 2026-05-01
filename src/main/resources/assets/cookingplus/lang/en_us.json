@@ -1,8 +1,21 @@
 {
   "itemGroup.cookingplus": "Cooking Plus",
+
   "block.cookingplus.oven": "Oven",
   "container.cookingplus.oven": "Oven",
   "block.cookingplus.trash_can": "Trash Can",
   "container.cookingplus.trash_can": "Trash Can",
-  "button.cookingplus.empty_trash": "Empty Trash"
+  "block.cookingplus.cutting_board": "Cutting Board",
+  "button.cookingplus.empty_trash": "Empty Trash",
+
+  "item.cookingplus.knife": "Kitchen Knife",
+  "item.cookingplus.sliced_bread": "Sliced Bread",
+  "item.cookingplus.lemon": "Lemon",
+  "item.cookingplus.pear": "Pear",
+  "item.cookingplus.banana": "Banana",
+  "item.cookingplus.orange": "Orange",
+  "item.cookingplus.kiwi": "Kiwi",
+  "item.cookingplus.soy_sauce": "Soy Sauce",
+  "item.cookingplus.tajin_sauce": "Tajin Sauce",
+  "item.cookingplus.tangy_sauce": "Tangy Sauce"
 }

@@ -1,6 +1,7 @@
 package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
+import com.cookingplus.recipe.CuttingRecipe;
 import com.cookingplus.recipe.OvenRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.registries.DeferredRegister;
@@ -13,6 +14,9 @@ public final class CPRecipeSerializers {
 
     public static final RegistryObject<RecipeSerializer<OvenRecipe>> OVEN =
             RECIPE_SERIALIZERS.register("oven", OvenRecipe.Serializer::new);
+
+    public static final RegistryObject<RecipeSerializer<CuttingRecipe>> CUTTING =
+            RECIPE_SERIALIZERS.register("cutting", CuttingRecipe.Serializer::new);
 
     private CPRecipeSerializers() {}
 }

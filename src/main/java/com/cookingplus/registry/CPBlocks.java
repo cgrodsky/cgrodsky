@@ -1,6 +1,7 @@
 package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
+import com.cookingplus.block.CuttingBoardBlock;
 import com.cookingplus.block.OvenBlock;
 import com.cookingplus.block.TrashCanBlock;
 import net.minecraft.world.item.BlockItem;
@@ -34,6 +35,15 @@ public final class CPBlocks {
                     .mapColor(MapColor.METAL)
                     .strength(2.0f)
                     .sound(SoundType.METAL))
+    );
+
+    public static final RegistryObject<Block> CUTTING_BOARD = registerBlock(
+            "cutting_board",
+            () -> new CuttingBoardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(1.5f)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion())
     );
 
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> blockSup) {

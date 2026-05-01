@@ -1,6 +1,7 @@
 package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
+import com.cookingplus.recipe.CuttingRecipe;
 import com.cookingplus.recipe.OvenRecipe;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -14,6 +15,9 @@ public final class CPRecipeTypes {
 
     public static final RegistryObject<RecipeType<OvenRecipe>> OVEN =
             RECIPE_TYPES.register("oven", () -> RecipeType.simple(new ResourceLocation(CookingPlusMod.MODID, "oven")));
+
+    public static final RegistryObject<RecipeType<CuttingRecipe>> CUTTING =
+            RECIPE_TYPES.register("cutting", () -> RecipeType.simple(new ResourceLocation(CookingPlusMod.MODID, "cutting")));
 
     private CPRecipeTypes() {}
 }
