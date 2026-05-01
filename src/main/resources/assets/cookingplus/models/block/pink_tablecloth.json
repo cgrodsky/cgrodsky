@@ -1,0 +1,6 @@
+{
+  "parent": "cookingplus:block/tablecloth",
+  "textures": {
+    "all": "cookingplus:block/pink_tablecloth"
+  }
+}

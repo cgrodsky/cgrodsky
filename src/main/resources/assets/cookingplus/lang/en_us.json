@@ -1,13 +1,11 @@
 {
   "itemGroup.cookingplus": "Cooking Plus",
-
   "block.cookingplus.oven": "Oven",
   "container.cookingplus.oven": "Oven",
   "block.cookingplus.trash_can": "Trash Can",
   "container.cookingplus.trash_can": "Trash Can",
   "block.cookingplus.cutting_board": "Cutting Board",
   "button.cookingplus.empty_trash": "Empty Trash",
-
   "item.cookingplus.knife": "Kitchen Knife",
   "item.cookingplus.sliced_bread": "Sliced Bread",
   "item.cookingplus.lemon": "Lemon",
@@ -17,5 +15,25 @@
   "item.cookingplus.kiwi": "Kiwi",
   "item.cookingplus.soy_sauce": "Soy Sauce",
   "item.cookingplus.tajin_sauce": "Tajin Sauce",
-  "item.cookingplus.tangy_sauce": "Tangy Sauce"
+  "item.cookingplus.tangy_sauce": "Tangy Sauce",
+  "block.cookingplus.bowl": "Bowl",
+  "block.cookingplus.plate": "Plate",
+  "block.cookingplus.dining_table": "Dining Table",
+  "block.cookingplus.dining_chair": "Dining Chair",
+  "block.cookingplus.white_tablecloth": "White Tablecloth",
+  "block.cookingplus.orange_tablecloth": "Orange Tablecloth",
+  "block.cookingplus.magenta_tablecloth": "Magenta Tablecloth",
+  "block.cookingplus.light_blue_tablecloth": "Light Blue Tablecloth",
+  "block.cookingplus.yellow_tablecloth": "Yellow Tablecloth",
+  "block.cookingplus.lime_tablecloth": "Lime Tablecloth",
+  "block.cookingplus.pink_tablecloth": "Pink Tablecloth",
+  "block.cookingplus.gray_tablecloth": "Gray Tablecloth",
+  "block.cookingplus.light_gray_tablecloth": "Light Gray Tablecloth",
+  "block.cookingplus.cyan_tablecloth": "Cyan Tablecloth",
+  "block.cookingplus.purple_tablecloth": "Purple Tablecloth",
+  "block.cookingplus.blue_tablecloth": "Blue Tablecloth",
+  "block.cookingplus.brown_tablecloth": "Brown Tablecloth",
+  "block.cookingplus.green_tablecloth": "Green Tablecloth",
+  "block.cookingplus.red_tablecloth": "Red Tablecloth",
+  "block.cookingplus.black_tablecloth": "Black Tablecloth"
 }
