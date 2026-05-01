@@ -1,0 +1,67 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cookingplus:block/oven_front",
+    "front": "cookingplus:block/oven_front",
+    "back": "cookingplus:block/oven_back",
+    "left": "cookingplus:block/oven_side_left",
+    "right": "cookingplus:block/oven_side_right",
+    "top": "cookingplus:block/oven_side_right",
+    "bottom": "cookingplus:block/oven_side_right",
+    "handle": "cookingplus:block/oven_side_right"
+  },
+  "elements": [
+    {
+      "name": "body",
+      "from": [0, 0, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "north": { "uv": [0, 0, 16, 16], "texture": "#back" },
+        "south": { "uv": [0, 0, 16, 16], "texture": "#front" },
+        "east":  { "uv": [0, 0, 16, 16], "texture": "#right" },
+        "west":  { "uv": [0, 0, 16, 16], "texture": "#left" },
+        "up":    { "uv": [0, 0, 16, 16], "texture": "#top" },
+        "down":  { "uv": [0, 0, 16, 16], "texture": "#bottom" }
+      }
+    },
+    {
+      "name": "handle_standoff_left",
+      "from": [3, 12, 16],
+      "to": [4, 14, 17],
+      "faces": {
+        "north": { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "south": { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "east":  { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "west":  { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "up":    { "uv": [0, 0, 1, 1], "texture": "#handle" },
+        "down":  { "uv": [0, 0, 1, 1], "texture": "#handle" }
+      }
+    },
+    {
+      "name": "handle_standoff_right",
+      "from": [12, 12, 16],
+      "to": [13, 14, 17],
+      "faces": {
+        "north": { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "south": { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "east":  { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "west":  { "uv": [0, 0, 1, 2], "texture": "#handle" },
+        "up":    { "uv": [0, 0, 1, 1], "texture": "#handle" },
+        "down":  { "uv": [0, 0, 1, 1], "texture": "#handle" }
+      }
+    },
+    {
+      "name": "handle_bar",
+      "from": [3, 12.5, 17],
+      "to": [13, 13.5, 18],
+      "faces": {
+        "north": { "uv": [3, 7, 13, 8], "texture": "#handle" },
+        "south": { "uv": [3, 7, 13, 8], "texture": "#handle" },
+        "east":  { "uv": [0, 0, 1, 1], "texture": "#handle" },
+        "west":  { "uv": [0, 0, 1, 1], "texture": "#handle" },
+        "up":    { "uv": [3, 0, 13, 1], "texture": "#handle" },
+        "down":  { "uv": [3, 0, 13, 1], "texture": "#handle" }
+      }
+    }
+  ]
+}

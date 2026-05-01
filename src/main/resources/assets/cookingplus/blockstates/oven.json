@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "cookingplus:block/oven" },
+    "facing=south,lit=false": { "model": "cookingplus:block/oven", "y": 180 },
+    "facing=east,lit=false":  { "model": "cookingplus:block/oven", "y": 90 },
+    "facing=west,lit=false":  { "model": "cookingplus:block/oven", "y": 270 },
+    "facing=north,lit=true":  { "model": "cookingplus:block/oven_lit" },
+    "facing=south,lit=true":  { "model": "cookingplus:block/oven_lit", "y": 180 },
+    "facing=east,lit=true":   { "model": "cookingplus:block/oven_lit", "y": 90 },
+    "facing=west,lit=true":   { "model": "cookingplus:block/oven_lit", "y": 270 }
+  }
+}

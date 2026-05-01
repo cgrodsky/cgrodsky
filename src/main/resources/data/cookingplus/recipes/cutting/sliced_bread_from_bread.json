@@ -1,0 +1,6 @@
+{
+  "type": "cookingplus:cutting",
+  "ingredient": { "item": "minecraft:bread" },
+  "result": { "item": "cookingplus:sliced_bread", "count": 4 },
+  "chops": 4
+}

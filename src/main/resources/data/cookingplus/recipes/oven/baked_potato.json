@@ -1,0 +1,6 @@
+{
+  "type": "cookingplus:oven",
+  "ingredient": { "item": "minecraft:potato" },
+  "result": { "item": "minecraft:baked_potato", "count": 1 },
+  "cook_time": 200
+}
