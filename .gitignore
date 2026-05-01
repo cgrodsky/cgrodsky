@@ -1,0 +1,21 @@
+# Build outputs
+build/
+out/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+.classpath
+.project
+.settings/
+
+# Forge dev runs
+run/
+runs/
+
+# OS
+.DS_Store
+Thumbs.db

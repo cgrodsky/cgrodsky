@@ -24,3 +24,27 @@ mandatory = true
 versionRange = "[1.20.1,1.21)"
 ordering = "NONE"
 side = "BOTH"
+
+[[mods]]
+modId = "cookingplus"
+version = "1.0.0"
+displayName = "Cooking Plus"
+description = '''
+Adds a cooking-themed expansion: foods, ingredients, and interactive
+cooking machine blocks (oven, microwave, blender, cutting board, and
+more) with custom recipes.
+'''
+
+[[dependencies.cookingplus]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.cookingplus]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "BOTH"

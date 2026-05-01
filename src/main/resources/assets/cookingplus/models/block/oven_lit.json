@@ -1,0 +1,7 @@
+{
+  "parent": "cookingplus:block/oven",
+  "textures": {
+    "front": "cookingplus:block/oven_front_lit",
+    "particle": "cookingplus:block/oven_front_lit"
+  }
+}
