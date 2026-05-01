@@ -1,5 +1,8 @@
 {
   "itemGroup.cookingplus": "Cooking Plus",
   "block.cookingplus.oven": "Oven",
-  "container.cookingplus.oven": "Oven"
+  "container.cookingplus.oven": "Oven",
+  "block.cookingplus.trash_can": "Trash Can",
+  "container.cookingplus.trash_can": "Trash Can",
+  "button.cookingplus.empty_trash": "Empty Trash"
 }

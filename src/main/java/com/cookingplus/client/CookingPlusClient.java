@@ -2,6 +2,7 @@ package com.cookingplus.client;
 
 import com.cookingplus.CookingPlusMod;
 import com.cookingplus.client.screen.OvenScreen;
+import com.cookingplus.client.screen.TrashCanScreen;
 import com.cookingplus.registry.CPMenus;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraftforge.api.distmarker.Dist;
@@ -16,6 +17,9 @@ public final class CookingPlusClient {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> MenuScreens.register(CPMenus.OVEN.get(), OvenScreen::new));
+        event.enqueueWork(() -> {
+            MenuScreens.register(CPMenus.OVEN.get(), OvenScreen::new);
+            MenuScreens.register(CPMenus.TRASH_CAN.get(), TrashCanScreen::new);
+        });
     }
 }

@@ -2,6 +2,7 @@ package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
 import com.cookingplus.block.OvenBlock;
+import com.cookingplus.block.TrashCanBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -25,6 +26,14 @@ public final class CPBlocks {
                     .strength(3.5f)
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(OvenBlock.LIT) ? 13 : 0))
+    );
+
+    public static final RegistryObject<Block> TRASH_CAN = registerBlock(
+            "trash_can",
+            () -> new TrashCanBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f)
+                    .sound(SoundType.METAL))
     );
 
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> blockSup) {
