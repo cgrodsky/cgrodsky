@@ -5,7 +5,7 @@
     "front": "cookingplus:block/trash_can_front",
     "back": "cookingplus:block/trash_can_back",
     "left": "cookingplus:block/trash_can_side",
-    "right": "cookingplus:block/trash_can_side",
+    "right": "cookingplus:block/trash_can_side_handle",
     "top": "cookingplus:block/trash_can_top",
     "bottom": "cookingplus:block/trash_can_bottom"
   },
