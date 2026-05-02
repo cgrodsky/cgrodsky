@@ -1,0 +1,27 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "cookingplus:block/microwave_front",
+    "front": "cookingplus:block/microwave_front",
+    "back": "cookingplus:block/microwave_back",
+    "left": "cookingplus:block/microwave_side_left",
+    "right": "cookingplus:block/microwave_side_right",
+    "top": "cookingplus:block/microwave_top",
+    "bottom": "cookingplus:block/microwave_side_right"
+  },
+  "elements": [
+    {
+      "name": "body",
+      "from": [0, 0, 4],
+      "to": [15, 7, 13],
+      "faces": {
+        "north": { "uv": [0, 0, 15, 7], "texture": "#back" },
+        "south": { "uv": [0, 0, 15, 7], "texture": "#front" },
+        "east":  { "uv": [0, 0, 9, 7],  "texture": "#right" },
+        "west":  { "uv": [0, 0, 9, 7],  "texture": "#left" },
+        "up":    { "uv": [0, 0, 15, 9], "texture": "#top" },
+        "down":  { "uv": [0, 0, 15, 9], "texture": "#bottom" }
+      }
+    }
+  ]
+}

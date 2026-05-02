@@ -2,6 +2,7 @@ package com.cookingplus.client;
 
 import com.cookingplus.CookingPlusMod;
 import com.cookingplus.client.renderer.CuttingBoardRenderer;
+import com.cookingplus.client.screen.MicrowaveScreen;
 import com.cookingplus.client.screen.OvenScreen;
 import com.cookingplus.client.screen.TrashCanScreen;
 import com.cookingplus.registry.CPBlockEntities;
@@ -22,6 +23,7 @@ public final class CookingPlusClient {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             MenuScreens.register(CPMenus.OVEN.get(), OvenScreen::new);
+            MenuScreens.register(CPMenus.MICROWAVE.get(), MicrowaveScreen::new);
             MenuScreens.register(CPMenus.TRASH_CAN.get(), TrashCanScreen::new);
         });
     }

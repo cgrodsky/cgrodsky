@@ -1,0 +1,11 @@
+{
+  "type": "cookingplus:cutting",
+  "ingredient": {
+    "item": "minecraft:apple"
+  },
+  "result": {
+    "item": "cookingplus:sliced_apple",
+    "count": 4
+  },
+  "chops": 3
+}

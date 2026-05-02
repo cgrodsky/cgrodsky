@@ -2,6 +2,7 @@ package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
 import com.cookingplus.recipe.CuttingRecipe;
+import com.cookingplus.recipe.MicrowaveRecipe;
 import com.cookingplus.recipe.OvenRecipe;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -18,6 +19,9 @@ public final class CPRecipeTypes {
 
     public static final RegistryObject<RecipeType<CuttingRecipe>> CUTTING =
             RECIPE_TYPES.register("cutting", () -> RecipeType.simple(new ResourceLocation(CookingPlusMod.MODID, "cutting")));
+
+    public static final RegistryObject<RecipeType<MicrowaveRecipe>> MICROWAVE =
+            RECIPE_TYPES.register("microwave", () -> RecipeType.simple(new ResourceLocation(CookingPlusMod.MODID, "microwave")));
 
     private CPRecipeTypes() {}
 }

@@ -1,0 +1,7 @@
+{
+  "parent": "cookingplus:block/microwave",
+  "textures": {
+    "front": "cookingplus:block/microwave_front_done",
+    "particle": "cookingplus:block/microwave_front_done"
+  }
+}

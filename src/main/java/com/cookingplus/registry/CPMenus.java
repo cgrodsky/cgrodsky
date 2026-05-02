@@ -1,6 +1,7 @@
 package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
+import com.cookingplus.menu.MicrowaveMenu;
 import com.cookingplus.menu.OvenMenu;
 import com.cookingplus.menu.TrashCanMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -15,6 +16,9 @@ public final class CPMenus {
 
     public static final RegistryObject<MenuType<OvenMenu>> OVEN =
             MENUS.register("oven", () -> IForgeMenuType.create(OvenMenu::new));
+
+    public static final RegistryObject<MenuType<MicrowaveMenu>> MICROWAVE =
+            MENUS.register("microwave", () -> IForgeMenuType.create(MicrowaveMenu::new));
 
     public static final RegistryObject<MenuType<TrashCanMenu>> TRASH_CAN =
             MENUS.register("trash_can", () -> IForgeMenuType.create(TrashCanMenu::new));

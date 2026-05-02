@@ -1,0 +1,6 @@
+{
+  "type": "cookingplus:microwave",
+  "ingredient": { "item": "minecraft:chicken" },
+  "result": { "item": "minecraft:cooked_chicken", "count": 1 },
+  "cook_time": 100
+}

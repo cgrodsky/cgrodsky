@@ -2,8 +2,10 @@ package com.cookingplus.registry;
 
 import com.cookingplus.CookingPlusMod;
 import com.cookingplus.block.CuttingBoardBlock;
+import com.cookingplus.block.MicrowaveBlock;
 import com.cookingplus.block.OvenBlock;
 import com.cookingplus.block.ShapedBlock;
+import com.cookingplus.block.SinkBlock;
 import com.cookingplus.block.TrashCanBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.DyeColor;
@@ -35,6 +37,16 @@ public final class CPBlocks {
                     .lightLevel(state -> state.getValue(OvenBlock.LIT) ? 13 : 0))
     );
 
+    public static final RegistryObject<Block> MICROWAVE = registerBlock(
+            "microwave",
+            () -> new MicrowaveBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(MicrowaveBlock.LIT) ? 7 : 0))
+    );
+
     public static final RegistryObject<Block> TRASH_CAN = registerBlock(
             "trash_can",
             () -> new TrashCanBlock(BlockBehaviour.Properties.of()
@@ -49,6 +61,15 @@ public final class CPBlocks {
                     .mapColor(MapColor.WOOD)
                     .strength(1.5f)
                     .sound(SoundType.WOOD)
+                    .noOcclusion())
+    );
+
+    public static final RegistryObject<Block> SINK = registerBlock(
+            "sink",
+            () -> new SinkBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(1.5f)
+                    .sound(SoundType.METAL)
                     .noOcclusion())
     );
 

@@ -1,0 +1,11 @@
+{
+  "type": "cookingplus:cutting",
+  "ingredient": {
+    "item": "cookingplus:lemon"
+  },
+  "result": {
+    "item": "cookingplus:sliced_lemon",
+    "count": 4
+  },
+  "chops": 3
+}

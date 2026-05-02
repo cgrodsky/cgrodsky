@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "cookingplus:block/microwave" },
+    "facing=south,lit=false": { "model": "cookingplus:block/microwave", "y": 180 },
+    "facing=east,lit=false":  { "model": "cookingplus:block/microwave", "y": 90 },
+    "facing=west,lit=false":  { "model": "cookingplus:block/microwave", "y": 270 },
+    "facing=north,lit=true":  { "model": "cookingplus:block/microwave_lit" },
+    "facing=south,lit=true":  { "model": "cookingplus:block/microwave_lit", "y": 180 },
+    "facing=east,lit=true":   { "model": "cookingplus:block/microwave_lit", "y": 90 },
+    "facing=west,lit=true":   { "model": "cookingplus:block/microwave_lit", "y": 270 }
+  }
+}

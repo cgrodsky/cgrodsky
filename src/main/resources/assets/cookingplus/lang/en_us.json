@@ -5,6 +5,8 @@
   "block.cookingplus.trash_can": "Trash Can",
   "container.cookingplus.trash_can": "Trash Can",
   "block.cookingplus.cutting_board": "Cutting Board",
+  "block.cookingplus.microwave": "Microwave",
+  "container.cookingplus.microwave": "Microwave",
   "button.cookingplus.empty_trash": "Empty Trash",
   "item.cookingplus.knife": "Kitchen Knife",
   "item.cookingplus.sliced_bread": "Sliced Bread",
@@ -35,5 +37,11 @@
   "block.cookingplus.brown_tablecloth": "Brown Tablecloth",
   "block.cookingplus.green_tablecloth": "Green Tablecloth",
   "block.cookingplus.red_tablecloth": "Red Tablecloth",
-  "block.cookingplus.black_tablecloth": "Black Tablecloth"
+  "block.cookingplus.black_tablecloth": "Black Tablecloth",
+  "item.cookingplus.sliced_potato": "Sliced Potato",
+  "item.cookingplus.sliced_carrot": "Sliced Carrot",
+  "item.cookingplus.sliced_apple": "Sliced Apple",
+  "item.cookingplus.sliced_lemon": "Sliced Lemon",
+  "item.cookingplus.sliced_orange": "Sliced Orange",
+  "block.cookingplus.sink": "Sink"
 }

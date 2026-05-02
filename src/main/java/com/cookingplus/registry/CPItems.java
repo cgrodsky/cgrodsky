@@ -15,8 +15,18 @@ public final class CPItems {
     public static final RegistryObject<Item> KNIFE = ITEMS.register("knife",
             () -> new KnifeItem(new Item.Properties().stacksTo(1).durability(120)));
 
-    // Sliced ingredients
-    public static final RegistryObject<Item> SLICED_BREAD = ITEMS.register("sliced_bread",
+    // Sliced ingredients (output of cutting board recipes)
+    public static final RegistryObject<Item> SLICED_BREAD  = ITEMS.register("sliced_bread",
+            () -> new Item(new Item.Properties().food(food(2, 0.3f))));
+    public static final RegistryObject<Item> SLICED_POTATO = ITEMS.register("sliced_potato",
+            () -> new Item(new Item.Properties().food(food(1, 0.2f))));
+    public static final RegistryObject<Item> SLICED_CARROT = ITEMS.register("sliced_carrot",
+            () -> new Item(new Item.Properties().food(food(2, 0.3f))));
+    public static final RegistryObject<Item> SLICED_APPLE  = ITEMS.register("sliced_apple",
+            () -> new Item(new Item.Properties().food(food(2, 0.3f))));
+    public static final RegistryObject<Item> SLICED_LEMON  = ITEMS.register("sliced_lemon",
+            () -> new Item(new Item.Properties().food(food(1, 0.2f))));
+    public static final RegistryObject<Item> SLICED_ORANGE = ITEMS.register("sliced_orange",
             () -> new Item(new Item.Properties().food(food(2, 0.3f))));
 
     // Fruits
