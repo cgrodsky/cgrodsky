@@ -3,11 +3,19 @@
 //  Fidgets - a single-file SwiftUI app of 120 little fidgets.
 //
 //  Targets iOS 17+. Uses Liquid Glass (.glassEffect) on iOS 26+ and falls back
-//  to .regularMaterial on earlier versions. To enable alternate app icons, add
-//  the icon image sets to the asset catalog and list them under
-//  CFBundleIcons -> CFBundleAlternateIcons in Info.plist with the names used
-//  below (AppIcon-Classic, AppIcon-Mint, AppIcon-Coral, AppIcon-Indigo,
-//  AppIcon-Slate, AppIcon-Sunset).
+//  to .regularMaterial on earlier versions.
+//
+//  Asset catalog setup:
+//    - Primary AppIcon = the "Default" bubble icon.
+//    - Add an alternate icon set named "AppIcon-Retro" for the retro variant
+//      and list it in Info.plist under
+//      CFBundleIcons -> CFBundleAlternateIcons -> AppIcon-Retro.
+//    - Add image sets named "AppIconPreview-Default" and "AppIconPreview-Retro"
+//      (any single 1024x1024 size works) so the in-app icon picker can show
+//      thumbnails. Without them the picker falls back to a placeholder.
+//    - To add more icons later: drop the AppIcon-* and AppIconPreview-* assets
+//      in, list the alternate in Info.plist, and append an AppIconOption entry
+//      to AppIconSheet.icons.
 //
 
 import SwiftUI
@@ -1777,9 +1785,10 @@ struct LibrarySheet: View {
 // MARK: - App icon sheet
 
 struct AppIconOption: Identifiable, Hashable {
-    let id: String   // alternate icon name (or "" for primary)
+    let id: String           // alternate icon name (or "" for primary)
     let label: String
-    let tintHue: Double
+    let previewAsset: String // image asset shown in the picker
+    let tintHue: Double      // fallback tint if the preview asset is missing
 }
 
 struct AppIconSheet: View {
@@ -1787,13 +1796,13 @@ struct AppIconSheet: View {
     @State private var current: String = ""
     @State private var error: String?
 
+    // The first entry (id: "") is always the primary AppIcon in the asset
+    // catalog. Add additional entries here as new alternate icons are
+    // delivered; the id must match the alternate icon name listed in
+    // Info.plist under CFBundleIcons -> CFBundleAlternateIcons.
     private let icons: [AppIconOption] = [
-        AppIconOption(id: "",                label: "Classic", tintHue: 0.58),
-        AppIconOption(id: "AppIcon-Mint",    label: "Mint",    tintHue: 0.40),
-        AppIconOption(id: "AppIcon-Coral",   label: "Coral",   tintHue: 0.03),
-        AppIconOption(id: "AppIcon-Indigo",  label: "Indigo",  tintHue: 0.70),
-        AppIconOption(id: "AppIcon-Slate",   label: "Slate",   tintHue: 0.62),
-        AppIconOption(id: "AppIcon-Sunset",  label: "Sunset",  tintHue: 0.08),
+        AppIconOption(id: "",              label: "Default", previewAsset: "AppIconPreview-Default", tintHue: 0.70),
+        AppIconOption(id: "AppIcon-Retro", label: "Retro",   previewAsset: "AppIconPreview-Retro",   tintHue: 0.70),
     ]
 
     private let columns = [GridItem(.adaptive(minimum: 110), spacing: 16)]
@@ -1807,10 +1816,11 @@ struct AppIconSheet: View {
                             setIcon(opt.id)
                         } label: {
                             VStack(spacing: 8) {
-                                IconPreview(hue: opt.tintHue, label: opt.label)
+                                IconPreview(assetName: opt.previewAsset, hue: opt.tintHue)
                                     .frame(width: 90, height: 90)
+                                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                                             .stroke(current == opt.id ? Color.accentColor : .clear,
                                                     lineWidth: 3)
                                     )
@@ -1862,20 +1872,25 @@ struct AppIconSheet: View {
 }
 
 struct IconPreview: View {
+    let assetName: String
     let hue: Double
-    let label: String
+
     var body: some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .fill(LinearGradient(colors: [
-                Color(hue: hue, saturation: 0.85, brightness: 1),
-                Color(hue: (hue + 0.08).truncatingRemainder(dividingBy: 1.0),
-                      saturation: 0.95, brightness: 0.75)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing))
-            .overlay(
-                Image(systemName: "switch.2")
-                    .font(.system(size: 36, weight: .heavy))
-                    .foregroundStyle(.white)
-            )
+        if let ui = UIImage(named: assetName) {
+            Image(uiImage: ui).resizable().scaledToFill()
+        } else {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(colors: [
+                    Color(hue: hue, saturation: 0.85, brightness: 1),
+                    Color(hue: (hue + 0.08).truncatingRemainder(dividingBy: 1.0),
+                          saturation: 0.95, brightness: 0.75)
+                ], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(
+                    Image(systemName: "bubble.left.fill")
+                        .font(.system(size: 36, weight: .heavy))
+                        .foregroundStyle(.white)
+                )
+        }
     }
 }
 
