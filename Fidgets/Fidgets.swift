@@ -6,16 +6,24 @@
 //  to .regularMaterial on earlier versions.
 //
 //  Asset catalog setup:
-//    - Primary AppIcon = the "Default" bubble icon.
-//    - Add an alternate icon set named "AppIcon-Retro" for the retro variant
-//      and list it in Info.plist under
-//      CFBundleIcons -> CFBundleAlternateIcons -> AppIcon-Retro.
-//    - Add image sets named "AppIconPreview-Default" and "AppIconPreview-Retro"
-//      (any single 1024x1024 size works) so the in-app icon picker can show
-//      thumbnails. Without them the picker falls back to a placeholder.
-//    - To add more icons later: drop the AppIcon-* and AppIconPreview-* assets
-//      in, list the alternate in Info.plist, and append an AppIconOption entry
-//      to AppIconSheet.icons.
+//    - Primary AppIcon = the "Default" smooth bubble icon.
+//    - Alternate icon sets (each also needs to be listed in Info.plist under
+//      CFBundleIcons -> CFBundleAlternateIcons):
+//          AppIcon-Sticker      (white-outlined sticker)
+//          AppIcon-Graffiti     (spray-paint on brick)
+//          AppIcon-Painted      (oil-paint texture)
+//          AppIcon-StickerDark  (sticker on black)
+//          AppIcon-Drip         (melting / dripping)
+//          AppIcon-Retro        (pixelated)
+//          AppIcon-Comic        (comic-book halftone)
+//          AppIcon-Neon         (glowing neon on brick)
+//    - For each one also drop an AppIconPreview-* image set (any single
+//      1024x1024 size) so the in-app picker can show thumbnails. Without the
+//      preview image the picker falls back to a coloured placeholder but still
+//      switches the live icon correctly.
+//    - To add more icons later, drop the AppIcon-* + AppIconPreview-* assets,
+//      list the alternate in Info.plist, and append an AppIconOption entry to
+//      AppIconSheet.icons.
 //
 
 import SwiftUI
@@ -1797,12 +1805,20 @@ struct AppIconSheet: View {
     @State private var error: String?
 
     // The first entry (id: "") is always the primary AppIcon in the asset
-    // catalog. Add additional entries here as new alternate icons are
-    // delivered; the id must match the alternate icon name listed in
-    // Info.plist under CFBundleIcons -> CFBundleAlternateIcons.
+    // catalog. Each alternate's id must match the name listed in Info.plist
+    // under CFBundleIcons -> CFBundleAlternateIcons. The previewAsset is the
+    // image set used as a thumbnail inside the picker (falls back to a
+    // coloured placeholder when the asset isn't present).
     private let icons: [AppIconOption] = [
-        AppIconOption(id: "",              label: "Default", previewAsset: "AppIconPreview-Default", tintHue: 0.70),
-        AppIconOption(id: "AppIcon-Retro", label: "Retro",   previewAsset: "AppIconPreview-Retro",   tintHue: 0.70),
+        AppIconOption(id: "",                  label: "Default",      previewAsset: "AppIconPreview-Default",     tintHue: 0.70),
+        AppIconOption(id: "AppIcon-Sticker",   label: "Sticker",      previewAsset: "AppIconPreview-Sticker",     tintHue: 0.72),
+        AppIconOption(id: "AppIcon-Graffiti",  label: "Graffiti",     previewAsset: "AppIconPreview-Graffiti",    tintHue: 0.82),
+        AppIconOption(id: "AppIcon-Painted",   label: "Painted",      previewAsset: "AppIconPreview-Painted",     tintHue: 0.74),
+        AppIconOption(id: "AppIcon-StickerDark", label: "Sticker Dark", previewAsset: "AppIconPreview-StickerDark", tintHue: 0.70),
+        AppIconOption(id: "AppIcon-Drip",      label: "Drip",         previewAsset: "AppIconPreview-Drip",        tintHue: 0.78),
+        AppIconOption(id: "AppIcon-Retro",     label: "Retro",        previewAsset: "AppIconPreview-Retro",       tintHue: 0.70),
+        AppIconOption(id: "AppIcon-Comic",     label: "Comic",        previewAsset: "AppIconPreview-Comic",       tintHue: 0.76),
+        AppIconOption(id: "AppIcon-Neon",      label: "Neon",         previewAsset: "AppIconPreview-Neon",        tintHue: 0.84),
     ]
 
     private let columns = [GridItem(.adaptive(minimum: 110), spacing: 16)]
