@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Windows 12</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Root host for everything -->
+  <div id="screen">
+    <!-- Boot / setup / desktop layers get injected here -->
+  </div>
+
+  <!-- Audio-less, pure visual. Hidden file input reused by media player -->
+  <input type="file" id="globalFileInput" style="display:none" />
+
+  <!-- Notification stack (bottom-right) -->
+  <div id="notifications"></div>
+
+  <script src="js/state.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/boot.js"></script>
+  <script src="js/setup.js"></script>
+  <script src="js/wm.js"></script>
+  <script src="js/browser.js"></script>
+  <script src="js/sites.js"></script>
+  <script src="js/apps.js"></script>
+  <script src="js/copilot.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
