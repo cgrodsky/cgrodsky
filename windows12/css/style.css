@@ -425,6 +425,9 @@ input[type=range] { width: 100%; }
 .ico-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ico-fallback { align-items: center; justify-content: center; color: #fff; font-weight: 600; border-radius: 24%; line-height: 1; letter-spacing: .5px; text-shadow: 0 1px 2px rgba(0,0,0,0.25); position: relative; }
 .ico-fallback::after { content: ""; position: absolute; inset: 0; border-radius: 24%; background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 55%); }
+.ico-fallback.ico-custom { overflow: visible; }
+.ico-fallback.ico-custom::after { display: none; }
+.ico-fallback.ico-custom svg { width: 100%; height: 100%; display: block; }
 
 .center-col { display: flex; flex-direction: column; align-items: center; }
 .muted { color: var(--text-dim); }

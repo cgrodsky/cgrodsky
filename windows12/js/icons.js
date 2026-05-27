@@ -21,22 +21,47 @@
     return s.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "?";
   }
 
+  // Hand-drawn SVG icons used as the fallback for specific keys (until/unless
+  // an assets/<key>.png is provided, which always takes precedence).
+  const custom = {};
+  function register(key, svg) { custom[String(key).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = svg; }
+
   function box(key, label, size) {
     size = size || 28;
     const safeKey = String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, "");
-    const ini = initials(label, key);
-    const grad = gradientFor(String(label || key || "x"));
-    return `<span class="ico-wrap" style="width:${size}px;height:${size}px">` +
+    let fallbackInner, fallbackStyle, cls = "ico-fallback";
+    if (custom[safeKey]) {
+      fallbackInner = custom[safeKey];
+      fallbackStyle = `display:none;background:transparent;box-shadow:none;width:${size}px;height:${size}px`;
+      cls += " ico-custom";
+    } else {
+      fallbackInner = initials(label, key);
+      const grad = gradientFor(String(label || key || "x"));
+      fallbackStyle = `display:none;background:${grad};font-size:${Math.round(size * 0.38)}px;width:${size}px;height:${size}px`;
+    }
+    return `<span class="ico-wrap" style="width:${size}px;height:${size}px${custom[safeKey] ? ";box-shadow:none" : ""}">` +
       `<img class="ico-img" src="assets/${safeKey}.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
-      `<span class="ico-fallback" style="display:none;background:${grad};font-size:${Math.round(size * 0.38)}px;width:${size}px;height:${size}px">${ini}</span>` +
+      `<span class="${cls}" style="${fallbackStyle}">${fallbackInner}</span>` +
       `</span>`;
   }
+
+  // Neon-red YouTube play button (matches the uploaded logo).
+  register("youtubeapp", `<svg viewBox="0 0 128 96" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="ytbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff1f1f"/><stop offset="1" stop-color="#8a0000"/></linearGradient>
+      <filter id="ytglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect x="6" y="6" width="116" height="84" rx="22" fill="url(#ytbg)" stroke="#ff5a5a" stroke-width="4" filter="url(#ytglow)"/>
+    <rect x="6" y="6" width="116" height="84" rx="22" fill="none" stroke="#ff2a2a" stroke-width="2"/>
+    <path d="M52 32 L86 48 L52 64 Z" fill="#fff" stroke="#ff6a6a" stroke-width="3" stroke-linejoin="round" filter="url(#ytglow)"/>
+  </svg>`);
 
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),
     big: (key, label) => box(key, label, 64),
     box,
+    register,
     colorFor,
     gradientFor,
   };
