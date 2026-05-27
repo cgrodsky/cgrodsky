@@ -275,7 +275,7 @@
     allVideos().forEach((v) => {
       const card = el(`<div class="yt-card">
         <div class="yt-thumb" style="background:${v.channel.color}"><span style="font-size:2rem;font-weight:700">${v.channel.name[0]}</span>${v.uploaded ? '<span class="len" style="left:6px;right:auto;background:#cc0000">NEW</span>' : ""}<span class="len">${v.length}</span></div>
-        <div class="yt-meta"><div class="yt-avatar" style="background:${v.channel.color}">${v.channel.name[0]}</div>
+        <div class="yt-meta"><div class="yt-avatar">${Icon.box(v.channel.id, v.channel.name, 36)}</div>
         <div><div style="font-weight:600;font-size:.9rem">${v.title}</div><div class="muted" style="font-size:.8rem">${v.channel.name} • ${v.views}</div></div></div>
       </div>`);
       card.onclick = () => ytWatch(ctx, v);
@@ -296,7 +296,7 @@
       <div class="yt-video"></div>
       <h2 style="margin:12px 0 4px">${v.title}</h2>
       <div class="row">
-        <div class="yt-avatar" style="background:${v.channel.color}">${v.channel.name[0]}</div>
+        <div class="yt-avatar">${Icon.box(v.channel.id, v.channel.name, 36)}</div>
         <div class="grow"><b>${v.channel.name}</b><div class="muted">${v.channel.subs || ""} subscribers</div></div>
         <button class="pill-btn like" style="background:${liked ? "#065fd4" : "#888"}">${liked ? "Liked" : "Like"}</button>
         <button class="pill-btn sub" style="background:${subbed ? "#888" : "#ff0000"}">${subbed ? "Subscribed" : "Subscribe"}</button>
