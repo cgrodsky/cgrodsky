@@ -14,7 +14,7 @@
     const b = S().bank;
     const view = el(`<div class="bank-site">
       <div class="bank-header">
-        <div><div style="font-size:1.3rem;font-weight:700">Forge Bank</div><div style="opacity:.8">Checking •••• 4242</div></div>
+        <div class="row"><span style="width:40px;height:40px">${Icon.md("bank", "Bank")}</span><div><div style="font-size:1.3rem;font-weight:700">Forge Bank</div><div style="opacity:.8">Checking •••• 4242</div></div></div>
         <div style="text-align:right"><div style="opacity:.8">Available balance</div><div class="bank-balance">$${b.balance.toFixed(2)}</div></div>
       </div>
       <div class="bank-content">
@@ -51,7 +51,8 @@
   function bankLogin(ctx) {
     const v = el(`<div class="bank-site" style="display:flex;align-items:center;justify-content:center">
       <form class="dc-card" style="background:#0a5c43">
-        <h2 style="margin-top:0">Forge Bank</h2>
+        <div class="center-col" style="margin-bottom:10px"><span style="width:64px;height:64px">${Icon.big("bank", "Bank")}</span></div>
+        <h2 style="margin-top:0;text-align:center">Forge Bank</h2>
         <input type="text" placeholder="Username" name="u">
         <input type="password" placeholder="Password" name="p">
         <button type="submit">Sign in</button>
@@ -477,7 +478,8 @@
   function discordLogin(ctx) {
     ctx.page.innerHTML = "";
     const v = el(`<div class="dc-login"><form class="dc-card">
-      <h2 style="margin-top:0;color:#fff">Welcome back!</h2>
+      <div class="center-col" style="margin-bottom:12px"><span style="width:72px;height:64px">${Icon.big("discord", "Discord")}</span></div>
+      <h2 style="margin-top:0;color:#fff;text-align:center">Welcome back!</h2>
       <label style="color:#b5bac1;font-size:.75rem">EMAIL OR PHONE</label>
       <input type="text" name="u">
       <label style="color:#b5bac1;font-size:.75rem">PASSWORD</label>
@@ -524,7 +526,7 @@
 
     function rebuildRail() {
       rail.innerHTML = "";
-      const home = el(`<div class="dc-server" style="background:#5865f2;font-weight:700">DM</div>`);
+      const home = el(`<div class="dc-server" style="background:#1e1f22;overflow:visible">${Icon.mini("discord", "Discord")}</div>`);
       home.onclick = () => showHome();
       rail.appendChild(home);
       const sep = el(`<div style="width:32px;height:2px;background:#35363c"></div>`);

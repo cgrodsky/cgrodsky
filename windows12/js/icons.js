@@ -56,6 +56,37 @@
     <path d="M52 32 L86 48 L52 64 Z" fill="#fff" stroke="#ff6a6a" stroke-width="3" stroke-linejoin="round" filter="url(#ytglow)"/>
   </svg>`);
 
+  // Dark glossy bank building with blue neon edges (matches the uploaded icon).
+  register("bank", `<svg viewBox="0 0 128 116" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3550"/><stop offset="1" stop-color="#0a0f1e"/></linearGradient>
+      <filter id="bkglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <g stroke="#7aa7ff" stroke-width="2.4" filter="url(#bkglow)" stroke-linejoin="round">
+      <polygon points="10,56 64,12 118,56" fill="url(#bkg)"/>
+      <rect x="26" y="60" width="14" height="30" fill="url(#bkg)"/>
+      <rect x="57" y="60" width="14" height="30" fill="url(#bkg)"/>
+      <rect x="88" y="60" width="14" height="30" fill="url(#bkg)"/>
+      <rect x="16" y="90" width="96" height="9" rx="2" fill="url(#bkg)"/>
+      <rect x="10" y="100" width="108" height="10" rx="2" fill="url(#bkg)"/>
+    </g>
+    <g stroke="#cfe0ff" stroke-width="2" fill="none" opacity="0.9">
+      <rect x="52" y="30" width="24" height="14" rx="1"/><line x1="56" y1="34" x2="56" y2="42"/><line x1="64" y1="34" x2="64" y2="42"/><line x1="72" y1="34" x2="72" y2="42"/>
+    </g>
+  </svg>`);
+
+  // Neon-blue Discord mark (stylized to match the uploaded icon).
+  register("discord", `<svg viewBox="0 0 128 104" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3fae"/><stop offset="1" stop-color="#10112e"/></linearGradient>
+      <filter id="dcglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <path d="M30 18 Q64 8 98 18 Q120 44 112 82 L96 94 L88 82 Q64 90 40 82 L32 94 L16 82 Q8 44 30 18 Z"
+      fill="url(#dcg)" stroke="#6f7bff" stroke-width="3" stroke-linejoin="round" filter="url(#dcglow)"/>
+    <circle cx="48" cy="56" r="11" fill="#0c0d24"/><circle cx="48" cy="56" r="6.5" fill="#aab4ff" filter="url(#dcglow)"/>
+    <circle cx="80" cy="56" r="11" fill="#0c0d24"/><circle cx="80" cy="56" r="6.5" fill="#aab4ff" filter="url(#dcglow)"/>
+  </svg>`);
+
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),
