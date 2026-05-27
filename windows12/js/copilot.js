@@ -6,6 +6,9 @@
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
   const S = () => State.data;
   const API_URL = "https://api.aimlapi.com/v1/chat/completions";
+  // Hardcoded per user request. NOTE: this is publicly visible in a static site.
+  const DEFAULT_KEY = "de3be806e952aece6c251ca128ae58f6";
+  const activeKey = () => S().copilot.apiKey || DEFAULT_KEY;
 
   const LOGO = (cls) => `<div class="${cls}"><div class="ring"></div><div class="dot"></div></div>`;
   const SEND_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" fill="#fff"/></svg>`;
@@ -16,7 +19,7 @@
   };
 
   function render(body) {
-    if (!S().copilot.apiKey) return renderKeyForm(body);
+    if (!activeKey()) return renderKeyForm(body);
     body.innerHTML = `
       <div class="cop">
         <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
@@ -88,7 +91,7 @@
       .concat(history.slice(-20));
     const res = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + S().copilot.apiKey },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
       body: JSON.stringify({ model: S().copilot.model, messages }),
     });
     if (!res.ok) {

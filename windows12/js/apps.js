@@ -38,7 +38,8 @@
           if (a.price) State.addTransaction({ vendor: "App Store", item: a.name, amount: a.price, refundable: true, kind: "app", refId: a.id });
           if (!S().installedApps.includes(a.id)) S().installedApps.push(a.id);
           State.save();
-          Notify.show({ icon: "", title: "Installed", body: a.name + " is ready.", onClick: () => window.WM.open(a.id) });
+          if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
+          Notify.show({ icon: "", title: "Installed", body: a.name + " is now on your home screen.", onClick: () => window.WM.open(a.id) });
           renderApps();
         };
         grid.appendChild(card);

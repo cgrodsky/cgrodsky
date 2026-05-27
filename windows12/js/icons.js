@@ -4,11 +4,16 @@
   "use strict";
   let n = 0;
 
-  const palette = ["#0067c0", "#7b5cff", "#e53935", "#43a047", "#fb8c00", "#00897b", "#8e24aa", "#3949ab", "#d81b60", "#00acc1"];
-  function colorFor(s) {
-    let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return palette[h % palette.length];
-  }
+  // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
+  const palette = [
+    ["#2b8cff", "#0052cc"], ["#9b6bff", "#6a2cff"], ["#ff6a6a", "#d61f1f"],
+    ["#42d392", "#1f9d57"], ["#ffb02e", "#f5820b"], ["#22c1c3", "#0a8a8c"],
+    ["#c061ff", "#8a1fd0"], ["#5a7bff", "#2942d6"], ["#ff7eb3", "#e01f6b"],
+    ["#34d0e6", "#0e8fb0"],
+  ];
+  function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+  function colorFor(s) { return palette[hash(s) % palette.length][0]; }
+  function gradientFor(s) { const p = palette[hash(s) % palette.length]; return `linear-gradient(135deg, ${p[0]}, ${p[1]})`; }
   function initials(label, key) {
     const s = String(label || key || "?");
     const words = s.replace(/[^A-Za-z0-9 ]/g, "").trim().split(/\s+/);
@@ -20,10 +25,10 @@
     size = size || 28;
     const safeKey = String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, "");
     const ini = initials(label, key);
-    const color = colorFor(String(label || key || "x"));
+    const grad = gradientFor(String(label || key || "x"));
     return `<span class="ico-wrap" style="width:${size}px;height:${size}px">` +
       `<img class="ico-img" src="assets/${safeKey}.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
-      `<span class="ico-fallback" style="display:none;background:${color};font-size:${Math.round(size * 0.4)}px;width:${size}px;height:${size}px">${ini}</span>` +
+      `<span class="ico-fallback" style="display:none;background:${grad};font-size:${Math.round(size * 0.38)}px;width:${size}px;height:${size}px">${ini}</span>` +
       `</span>`;
   }
 
@@ -33,5 +38,6 @@
     big: (key, label) => box(key, label, 64),
     box,
     colorFor,
+    gradientFor,
   };
 })();

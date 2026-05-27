@@ -292,7 +292,7 @@
     const liked = yt.likes.includes(v.id);
     const subbed = yt.subscriptions.includes(v.channel.id);
     const player = el(`<div class="yt-player">
-      <div class="yt-video"><div style="text-align:center"><div style="font-size:3rem">${v.channel.name[0]}</div><div>${v.title}</div></div></div>
+      <div class="yt-video"></div>
       <h2 style="margin:12px 0 4px">${v.title}</h2>
       <div class="row">
         <div class="yt-avatar" style="background:${v.channel.color}">${v.channel.name[0]}</div>
@@ -316,12 +316,96 @@
       State.save(); ytWatch(ctx, v);
     };
 
-    if (!yt.premium) playAd(player.querySelector(".yt-video"));
+    const videoEl = player.querySelector(".yt-video");
+    const vp = makeVideoPlayer(videoEl, v);
+    if (!yt.premium) playAd(videoEl, () => vp.play());
+    else vp.play();
   }
 
-  function playAd(videoEl) {
+  // Self-contained animated "video" with play/pause and a progress bar.
+  // (YouTube content is allowed to use emoji as placeholder art until images are added.)
+  function makeVideoPlayer(videoEl, v) {
+    videoEl.innerHTML = "";
+    const SIM_SECONDS = 24;
+    const canvas = document.createElement("canvas");
+    canvas.width = 640; canvas.height = 360;
+    canvas.style.cssText = "width:100%;height:100%;display:block";
+    videoEl.appendChild(canvas);
+    const cx = canvas.getContext("2d");
+
+    const bar = el(`<div class="vp-bar">
+      <button class="vp-play" title="Play/Pause">&#9654;</button>
+      <span class="vp-time">0:00</span>
+      <div class="vp-track"><div class="vp-fill"></div></div>
+      <span class="vp-dur">${v.length}</span>
+    </div>`);
+    videoEl.appendChild(bar);
+    const bigPlay = el(`<button class="vp-big">&#9654;</button>`);
+    videoEl.appendChild(bigPlay);
+
+    const emojis = ["🎮", "🔥", "⭐", "🚀", "🎉", "💎", "⚡", "🏆"];
+    const sprites = Array.from({ length: 8 }, (_, i) => ({
+      e: emojis[i % emojis.length],
+      x: Math.random(), y: Math.random(), vx: (Math.random() - .5) * .002, vy: (Math.random() - .5) * .002, s: 24 + Math.random() * 26,
+    }));
+
+    let playing = false, t = 0, raf = null, last = 0;
+    const fill = bar.querySelector(".vp-fill"), timeEl = bar.querySelector(".vp-time");
+    const playBtns = [bar.querySelector(".vp-play"), bigPlay];
+
+    function fmt(sec) { const m = Math.floor(sec / 60); const s = Math.floor(sec % 60); return m + ":" + s.toString().padStart(2, "0"); }
+
+    function draw() {
+      const w = canvas.width, h = canvas.height;
+      const g = cx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, v.channel.color); g.addColorStop(1, "#101014");
+      cx.fillStyle = g; cx.fillRect(0, 0, w, h);
+      // moving sprites
+      sprites.forEach((sp) => {
+        if (playing) { sp.x += sp.vx; sp.y += sp.vy; if (sp.x < 0 || sp.x > 1) sp.vx *= -1; if (sp.y < 0 || sp.y > 1) sp.vy *= -1; }
+        cx.font = sp.s + "px serif"; cx.textAlign = "center"; cx.textBaseline = "middle";
+        cx.fillText(sp.e, sp.x * w, sp.y * h);
+      });
+      // title + channel
+      cx.fillStyle = "rgba(0,0,0,.35)"; cx.fillRect(0, h - 90, w, 90);
+      cx.fillStyle = "#fff"; cx.textAlign = "center";
+      cx.font = "bold 30px Segoe UI, sans-serif"; cx.fillText(v.title, w / 2, h - 52);
+      cx.font = "18px Segoe UI, sans-serif"; cx.fillStyle = "#ddd"; cx.fillText(v.channel.name, w / 2, h - 22);
+    }
+
+    function loop(ts) {
+      if (!last) last = ts;
+      const dt = (ts - last) / 1000; last = ts;
+      if (playing) {
+        t += dt;
+        if (t >= SIM_SECONDS) { t = SIM_SECONDS; pause(); showReplay(); }
+        fill.style.width = (t / SIM_SECONDS * 100) + "%";
+        timeEl.textContent = fmt(t);
+      }
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+
+    function play() { if (t >= SIM_SECONDS) t = 0; playing = true; bigPlay.style.display = "none"; playBtns.forEach((b) => b.innerHTML = "&#10074;&#10074;"); }
+    function pause() { playing = false; bigPlay.style.display = ""; playBtns.forEach((b) => b.innerHTML = "&#9654;"); }
+    function showReplay() { bigPlay.innerHTML = "&#8635;"; bigPlay.style.display = ""; }
+    function toggle() { playing ? pause() : play(); }
+
+    playBtns.forEach((b) => b.onclick = toggle);
+    bar.querySelector(".vp-track").onclick = (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      t = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * SIM_SECONDS;
+      fill.style.width = (t / SIM_SECONDS * 100) + "%"; timeEl.textContent = fmt(t);
+    };
+    raf = requestAnimationFrame(loop);
+    videoEl.closest(".win").addEventListener("DOMNodeRemoved", () => cancelAnimationFrame(raf));
+    return { play, pause };
+  }
+
+  function playAd(videoEl, onDone) {
     let remaining = 90, skipIn = 10;
     const ad = el(`<div class="yt-ad">
+      <div style="font-size:3rem">🛍️🔥💸</div>
       <div style="font-size:2.5rem;font-weight:800;color:#ffd814">MEGA SALE!</div>
       <div>Buy 1 get 1 imaginary thing free! Only at Forge Store.</div>
       <div class="muted" id="adTimer">Ad • 90s</div>
@@ -330,14 +414,15 @@
     videoEl.appendChild(ad);
     const timer = ad.querySelector("#adTimer");
     const skip = ad.querySelector(".yt-skip");
+    const finish = () => { clearInterval(iv); ad.remove(); if (onDone) onDone(); };
     const iv = setInterval(() => {
       remaining--; skipIn--;
       timer.textContent = `Ad • ${remaining}s`;
       if (skipIn > 0) skip.textContent = `Skip in ${skipIn}`;
       else { skip.disabled = false; skip.textContent = "Skip Ad"; }
-      if (remaining <= 0) { clearInterval(iv); ad.remove(); }
+      if (remaining <= 0) finish();
     }, 1000);
-    skip.onclick = () => { if (!skip.disabled) { clearInterval(iv); ad.remove(); } };
+    skip.onclick = () => { if (!skip.disabled) finish(); };
   }
 
   function ytUpload(ctx) {

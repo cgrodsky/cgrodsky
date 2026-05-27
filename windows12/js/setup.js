@@ -7,6 +7,7 @@
 
   let bg, win, onComplete;
   const S = () => State.data;
+  const t = (k) => I18n.t(k);
 
   function mount() {
     bg = el(`<div class="setup-bg"><div class="setup-window"></div></div>`);
@@ -20,14 +21,14 @@
   function stepRegion() {
     const regions = ["United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "India", "Brazil", "Mexico"];
     const node = el(`<div>
-      <h1>Is this the right country or region?</h1>
-      <p class="sub">Windows 12 supports a single language and will translate everything for you.</p>
+      <h1>${t("region_title")}</h1>
+      <p class="sub">${t("region_sub")}</p>
       <div class="setup-list" id="regionList"></div>
       <div class="field" style="margin-top:16px">
-        <label>Language</label>
-        <select id="lang"><option>English (United States)</option></select>
+        <label>${t("language")}</label>
+        <select id="lang"></select>
       </div>
-      <div class="setup-actions"><button class="btn-primary" id="next">Yes</button></div>
+      <div class="setup-actions"><button class="btn-primary" id="next">${t("yes")}</button></div>
     </div>`);
     const list = node.querySelector("#regionList");
     regions.forEach((r) => {
@@ -36,6 +37,14 @@
       o.onclick = () => { list.querySelectorAll(".opt").forEach((x) => x.classList.remove("sel")); o.classList.add("sel"); S().region = r; };
       list.appendChild(o);
     });
+    const langSel = node.querySelector("#lang");
+    I18n.languages.forEach((l) => {
+      const opt = document.createElement("option");
+      opt.value = l.code; opt.textContent = l.name;
+      if (l.code === I18n.lang) opt.selected = true;
+      langSel.appendChild(opt);
+    });
+    langSel.onchange = () => { I18n.set(langSel.value); stepRegion(); };
     node.querySelector("#next").onclick = () => { State.save(); stepAccessibility(); };
     render(node);
   }
@@ -43,26 +52,26 @@
   // ---------- Step 2: Accessibility ----------
   function stepAccessibility() {
     const node = el(`<div>
-      <h1>Accessibility settings</h1>
-      <p class="sub">Set things up now, or skip and change them later in Settings.</p>
-      <div class="field"><label>Appearance</label>
+      <h1>${t("access_title")}</h1>
+      <p class="sub">${t("access_sub")}</p>
+      <div class="field"><label>${t("appearance")}</label>
         <div class="toggle-row" id="themeRow">
-          <button data-v="light">Light</button>
-          <button data-v="dark">Dark</button>
+          <button data-v="light">${t("light")}</button>
+          <button data-v="dark">${t("dark")}</button>
         </div>
       </div>
-      <div class="field"><label>Text size — <span id="tsVal">${S().textScale}%</span></label>
+      <div class="field"><label>${t("text_size")} — <span id="tsVal">${S().textScale}%</span></label>
         <input type="range" id="ts" min="80" max="180" step="10" value="${S().textScale}">
       </div>
-      <div class="field"><label>On-screen keyboard</label>
+      <div class="field"><label>${t("osk")}</label>
         <div class="toggle-row" id="oskRow">
-          <button data-v="off">Off</button>
-          <button data-v="on">On</button>
+          <button data-v="off">${t("off")}</button>
+          <button data-v="on">${t("on")}</button>
         </div>
       </div>
       <div class="setup-actions spread">
-        <button class="btn-text" id="later">Later in settings</button>
-        <button class="btn-primary" id="setup">Set up</button>
+        <button class="btn-text" id="later">${t("later_settings")}</button>
+        <button class="btn-primary" id="setup">${t("set_up")}</button>
       </div>
     </div>`);
 
@@ -90,16 +99,16 @@
   // ---------- Step 3: Product key ----------
   function stepProductKey() {
     const node = el(`<div>
-      <h1>Activate Windows</h1>
-      <p class="sub">Do you have a product key? Enter it now, or skip and activate later.</p>
+      <h1>${t("activate_title")}</h1>
+      <p class="sub">${t("activate_sub")}</p>
       <div class="field">
         <input type="text" id="key" class="key-input" maxlength="15" placeholder="xxx-xxx-xxx-xxx">
         <div class="error-msg" id="err"></div>
       </div>
-      <p><span class="link-blue" id="sheet">View the 100-key sheet</span></p>
+      <p><span class="link-blue" id="sheet">${t("view_keys")}</span></p>
       <div class="setup-actions spread">
-        <button class="btn-text" id="skip">Skip</button>
-        <button class="btn-primary" id="cont">Continue</button>
+        <button class="btn-text" id="skip">${t("skip")}</button>
+        <button class="btn-primary" id="cont">${t("continue")}</button>
       </div>
     </div>`);
 
@@ -116,8 +125,8 @@
     node.querySelector("#cont").onclick = () => {
       const res = State.validateKey(key.value);
       if (res === "valid") { State.redeemKey(key.value); stepAccount(true); }
-      else if (res === "redeemed") err.textContent = "Product Key Already Redeemed";
-      else err.textContent = "Invalid Key";
+      else if (res === "redeemed") err.textContent = t("key_redeemed");
+      else err.textContent = t("key_invalid");
     };
     render(node);
   }
@@ -142,18 +151,18 @@
   // ---------- Step 4: Account ----------
   function stepAccount(forced) {
     const node = el(`<div>
-      <h1>${forced ? "Create your account" : "Sign in to your account"}</h1>
-      <p class="sub">${forced ? "An account is required to finish activating Windows." : "Add an account, or skip for now."}</p>
-      <div class="field"><label>Email</label><input type="email" id="email" placeholder="name@example.com"></div>
-      <div class="field"><label>Password</label><input type="password" id="pw" placeholder="Password"></div>
+      <h1>${forced ? t("create_account") : t("signin_account")}</h1>
+      <p class="sub">${forced ? t("account_required") : t("account_optional")}</p>
+      <div class="field"><label>${t("email")}</label><input type="email" id="email" placeholder="name@example.com"></div>
+      <div class="field"><label>${t("password")}</label><input type="password" id="pw" placeholder="${t("password")}"></div>
       <div class="field row">
         <input type="checkbox" id="tos" style="width:auto">
-        <span>I agree to the <span class="link-blue" id="tosLink">terms of service</span></span>
+        <span>${t("agree_pre")} <span class="link-blue" id="tosLink">${t("terms")}</span></span>
       </div>
       <div class="error-msg" id="err"></div>
       <div class="setup-actions spread">
-        ${forced ? "<span></span>" : '<button class="btn-text" id="skip">Skip</button>'}
-        <button class="btn-primary" id="next" disabled>Next</button>
+        ${forced ? "<span></span>" : `<button class="btn-text" id="skip">${t("skip")}</button>`}
+        <button class="btn-primary" id="next" disabled>${t("next")}</button>
       </div>
     </div>`);
 
@@ -170,7 +179,7 @@
     next.onclick = () => {
       const email = node.querySelector("#email").value.trim();
       const pw = node.querySelector("#pw").value;
-      if (!email || !pw) { err.textContent = "Email and password are required."; return; }
+      if (!email || !pw) { err.textContent = t("email_pw_required"); return; }
       S().account = { email, password: pw };
       State.save();
       stepCustomize();
@@ -210,20 +219,20 @@
   // ---------- Step 5: Customize (profile picture + username + pin/password) ----------
   function stepCustomize() {
     const node = el(`<div>
-      <h1>Make it yours</h1>
-      <p class="sub">Add a profile picture and a username, then choose how you'll sign in.</p>
+      <h1>${t("make_yours")}</h1>
+      <p class="sub">${t("make_yours_sub")}</p>
       <div class="center-col">
-        <div class="pic-crop" id="crop"><span class="muted" style="margin:auto">No photo</span></div>
-        <button class="btn-text" id="upload">Upload a photo</button>
+        <div class="pic-crop" id="crop"><span class="muted" style="margin:auto">${t("no_photo")}</span></div>
+        <button class="btn-text" id="upload">${t("upload_photo")}</button>
       </div>
-      <div class="field"><label>Username</label><input type="text" id="uname" value="User"></div>
-      <div class="field"><label>Sign-in method</label>
-        <div class="toggle-row" id="authRow"><button data-v="pin" class="sel">PIN</button><button data-v="password">Password</button></div>
+      <div class="field"><label>${t("username")}</label><input type="text" id="uname" value="User"></div>
+      <div class="field"><label>${t("signin_method")}</label>
+        <div class="toggle-row" id="authRow"><button data-v="pin" class="sel">${t("pin")}</button><button data-v="password">${t("password")}</button></div>
       </div>
-      <div class="field"><label id="secLabel">PIN (4 or 6 digits)</label>
-        <input type="password" id="secret" placeholder="Enter PIN"></div>
+      <div class="field"><label id="secLabel">${t("pin_label")}</label>
+        <input type="password" id="secret" placeholder="${t("enter_pin")}"></div>
       <div class="error-msg" id="err"></div>
-      <div class="setup-actions"><button class="btn-primary" id="next">Next</button></div>
+      <div class="setup-actions"><button class="btn-primary" id="next">${t("next")}</button></div>
     </div>`);
 
     // picture upload + drag crop
@@ -254,8 +263,8 @@
     authRow.querySelectorAll("button").forEach((b) => b.onclick = () => {
       authRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel");
       authType = b.dataset.v;
-      if (authType === "pin") { secLabel.textContent = "PIN (4 or 6 digits)"; secret.placeholder = "Enter PIN"; secret.inputMode = "numeric"; }
-      else { secLabel.textContent = "Password"; secret.placeholder = "Enter password"; secret.inputMode = "text"; }
+      if (authType === "pin") { secLabel.textContent = t("pin_label"); secret.placeholder = t("enter_pin"); secret.inputMode = "numeric"; }
+      else { secLabel.textContent = t("password"); secret.placeholder = t("enter_password"); secret.inputMode = "text"; }
     });
 
     node.querySelector("#next").onclick = () => {
@@ -263,8 +272,8 @@
       const uname = node.querySelector("#uname").value.trim() || "User";
       const sec = secret.value;
       if (authType === "pin") {
-        if (!/^(\d{4}|\d{6})$/.test(sec)) { err.textContent = "PIN must be exactly 4 or 6 digits."; return; }
-      } else if (!sec) { err.textContent = "Password is required."; return; }
+        if (!/^(\d{4}|\d{6})$/.test(sec)) { err.textContent = t("pin_error"); return; }
+      } else if (!sec) { err.textContent = t("pw_required"); return; }
       S().profile = {
         picture: imgEl ? captureCrop(imgEl, crop) : null,
         username: uname, authType, secret: sec,
@@ -302,18 +311,18 @@
   // ---------- Step 6: Time ----------
   function stepTime() {
     const node = el(`<div>
-      <h1>Date & time</h1>
-      <p class="sub">Set automatically, or choose a custom time.</p>
-      <div class="field"><label>Mode</label>
-        <div class="toggle-row" id="modeRow"><button data-v="automatic" class="sel">Automatic</button><button data-v="custom">Custom</button></div>
+      <h1>${t("datetime_title")}</h1>
+      <p class="sub">${t("datetime_sub")}</p>
+      <div class="field"><label>${t("mode")}</label>
+        <div class="toggle-row" id="modeRow"><button data-v="automatic" class="sel">${t("automatic")}</button><button data-v="custom">${t("custom")}</button></div>
       </div>
-      <div class="field"><label>Clock format</label>
-        <div class="toggle-row" id="fmtRow"><button data-v="12" class="sel">12-hour</button><button data-v="24">24-hour</button></div>
+      <div class="field"><label>${t("clock_format")}</label>
+        <div class="toggle-row" id="fmtRow"><button data-v="12" class="sel">${t("h12")}</button><button data-v="24">${t("h24")}</button></div>
       </div>
-      <div class="field" id="customWrap" style="display:none"><label>Custom time</label>
+      <div class="field" id="customWrap" style="display:none"><label>${t("custom_time")}</label>
         <input type="time" id="customTime"></div>
       <p class="muted" id="preview"></p>
-      <div class="setup-actions"><button class="btn-primary" id="finish">Finish</button></div>
+      <div class="setup-actions"><button class="btn-primary" id="finish">${t("finish")}</button></div>
     </div>`);
 
     let mode = "automatic", fmt24 = false;
@@ -322,7 +331,7 @@
 
     function updatePreview() {
       const d = new Date();
-      preview.textContent = "Preview: " + (fmt24 ? d.toTimeString().slice(0, 5) : d.toLocaleTimeString());
+      preview.textContent = t("preview") + ": " + (fmt24 ? d.toTimeString().slice(0, 5) : d.toLocaleTimeString());
     }
     modeRow.querySelectorAll("button").forEach((b) => b.onclick = () => {
       modeRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel");

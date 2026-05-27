@@ -96,26 +96,39 @@
   }
 
   // ---------------- Desktop ----------------
-  function buildDesktop() {
-    desktop = el(`<div class="desktop"><div class="desktop-icons"></div></div>`);
-    screen().appendChild(desktop);
-    applyWallpaper();
+  const DEFAULT_SHORTCUTS = [
+    { id: "browser", name: "Edge" },
+    { id: "store__", name: "Store" },
+    { id: "youtubeApp", name: "YouTube" },
+    { id: "copilot", name: "Copilot" },
+    { id: "settings", name: "Settings" },
+    { id: "calculator", name: "Calculator" },
+  ];
 
+  function renderDesktopIcons() {
     const iconWrap = desktop.querySelector(".desktop-icons");
-    const shortcuts = [
-      { id: "browser", name: "Edge" },
-      { id: "store__", name: "Store" },
-      { id: "youtubeApp", name: "YouTube" },
-      { id: "copilot", name: "Copilot" },
-      { id: "settings", name: "Settings" },
-      { id: "calculator", name: "Calculator" },
-    ];
-    shortcuts.forEach((s) => {
+    iconWrap.innerHTML = "";
+    const seen = new Set();
+    const items = DEFAULT_SHORTCUTS.slice();
+    // Installed apps from the Store stay on the home screen.
+    S().installedApps.forEach((id) => {
+      if (DEFAULT_SHORTCUTS.some((s) => s.id === id)) return;
+      const app = Catalog.storeApps.find((a) => a.id === id);
+      if (app) items.push({ id: app.id, name: app.name });
+    });
+    items.forEach((s) => {
+      if (seen.has(s.id)) return; seen.add(s.id);
       const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(s.id, s.name)}</div><div class="label">${s.name}</div></div>`);
       ic.ondblclick = () => open(s.id);
       iconWrap.appendChild(ic);
     });
+  }
 
+  function buildDesktop() {
+    desktop = el(`<div class="desktop"><div class="desktop-icons"></div></div>`);
+    screen().appendChild(desktop);
+    applyWallpaper();
+    renderDesktopIcons();
     buildTaskbar();
     startClock();
   }
@@ -189,7 +202,7 @@
   // ---------------- Start menu ----------------
   function buildStartMenu() {
     startMenu = el(`<div class="start-menu">
-      <input class="search" placeholder="Search for apps">
+      <input class="search" placeholder="${I18n.t("search_apps")}">
       <div class="app-grid"></div>
     </div>`);
     screen().appendChild(startMenu);
@@ -295,5 +308,5 @@
   }
   window.Notify = { show: notify };
 
-  window.WM = { createWindow, open, buildDesktop };
+  window.WM = { createWindow, open, buildDesktop, refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); } };
 })();

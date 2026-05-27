@@ -10,6 +10,7 @@
     // setup choices
     region: "United States",
     language: "English (United States)",
+    langCode: "en",
     theme: "light", // light | dark
     textScale: 100, // percent
     productKey: null,
@@ -59,6 +60,8 @@
     redeemedKeys: [],
     // Copilot AI assistant (key stored only in this browser, never committed)
     copilot: { apiKey: "", model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", history: [] },
+    // Per-app saved data (To Do, Sticky Notes, etc.)
+    appData: {},
   });
 
   let data = load();

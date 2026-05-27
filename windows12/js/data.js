@@ -42,8 +42,21 @@
     ["Health", "Lifestyle"], ["Fitness", "Lifestyle"], ["Drawboard", "Multimedia"], ["Code Writer", "Developer"],
     ["Audible", "Multimedia"], ["Comic Reader", "Lifestyle"], ["Sketch It", "Multimedia"], ["Quick PDF", "Productivity"],
   ];
+  // Map decorative listings to real working built-in apps where it makes sense.
+  const builtinMap = {
+    "To Do": "todo", "Sticky Notes": "stickynotes", "Weather": "weather", "Calendar": "calendar",
+    "News": "news", "Terminal": "terminal", "Mail": "mail", "Sudoku": "sudoku",
+    "File Explorer": "fileexplorer", "Maps": "maps", "Photos": "photos", "Camera": "camera",
+    "Movies & TV": "mediaplayer", "Audible": "mediaplayer", "Spotfor": "mediaplayer",
+    "Drawboard": "paint", "Sketch It": "paint", "OneNote": "notepad", "Code Writer": "notepad",
+    "VS Codey": "notepad", "Quick PDF": "notepad", "Comic Reader": "photos", "Voice Recorder": "recorder",
+    "Money": "bank", "Translator": "translator",
+  };
   filler.forEach((f, i) => {
-    storeApps.push({ id: "app_" + i, name: f[0], cat: f[1], price: 0, decorative: true, desc: `${f[0]} — a great ${f[1].toLowerCase()} app for Windows 12.` });
+    const builtin = builtinMap[f[0]];
+    const app = { id: "app_" + i, name: f[0], cat: f[1], price: 0, desc: `${f[0]} — a ${f[1].toLowerCase()} app for Windows 12.` };
+    if (builtin) app.builtin = builtin; else app.decorative = true;
+    storeApps.push(app);
   });
 
   // ---------- Amazon ----------
