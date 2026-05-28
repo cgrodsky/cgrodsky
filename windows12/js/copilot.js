@@ -7,8 +7,10 @@
   const S = () => State.data;
   const API_URL = "https://api.aimlapi.com/v1/chat/completions";
   // Hardcoded per user request. NOTE: this is publicly visible in a static site.
-  const DEFAULT_KEY = "de3be806e952aece6c251ca128ae58f6";
+  const DEFAULT_KEY = "e0a6f2b4dc403b83b9c22e3361af4416";
+  const DEFAULT_MODEL = "baidu/ernie-4-5-0-3b";
   const activeKey = () => S().copilot.apiKey || DEFAULT_KEY;
+  const activeModel = () => DEFAULT_MODEL;
 
   const LOGO = (cls) => `<div class="${cls}"><div class="ring"></div><div class="dot"></div></div>`;
   const SEND_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" fill="#fff"/></svg>`;
@@ -92,7 +94,7 @@
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
-      body: JSON.stringify({ model: S().copilot.model, messages }),
+      body: JSON.stringify({ model: activeModel(), messages }),
     });
     if (!res.ok) {
       let detail = "HTTP " + res.status;
@@ -108,15 +110,13 @@
       ${LOGO("cop-logo big-logo")}
       <h2 style="margin:.4rem 0">Connect Copilot</h2>
       <p class="muted">Paste your AIML API key. It's stored only in this browser and is never saved into the app's code.</p>
-      <input type="password" placeholder="API key" value="${S().copilot.apiKey || ""}">
-      <input type="text" placeholder="Model" value="${S().copilot.model}">
+      <input type="password" placeholder="API key (optional — a default is built in)" value="${S().copilot.apiKey || ""}">
       <button class="pill-btn" style="width:100%">Save & start chatting</button>
-      <p class="muted" style="font-size:.78rem;margin-top:14px">Note: if the browser blocks the request (CORS), the key will need to go through a small server instead.</p>
+      <p class="muted" style="font-size:.78rem;margin-top:14px">Model: ${DEFAULT_MODEL}. If the browser blocks the request (CORS), the key needs a small server instead.</p>
     </div></div>`;
-    const [keyInput, modelInput] = body.querySelectorAll("input");
+    const keyInput = body.querySelector("input");
     body.querySelector("button").onclick = () => {
       S().copilot.apiKey = keyInput.value.trim();
-      S().copilot.model = modelInput.value.trim() || S().copilot.model;
       State.save();
       render(body);
     };

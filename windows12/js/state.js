@@ -59,7 +59,7 @@
     // redeemed product keys are global (shared file) — tracked here
     redeemedKeys: [],
     // Copilot AI assistant (key stored only in this browser, never committed)
-    copilot: { apiKey: "", model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", history: [] },
+    copilot: { apiKey: "", model: "baidu/ernie-4-5-0-3b", history: [] },
     // Per-app saved data (To Do, Sticky Notes, etc.)
     appData: {},
   });

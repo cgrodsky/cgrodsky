@@ -267,8 +267,8 @@
       out.textContent = "Translating...";
       try {
         const r = await fetch("https://api.aimlapi.com/v1/chat/completions", {
-          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (S().copilot.apiKey || "de3be806e952aece6c251ca128ae58f6") },
-          body: JSON.stringify({ model: S().copilot.model, messages: [{ role: "user", content: `Translate the following into ${body.querySelector("#lang").value}. Reply with only the translation:\n\n${text}` }] }),
+          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (S().copilot.apiKey || "e0a6f2b4dc403b83b9c22e3361af4416") },
+          body: JSON.stringify({ model: "baidu/ernie-4-5-0-3b", messages: [{ role: "user", content: `Translate the following into ${body.querySelector("#lang").value}. Reply with only the translation:\n\n${text}` }] }),
         });
         const j = await r.json();
         out.textContent = j.choices?.[0]?.message?.content || "(no result)";
