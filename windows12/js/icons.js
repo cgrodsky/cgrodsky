@@ -138,6 +138,24 @@
     <circle cx="64" cy="48" r="28" fill="#fc4c4c"/>
   </svg>`);
 
+  // English course flag (US, emoji style) for Duolingo.
+  register("duo_en", `<svg viewBox="0 0 128 96" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect width="128" height="96" fill="#f5f5f5"/>
+    <g fill="#ff5757">
+      <rect y="0"  width="128" height="8"/>
+      <rect y="16" width="128" height="8"/>
+      <rect y="32" width="128" height="8"/>
+      <rect y="48" width="128" height="8"/>
+      <rect y="64" width="128" height="8"/>
+      <rect y="80" width="128" height="8"/>
+    </g>
+    <rect width="56" height="40" fill="#1ea7f0"/>
+    <g fill="#fff">
+      <circle cx="12" cy="12" r="3.4"/><circle cx="28" cy="12" r="3.4"/><circle cx="44" cy="12" r="3.4"/>
+      <circle cx="12" cy="28" r="3.4"/><circle cx="28" cy="28" r="3.4"/><circle cx="44" cy="28" r="3.4"/>
+    </g>
+  </svg>`);
+
   // Microsoft 365 — folded ribbon in Office orange/red.
   register("ms365", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs>
