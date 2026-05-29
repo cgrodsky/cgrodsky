@@ -8,7 +8,7 @@
   const CHAT_URL = window.AIML_BASE + "/chat/completions";
   const COMPLETIONS_URL = window.AIML_BASE + "/completions";
   const TTS_URL = window.AIML_BASE + "/tts";
-  const DEFAULT_MODEL = "microsoft/phi-2";
+  const DEFAULT_MODEL = "baidu/ernie-4-5-0-3b";
   const activeKey = () => S().copilot.apiKey || window.AIML_KEY;
   const activeModel = () => DEFAULT_MODEL;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
