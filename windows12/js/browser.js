@@ -14,9 +14,30 @@
   };
 
   function resolveSpecial(input) {
-    const key = (input || "").trim().toLowerCase()
-      .replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
-    return SPECIAL[key] || SPECIAL[(input || "").trim().toLowerCase()] || null;
+    const raw = (input || "").trim().toLowerCase();
+    if (!raw || raw === "home" || raw === "newtab" || raw === "about:home") return "home";
+    const key = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+    return SPECIAL[key] || SPECIAL[raw] || null;
+  }
+
+  function renderHome(ctx) {
+    const colors = ["#4285F4", "#EA4335", "#FBBC05", "#4285F4", "#34A853", "#EA4335"];
+    const letters = "Google".split("").map((ch, i) => `<span style="color:${colors[i]}">${ch}</span>`).join("");
+    const page = el(`<div class="google-home">
+      <div class="google-logo">${letters}</div>
+      <form class="google-search" autocomplete="off">
+        <input type="text" placeholder="Search Google or type a URL" autofocus>
+      </form>
+      <div class="google-shortcuts"></div>
+    </div>`);
+    const shortcuts = page.querySelector(".google-shortcuts");
+    Catalog.bookmarks.forEach((b) => {
+      const sc = el(`<button class="google-sc"><span class="g-sc-ic">${Icon.md(b.label.toLowerCase(), b.label)}</span><span class="g-sc-lb">${b.label}</span></button>`);
+      sc.onclick = () => ctx.navigate(b.url);
+      shortcuts.appendChild(sc);
+    });
+    page.querySelector("form").onsubmit = (e) => { e.preventDefault(); const q = page.querySelector("input").value.trim(); if (q) ctx.navigate(q); };
+    ctx.page.appendChild(page);
   }
 
   function openBrowser(createWindow, startUrl) {
@@ -50,6 +71,13 @@
       page.innerHTML = "";
       const special = resolveSpecial(url);
       const ctx = { page, navigate, win, urlInput };
+      if (special === "home") {
+        lock.textContent = "";
+        body.querySelector(".addr").classList.remove("locked-site");
+        urlInput.value = "";
+        renderHome(ctx);
+        return;
+      }
       if (special) {
         lock.textContent = "Secure";
         body.querySelector(".addr").classList.add("locked-site");
@@ -71,7 +99,7 @@
     body.querySelector(".reload").onclick = () => navigate(urlInput.value, false);
     body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev) navigate(prev, false); };
 
-    navigate(startUrl || "bank.local");
+    navigate(startUrl || "home");
     return { navigate };
   }
 
