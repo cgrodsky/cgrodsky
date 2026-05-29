@@ -107,29 +107,165 @@
 
   // ---------- Terminal ----------
   AppRegistry.terminal = function () {
-    const { body } = cw({ title: "Terminal", icon: Icon.mini("terminal", "Terminal"), width: 600, height: 400 });
+    const winRef = cw({ title: "Terminal", icon: Icon.mini("terminal", "Terminal"), width: 680, height: 440 });
+    const body = winRef.body;
     body.innerHTML = `<div style="height:100%;background:#0c0c0c;color:#cccccc;font-family:Consolas,monospace;font-size:.9rem;padding:12px;overflow:auto" id="term">
-      <div>Windows 12 Terminal [Version 12.0.2026]</div><div>Type 'help' for commands.</div><div id="out"></div>
-      <div class="row"><span style="color:#16c60c">C:\\&gt;</span>&nbsp;<input id="cmd" style="flex:1;background:none;border:none;color:#fff;outline:none;font-family:inherit"></div></div>`;
-    const out = body.querySelector("#out"), cmd = body.querySelector("#cmd");
-    const print = (s) => { const d = document.createElement("div"); d.textContent = s; out.appendChild(d); };
+      <div style="color:#16c60c">Windows 12 Terminal [Version 12.0.2026]</div>
+      <div>(c) Cameron Systems. All rights reserved (not really).</div>
+      <div style="color:#888">Type 'help' for the list of commands.</div>
+      <div id="out"></div>
+      <div class="row"><span class="prompt" style="color:#16c60c"></span>&nbsp;<input id="cmd" style="flex:1;background:none;border:none;color:#fff;outline:none;font-family:inherit;font-size:.9rem"></div></div>`;
+    const out = body.querySelector("#out"), cmd = body.querySelector("#cmd"), promptEl = body.querySelector(".prompt");
+    const print = (s, color) => { const d = document.createElement("div"); d.textContent = s; if (color) d.style.color = color; out.appendChild(d); };
+    const printHTML = (h) => { const d = document.createElement("div"); d.innerHTML = h; out.appendChild(d); };
+
+    // tiny in-memory filesystem
+    const fs = {
+      "C:\\": { type: "dir", children: { "Users": null, "Windows": null, "Program Files": null } },
+      "C:\\Users": { type: "dir", children: { "User": null } },
+      "C:\\Users\\User": { type: "dir", children: { "Documents": null, "Downloads": null, "Pictures": null, "Music": null, "Videos": null, "Desktop": null } },
+      "C:\\Users\\User\\Documents": { type: "dir", children: { "readme.txt": "f", "todo.txt": "f" } },
+      "C:\\Users\\User\\Desktop": { type: "dir", children: {} },
+      "C:\\Users\\User\\Downloads": { type: "dir", children: {} },
+      "C:\\Users\\User\\Pictures": { type: "dir", children: {} },
+      "C:\\Users\\User\\Music": { type: "dir", children: {} },
+      "C:\\Users\\User\\Videos": { type: "dir", children: {} },
+      "C:\\Windows": { type: "dir", children: { "System32": null } },
+      "C:\\Windows\\System32": { type: "dir", children: {} },
+      "C:\\Program Files": { type: "dir", children: {} },
+    };
+    const fileContents = {
+      "readme.txt": "Welcome to the Windows 12 simulation!\nThis is a fake filesystem inside the Terminal.\nTry: dir, cd, cat, calc, ping, ipconfig, color green",
+      "todo.txt": "- finish Windows 12 simulation\n- ship it\n- celebrate",
+    };
+
+    let cwd = "C:\\Users\\User";
+    const history = [];
+    let histIdx = -1;
+    const setPrompt = () => { promptEl.textContent = cwd + ">"; };
+    setPrompt();
+
+    function resolvePath(p) {
+      if (!p) return cwd;
+      if (p === "..") {
+        const parts = cwd.split("\\").filter(Boolean);
+        if (parts.length > 1) parts.pop();
+        return parts.join("\\") + (parts.length === 1 ? "\\" : "");
+      }
+      if (p === "." || p === "~") return cwd;
+      if (/^[A-Za-z]:\\/.test(p)) return p;
+      return cwd.replace(/\\$/, "") + "\\" + p;
+    }
+
+    const cmds = {
+      help: () => printHTML(`<pre style="margin:0;color:#cccccc">Commands:
+  help, cls/clear, exit, echo &lt;text&gt;, ver, whoami, hostname
+  date, time, calendar
+  dir/ls, cd &lt;path&gt;, pwd, cat/type &lt;file&gt;, mkdir &lt;name&gt;, touch &lt;name&gt;
+  calc &lt;expression&gt;            e.g. calc (2+3)*4
+  color &lt;name&gt;                 green, red, blue, yellow, white, cyan
+  weather, ping &lt;host&gt;, ipconfig
+  open &lt;app&gt;                   browser, settings, calculator, copilot...
+  history</pre>`),
+      cls: () => { out.innerHTML = ""; },
+      clear: () => { out.innerHTML = ""; },
+      exit: () => { winRef.close(); },
+      echo: (a) => print(a.join(" ")),
+      ver: () => print("Windows 12 [Version 12.0.2026]", "#16c60c"),
+      whoami: () => print(S().profile.username),
+      hostname: () => print("WIN12-PC"),
+      date: () => print(State.formatDate()),
+      time: () => print(State.formatClock()),
+      calendar: () => print(new Date().toDateString()),
+      pwd: () => print(cwd),
+      dir: () => listDir(),
+      ls: () => listDir(),
+      cd: (a) => {
+        const target = resolvePath(a[0]);
+        if (fs[target]) { cwd = target; setPrompt(); }
+        else print(`The system cannot find the path: ${target}`, "#ff4b4b");
+      },
+      cat: (a) => readFile(a[0]),
+      type: (a) => readFile(a[0]),
+      mkdir: (a) => {
+        if (!a[0]) return print("Usage: mkdir <name>", "#ff4b4b");
+        const node = fs[cwd]; if (!node) return;
+        node.children[a[0]] = null;
+        fs[cwd + "\\" + a[0]] = { type: "dir", children: {} };
+        print(`Created '${a[0]}'`, "#16c60c");
+      },
+      touch: (a) => {
+        if (!a[0]) return print("Usage: touch <name>", "#ff4b4b");
+        const node = fs[cwd]; if (!node) return;
+        node.children[a[0]] = "f"; fileContents[a[0]] = ""; print(`Created '${a[0]}'`, "#16c60c");
+      },
+      calc: (a) => {
+        const expr = a.join(" ").replace(/[^0-9+\-*/().% ]/g, "");
+        if (!expr) return print("Usage: calc <expression>", "#ff4b4b");
+        try { print(String(Function('"use strict";return (' + expr + ')')())); } catch (e) { print("Error: " + e.message, "#ff4b4b"); }
+      },
+      color: (a) => {
+        const map = { green: "#16c60c", red: "#ff4b4b", blue: "#3a96ff", yellow: "#ffe000", white: "#ffffff", cyan: "#00ffff" };
+        const c = map[(a[0] || "").toLowerCase()];
+        if (!c) return print("Unknown color. Try: green, red, blue, yellow, white, cyan", "#ff4b4b");
+        body.querySelector("#term").style.color = c; cmd.style.color = c;
+        promptEl.style.color = c; print("Color set.", c);
+      },
+      weather: () => {
+        const cs = ["Sunny", "Partly cloudy", "Cloudy", "Light rain", "Clear"];
+        const t = 12 + Math.floor(Math.random() * 20);
+        print(`${S().region}: ${cs[Math.floor(Math.random() * cs.length)]}, ${t}°`);
+      },
+      ping: (a) => {
+        const host = a[0] || "windows12.local";
+        print(`Pinging ${host} ...`);
+        let i = 0; const iv = setInterval(() => {
+          print(`Reply from ${host}: bytes=32 time=${(20 + Math.random() * 40).toFixed(0)}ms TTL=64`);
+          if (++i >= 4) { clearInterval(iv); print(`Ping statistics: 4 packets sent, 4 received, 0% loss.`, "#16c60c"); body.querySelector("#term").scrollTop = 1e9; }
+        }, 300);
+      },
+      ipconfig: () => {
+        printHTML(`<pre style="margin:0;color:#cccccc">Windows 12 IP Configuration
+
+Ethernet adapter Local Area Connection:
+   IPv4 Address. . . . . . . . . . . : 192.168.1.${Math.floor(Math.random() * 200 + 50)}
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 192.168.1.1</pre>`);
+      },
+      open: (a) => {
+        const id = a[0]; if (!id) return print("Usage: open <app>", "#ff4b4b");
+        try { window.WM.open(id); print("Opened " + id, "#16c60c"); } catch (e) { print("Unknown app: " + id, "#ff4b4b"); }
+      },
+      history: () => history.forEach((h, i) => print(`  ${i + 1}  ${h}`)),
+    };
+
+    function listDir() {
+      const node = fs[cwd];
+      if (!node) return print("(empty)");
+      const names = Object.keys(node.children);
+      if (!names.length) return print("(empty)");
+      names.forEach((n) => {
+        const isFile = node.children[n] === "f";
+        print((isFile ? "       " : "<DIR>  ") + n, isFile ? "#cccccc" : "#3a96ff");
+      });
+    }
+    function readFile(name) {
+      if (!name) return print("Usage: cat <file>", "#ff4b4b");
+      const node = fs[cwd];
+      if (node && node.children[name] === "f" && fileContents[name] != null) print(fileContents[name]);
+      else print("File not found: " + name, "#ff4b4b");
+    }
+
     cmd.focus();
     cmd.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp") { if (histIdx > 0) histIdx--; else histIdx = Math.max(0, history.length - 1); cmd.value = history[histIdx] || ""; e.preventDefault(); return; }
+      if (e.key === "ArrowDown") { histIdx++; if (histIdx >= history.length) { histIdx = history.length; cmd.value = ""; } else cmd.value = history[histIdx] || ""; e.preventDefault(); return; }
       if (e.key !== "Enter") return;
-      const line = cmd.value.trim(); print("C:\\> " + line); cmd.value = "";
-      const [c, ...args] = line.split(/\s+/);
-      const cmds = {
-        help: () => print("Commands: help, echo, date, time, ver, whoami, cls, dir"),
-        echo: () => print(args.join(" ")),
-        date: () => print(State.formatDate()),
-        time: () => print(State.formatClock()),
-        ver: () => print("Windows 12 [Version 12.0.2026]"),
-        whoami: () => print(S().profile.username),
-        dir: () => print("Documents  Downloads  Pictures  Music  Desktop"),
-        cls: () => { out.innerHTML = ""; },
-      };
-      if (!line) return;
-      (cmds[c] || (() => print(`'${c}' is not recognized as a command.`)))();
+      const line = cmd.value; print(cwd + "> " + line); cmd.value = "";
+      if (line.trim()) { history.push(line); histIdx = history.length; }
+      const [c, ...args] = line.trim().split(/\s+/);
+      if (!c) return;
+      (cmds[c.toLowerCase()] || (() => print(`'${c}' is not recognized as a command. Try 'help'.`, "#ff4b4b")))(args);
       body.querySelector("#term").scrollTop = 1e9;
     });
   };

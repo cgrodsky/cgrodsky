@@ -15,7 +15,21 @@
     win = bg.querySelector(".setup-window");
   }
 
-  function render(node) { win.innerHTML = ""; win.appendChild(node); }
+  const TOTAL_STEPS = 6;
+  function render(node, step) {
+    win.innerHTML = "";
+    if (step) {
+      const pips = el(`<div class="setup-stepper"></div>`);
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        const cls = i < step ? "done" : i === step ? "current" : "";
+        pips.appendChild(el(`<div class="setup-step-pip ${cls}"></div>`));
+      }
+      win.appendChild(pips);
+    }
+    const wrap = el(`<div class="setup-step-body"></div>`);
+    wrap.appendChild(node);
+    win.appendChild(wrap);
+  }
 
   // ---------- Step 1: Region & Language ----------
   function stepRegion() {
@@ -46,7 +60,7 @@
     });
     langSel.onchange = () => { I18n.set(langSel.value); stepRegion(); };
     node.querySelector("#next").onclick = () => { State.save(); stepAccessibility(); };
-    render(node);
+    render(node, 1);
   }
 
   // ---------- Step 2: Accessibility ----------
@@ -93,7 +107,7 @@
     const go = () => { State.save(); stepProductKey(); };
     node.querySelector("#later").onclick = go;
     node.querySelector("#setup").onclick = go;
-    render(node);
+    render(node, 2);
   }
 
   // ---------- Step 3: Product key ----------
@@ -128,7 +142,7 @@
       else if (res === "redeemed") err.textContent = t("key_redeemed");
       else err.textContent = t("key_invalid");
     };
-    render(node);
+    render(node, 3);
   }
 
   function showKeySheet() {
@@ -184,7 +198,7 @@
       State.save();
       stepCustomize();
     };
-    render(node);
+    render(node, 4);
   }
 
   function openTermsBrowser() {
@@ -281,7 +295,7 @@
       State.save();
       stepTime();
     };
-    render(node);
+    render(node, 5);
   }
 
   function enableDrag(img, container) {
@@ -357,7 +371,7 @@
       State.save();
       finish();
     };
-    render(node);
+    render(node, 6);
   }
 
   function finish() {

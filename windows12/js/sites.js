@@ -722,14 +722,151 @@
       node.querySelector("button").onclick = () => {
         if (locked) return;
         if (d.hearts <= 0) { alert("Out of hearts! Try again later."); return; }
-        const got = Math.random() < 0.7;
-        if (got) { d.xp += 10; if (!done) d.completed.push(i); if (d.completed.length === 1) d.streak += 1; alert("Correct! +10 XP"); }
-        else { d.hearts -= 1; alert("Oops — lost a heart."); }
-        State.save(); duolingo(ctx);
+        startLesson(ctx, i, () => { if (!d.completed.includes(i)) d.completed.push(i); State.save(); duolingo(ctx); });
       };
       path.appendChild(node);
     });
     ctx.page.appendChild(wrap);
+  }
+
+  // ------- Duolingo vocabulary + lesson engine -------
+  // Spanish course is the default for now; other courses fall back to it.
+  const duoVocab = {
+    es: [["hello", "hola"], ["goodbye", "adiós"], ["water", "agua"], ["bread", "pan"], ["cat", "gato"],
+         ["dog", "perro"], ["yes", "sí"], ["no", "no"], ["thanks", "gracias"], ["please", "por favor"],
+         ["man", "hombre"], ["woman", "mujer"], ["apple", "manzana"], ["milk", "leche"], ["sun", "sol"]],
+    ja: [["hello", "konnichiwa"], ["goodbye", "sayonara"], ["water", "mizu"], ["cat", "neko"], ["dog", "inu"],
+         ["yes", "hai"], ["no", "iie"], ["thanks", "arigatou"], ["sun", "taiyou"], ["book", "hon"]],
+    zh: [["hello", "nǐ hǎo"], ["goodbye", "zài jiàn"], ["water", "shuǐ"], ["cat", "māo"], ["dog", "gǒu"],
+         ["yes", "shì"], ["no", "bù"], ["thanks", "xiè xie"], ["sun", "tài yáng"], ["bread", "miàn bāo"]],
+    sv: [["hello", "hej"], ["goodbye", "hejdå"], ["water", "vatten"], ["cat", "katt"], ["dog", "hund"],
+         ["yes", "ja"], ["no", "nej"], ["thanks", "tack"], ["sun", "sol"], ["bread", "bröd"]],
+    en: [["hola", "hello"], ["agua", "water"], ["gato", "cat"], ["perro", "dog"], ["gracias", "thanks"],
+         ["sí", "yes"], ["no", "no"], ["pan", "bread"], ["sol", "sun"], ["mujer", "woman"]],
+  };
+  function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function startLesson(ctx, idx, onDone) {
+    const courseId = (S().appData.duolingoCourse || "es");
+    const pairs = duoVocab[courseId] || duoVocab.es;
+    const target = (S().appData.duolingo);
+    const questions = [];
+    const types = ["type", "mc", "pairs", "type", "mc"];
+    types.forEach((t) => {
+      if (t === "pairs") {
+        const pool = shuffle(pairs.slice()).slice(0, 4);
+        questions.push({ type: "pairs", pool });
+      } else {
+        const w = pairs[Math.floor(Math.random() * pairs.length)];
+        questions.push({ type: t, prompt: w[0], answer: w[1] });
+      }
+    });
+
+    let qi = 0, correct = 0;
+
+    function render() {
+      ctx.page.innerHTML = "";
+      if (qi >= questions.length) return finish();
+      const q = questions[qi];
+      const pct = (qi / questions.length) * 100;
+      const wrap = el(`<div class="duo-lesson">
+        <div class="duo-lesson-head">
+          <button class="duo-x" title="Quit">&#215;</button>
+          <div class="duo-progress"><div class="duo-progress-fill" style="width:${pct}%"></div></div>
+          <span class="duo-heart">♥ ${target.hearts}</span>
+        </div>
+        <div class="duo-q"></div>
+        <div class="duo-foot"><button class="duo-check" disabled>Check</button></div>
+      </div>`);
+      const body = wrap.querySelector(".duo-q");
+      const check = wrap.querySelector(".duo-check");
+      wrap.querySelector(".duo-x").onclick = () => { if (confirm("Quit this lesson?")) duolingo(ctx); };
+
+      if (q.type === "type") renderType(q, body, check, onCheck);
+      else if (q.type === "mc") renderMC(q, body, pairs, check, onCheck);
+      else renderPairs(q, body, check, onCheck);
+
+      ctx.page.appendChild(wrap);
+    }
+
+    function onCheck(isRight) {
+      if (isRight) { correct++; target.xp += 10; }
+      else { target.hearts = Math.max(0, target.hearts - 1); }
+      State.save();
+      const banner = el(`<div class="duo-banner ${isRight ? "ok" : "bad"}">${isRight ? "Nice!" : "Not quite"}<button class="pill-btn">Continue</button></div>`);
+      ctx.page.querySelector(".duo-lesson").appendChild(banner);
+      banner.querySelector("button").onclick = () => { qi++; if (target.hearts <= 0) return finish(); render(); };
+    }
+
+    function renderType(q, body, check, done) {
+      body.innerHTML = `<h2>Translate this word</h2>
+        <div class="duo-word">${q.prompt}</div>
+        <input type="text" class="duo-input" placeholder="Type the translation" autocomplete="off">`;
+      const inp = body.querySelector("input");
+      inp.oninput = () => { check.disabled = !inp.value.trim(); };
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && !check.disabled) check.click(); });
+      check.onclick = () => done(inp.value.trim().toLowerCase() === q.answer.toLowerCase());
+      inp.focus();
+    }
+
+    function renderMC(q, body, pool, check, done) {
+      const options = [q.answer, ...shuffle(pool.filter((p) => p[1] !== q.answer)).slice(0, 3).map((p) => p[1])];
+      shuffle(options);
+      body.innerHTML = `<h2>Pick the right translation</h2><div class="duo-word">${q.prompt}</div><div class="duo-mc"></div>`;
+      const grid = body.querySelector(".duo-mc");
+      let picked = null;
+      options.forEach((o) => {
+        const b = el(`<button class="duo-mc-opt">${o}</button>`);
+        b.onclick = () => { grid.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); picked = o; check.disabled = false; };
+        grid.appendChild(b);
+      });
+      check.onclick = () => done(picked === q.answer);
+    }
+
+    function renderPairs(q, body, check, done) {
+      const left = q.pool.map((p) => p[0]);
+      const right = shuffle(q.pool.map((p) => p[1]).slice());
+      body.innerHTML = `<h2>Match the pairs</h2>
+        <div class="duo-pairs"><div class="duo-col" id="L"></div><div class="duo-col" id="R"></div></div>`;
+      const L = body.querySelector("#L"), R = body.querySelector("#R");
+      left.forEach((w) => { const b = el(`<button class="duo-pair-btn" data-w="${w}">${w}</button>`); b.onclick = () => pick("L", b); L.appendChild(b); });
+      right.forEach((w) => { const b = el(`<button class="duo-pair-btn" data-w="${w}">${w}</button>`); b.onclick = () => pick("R", b); R.appendChild(b); });
+      let selL = null, selR = null, matched = 0;
+      function pick(side, btn) {
+        if (btn.disabled) return;
+        if (side === "L") { L.querySelectorAll("button").forEach((b) => b.classList.remove("sel")); btn.classList.add("sel"); selL = btn; }
+        else { R.querySelectorAll("button").forEach((b) => b.classList.remove("sel")); btn.classList.add("sel"); selR = btn; }
+        if (selL && selR) {
+          const lw = selL.dataset.w, rw = selR.dataset.w;
+          const pair = q.pool.find((p) => p[0] === lw);
+          if (pair && pair[1] === rw) {
+            selL.classList.add("done"); selR.classList.add("done"); selL.disabled = true; selR.disabled = true; matched++;
+            selL = null; selR = null;
+            if (matched === q.pool.length) { check.disabled = false; }
+          } else {
+            const a = selL, b = selR;
+            a.classList.add("shake"); b.classList.add("shake");
+            setTimeout(() => { a.classList.remove("shake", "sel"); b.classList.remove("shake", "sel"); }, 400);
+            selL = null; selR = null;
+          }
+        }
+      }
+      check.disabled = true;
+      check.onclick = () => done(matched === q.pool.length);
+    }
+
+    function finish() {
+      const failed = target.hearts <= 0;
+      ctx.page.innerHTML = "";
+      const wrap = el(`<div class="duo-lesson"><div class="duo-q center-col" style="justify-content:center;height:100%">
+        <h1>${failed ? "Out of hearts" : "Lesson complete!"}</h1>
+        <p class="muted">${correct} / ${questions.length} correct • +${correct * 10} XP</p>
+        <button class="pill-btn" id="back">Back to learning</button></div></div>`);
+      wrap.querySelector("#back").onclick = () => { if (!failed) onDone(); else duolingo(ctx); };
+      ctx.page.appendChild(wrap);
+    }
+
+    render();
   }
 
   window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo };
