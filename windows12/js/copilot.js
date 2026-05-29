@@ -6,6 +6,7 @@
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
   const S = () => State.data;
   const CHAT_URL = window.AIML_BASE + "/chat/completions";
+  const COMPLETIONS_URL = window.AIML_BASE + "/completions";
   const TTS_URL = window.AIML_BASE + "/tts";
   const DEFAULT_MODEL = "microsoft/phi-2";
   const activeKey = () => S().copilot.apiKey || window.AIML_KEY;
@@ -128,12 +129,31 @@
   }
 
   async function callApi(history) {
+    const model = activeModel();
+    // phi-2 (and other base models) use /v1/completions with a flat prompt.
+    // Chat-tuned models use /v1/chat/completions with a messages array.
+    const isCompletion = /phi-2|davinci|babbage|llama-(?!2-chat)/i.test(model);
+    if (isCompletion) {
+      const recent = history.slice(-20);
+      const lines = ["You are Copilot, a friendly and helpful AI assistant built into Windows 12.\n"];
+      recent.forEach((m) => lines.push((m.role === "user" ? "User: " : "Assistant: ") + m.content));
+      lines.push("Assistant:");
+      const res = await fetch(COMPLETIONS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
+        body: JSON.stringify({ model, prompt: lines.join("\n"), max_tokens: 400, stop: ["\nUser:"] }),
+      });
+      if (!res.ok) { let d = "HTTP " + res.status; try { const j = await res.json(); d += " — " + (j.error?.message || j.message || JSON.stringify(j)); } catch (e) {} throw new Error(d); }
+      const data = await res.json();
+      const t = (data.choices?.[0]?.text || "").trim();
+      return t || "(no response)";
+    }
     const messages = [{ role: "system", content: "You are Copilot, a friendly and helpful AI assistant built into Windows 12." }]
       .concat(history.slice(-20));
     const res = await fetch(CHAT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
-      body: JSON.stringify({ model: activeModel(), messages }),
+      body: JSON.stringify({ model, messages }),
     });
     if (!res.ok) {
       let detail = "HTTP " + res.status;
