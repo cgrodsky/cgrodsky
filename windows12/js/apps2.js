@@ -160,24 +160,82 @@
     render();
   };
 
-  // ---------- File Explorer ----------
+  // ---------- File Explorer (actually opens device files) ----------
   AppRegistry.fileexplorer = function () {
-    const { body } = cw({ title: "File Explorer", icon: Icon.mini("fileexplorer", "Files"), width: 640, height: 460 });
-    const tree = { "This PC": ["Desktop", "Documents", "Downloads", "Pictures", "Music", "Videos"] };
-    const files = {
-      Desktop: ["Recycle Bin", "My shortcut"], Documents: ["resume.docx", "budget.xlsx", "notes.txt"],
-      Downloads: ["installer.exe", "photo.png"], Pictures: ["vacation.jpg", "screenshot.png"],
-      Music: ["song.mp3", "podcast.mp3"], Videos: ["clip.mp4"],
-    };
-    function render(folder) {
-      const list = (files[folder] || tree["This PC"]).map((f) =>
-        `<div class="row" style="padding:8px;border-radius:6px;cursor:default"><span>${Icon.mini(folder ? "file" : "folder", f)}</span><span>${f}</span></div>`).join("");
+    const { body } = cw({ title: "File Explorer", icon: Icon.mini("fileexplorer", "Files"), width: 760, height: 520 });
+    const cats = [
+      { key: "Pictures", accept: "image/*" },
+      { key: "Music", accept: "audio/*" },
+      { key: "Videos", accept: "video/*" },
+      { key: "Documents", accept: ".txt,.md,.csv,.json,.pdf,.html,.xml,.log,text/*" },
+      { key: "Any file", accept: "*/*" },
+    ];
+    if (S().appData.fileExplorer == null) S().appData.fileExplorer = { recent: [] };
+    const data = S().appData.fileExplorer;
+    let currentCat = "Pictures";
+
+    function render() {
       body.innerHTML = `<div style="display:flex;height:100%">
-        <div style="width:180px;background:var(--bg-elev);padding:10px">${tree["This PC"].map((f) => `<div class="nav" data-f="${f}" style="padding:8px;border-radius:6px;cursor:pointer">${f}</div>`).join("")}</div>
-        <div style="flex:1;padding:14px;overflow:auto"><h3 style="margin-top:0">${folder || "This PC"}</h3>${list}</div></div>`;
-      body.querySelectorAll(".nav").forEach((n) => n.onclick = () => render(n.dataset.f));
+        <div style="width:200px;background:var(--bg-elev);padding:12px;border-right:1px solid var(--border)">
+          <div class="muted" style="font-size:.75rem;text-transform:uppercase;margin-bottom:6px">This PC</div>
+          ${cats.map((c) => `<div class="nav fe-nav ${c.key === currentCat ? "active" : ""}" data-c="${c.key}" style="padding:8px 10px;border-radius:6px;cursor:pointer">${c.key}</div>`).join("")}
+          <hr style="border-color:var(--border);margin:14px 0">
+          <div class="muted" style="font-size:.75rem;text-transform:uppercase;margin-bottom:6px">Recent</div>
+          <div id="recent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="row" style="padding:10px 16px;border-bottom:1px solid var(--border)">
+            <h3 style="margin:0">${currentCat}</h3><span class="grow"></span>
+            <button class="pill-btn" id="open">Open file</button>
+          </div>
+          <div id="stage" style="flex:1;overflow:auto;padding:18px"></div>
+        </div></div>`;
+      const stage = body.querySelector("#stage");
+      stage.innerHTML = `<div class="muted center-col" style="justify-content:center;height:100%;text-align:center">
+        <p>Click <b>Open file</b> to pick a ${currentCat.toLowerCase().replace("any file", "file")} from your device.</p></div>`;
+      body.querySelectorAll(".fe-nav").forEach((n) => n.onclick = () => { currentCat = n.dataset.c; render(); });
+      body.querySelector("#open").onclick = openPicker;
+      const recentEl = body.querySelector("#recent");
+      if (!data.recent.length) recentEl.innerHTML = `<div class="muted" style="font-size:.75rem">No recent files</div>`;
+      else data.recent.slice(0, 8).forEach((r) => {
+        const row = el(`<div class="row" style="padding:6px 8px;font-size:.8rem;cursor:default" title="${escapeHtml(r.name)}"><span class="grow" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.name)}</span></div>`);
+        recentEl.appendChild(row);
+      });
     }
-    render(null);
+
+    function openPicker() {
+      const inp = document.getElementById("globalFileInput");
+      inp.accept = cats.find((c) => c.key === currentCat).accept; inp.value = ""; inp.multiple = false;
+      inp.onchange = () => { const f = inp.files[0]; if (f) openFile(f); };
+      inp.click();
+    }
+
+    function openFile(file) {
+      data.recent.unshift({ name: file.name, type: file.type, size: file.size, ts: Date.now() });
+      data.recent = data.recent.slice(0, 20); State.save();
+      const url = URL.createObjectURL(file);
+      const stage = body.querySelector("#stage");
+      stage.innerHTML = "";
+      const header = el(`<div class="row" style="margin-bottom:10px"><b style="flex:1">${escapeHtml(file.name)}</b><span class="muted">${(file.size / 1024).toFixed(1)} KB</span></div>`);
+      stage.appendChild(header);
+      let viewer;
+      if (file.type.startsWith("image/")) viewer = el(`<img src="${url}" style="max-width:100%;max-height:60vh;border-radius:8px;display:block;margin:auto">`);
+      else if (file.type.startsWith("video/")) viewer = el(`<video src="${url}" controls autoplay style="max-width:100%;max-height:60vh;border-radius:8px;display:block;margin:auto"></video>`);
+      else if (file.type.startsWith("audio/")) viewer = el(`<audio src="${url}" controls autoplay style="width:100%"></audio>`);
+      else if (file.type === "application/pdf") viewer = el(`<iframe src="${url}" style="width:100%;height:60vh;border:none;border-radius:8px"></iframe>`);
+      else {
+        viewer = el(`<pre style="white-space:pre-wrap;background:var(--bg-elev);padding:14px;border-radius:8px;max-height:60vh;overflow:auto;font-family:Consolas,monospace;font-size:.85rem"></pre>`);
+        file.text().then((t) => { viewer.textContent = t.length > 200000 ? t.slice(0, 200000) + "\n…(truncated)" : t; }).catch(() => { viewer.textContent = "(can't display this file type)"; });
+      }
+      stage.appendChild(viewer);
+      const recentEl = body.querySelector("#recent");
+      if (recentEl) {
+        recentEl.innerHTML = "";
+        data.recent.slice(0, 8).forEach((r) => recentEl.appendChild(el(`<div class="row" style="padding:6px 8px;font-size:.8rem" title="${escapeHtml(r.name)}"><span class="grow" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(r.name)}</span></div>`)));
+      }
+    }
+
+    render();
   };
 
   // ---------- Maps ----------

@@ -10,6 +10,7 @@
     "microsoft": "microsoft", "microsoft.local": "microsoft", "microsoft.com": "microsoft",
     "youtube": "youtube", "youtube.local": "youtube", "youtube.com": "youtube",
     "discord": "discord", "discord.local": "discord", "discord.com": "discord",
+    "duolingo": "duolingo", "duolingo.local": "duolingo", "duolingo.com": "duolingo",
   };
 
   function resolveSpecial(input) {

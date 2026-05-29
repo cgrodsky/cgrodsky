@@ -87,6 +87,55 @@
     <circle cx="80" cy="56" r="11" fill="#0c0d24"/><circle cx="80" cy="56" r="6.5" fill="#aab4ff" filter="url(#dcglow)"/>
   </svg>`);
 
+  // Copilot — gradient orb with a glowing core.
+  register("copilot", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19c2ff"/><stop offset=".5" stop-color="#7b5cff"/><stop offset="1" stop-color="#19e3a5"/></linearGradient>
+      <radialGradient id="cpc" cx="50%" cy="50%"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#aedfff"/><stop offset="1" stop-color="#2f7bff"/></radialGradient>
+      <filter id="cpglow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <circle cx="64" cy="64" r="56" fill="none" stroke="url(#cpg)" stroke-width="10" filter="url(#cpglow)"/>
+    <circle cx="64" cy="64" r="28" fill="url(#cpc)" filter="url(#cpglow)"/>
+  </svg>`);
+
+  // Duolingo — floating Duo owl (taskbar / general).
+  register("duolingo", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="24" cy="96" rx="8" ry="3.2" fill="#ffc800" transform="rotate(-25 24 96)"/>
+    <ellipse cx="100" cy="112" rx="7" ry="2.8" fill="#ffc800" transform="rotate(25 100 112)"/>
+    <path d="M70 18 Q44 16 32 40 Q24 52 28 66 Q22 78 32 86 Q40 94 54 92 Q68 100 84 94 Q96 96 102 86 Q108 72 100 64 Q108 50 100 40 Q100 22 70 18 Z" fill="#58cc02"/>
+    <path d="M30 60 Q22 58 22 50 Q24 44 32 46 Z" fill="#58cc02"/>
+    <circle cx="50" cy="52" r="14" fill="#fff"/>
+    <circle cx="80" cy="52" r="14" fill="#fff"/>
+    <circle cx="52" cy="56" r="5" fill="#1b1a1a"/>
+    <circle cx="80" cy="56" r="5" fill="#1b1a1a"/>
+    <path d="M58 70 Q64 66 70 70 L66 82 Q64 84 62 82 Z" fill="#ffc800" stroke="#e68a00" stroke-width=".8"/>
+    <path d="M52 84 Q64 92 76 84" stroke="#1b1a1a" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".35"/>
+  </svg>`);
+
+  // Duolingo (app icon) — framed head, used on home screen + start search.
+  register("duolingo_app", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect width="128" height="128" fill="#58cc02"/>
+    <path d="M14 30 Q46 18 64 22 Q82 18 114 30" fill="#7dd54a"/>
+    <circle cx="44" cy="58" r="22" fill="#fff"/>
+    <circle cx="84" cy="58" r="22" fill="#fff"/>
+    <ellipse cx="38" cy="58" rx="7" ry="11" fill="#1b1a1a"/>
+    <ellipse cx="78" cy="58" rx="7" ry="11" fill="#1b1a1a"/>
+    <circle cx="35" cy="54" r="2.5" fill="#fff"/>
+    <circle cx="75" cy="54" r="2.5" fill="#fff"/>
+    <path d="M52 80 Q64 74 76 80 L70 98 Q64 102 58 98 Z" fill="#ffc800" stroke="#e68a00" stroke-width="1.2"/>
+  </svg>`);
+
+  // Microsoft 365 — folded ribbon in Office orange/red.
+  register("ms365", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="m3a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb56b"/><stop offset="1" stop-color="#d83b01"/></linearGradient>
+      <linearGradient id="m3b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a3a"/><stop offset="1" stop-color="#9c1a01"/></linearGradient>
+    </defs>
+    <path d="M18 36 L64 16 L110 36 L110 96 L64 116 L18 96 Z" fill="url(#m3a)"/>
+    <path d="M64 16 L64 116 L18 96 L18 36 Z" fill="url(#m3b)" opacity=".85"/>
+    <text x="68" y="80" text-anchor="middle" fill="#fff" font-family="Segoe UI, sans-serif" font-weight="800" font-size="26" letter-spacing="-1">365</text>
+  </svg>`);
+
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),

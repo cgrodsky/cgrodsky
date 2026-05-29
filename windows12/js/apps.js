@@ -50,7 +50,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "store__"];
+    const defaults = ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 
@@ -218,4 +218,7 @@
 
   // ---------- YouTube launcher ----------
   AppRegistry.youtube = function () { window.Browser.openTo("youtube.local"); };
+
+  // ---------- Duolingo launcher ----------
+  AppRegistry.duolingo = function () { window.Browser.openTo("duolingo.local"); };
 })();

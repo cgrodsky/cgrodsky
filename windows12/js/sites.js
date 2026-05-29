@@ -677,5 +677,60 @@
 
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
 
-  window.Sites = { bank, amazon, microsoft, youtube, discord };
+  // =================== DUOLINGO ===================
+  function duolingo(ctx) {
+    if (S().appData.duolingo == null) S().appData.duolingo = { xp: 0, streak: 0, hearts: 5, completed: [] };
+    const d = S().appData.duolingo;
+    ctx.page.innerHTML = "";
+    const courses = [
+      { id: "duo_en", name: "English" }, { id: "duo_es", name: "Spanish" },
+      { id: "duo_ja", name: "Japanese" }, { id: "duo_zh", name: "Mandarin" },
+      { id: "duo_sv", name: "Swedish" },
+    ];
+    const lessons = [
+      "Basics 1", "Basics 2", "Greetings", "Food", "Animals", "Family",
+      "Numbers", "Travel", "Past Tense", "Hobbies",
+    ];
+
+    const wrap = el(`<div class="duo-site">
+      <div class="duo-header">
+        <div class="row" style="gap:10px;align-items:center">
+          <span style="width:36px;height:36px">${Icon.md("duolingo", "Duolingo")}</span>
+          <span style="font-weight:800;font-size:1.2rem;color:#58cc02;font-family:'DIN Round Pro','Nunito',Segoe UI,sans-serif">duolingo</span>
+        </div>
+        <span class="grow"></span>
+        <span class="duo-stat" title="Streak">Streak ${d.streak}</span>
+        <span class="duo-stat" title="XP"><span class="duo-icn" style="color:#ffc800">★</span>${d.xp}</span>
+        <span class="duo-stat" title="Hearts"><span class="duo-icn" style="color:#ff4b4b">♥</span>${d.hearts}</span>
+      </div>
+      <div class="duo-courses"></div>
+      <div class="duo-path"></div>
+    </div>`);
+    const courseRow = wrap.querySelector(".duo-courses");
+    courses.forEach((c) => {
+      const t = el(`<button class="duo-course"><span style="width:48px;height:48px">${Icon.box(c.id, c.name, 48)}</span><span>${c.name}</span></button>`);
+      courseRow.appendChild(t);
+    });
+    const path = wrap.querySelector(".duo-path");
+    lessons.forEach((name, i) => {
+      const done = d.completed.includes(i);
+      const locked = !done && i > (d.completed.length);
+      const node = el(`<div class="duo-node ${done ? "done" : locked ? "locked" : "open"}" style="margin-left:${(i % 2 === 0 ? 0 : 80)}px">
+        <button class="duo-circle" ${locked ? "disabled" : ""}>${done ? "✓" : (locked ? "🔒" : i + 1)}</button>
+        <div class="duo-label">${name}</div>
+      </div>`);
+      node.querySelector("button").onclick = () => {
+        if (locked) return;
+        if (d.hearts <= 0) { alert("Out of hearts! Try again later."); return; }
+        const got = Math.random() < 0.7;
+        if (got) { d.xp += 10; if (!done) d.completed.push(i); if (d.completed.length === 1) d.streak += 1; alert("Correct! +10 XP"); }
+        else { d.hearts -= 1; alert("Oops — lost a heart."); }
+        State.save(); duolingo(ctx);
+      };
+      path.appendChild(node);
+    });
+    ctx.page.appendChild(wrap);
+  }
+
+  window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo };
 })();

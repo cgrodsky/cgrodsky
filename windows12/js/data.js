@@ -30,6 +30,8 @@
     { id: "copilot", name: "Copilot", cat: "Productivity", price: 0, builtin: "copilot", desc: "Your AI assistant. Ask anything." },
     { id: "imagestudio", name: "Image Studio", cat: "Multimedia", price: 0, builtin: "imagestudio", desc: "Generate images from text with AI." },
     { id: "textgen", name: "AI Text", cat: "Productivity", price: 0, builtin: "textgen", desc: "Continue any text with phi-2." },
+    { id: "fileexplorer", name: "File Explorer", cat: "System", price: 0, builtin: "fileexplorer", desc: "Browse and open files from your device." },
+    { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).
@@ -45,10 +47,11 @@
     ["Audible", "Multimedia"], ["Comic Reader", "Lifestyle"], ["Sketch It", "Multimedia"], ["Quick PDF", "Productivity"],
   ];
   // Map decorative listings to real working built-in apps where it makes sense.
+  // (File Explorer is now a top-level app above; the filler entry below is hidden.)
   const builtinMap = {
     "To Do": "todo", "Sticky Notes": "stickynotes", "Weather": "weather", "Calendar": "calendar",
     "News": "news", "Terminal": "terminal", "Mail": "mail", "Sudoku": "sudoku",
-    "File Explorer": "fileexplorer", "Maps": "maps", "Photos": "photos", "Camera": "camera",
+    "File Explorer": "__skip__", "Maps": "maps", "Photos": "photos", "Camera": "camera",
     "Movies & TV": "mediaplayer", "Audible": "mediaplayer", "Spotfor": "mediaplayer",
     "Drawboard": "paint", "Sketch It": "paint", "OneNote": "notepad", "Code Writer": "notepad",
     "VS Codey": "notepad", "Quick PDF": "notepad", "Comic Reader": "photos", "Voice Recorder": "recorder",
@@ -56,6 +59,7 @@
   };
   filler.forEach((f, i) => {
     const builtin = builtinMap[f[0]];
+    if (builtin === "__skip__") return;
     const app = { id: "app_" + i, name: f[0], cat: f[1], price: 0, desc: `${f[0]} — a ${f[1].toLowerCase()} app for Windows 12.` };
     if (builtin) app.builtin = builtin; else app.decorative = true;
     storeApps.push(app);
@@ -132,6 +136,7 @@
     { label: "Microsoft", url: "microsoft.local" },
     { label: "YouTube", url: "youtube.local" },
     { label: "Discord", url: "discord.local" },
+    { label: "Duolingo", url: "duolingo.local" },
   ];
 
   window.Catalog = { storeApps, amazonItems, channels, discordServers, bookmarks };

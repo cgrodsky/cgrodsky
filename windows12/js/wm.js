@@ -118,7 +118,8 @@
     });
     items.forEach((s) => {
       if (seen.has(s.id)) return; seen.add(s.id);
-      const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(s.id, s.name)}</div><div class="label">${s.name}</div></div>`);
+      const ikey = s.id === "duolingo" ? "duolingo_app" : s.id;
+      const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(ikey, s.name)}</div><div class="label">${s.name}</div></div>`);
       ic.ondblclick = () => open(s.id);
       iconWrap.appendChild(ic);
     });
@@ -228,14 +229,15 @@
     });
     const f = (filter || "").toLowerCase();
     list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => {
-      const tile = el(`<div class="app-tile"><div class="ic">${Icon.md(a.id, a.name)}</div><div class="nm">${a.name}</div></div>`);
+      const ikey = a.id === "duolingo" ? "duolingo_app" : a.id;
+      const tile = el(`<div class="app-tile"><div class="ic">${Icon.md(ikey, a.name)}</div><div class="nm">${a.name}</div></div>`);
       tile.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
       grid.appendChild(tile);
     });
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "store__"].includes(id);
+    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "store__"].includes(id);
   }
 
   function toggleStart() { startMenu.classList.toggle("open"); renderStartApps(""); }

@@ -52,6 +52,33 @@
     d.remove();
   }
 
+  const XP_LOGO_SVG = `<svg viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="xpR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8546"/><stop offset="1" stop-color="#c81e00"/></linearGradient>
+      <linearGradient id="xpG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aede4d"/><stop offset="1" stop-color="#5a8a0d"/></linearGradient>
+      <linearGradient id="xpB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8aa6ff"/><stop offset="1" stop-color="#1e3aa8"/></linearGradient>
+      <linearGradient id="xpY" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe06b"/><stop offset="1" stop-color="#c89500"/></linearGradient>
+    </defs>
+    <g stroke="#000" stroke-width="1.6" stroke-linejoin="round">
+      <path d="M22 24 Q60 8 100 18 Q104 28 102 62 Q70 50 28 64 Q22 50 22 24 Z" fill="url(#xpR)"/>
+      <path d="M104 18 Q146 10 190 26 Q198 50 192 70 Q160 56 106 62 Q104 36 104 18 Z" fill="url(#xpG)"/>
+      <path d="M22 70 Q60 56 102 70 Q104 100 100 132 Q60 124 22 138 Q18 100 22 70 Z" fill="url(#xpB)"/>
+      <path d="M106 70 Q160 60 192 78 Q200 110 192 132 Q150 120 106 132 Q104 100 106 70 Z" fill="url(#xpY)"/>
+    </g>
+  </svg>`;
+
+  async function xpLogo(layer) {
+    const wrap = el(`<div class="center-col" style="gap:18px">
+      <div class="xp-logo">${XP_LOGO_SVG}</div>
+      <div style="color:#fff;font-size:1.6rem;letter-spacing:.04em;font-family:Tahoma,'Segoe UI',sans-serif">Windows XP</div>
+    </div>`);
+    layer.appendChild(wrap);
+    await wait(2400);
+    wrap.classList.add("fade-out");
+    await wait(700);
+    wrap.remove();
+  }
+
   function paintLogo(logoEl, colors) {
     [...logoEl.children].forEach((pane, i) => { pane.style.background = colors[i]; });
   }
@@ -138,6 +165,7 @@
 
     await cameron(layer);
     await disclaimer(layer);
+    await xpLogo(layer);
     await logoMorph(layer);
     await gettingReady(layer);
 
