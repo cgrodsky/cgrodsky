@@ -38,8 +38,10 @@ html, body {
 .xp-logo svg { width: 100%; height: auto; display: block; }
 @keyframes xpFloat { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1.5deg); } }
 
-/* Duolingo site */
-.duo-site { background: #fff; min-height: 100%; color: #4b4b4b; padding: 0; font-family: 'DIN Round Pro', 'Nunito', 'Segoe UI', sans-serif; }
+/* Duolingo site — Feather Bold with Nunito fallback */
+.duo-site, .duo-lesson { font-family: "Feather Bold", "Feather", "Nunito", "DIN Round Pro", "Segoe UI", sans-serif; font-weight: 800; }
+.duo-site *, .duo-lesson * { font-family: inherit; }
+.duo-site { background: #fff; min-height: 100%; color: #4b4b4b; padding: 0; }
 .duo-header { display: flex; align-items: center; gap: 10px; padding: 14px 20px; background: #fff; border-bottom: 2px solid #e5e5e5; position: sticky; top: 0; z-index: 5; }
 .duo-stat { background: #f7f7f7; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
 .duo-icn { font-size: 1rem; }

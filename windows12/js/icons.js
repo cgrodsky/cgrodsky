@@ -125,6 +125,13 @@
     <path d="M52 80 Q64 74 76 80 L70 98 Q64 102 58 98 Z" fill="#ffc800" stroke="#e68a00" stroke-width="1.2"/>
   </svg>`);
 
+  // Swedish course flag for Duolingo.
+  register("duo_sv", `<svg viewBox="0 0 128 96" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect width="128" height="96" fill="#006aa7"/>
+    <rect x="40" y="0" width="16" height="96" fill="#fecc00"/>
+    <rect x="0" y="40" width="128" height="16" fill="#fecc00"/>
+  </svg>`);
+
   // Microsoft 365 — folded ribbon in Office orange/red.
   register("ms365", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs>
