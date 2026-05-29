@@ -491,11 +491,39 @@
     ctx.page.appendChild(v);
   }
 
+  const RECAPTCHA_SITEKEY = "6LcXTAMtAAAAAM7DlFj7VvoHHIUYqK-ekwoXhDqe";
+
   function captchaGate(ctx) {
     ctx.page.innerHTML = "";
-    const host = el(`<div class="dc-login"></div>`);
+    const host = el(`<div class="dc-login">
+      <div class="captcha" style="background:#fff;color:#111;width:340px">
+        <div style="font-weight:600;margin-bottom:12px">Verify you're human</div>
+        <div id="recap-host" style="min-height:78px"></div>
+        <p class="muted" style="font-size:.72rem;margin-top:10px">reCAPTCHA verifies the challenge; no backend verification.</p>
+      </div></div>`);
     ctx.page.appendChild(host);
-    renderCaptcha(host, () => { session.discord = true; S().discord.loggedIn = true; State.save(); discordApp(ctx); });
+    const onSolved = () => { session.discord = true; S().discord.loggedIn = true; State.save(); discordApp(ctx); };
+    const target = host.querySelector("#recap-host");
+
+    function tryRender() {
+      if (!window.grecaptcha || !grecaptcha.render) return false;
+      try {
+        grecaptcha.render(target, { sitekey: RECAPTCHA_SITEKEY, callback: onSolved });
+        return true;
+      } catch (e) { return false; }
+    }
+
+    if (tryRender()) return;
+    // Wait for grecaptcha to load, then fall back to the custom captcha.
+    let tries = 0;
+    const iv = setInterval(() => {
+      if (tryRender()) { clearInterval(iv); return; }
+      if (++tries > 12) {
+        clearInterval(iv);
+        host.querySelector(".captcha").remove();
+        renderCaptcha(host, onSolved);
+      }
+    }, 400);
   }
 
   function discordApp(ctx) {
