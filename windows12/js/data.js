@@ -28,6 +28,8 @@
     { id: "clock", name: "Clock", cat: "Productivity", price: 0, builtin: "clock", desc: "Stopwatch and the current time." },
     { id: "youtubeApp", name: "YouTube", cat: "Multimedia", price: 0, builtin: "youtube", desc: "Watch, like, subscribe and upload." },
     { id: "copilot", name: "Copilot", cat: "Productivity", price: 0, builtin: "copilot", desc: "Your AI assistant. Ask anything." },
+    { id: "imagestudio", name: "Image Studio", cat: "Multimedia", price: 0, builtin: "imagestudio", desc: "Generate images from text with AI." },
+    { id: "textgen", name: "AI Text", cat: "Productivity", price: 0, builtin: "textgen", desc: "Continue any text with phi-2." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).

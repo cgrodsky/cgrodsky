@@ -420,6 +420,23 @@ input[type=range] { width: 100%; }
 .cop-keyform { padding: 24px; max-width: 460px; margin: auto; text-align: center; }
 .cop-keyform input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-elev); color: var(--text); margin: 12px 0; }
 
+/* Copilot mic button + voice mode pulse */
+.cop-head .mic { padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; color: var(--text-dim); }
+.cop-head .mic:hover { background: rgba(127,127,127,0.15); color: var(--text); }
+.cop-head .mic.active { color: #fff; background: #e53935; animation: micPulse 1.2s infinite; }
+@keyframes micPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.5); } 50% { box-shadow: 0 0 0 8px rgba(229,57,53,0); } }
+
+/* Image Studio */
+.imgstudio { display: flex; flex-direction: column; height: 100%; background: var(--window-bg); }
+.imgstudio-bar { display: flex; gap: 10px; padding: 14px; border-bottom: 1px solid var(--border); }
+.imgstudio-bar textarea { flex: 1; resize: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; background: var(--bg-elev); color: var(--text); font-family: inherit; font-size: .95rem; }
+.imgstudio-bar button { flex: 0 0 auto; align-self: stretch; }
+.imgstudio-gallery { flex: 1; overflow: auto; padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.img-card { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; animation: msgIn .35s ease; }
+.img-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #111; }
+.img-meta { padding: 10px 12px; }
+.img-prompt { font-size: .85rem; line-height: 1.35; margin-bottom: 6px; }
+
 /* Icon system */
 .ico-wrap { display: inline-flex; position: relative; vertical-align: middle; border-radius: 24%; overflow: hidden; flex: 0 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
 .ico-img { width: 100%; height: 100%; object-fit: cover; display: block; }

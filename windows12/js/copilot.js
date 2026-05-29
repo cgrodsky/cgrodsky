@@ -5,15 +5,16 @@
   "use strict";
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
   const S = () => State.data;
-  const API_URL = "https://api.aimlapi.com/v1/chat/completions";
-  // Hardcoded per user request. NOTE: this is publicly visible in a static site.
-  const DEFAULT_KEY = "e0a6f2b4dc403b83b9c22e3361af4416";
-  const DEFAULT_MODEL = "baidu/ernie-4-5-0-3b";
-  const activeKey = () => S().copilot.apiKey || DEFAULT_KEY;
+  const CHAT_URL = window.AIML_BASE + "/chat/completions";
+  const TTS_URL = window.AIML_BASE + "/tts";
+  const DEFAULT_MODEL = "microsoft/phi-2";
+  const activeKey = () => S().copilot.apiKey || window.AIML_KEY;
   const activeModel = () => DEFAULT_MODEL;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   const LOGO = (cls) => `<div class="${cls}"><div class="ring"></div><div class="dot"></div></div>`;
   const SEND_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" fill="#fff"/></svg>`;
+  const MIC_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>`;
 
   AppRegistry.copilot = function () {
     const { body } = window.WM.createWindow({ title: "Copilot", icon: LOGO("cop-logo"), width: 460, height: 620, appId: "copilot" });
@@ -25,6 +26,7 @@
     body.innerHTML = `
       <div class="cop">
         <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
+          <button class="mic" title="Voice mode">${MIC_SVG}</button>
           <button class="clear">Clear</button><button class="setkey">API key</button></div>
         <div class="cop-msgs"></div>
         <div class="cop-input">
@@ -35,9 +37,45 @@
     const msgs = body.querySelector(".cop-msgs");
     const ta = body.querySelector("textarea");
     const sendBtn = body.querySelector(".cop-send");
+    const micBtn = body.querySelector(".mic");
 
     body.querySelector(".setkey").onclick = () => renderKeyForm(body);
     body.querySelector(".clear").onclick = () => { S().copilot.history = []; State.save(); paint(); };
+
+    // ---- Voice mode (browser STT + AIML TTS) ----
+    let voiceOn = false, rec = null, audioEl = null;
+    function setMicVisual() { micBtn.classList.toggle("active", voiceOn); }
+    micBtn.onclick = () => {
+      if (!SR) { addBubble("assistant", "Voice mode needs Chrome or Edge — your browser doesn't support speech recognition."); return; }
+      voiceOn = !voiceOn; setMicVisual();
+      if (voiceOn) startListening(); else stopListening();
+    };
+    function startListening() {
+      try {
+        rec = new SR();
+        rec.continuous = false; rec.interimResults = false; rec.lang = (I18n.lang === "en" ? "en-US" : I18n.lang);
+        rec.onresult = (e) => { const t = e.results[0][0].transcript; ta.value = t; send(); };
+        rec.onerror = () => { voiceOn = false; setMicVisual(); };
+        rec.onend = () => { if (voiceOn && !sendBtn.disabled) { try { rec.start(); } catch (_) {} } };
+        rec.start();
+      } catch (e) { voiceOn = false; setMicVisual(); }
+    }
+    function stopListening() { if (rec) { try { rec.stop(); } catch (_) {} rec = null; } if (audioEl) { audioEl.pause(); audioEl = null; } }
+    async function speak(text) {
+      try {
+        const r = await fetch(TTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
+          body: JSON.stringify({ model: "openai/tts-1", text: text.slice(0, 4000), voice: "coral" }),
+        });
+        const j = await r.json();
+        const url = j.audio?.url || j.url;
+        if (!url) return;
+        audioEl = new Audio(url);
+        audioEl.onended = () => { if (voiceOn) { try { rec && rec.start(); } catch (_) {} } };
+        audioEl.play();
+      } catch (e) {}
+    }
 
     function paint() {
       msgs.innerHTML = "";
@@ -73,6 +111,7 @@
         S().copilot.history.push({ role: "assistant", content: reply });
         State.save();
         addBubble("assistant", reply);
+        if (voiceOn) speak(reply);
       } catch (err) {
         typing.remove();
         addBubble("assistant", "Couldn't reach the AI service.\n\n" + (err && err.message ? err.message : err) +
@@ -91,7 +130,7 @@
   async function callApi(history) {
     const messages = [{ role: "system", content: "You are Copilot, a friendly and helpful AI assistant built into Windows 12." }]
       .concat(history.slice(-20));
-    const res = await fetch(API_URL, {
+    const res = await fetch(CHAT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
       body: JSON.stringify({ model: activeModel(), messages }),

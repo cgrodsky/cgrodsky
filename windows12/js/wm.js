@@ -235,7 +235,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "store__"].includes(id);
+    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "store__"].includes(id);
   }
 
   function toggleStart() { startMenu.classList.toggle("open"); renderStartApps(""); }

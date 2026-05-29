@@ -267,7 +267,7 @@
       out.textContent = "Translating...";
       try {
         const r = await fetch("https://api.aimlapi.com/v1/chat/completions", {
-          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (S().copilot.apiKey || "e0a6f2b4dc403b83b9c22e3361af4416") },
+          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (S().copilot.apiKey || window.AIML_KEY) },
           body: JSON.stringify({ model: "baidu/ernie-4-5-0-3b", messages: [{ role: "user", content: `Translate the following into ${body.querySelector("#lang").value}. Reply with only the translation:\n\n${text}` }] }),
         });
         const j = await r.json();
