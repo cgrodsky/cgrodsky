@@ -128,6 +128,11 @@
     paint();
   }
 
+  function systemPrompt() {
+    const langName = ((window.I18n && I18n.languages.find((l) => l.code === I18n.lang)) || { name: "English" }).name;
+    return `You are Copilot, a friendly and helpful AI assistant built into Windows 12. Always respond in ${langName}, regardless of the language of the question.`;
+  }
+
   async function callApi(history) {
     const model = activeModel();
     // phi-2 (and other base models) use /v1/completions with a flat prompt.
@@ -135,7 +140,7 @@
     const isCompletion = /phi-2|davinci|babbage|llama-(?!2-chat)/i.test(model);
     if (isCompletion) {
       const recent = history.slice(-20);
-      const lines = ["You are Copilot, a friendly and helpful AI assistant built into Windows 12.\n"];
+      const lines = [systemPrompt() + "\n"];
       recent.forEach((m) => lines.push((m.role === "user" ? "User: " : "Assistant: ") + m.content));
       lines.push("Assistant:");
       const res = await fetch(COMPLETIONS_URL, {
@@ -148,7 +153,7 @@
       const t = (data.choices?.[0]?.text || "").trim();
       return t || "(no response)";
     }
-    const messages = [{ role: "system", content: "You are Copilot, a friendly and helpful AI assistant built into Windows 12." }]
+    const messages = [{ role: "system", content: systemPrompt() }]
       .concat(history.slice(-20));
     const res = await fetch(CHAT_URL, {
       method: "POST",
