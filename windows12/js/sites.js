@@ -497,7 +497,7 @@
     ctx.page.innerHTML = "";
     const host = el(`<div class="dc-login">
       <div class="captcha" style="background:#fff;color:#111;width:340px">
-        <div style="font-weight:600;margin-bottom:12px">Verify you're human</div>
+        <div style="font-weight:600;margin-bottom:12px">reCaptcha</div>
         <div id="recap-host" style="min-height:78px"></div>
         <p class="muted" style="font-size:.72rem;margin-top:10px">reCAPTCHA verifies the challenge; no backend verification.</p>
       </div></div>`);
