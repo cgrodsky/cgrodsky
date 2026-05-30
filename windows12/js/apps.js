@@ -257,9 +257,25 @@
       { key: "duo_ja", name: "Japanese" }, { key: "duo_zh", name: "Mandarin" }, { key: "duo_sv", name: "Swedish" },
     ];
     const serverItems = Catalog.discordServers.map((s) => ({ key: s.id, name: s.name }));
+    const duoVariants = [
+      { key: "duolingo", name: "Duolingo (taskbar)" },
+      { key: "duolingo_app", name: "Duolingo (home/Start)" },
+      { key: "duolingo_super", name: "Super Duolingo" },
+      { key: "duolingo_max", name: "Duolingo Max" },
+      { key: "duo_sad", name: "Sad Duo (quit modal)" },
+    ];
+    const brandLogos = [
+      { key: "bank", name: "Bank" },
+      { key: "discord", name: "Discord (login)" },
+      { key: "microsoft", name: "Microsoft" },
+      { key: "amazon", name: "Amazon" },
+      { key: "youtubeApp", name: "YouTube" },
+    ];
 
+    groups.appendChild(group("Duolingo variants", duoVariants));
     groups.appendChild(group("YouTube channels", channelItems));
     groups.appendChild(group("Duolingo courses", courseItems));
+    groups.appendChild(group("Brand logos", brandLogos));
     groups.appendChild(group("Apps", appItems));
     groups.appendChild(group("Discord servers", serverItems));
   }
