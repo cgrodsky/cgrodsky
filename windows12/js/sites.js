@@ -471,8 +471,10 @@
 
   // =================== DISCORD ===================
   function discord(ctx) {
-    if (!session.discord && !S().discord.loggedIn) return discordLogin(ctx);
-    discordApp(ctx);
+    // Always re-verify on every visit so reCAPTCHA fires each time you open Discord.
+    session.discord = false;
+    if (!S().discord.loggedIn) return discordLogin(ctx);
+    captchaGate(ctx);
   }
 
   function discordLogin(ctx) {
