@@ -26,9 +26,15 @@
   const custom = {};
   function register(key, svg) { custom[String(key).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = svg; }
 
+  function getCustomSrc(key) {
+    try { return (window.State && State.data.appData && State.data.appData.customIcons && State.data.appData.customIcons[key]) || null; }
+    catch (e) { return null; }
+  }
+
   function box(key, label, size) {
     size = size || 28;
     const safeKey = String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const customSrc = getCustomSrc(safeKey);
     let fallbackInner, fallbackStyle, cls = "ico-fallback";
     if (custom[safeKey]) {
       fallbackInner = custom[safeKey];
@@ -39,8 +45,8 @@
       const grad = gradientFor(String(label || key || "x"));
       fallbackStyle = `display:none;background:${grad};font-size:${Math.round(size * 0.38)}px;width:${size}px;height:${size}px`;
     }
-    return `<span class="ico-wrap" style="width:${size}px;height:${size}px${custom[safeKey] ? ";box-shadow:none" : ""}">` +
-      `<img class="ico-img" src="assets/${safeKey}.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
+    return `<span class="ico-wrap" style="width:${size}px;height:${size}px${custom[safeKey] || customSrc ? ";box-shadow:none" : ""}">` +
+      `<img class="ico-img" src="${customSrc || "assets/" + safeKey + ".png"}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
       `<span class="${cls}" style="${fallbackStyle}">${fallbackInner}</span>` +
       `</span>`;
   }
@@ -136,6 +142,43 @@
   register("duo_ja", `<svg viewBox="0 0 128 96" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect width="128" height="96" fill="#f4f4f4"/>
     <circle cx="64" cy="48" r="28" fill="#fc4c4c"/>
+  </svg>`);
+
+  // Super Duolingo — holographic gradient Duo (taskbar/home when tier=super).
+  register("duolingo_super", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dsg" x1=".1" y1="0" x2=".9" y2="1">
+        <stop offset="0" stop-color="#3ce0a3"/>
+        <stop offset=".35" stop-color="#1cb0f6"/>
+        <stop offset=".7" stop-color="#a06cff"/>
+        <stop offset="1" stop-color="#ff5cb1"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="74" cy="112" rx="7" ry="3" fill="#ff5cb1"/>
+    <path d="M70 18 Q44 16 32 40 Q24 52 28 66 Q22 78 32 86 Q40 94 54 92 Q68 100 84 94 Q96 96 102 86 Q108 72 100 64 Q108 50 100 40 Q100 22 70 18 Z" fill="url(#dsg)" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="50" cy="52" r="12" fill="rgba(255,255,255,.92)"/>
+    <circle cx="80" cy="52" r="12" fill="rgba(255,255,255,.92)"/>
+    <circle cx="50" cy="55" r="3.4" fill="#1b1a1a"/>
+    <circle cx="80" cy="55" r="3.4" fill="#1b1a1a"/>
+    <path d="M52 78 Q64 88 76 78" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>
+  </svg>`);
+
+  // Duolingo Max — pink/purple gradient Duo (taskbar/home when tier=max).
+  register("duolingo_max", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dmg" x1=".1" y1="0" x2=".9" y2="1">
+        <stop offset="0" stop-color="#a06cff"/>
+        <stop offset=".55" stop-color="#c061ff"/>
+        <stop offset="1" stop-color="#ff5cb1"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="74" cy="112" rx="7" ry="3" fill="#c061ff"/>
+    <path d="M70 18 Q44 16 32 40 Q24 52 28 66 Q22 78 32 86 Q40 94 54 92 Q68 100 84 94 Q96 96 102 86 Q108 72 100 64 Q108 50 100 40 Q100 22 70 18 Z" fill="url(#dmg)" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="50" cy="52" r="12" fill="rgba(255,255,255,.92)"/>
+    <circle cx="80" cy="52" r="12" fill="rgba(255,255,255,.92)"/>
+    <circle cx="50" cy="55" r="3.4" fill="#1b1a1a"/>
+    <circle cx="80" cy="55" r="3.4" fill="#1b1a1a"/>
+    <path d="M52 78 Q64 88 76 78" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>
   </svg>`);
 
   // English course flag (US, emoji style) for Duolingo.

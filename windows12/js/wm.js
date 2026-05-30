@@ -14,6 +14,14 @@
   const AppRegistry = {};
   window.AppRegistry = AppRegistry;
 
+  // Duolingo icon depends on the current subscription tier.
+  function duoIconKey(forApp) {
+    const tier = (S().appData && S().appData.duolingo && S().appData.duolingo.tier) || "free";
+    if (tier === "max") return "duolingo_max";
+    if (tier === "super") return "duolingo_super";
+    return forApp ? "duolingo_app" : "duolingo";
+  }
+
   // ---------------- Window manager ----------------
   function createWindow(opts) {
     opts = opts || {};
@@ -118,7 +126,7 @@
     });
     items.forEach((s) => {
       if (seen.has(s.id)) return; seen.add(s.id);
-      const ikey = s.id === "duolingo" ? "duolingo_app" : s.id;
+      const ikey = s.id === "duolingo" ? duoIconKey(true) : s.id;
       const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(ikey, s.name)}</div><div class="label">${s.name}</div></div>`);
       ic.ondblclick = () => open(s.id);
       iconWrap.appendChild(ic);
@@ -154,6 +162,7 @@
       <div class="tb-btn start" title="Start">${Icon.mini("start", "Windows")}</div>
       <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
       <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
+      <div class="tb-btn" data-open="duolingo" title="Duolingo">${Icon.mini(duoIconKey(false), "Duolingo")}</div>
       <div class="tb-btn" data-open="settings" title="Settings">${Icon.mini("settings", "Settings")}</div>
       <div class="tb-clock" id="tbClock"></div>
     </div>`);
@@ -229,7 +238,7 @@
     });
     const f = (filter || "").toLowerCase();
     list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => {
-      const ikey = a.id === "duolingo" ? "duolingo_app" : a.id;
+      const ikey = a.id === "duolingo" ? duoIconKey(true) : a.id;
       const tile = el(`<div class="app-tile"><div class="ic">${Icon.md(ikey, a.name)}</div><div class="nm">${a.name}</div></div>`);
       tile.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
       grid.appendChild(tile);
@@ -310,5 +319,14 @@
   }
   window.Notify = { show: notify };
 
-  window.WM = { createWindow, open, buildDesktop, refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); } };
+  function refreshTaskbarIcons() {
+    if (!taskbar) return;
+    const btn = taskbar.querySelector('.tb-btn[data-open="duolingo"]');
+    if (btn) btn.innerHTML = Icon.mini(duoIconKey(false), "Duolingo");
+  }
+  window.WM = {
+    createWindow, open, buildDesktop,
+    refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
+    refreshTaskbar: refreshTaskbarIcons,
+  };
 })();

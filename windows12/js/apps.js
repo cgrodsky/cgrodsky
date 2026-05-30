@@ -120,6 +120,7 @@
         <div class="nav" data-p="access">Accessibility</div>
         <div class="nav" data-p="account">Account</div>
         <div class="nav" data-p="time">Time & language</div>
+        <div class="nav" data-p="icons">Personalize icons</div>
         <div class="nav" data-p="system">System</div>
       </div>
       <div class="settings-body"></div></div>`;
@@ -175,9 +176,11 @@
         sb.appendChild(fmt);
       } else if (p === "system") {
         sb.appendChild(el(`<h2>System</h2><p class="muted">Windows 12 — simulation build</p>`));
-        const reset = el(`<button class="pill-btn" style="background:#c0392b">Reset this PC (clears everything)</button>`);
-        reset.onclick = () => { if (confirm("Reset the PC? This clears all data and replays setup.")) { State.reset(); location.reload(); } };
+        const reset = el(`<button class="pill-btn" style="background:#c0392b">Factory Reset</button>`);
+        reset.onclick = () => window.WM.factoryReset();
         sb.appendChild(reset);
+      } else if (p === "icons") {
+        renderIconCustomizer(sb);
       }
     }
     render("personal");
@@ -221,4 +224,95 @@
 
   // ---------- Duolingo launcher ----------
   AppRegistry.duolingo = function () { window.Browser.openTo("duolingo.local"); };
+
+  // ---------- Icon customizer (Settings) ----------
+  function renderIconCustomizer(host) {
+    host.innerHTML = `<h2>Personalize icons</h2>
+      <p class="muted">Upload an image to use as the icon. It's saved in this browser.</p>
+      <div id="ic-groups" style="display:flex;flex-direction:column;gap:18px"></div>`;
+    const groups = host.querySelector("#ic-groups");
+    if (S().appData.customIcons == null) S().appData.customIcons = {};
+
+    function group(title, items) {
+      const sec = document.createElement("div");
+      sec.innerHTML = `<h3 style="margin:6px 0">${title}</h3>`;
+      const grid = document.createElement("div");
+      grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px";
+      items.forEach((it) => {
+        const row = document.createElement("div");
+        row.style.cssText = "border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center";
+        row.innerHTML = `<div>${Icon.md(it.key, it.name)}</div><div style="font-size:.8rem">${it.name}</div>
+          <div class="row" style="gap:4px"><button class="btn-text up" style="padding:4px 8px">Upload</button>${S().appData.customIcons[it.key] ? '<button class="btn-text rm" style="padding:4px 8px;color:#c0392b">Remove</button>' : ""}</div>`;
+        row.querySelector(".up").onclick = () => pickIcon(it.key);
+        const rm = row.querySelector(".rm"); if (rm) rm.onclick = () => { delete S().appData.customIcons[it.key]; State.save(); renderIconCustomizer(host); };
+        grid.appendChild(row);
+      });
+      sec.appendChild(grid); return sec;
+    }
+
+    const channelItems = Catalog.channels.map((c) => ({ key: c.id, name: c.name }));
+    const appItems = Catalog.storeApps.filter((a) => !a.decorative).map((a) => ({ key: a.id === "duolingo" ? "duolingo_app" : a.id, name: a.name }));
+    const courseItems = [
+      { key: "duo_en", name: "English" }, { key: "duo_es", name: "Spanish" },
+      { key: "duo_ja", name: "Japanese" }, { key: "duo_zh", name: "Mandarin" }, { key: "duo_sv", name: "Swedish" },
+    ];
+    const serverItems = Catalog.discordServers.map((s) => ({ key: s.id, name: s.name }));
+
+    groups.appendChild(group("YouTube channels", channelItems));
+    groups.appendChild(group("Duolingo courses", courseItems));
+    groups.appendChild(group("Apps", appItems));
+    groups.appendChild(group("Discord servers", serverItems));
+  }
+
+  function pickIcon(key) {
+    const inp = document.getElementById("globalFileInput");
+    inp.accept = "image/*"; inp.value = "";
+    inp.onchange = () => {
+      const f = inp.files[0]; if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Downscale to 256x256 to keep localStorage small.
+        const img = new Image();
+        img.onload = () => {
+          const sz = 256;
+          const c = document.createElement("canvas"); c.width = sz; c.height = sz;
+          const ctx = c.getContext("2d");
+          // cover-fit
+          const sc = Math.max(sz / img.width, sz / img.height);
+          const w = img.width * sc, h = img.height * sc;
+          ctx.drawImage(img, (sz - w) / 2, (sz - h) / 2, w, h);
+          if (S().appData.customIcons == null) S().appData.customIcons = {};
+          S().appData.customIcons[key] = c.toDataURL("image/png");
+          try { State.save(); } catch (e) { alert("Storage full — try smaller/fewer images."); return; }
+          // Re-render desktop + active settings panel
+          if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
+          const settingsBody = document.querySelector(".settings-body");
+          if (settingsBody) renderIconCustomizer(settingsBody);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(f);
+    };
+    inp.click();
+  }
+
+  // ---------- Factory reset (Settings + Terminal command) ----------
+  function factoryReset() {
+    const secret = S().profile.secret;
+    const label = S().profile.authType === "pin" ? "PIN" : "password";
+    const p1 = prompt(`Factory reset — enter your ${label}:`);
+    if (p1 == null) return false;
+    if (secret && p1 !== secret) { alert("Incorrect."); return false; }
+    const p2 = prompt(`Enter your ${label} again:`);
+    if (p2 == null) return false;
+    if (secret && p2 !== secret) { alert("Incorrect."); return false; }
+    const c = prompt('Type CONFIRM (all caps) to wipe this PC:');
+    if (c !== "CONFIRM") { alert("Not confirmed."); return false; }
+    State.reset();
+    location.reload();
+    return true;
+  }
+  // Make available on the WM namespace for both Settings and Terminal to call.
+  if (window.WM) window.WM.factoryReset = factoryReset;
+  else { const iv = setInterval(() => { if (window.WM) { window.WM.factoryReset = factoryReset; clearInterval(iv); } }, 50); }
 })();

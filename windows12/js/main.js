@@ -17,7 +17,7 @@
       if (!State.data.setupCompleted) {
         Setup.run(startDesktop);
       } else {
-        startDesktop();
+        Lock.run(startDesktop);
       }
     });
   });

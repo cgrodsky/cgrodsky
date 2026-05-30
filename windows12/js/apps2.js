@@ -237,6 +237,7 @@ Ethernet adapter Local Area Connection:
         try { window.WM.open(id); print("Opened " + id, "#16c60c"); } catch (e) { print("Unknown app: " + id, "#ff4b4b"); }
       },
       history: () => history.forEach((h, i) => print(`  ${i + 1}  ${h}`)),
+      "factory-reset": () => { window.WM.factoryReset(); },
     };
 
     function listDir() {

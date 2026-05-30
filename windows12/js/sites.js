@@ -679,8 +679,12 @@
 
   // =================== DUOLINGO ===================
   function duolingo(ctx) {
-    if (S().appData.duolingo == null) S().appData.duolingo = { xp: 0, streak: 0, hearts: 5, completed: [] };
+    if (S().appData.duolingo == null) S().appData.duolingo = { xp: 0, streak: 0, hearts: 5, completed: [], tier: "free" };
     const d = S().appData.duolingo;
+    if (!d.tier) d.tier = "free";
+    const tier = d.tier;
+    const tierCls = tier === "max" ? "duo-max" : tier === "super" ? "duo-super" : "";
+    const heartLabel = (tier === "free") ? d.hearts : "∞";
     ctx.page.innerHTML = "";
     const courses = [
       { id: "duo_en", name: "English" }, { id: "duo_es", name: "Spanish" },
@@ -692,20 +696,24 @@
       "Numbers", "Travel", "Past Tense", "Hobbies",
     ];
 
-    const wrap = el(`<div class="duo-site">
+    const heartSvg = `<svg class="duo-heart-svg" width="14" height="14" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9.5C1 7 4 4 7.5 4c2 0 3.5 1 4.5 2.5C13 5 14.5 4 16.5 4 20 4 23 7 21.5 11.5 19 16.5 12 21 12 21z" fill="currentColor"/></svg>`;
+    const wrap = el(`<div class="duo-site ${tierCls}">
       <div class="duo-header">
         <div class="row" style="gap:10px;align-items:center">
           <span style="width:36px;height:36px">${Icon.md("duolingo", "Duolingo")}</span>
-          <span style="font-weight:800;font-size:1.2rem;color:#58cc02;font-family:'DIN Round Pro','Nunito',Segoe UI,sans-serif">duolingo</span>
+          <span class="duo-brand">duolingo${tier === "super" ? '<span class="duo-badge">SUPER</span>' : tier === "max" ? '<span class="duo-badge duo-badge-max">MAX</span>' : ""}</span>
         </div>
         <span class="grow"></span>
+        ${tier === "free" ? `<button class="duo-buy" data-tier="super">Get Super</button>` : ""}
+        ${tier !== "max" ? `<button class="duo-buy" data-tier="max">Get Max</button>` : ""}
         <span class="duo-stat" title="Streak">Streak ${d.streak}</span>
         <span class="duo-stat" title="XP"><span class="duo-icn" style="color:#ffc800">★</span>${d.xp}</span>
-        <span class="duo-stat" title="Hearts"><span class="duo-icn" style="color:#ff4b4b">♥</span>${d.hearts}</span>
+        <span class="duo-stat duo-hearts" title="Hearts"><span class="duo-icn">${heartSvg}</span>${heartLabel}</span>
       </div>
       <div class="duo-courses"></div>
       <div class="duo-path"></div>
     </div>`);
+    wrap.querySelectorAll(".duo-buy").forEach((b) => b.onclick = () => buyDuoTier(ctx, b.dataset.tier));
     const courseRow = wrap.querySelector(".duo-courses");
     courses.forEach((c) => {
       const t = el(`<button class="duo-course"><span style="width:48px;height:48px">${Icon.box(c.id, c.name, 48)}</span><span>${c.name}</span></button>`);
@@ -746,6 +754,23 @@
   };
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
+  function buyDuoTier(ctx, tier) {
+    const prices = { super: 9.99, max: 29.99 };
+    const price = prices[tier];
+    if (!price) return;
+    const name = tier === "super" ? "Super Duolingo" : "Duolingo Max";
+    if (S().bank.balance < price) { alert("Insufficient funds in Forge Bank."); return; }
+    if (!confirm(`Subscribe to ${name} for $${price.toFixed(2)}?\n\nUnlimited hearts${tier === "max" ? " + Max features" : ""}.`)) return;
+    State.addTransaction({ vendor: "Duolingo", item: name + " (1 month)", amount: price, refundable: true });
+    S().appData.duolingo.tier = tier;
+    S().appData.duolingo.hearts = 5;
+    State.save();
+    if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
+    if (window.WM.refreshTaskbar) window.WM.refreshTaskbar();
+    Notify.show({ icon: "", title: `${name} active`, body: "Unlimited hearts unlocked.", onClick: () => Browser.openTo("duolingo.local") });
+    duolingo(ctx);
+  }
+
   function startLesson(ctx, idx, onDone) {
     const courseId = (S().appData.duolingoCourse || "es");
     const pairs = duoVocab[courseId] || duoVocab.es;
@@ -769,11 +794,14 @@
       if (qi >= questions.length) return finish();
       const q = questions[qi];
       const pct = (qi / questions.length) * 100;
-      const wrap = el(`<div class="duo-lesson">
+      const heartSvg = `<svg class="duo-heart-svg" width="14" height="14" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9.5C1 7 4 4 7.5 4c2 0 3.5 1 4.5 2.5C13 5 14.5 4 16.5 4 20 4 23 7 21.5 11.5 19 16.5 12 21 12 21z" fill="currentColor"/></svg>`;
+      const heartLbl = target.tier === "free" ? target.hearts : "∞";
+      const tcls = target.tier === "max" ? "duo-max" : target.tier === "super" ? "duo-super" : "";
+      const wrap = el(`<div class="duo-lesson ${tcls}">
         <div class="duo-lesson-head">
           <button class="duo-x" title="Quit">&#215;</button>
           <div class="duo-progress"><div class="duo-progress-fill" style="width:${pct}%"></div></div>
-          <span class="duo-heart">♥ ${target.hearts}</span>
+          <span class="duo-heart">${heartSvg} ${heartLbl}</span>
         </div>
         <div class="duo-q"></div>
         <div class="duo-foot"><button class="duo-check" disabled>Check</button></div>
@@ -791,7 +819,7 @@
 
     function onCheck(isRight) {
       if (isRight) { correct++; target.xp += 10; }
-      else { target.hearts = Math.max(0, target.hearts - 1); }
+      else if (target.tier === "free") { target.hearts = Math.max(0, target.hearts - 1); }
       State.save();
       const banner = el(`<div class="duo-banner ${isRight ? "ok" : "bad"}">${isRight ? "Nice!" : "Not quite"}<button class="pill-btn">Continue</button></div>`);
       ctx.page.querySelector(".duo-lesson").appendChild(banner);
@@ -856,7 +884,7 @@
     }
 
     function finish() {
-      const failed = target.hearts <= 0;
+      const failed = target.tier === "free" && target.hearts <= 0;
       ctx.page.innerHTML = "";
       const wrap = el(`<div class="duo-lesson"><div class="duo-q center-col" style="justify-content:center;height:100%">
         <h1>${failed ? "Out of hearts" : "Lesson complete!"}</h1>
