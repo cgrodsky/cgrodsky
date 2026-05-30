@@ -144,6 +144,26 @@
     <circle cx="64" cy="48" r="28" fill="#fc4c4c"/>
   </svg>`);
 
+  // Sad Duo — shown in the "don't quit your lesson" modal.
+  register("duo_sad", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="64" cy="120" rx="36" ry="3.5" fill="#000" opacity=".1"/>
+    <path d="M30 32 Q30 14 50 14 L78 14 Q98 14 98 32 L98 96 Q98 114 78 114 L50 114 Q30 114 30 96 Z" fill="#58cc02"/>
+    <path d="M30 30 Q32 12 46 22" fill="#58cc02"/>
+    <path d="M98 30 Q96 12 82 22" fill="#58cc02"/>
+    <ellipse cx="46" cy="113" rx="10" ry="4.5" fill="#ffc800"/>
+    <ellipse cx="82" cy="113" rx="10" ry="4.5" fill="#ffc800"/>
+    <circle cx="50" cy="52" r="14" fill="#fff"/>
+    <circle cx="78" cy="52" r="14" fill="#fff"/>
+    <circle cx="50" cy="50" r="6" fill="#1b1a1a"/>
+    <circle cx="78" cy="50" r="6" fill="#1b1a1a"/>
+    <circle cx="52" cy="48" r="2" fill="#fff"/>
+    <circle cx="80" cy="48" r="2" fill="#fff"/>
+    <path d="M38 60 Q50 68 62 60 L62 66 Q50 72 38 66 Z" fill="#4cc6f5"/>
+    <path d="M66 60 Q78 68 90 60 L90 66 Q78 72 66 66 Z" fill="#4cc6f5"/>
+    <path d="M58 62 Q64 58 70 62 L66 74 Q64 76 62 74 Z" fill="#ffc800" stroke="#e68a00" stroke-width=".8"/>
+    <path d="M52 92 Q64 88 76 92" stroke="#1b1a1a" stroke-width="2" fill="none" stroke-linecap="round" opacity=".35"/>
+  </svg>`);
+
   // Super Duolingo — holographic gradient Duo (taskbar/home when tier=super).
   register("duolingo_super", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs>

@@ -133,6 +133,12 @@ html, body {
 .duo-banner.ok { background: #d7ffb8; color: #58a700; border-color: #58cc02; }
 .duo-banner.bad { background: #ffdfe0; color: #ea2b2b; border-color: #ff4b4b; }
 .duo-banner button { margin-left: auto; }
+.duo-modal-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeIn .2s; padding: 20px; }
+.duo-modal { background: #fff; border-radius: 16px; padding: 24px; max-width: 380px; text-align: center; animation: popIn .3s ease; }
+.duo-modal h2 { color: #4b4b4b; margin: 12px 0 6px; font-weight: 800; }
+.duo-modal p { color: #777; margin: 6px 0 18px; }
+.duo-modal-img { display: flex; align-items: center; justify-content: center; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- BOOT ---------- */
 .boot-layer {

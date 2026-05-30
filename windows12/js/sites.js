@@ -787,7 +787,7 @@
       }
     });
 
-    let qi = 0, correct = 0;
+    let qi = 0, correct = 0, lessonXp = 0;
 
     function render() {
       ctx.page.innerHTML = "";
@@ -808,7 +808,26 @@
       </div>`);
       const body = wrap.querySelector(".duo-q");
       const check = wrap.querySelector(".duo-check");
-      wrap.querySelector(".duo-x").onclick = () => { if (confirm("Quit this lesson?")) duolingo(ctx); };
+      wrap.querySelector(".duo-x").onclick = () => showQuitModal(wrap);
+
+      function showQuitModal(host) {
+        const overlay = el(`<div class="duo-modal-mask">
+          <div class="duo-modal">
+            <div class="duo-modal-img" style="width:140px;height:140px;margin:0 auto">${Icon.box("duo_sad", "Sad Duo", 140)}</div>
+            <h2>Don't go!</h2>
+            <p>You'll lose all <b>${lessonXp} XP</b> from this lesson if you leave.</p>
+            <button class="duo-check" id="stay">KEEP LEARNING</button>
+            <button class="btn-text" id="leave" style="color:#777;margin-top:10px;width:100%">End lesson</button>
+          </div></div>`);
+        overlay.querySelector("#stay").onclick = () => overlay.remove();
+        overlay.querySelector("#leave").onclick = () => {
+          target.xp = Math.max(0, target.xp - lessonXp);
+          State.save();
+          overlay.remove();
+          duolingo(ctx);
+        };
+        host.appendChild(overlay);
+      }
 
       if (q.type === "type") renderType(q, body, check, onCheck);
       else if (q.type === "mc") renderMC(q, body, pairs, check, onCheck);
@@ -818,7 +837,7 @@
     }
 
     function onCheck(isRight) {
-      if (isRight) { correct++; target.xp += 10; }
+      if (isRight) { correct++; target.xp += 10; lessonXp += 10; }
       else if (target.tier === "free") { target.hearts = Math.max(0, target.hearts - 1); }
       State.save();
       const banner = el(`<div class="duo-banner ${isRight ? "ok" : "bad"}">${isRight ? "Nice!" : "Not quite"}<button class="pill-btn">Continue</button></div>`);
