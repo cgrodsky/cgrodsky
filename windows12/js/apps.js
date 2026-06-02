@@ -229,7 +229,14 @@
   function renderIconCustomizer(host) {
     host.innerHTML = `<h2>Personalize icons</h2>
       <p class="muted">Upload an image to use as the icon. It's saved in this browser.</p>
+      <div class="row" style="margin:10px 0 18px;gap:8px;flex-wrap:wrap">
+        <button class="pill-btn" id="ic-export">Download as files</button>
+        <button class="btn-text" id="ic-view">View &amp; long-press to save</button>
+        <span class="muted" style="font-size:.78rem">Use these to upload icons to GitHub's <code>windows12/assets/</code> folder so they're global.</span>
+      </div>
       <div id="ic-groups" style="display:flex;flex-direction:column;gap:18px"></div>`;
+    host.querySelector("#ic-export").onclick = () => exportIconsAsFiles();
+    host.querySelector("#ic-view").onclick = () => viewIconsForSave();
     const groups = host.querySelector("#ic-groups");
     if (S().appData.customIcons == null) S().appData.customIcons = {};
 
@@ -310,6 +317,38 @@
       reader.readAsDataURL(f);
     };
     inp.click();
+  }
+
+  function exportIconsAsFiles() {
+    const icons = S().appData.customIcons || {};
+    const entries = Object.entries(icons);
+    if (!entries.length) { alert("No personalized icons to export yet."); return; }
+    entries.forEach(([key, url], i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = url; a.download = key + ".png";
+        document.body.appendChild(a); a.click(); a.remove();
+      }, i * 250);
+    });
+  }
+
+  function viewIconsForSave() {
+    const icons = S().appData.customIcons || {};
+    const entries = Object.entries(icons);
+    if (!entries.length) { alert("No personalized icons yet."); return; }
+    const overlay = el(`<div class="modal-mask" style="z-index:9999;overflow:auto;padding:20px">
+      <div style="background:var(--window-bg);color:var(--text);max-width:520px;margin:0 auto;padding:24px;border-radius:12px">
+        <h2 style="margin-top:0">Save these to your device</h2>
+        <p class="muted" style="margin-top:0">Long-press each image → <b>Save Image</b>. Then upload to <code>windows12/assets/</code> on GitHub with the filename shown.</p>
+        <div id="ic-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:14px"></div>
+        <div style="text-align:right;margin-top:18px"><button class="pill-btn" id="ic-close">Close</button></div>
+      </div></div>`);
+    const list = overlay.querySelector("#ic-list");
+    entries.forEach(([key, url]) => {
+      list.appendChild(el(`<div style="text-align:center"><img src="${url}" style="width:120px;height:120px;border-radius:8px;object-fit:cover;background:#0001"><div style="font-family:monospace;font-size:.8rem;margin-top:6px">${key}.png</div></div>`));
+    });
+    overlay.querySelector("#ic-close").onclick = () => overlay.remove();
+    document.getElementById("screen").appendChild(overlay);
   }
 
   // ---------- Factory reset (Settings + Terminal command) ----------
