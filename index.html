@@ -1,9 +1,43 @@
-<!doctype html>
-<html><head>
-<meta charset="utf-8">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Windows 12</title>
-<meta http-equiv="refresh" content="0; url=./windows12/">
-<link rel="canonical" href="./windows12/">
-</head><body>
-<p>Redirecting to <a href="./windows12/">Windows 12</a>...</p>
-</body></html>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Google+Sans:wght@400;500;700&display=swap">
+<script src="https://www.google.com/recaptcha/api.js?render=explicit" async defer></script>
+</head>
+<body>
+  <!-- Root host for everything -->
+  <div id="screen">
+    <!-- Boot / setup / desktop layers get injected here -->
+  </div>
+
+  <!-- Audio-less, pure visual. Hidden file input reused by media player -->
+  <input type="file" id="globalFileInput" style="display:none" />
+
+  <!-- Notification stack (bottom-right) -->
+  <div id="notifications"></div>
+
+  <script src="js/aiml.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/boot.js"></script>
+  <script src="js/setup.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/wm.js"></script>
+  <script src="js/browser.js"></script>
+  <script src="js/sites.js"></script>
+  <script src="js/apps.js"></script>
+  <script src="js/apps2.js"></script>
+  <script src="js/apps3.js"></script>
+  <script src="js/copilot.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
