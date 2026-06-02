@@ -250,9 +250,11 @@
       items.forEach((it) => {
         const row = document.createElement("div");
         row.style.cssText = "border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center";
+        const has = !!S().appData.customIcons[it.key];
         row.innerHTML = `<div>${Icon.md(it.key, it.name)}</div><div style="font-size:.8rem">${it.name}</div>
-          <div class="row" style="gap:4px"><button class="btn-text up" style="padding:4px 8px">Upload</button>${S().appData.customIcons[it.key] ? '<button class="btn-text rm" style="padding:4px 8px;color:#c0392b">Remove</button>' : ""}</div>`;
+          <div class="row" style="gap:4px;flex-wrap:wrap;justify-content:center"><button class="btn-text up" style="padding:4px 8px">Upload</button>${has ? '<button class="btn-text cp" style="padding:4px 8px">Copy</button><button class="btn-text rm" style="padding:4px 8px;color:#c0392b">Remove</button>' : ""}</div>`;
         row.querySelector(".up").onclick = () => pickIcon(it.key);
+        const cp = row.querySelector(".cp"); if (cp) cp.onclick = () => copyOneIcon(it.key);
         const rm = row.querySelector(".rm"); if (rm) rm.onclick = () => { delete S().appData.customIcons[it.key]; State.save(); renderIconCustomizer(host); };
         grid.appendChild(row);
       });
@@ -299,7 +301,7 @@
         // Downscale to 256x256 to keep localStorage small.
         const img = new Image();
         img.onload = () => {
-          const sz = 256;
+          const sz = 128;
           const c = document.createElement("canvas"); c.width = sz; c.height = sz;
           const ctx = c.getContext("2d");
           // cover-fit
@@ -307,7 +309,8 @@
           const w = img.width * sc, h = img.height * sc;
           ctx.drawImage(img, (sz - w) / 2, (sz - h) / 2, w, h);
           if (S().appData.customIcons == null) S().appData.customIcons = {};
-          S().appData.customIcons[key] = c.toDataURL("image/png");
+          // JPEG is much smaller than PNG for paste-to-Claude bridge. Quality 0.85 is plenty for 128px.
+          S().appData.customIcons[key] = c.toDataURL("image/jpeg", 0.85);
           try { State.save(); } catch (e) { alert("Storage full — try smaller/fewer images."); return; }
           // Re-render desktop + active settings panel
           if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
@@ -319,6 +322,27 @@
       reader.readAsDataURL(f);
     };
     inp.click();
+  }
+
+  function copyOneIcon(key) {
+    const url = (S().appData.customIcons || {})[key];
+    if (!url) return;
+    const payload = `WIN12_ICON ${key} ${url}`;
+    const showFallback = () => {
+      const overlay = el(`<div class="modal-mask" style="z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--window-bg);color:var(--text);max-width:520px;padding:24px;border-radius:12px">
+          <h2 style="margin-top:0">Copy and paste to Claude</h2>
+          <p>Tap inside, select all, copy, then paste into chat.</p>
+          <textarea readonly style="width:100%;height:120px;font-family:monospace;font-size:.7rem">${payload}</textarea>
+          <div style="text-align:right;margin-top:12px"><button class="pill-btn" id="cc">Close</button></div>
+        </div></div>`);
+      overlay.querySelector("#cc").onclick = () => overlay.remove();
+      document.getElementById("screen").appendChild(overlay);
+      const ta = overlay.querySelector("textarea"); ta.focus(); ta.select();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(payload).then(() => Notify.show({ icon: "", title: "Copied", body: key + " — paste it in Claude" })).catch(showFallback);
+    } else showFallback();
   }
 
   function copyIconsAsText() {
