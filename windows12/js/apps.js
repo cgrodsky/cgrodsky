@@ -230,13 +230,15 @@
     host.innerHTML = `<h2>Personalize icons</h2>
       <p class="muted">Upload an image to use as the icon. It's saved in this browser.</p>
       <div class="row" style="margin:10px 0 18px;gap:8px;flex-wrap:wrap">
-        <button class="pill-btn" id="ic-export">Download as files</button>
+        <button class="pill-btn" id="ic-copy">Copy icons as text (paste to Claude)</button>
+        <button class="btn-text" id="ic-export">Download as files</button>
         <button class="btn-text" id="ic-view">View &amp; long-press to save</button>
-        <span class="muted" style="font-size:.78rem">Use these to upload icons to GitHub's <code>windows12/assets/</code> folder so they're global.</span>
+        <p class="muted" style="font-size:.78rem;flex-basis:100%">Tap <b>Copy icons as text</b> and paste into your Claude chat — I'll commit the actual image files into the repo so they're global.</p>
       </div>
       <div id="ic-groups" style="display:flex;flex-direction:column;gap:18px"></div>`;
     host.querySelector("#ic-export").onclick = () => exportIconsAsFiles();
     host.querySelector("#ic-view").onclick = () => viewIconsForSave();
+    host.querySelector("#ic-copy").onclick = () => copyIconsAsText();
     const groups = host.querySelector("#ic-groups");
     if (S().appData.customIcons == null) S().appData.customIcons = {};
 
@@ -317,6 +319,28 @@
       reader.readAsDataURL(f);
     };
     inp.click();
+  }
+
+  function copyIconsAsText() {
+    const icons = S().appData.customIcons || {};
+    const entries = Object.entries(icons);
+    if (!entries.length) { alert("No personalized icons yet."); return; }
+    const payload = "WIN12_ICONS_BEGIN\n" + JSON.stringify(icons, null, 0) + "\nWIN12_ICONS_END";
+    const finish = (ok) => {
+      const overlay = el(`<div class="modal-mask" style="z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--window-bg);color:var(--text);max-width:520px;padding:24px;border-radius:12px">
+          <h2 style="margin-top:0">${ok ? "Copied!" : "Couldn't copy — copy manually"}</h2>
+          <p>${ok ? "Switch to your Claude chat and paste. I'll see the icons and commit them to the repo." : "Select the text below and copy it, then paste it into your Claude chat."}</p>
+          <textarea readonly style="width:100%;height:160px;font-family:monospace;font-size:.7rem">${payload}</textarea>
+          <div style="text-align:right;margin-top:12px"><button class="pill-btn" id="cc">Close</button></div>
+        </div></div>`);
+      overlay.querySelector("#cc").onclick = () => overlay.remove();
+      document.getElementById("screen").appendChild(overlay);
+      const ta = overlay.querySelector("textarea"); ta.focus(); ta.select();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(payload).then(() => finish(true)).catch(() => finish(false));
+    } else finish(false);
   }
 
   function exportIconsAsFiles() {
