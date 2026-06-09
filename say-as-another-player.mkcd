@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "cloudId": "pxt/minecraft",
+    "targetVersions": {
+      "target": "7.0.0"
+    },
+    "editor": "tsprj",
+    "name": "say-as-another-player"
+  },
+  "source": "{\"main.blocks\": \"<xml xmlns=\\\"https://developers.google.com/blockly/xml\\\"></xml>\", \"main.ts\": \"// Say something AS another player in Minecraft.\\n//\\n// Type \\\"speak\\\" in the chat to make the message below appear\\n// as if the player named in PLAYER_NAME sent it.\\n//\\n// Change PLAYER_NAME and MESSAGE to whatever you like.\\nlet PLAYER_NAME = \\\"Alex\\\"\\nlet MESSAGE = \\\"Hello, this is Alex speaking!\\\"\\n\\nplayer.onChat(\\\"speak\\\", function () {\\n    player.execute(`tellraw @a {\\\"rawtext\\\":[{\\\"text\\\":\\\"<${PLAYER_NAME}> ${MESSAGE}\\\"}]}`)\\n})\\n\", \"README.md\": \"# Say as another player\\n\\nType **speak** in the Minecraft chat. Everyone sees:\\n\\n`<Alex> Hello, this is Alex speaking!`\\n\\nIt looks like the player \\\"Alex\\\" sent the message, even though you did.\\n\\nEdit `PLAYER_NAME` and `MESSAGE` in the code to change who \\\"speaks\\\" and what they say.\\n\", \"pxt.json\": \"{\\n    \\\"name\\\": \\\"say-as-another-player\\\",\\n    \\\"description\\\": \\\"Make a chat message appear as if another player said it.\\\",\\n    \\\"dependencies\\\": {\\n        \\\"core\\\": \\\"*\\\",\\n        \\\"minecraft\\\": \\\"*\\\"\\n    },\\n    \\\"files\\\": [\\n        \\\"main.blocks\\\",\\n        \\\"main.ts\\\",\\n        \\\"README.md\\\"\\n    ],\\n    \\\"preferredEditor\\\": \\\"tsprj\\\"\\n}\"}"
+}
