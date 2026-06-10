@@ -32,6 +32,7 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/land:claim` | Claims the 16×16 chunk you're standing in. |
 | `/land:unclaim` | Removes your claim on the current chunk. |
 | `/land:info` | Shows who owns the current chunk. |
+| `/land:list` | Lists all the chunks you own. |
 
 **Rules:** anyone can claim, **except** within **300 blocks of spawn**, or on a
 chunk **another player already claimed**. Claimed chunks are protected from other
@@ -42,13 +43,15 @@ players breaking, placing, and opening blocks (chests, doors, buttons).
 |---|---|
 | `/money:bal` | Shows your balance. |
 | `/money:pay <player> <amount>` | Pays another player from your balance. |
+| `/money:top` | Leaderboard of the richest players. |
 
 - Everyone starts with **$1000**.
 - You earn money by completing in-game **achievements**, paid by rarity:
   common $50, uncommon $150, rare $300, epic $600, legendary $1500.
-- Built-in achievements: mine diamonds (rare), mine ancient debris (epic),
-  enter the Nether (uncommon), enter the End (rare), kill the Wither (epic),
-  kill the Ender Dragon (legendary).
+- Built-in achievements: mine emerald (uncommon), mine diamonds (rare),
+  mine ancient debris (epic), enter the Nether (uncommon), enter the End (rare),
+  kill the Elder Guardian (rare), kill the Wither (epic),
+  kill the Warden (legendary), kill the Ender Dragon (legendary).
 
 ## Daily Ender Dragon
 Every **24 real hours**, a fresh Ender Dragon is summoned in the End and a
