@@ -24,6 +24,8 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/a:vanish <player> <true\|false>` | Makes a player invisible, or visible again. |
 | `/a:breakblock <true\|false>` | Allows or prevents breaking blocks (whole world). |
 | `/a:setmoney <player> <amount>` | Sets a player's money balance. |
+| `/a:insee <player>` | Opens a menu of that player's inventory — take items, or put your held item in. |
+| `/a:bypassclaim` | Toggle: lets you ignore land-claim protection. |
 | `/a:debug` | Prints money, position, chunk, claim owner, PvP/break state, etc. |
 
 ## Land claims (everyone can use)
@@ -44,14 +46,25 @@ players breaking, placing, and opening blocks (chests, doors, buttons).
 | `/money:bal` | Shows your balance. |
 | `/money:pay <player> <amount>` | Pays another player from your balance. |
 | `/money:top` | Leaderboard of the richest players. |
+| `/money:shop` | Opens the item shop to spend money. |
 
 - Everyone starts with **$1000**.
-- You earn money by completing in-game **achievements**, paid by rarity:
-  common $50, uncommon $150, rare $300, epic $600, legendary $1500.
-- Built-in achievements: mine emerald (uncommon), mine diamonds (rare),
-  mine ancient debris (epic), enter the Nether (uncommon), enter the End (rare),
-  kill the Elder Guardian (rare), kill the Wither (epic),
-  kill the Warden (legendary), kill the Ender Dragon (legendary).
+- You earn money by completing in-game **achievements** (one-time each), paid by
+  rarity: common $50, uncommon $150, rare $300, epic $600, legendary $1500.
+
+### Achievements (the ones a script can actually detect)
+- **Mining:** Getting Wood (log), Chestful of Cobblestone (1,728 cobblestone),
+  Emerald!, Diamonds!, Hidden in the Depths (ancient debris).
+- **Building:** It's a Sign!, Pot Planter, Benchmarking (crafting table),
+  Hot Topic (furnace), The Lie (place a cake).
+- **Food:** Pork Chop, Rabbit Season, Iron Belly (rotten flesh), Delicious Fish,
+  Bake Bread.
+- **Exploring:** Into the Fire (Nether), The End? (End).
+- **Combat:** Monster Hunter, Archer (creeper w/ arrow), Overkill (9 hearts in one
+  hit), Ocean Conqueror (elder guardian), Withered (wither), Feeling Ill (evoker),
+  Kill the Beast! (ravager), Sculk Slayer (warden), Dragon Slayer (ender dragon),
+  It Spreads (kill near a sculk catalyst), Bullseye (target block).
+- **Gear:** Iron Man (full iron armor), Have a Shearful Day (shear a sheep).
 
 ## Daily Ender Dragon
 Every **24 real hours**, a fresh Ender Dragon is summoned in the End and a
@@ -61,7 +74,11 @@ message is announced to everyone.
 - Commands need a `:` prefix — Bedrock requires custom commands to be namespaced
   (`/a:` admin, `/land:` claims, `/money:` money). A bare `/sudo` isn't allowed in add-ons.
 - Real Xbox achievements can't be read by scripts, so the money rewards trigger
-  on detectable in-game milestones instead.
+  on detectable in-game milestones instead. Achievements with no script event
+  (taming/breeding animals, crafting tools, smelting, opening inventory, diving
+  timers, structure discovery, naming items, etc.) are not included.
+- `/a:insee` is a menu, not a live drag-and-drop inventory window (Bedrock
+  add-ons can't open another player's real inventory GUI).
 - `/a:pvp false` is a script workaround (undoes player-vs-player damage), since
   Bedrock has no native PvP toggle.
 - Not on the Minecraft Marketplace — that's an approved-partner-only process.
