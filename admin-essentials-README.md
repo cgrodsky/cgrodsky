@@ -22,7 +22,13 @@ Type these in chat:
 | `/admin:fakechat <player> <message>` | Chat looks like that player said it. |
 | `/admin:announce <message>` | Broadcasts a message to everyone. |
 | `/admin:heal <player>` | Fully heals and feeds the player. |
+| `/admin:warn <player> [reason]` | Flashes a red WARNING + sound to the player. |
+| `/admin:pvp <true\|false>` | Turns player-vs-player damage on or off. |
 | `/function help` | Shows the command list in chat. |
+
+> **PvP note:** Bedrock has no built-in PvP command, so `/admin:pvp false`
+> works by undoing player-vs-player damage via script. Knockback may still
+> show briefly, but health is restored.
 
 `<player>` is a selector: `@a` all, `@r` random, `@p` nearest, `@s` you,
 or `@a[name="Bob"]` for one player.
