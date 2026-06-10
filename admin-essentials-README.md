@@ -24,6 +24,8 @@ Type these in chat:
 | `/admin:heal <player>` | Fully heals and feeds the player. |
 | `/admin:warn <player> [reason]` | Flashes a red WARNING + sound to the player. |
 | `/admin:pvp <true\|false>` | Turns player-vs-player damage on or off. |
+| `/admin:vanish <player> <true\|false>` | Makes a player invisible, or visible again. |
+| `/admin:breakblock <true\|false>` | Allows or prevents players breaking blocks. |
 | `/function help` | Shows the command list in chat. |
 
 > **PvP note:** Bedrock has no built-in PvP command, so `/admin:pvp false`
