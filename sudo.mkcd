@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "cloudId": "pxt/minecraft",
+    "targetVersions": {
+      "target": "7.0.0"
+    },
+    "editor": "tsprj",
+    "name": "sudo"
+  },
+  "source": "{\"main.blocks\": \"<xml xmlns=\\\"https://developers.google.com/blockly/xml\\\"></xml>\", \"main.ts\": \"// SUDO for Minecraft\\n//\\n// Type \\\"sudo\\\" in the chat to force another player to run a command,\\n// as if THEY did it (not you).\\n//\\n// TARGET = the player you want to act as\\n// ACTION = the command they will run (leave OFF the leading slash)\\nlet TARGET = \\\"Alex\\\"\\nlet ACTION = \\\"say Hello everyone \\u2014 I am totally doing this myself.\\\"\\n\\nplayer.onChat(\\\"sudo\\\", function () {\\n    player.execute(`execute as @a[name=\\\"${TARGET}\\\"] at @s run ${ACTION}`)\\n})\\n\\n// Bonus: \\\"fakechat\\\" just makes text LOOK like the target said it,\\n// without actually running a command as them.\\nplayer.onChat(\\\"fakechat\\\", function () {\\n    player.execute(`tellraw @a {\\\"rawtext\\\":[{\\\"text\\\":\\\"<${TARGET}> ${ACTION}\\\"}]}`)\\n})\\n\", \"README.md\": \"# Sudo\\n\\nType **sudo** in chat: forces the player named in `TARGET` to run `ACTION`\\n(`execute as` \\u2014 the command really runs as them).\\n\\nType **fakechat** in chat: just makes a chat line *look* like `TARGET` said it.\\n\\nEdit `TARGET` and `ACTION` at the top of the code.\\n\", \"pxt.json\": \"{\\n    \\\"name\\\": \\\"sudo\\\",\\n    \\\"description\\\": \\\"Force another player to run a command, or fake their chat.\\\",\\n    \\\"dependencies\\\": {\\n        \\\"core\\\": \\\"*\\\",\\n        \\\"minecraft\\\": \\\"*\\\"\\n    },\\n    \\\"files\\\": [\\n        \\\"main.blocks\\\",\\n        \\\"main.ts\\\",\\n        \\\"README.md\\\"\\n    ],\\n    \\\"preferredEditor\\\": \\\"tsprj\\\"\\n}\"}"
+}
