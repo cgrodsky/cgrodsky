@@ -36,11 +36,22 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/land:unclaim` | Removes your claim on the current chunk. |
 | `/land:info` | Shows who owns the current chunk. |
 | `/land:list` | Lists all the chunks you own. |
+| `/land:trust <player>` | Lets a friend build on all your claimed land. |
+| `/land:untrust <player>` | Removes a friend's build access. |
+| `/land:trustlist` | Shows who you've trusted. |
 
 **Rules:** anyone can claim, **except** within **300 blocks of spawn**, or on a
 chunk **another player already claimed**. Each player can claim up to **10 chunks**
 (change with `/a:claimlimit`). Claimed chunks are protected from other players
-breaking, placing, and opening blocks (chests, doors, buttons).
+breaking, placing, and opening blocks (chests, doors, buttons) — unless they're
+**trusted** by the owner.
+
+## Teleport (everyone can use)
+| Command | What it does |
+|---|---|
+| `/tp:sethome` | Saves your current spot as home. |
+| `/tp:home` | Teleports you to your saved home. |
+| `/tp:spawn` | Teleports you to world spawn. |
 
 ## Money (everyone can use)
 | Command | What it does |
