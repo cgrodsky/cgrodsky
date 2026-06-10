@@ -1,6 +1,6 @@
 # Admin Essentials (Minecraft Bedrock Add-On)
 
-Admin command pack for **Minecraft Bedrock** (iPad, phone, Windows, console).
+Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Windows, console).
 
 ## Install
 1. Download **`admin-essentials.mcpack`**.
@@ -8,34 +8,38 @@ Admin command pack for **Minecraft Bedrock** (iPad, phone, Windows, console).
 
 ## Turn it on
 1. Create/Edit a world → **Behavior Packs** → activate **Admin Essentials**.
-2. Settings → turn **Cheats: ON**.
-3. (If the `/admin:` commands don't show) Settings → turn on the **Beta APIs**
-   experiment. Requires Minecraft **1.21.80+**.
-4. Play the world.
+2. Settings → **Cheats: ON**.
+3. (If the commands don't show) Settings → turn on the **Beta APIs** experiment.
+   Requires Minecraft **1.21.80+**.
 
-## Commands
-Type these in chat:
-
+## Admin commands (operators)
 | Command | What it does |
 |---|---|
-| `/admin:sudo <player> <message>` | That player actually says the message. |
-| `/admin:fakechat <player> <message>` | Chat looks like that player said it. |
-| `/admin:announce <message>` | Broadcasts a message to everyone. |
-| `/admin:heal <player>` | Fully heals and feeds the player. |
-| `/admin:warn <player> [reason]` | Flashes a red WARNING + sound to the player. |
-| `/admin:pvp <true\|false>` | Turns player-vs-player damage on or off. |
-| `/admin:vanish <player> <true\|false>` | Makes a player invisible, or visible again. |
-| `/admin:breakblock <true\|false>` | Allows or prevents players breaking blocks. |
-| `/function help` | Shows the command list in chat. |
+| `/a:sudo <player> <message>` | That player actually says the message. |
+| `/a:fakechat <player> <message>` | Chat looks like that player said it. |
+| `/a:announce <message>` | Broadcasts a message to everyone. |
+| `/a:heal <player>` | Fully heals and feeds the player. |
+| `/a:warn <player> [reason]` | Flashes a red WARNING + sound to the player. |
+| `/a:pvp <true\|false>` | Turns player-vs-player damage on or off. |
+| `/a:vanish <player> <true\|false>` | Makes a player invisible, or visible again. |
+| `/a:breakblock <true\|false>` | Allows or prevents breaking blocks (whole world). |
+| `/a:debug` | Prints position, chunk, claim owner, PvP/break state, etc. |
 
-> **PvP note:** Bedrock has no built-in PvP command, so `/admin:pvp false`
-> works by undoing player-vs-player damage via script. Knockback may still
-> show briefly, but health is restored.
+## Land claims (everyone can use)
+| Command | What it does |
+|---|---|
+| `/land:claim` | Claims the 16×16 chunk you're standing in. |
+| `/land:unclaim` | Removes your claim on the current chunk. |
+| `/land:info` | Shows who owns the current chunk. |
 
-`<player>` is a selector: `@a` all, `@r` random, `@p` nearest, `@s` you,
-or `@a[name="Bob"]` for one player.
+**Rules:** anyone can claim, **except** within **300 blocks of spawn**, or on a
+chunk **another player already claimed**. Claimed chunks are protected from other
+players breaking, placing, and opening blocks (chests, doors, buttons).
 
-## Note on the Marketplace
-This is a personal add-on shared as a `.mcpack`. It is **not** on the official
-Minecraft Marketplace — Marketplace content must come from approved Microsoft
-Marketplace Partners and pass a content-review process.
+## Notes
+- Commands need a `:` prefix — Bedrock requires custom commands to be namespaced
+  (`/a:` for admin, `/land:` for claims). A bare `/sudo` isn't allowed in add-ons.
+- `/a:pvp false` is a script workaround (undoes player-vs-player damage), since
+  Bedrock has no native PvP toggle.
+- Not on the Minecraft Marketplace — that's an approved-partner-only process.
+  Share the `.mcpack` file directly.
