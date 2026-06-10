@@ -26,6 +26,7 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/a:setmoney <player> <amount>` | Sets a player's money balance. |
 | `/a:insee <player>` | Opens a menu of that player's inventory — take items, or put your held item in. |
 | `/a:bypassclaim` | Toggle: lets you ignore land-claim protection. |
+| `/a:claimlimit <amount>` | Sets how many chunks each player may claim (default 10). |
 | `/a:debug` | Prints money, position, chunk, claim owner, PvP/break state, etc. |
 
 ## Land claims (everyone can use)
@@ -37,8 +38,9 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/land:list` | Lists all the chunks you own. |
 
 **Rules:** anyone can claim, **except** within **300 blocks of spawn**, or on a
-chunk **another player already claimed**. Claimed chunks are protected from other
-players breaking, placing, and opening blocks (chests, doors, buttons).
+chunk **another player already claimed**. Each player can claim up to **10 chunks**
+(change with `/a:claimlimit`). Claimed chunks are protected from other players
+breaking, placing, and opening blocks (chests, doors, buttons).
 
 ## Money (everyone can use)
 | Command | What it does |
@@ -47,8 +49,10 @@ players breaking, placing, and opening blocks (chests, doors, buttons).
 | `/money:pay <player> <amount>` | Pays another player from your balance. |
 | `/money:top` | Leaderboard of the richest players. |
 | `/money:shop` | Opens the item shop to spend money. |
+| `/money:sell` | Sells the item you're holding (half its shop price). |
 
 - Everyone starts with **$1000**.
+- **Daily login bonus:** +$250 the first time you join each 24 hours.
 - You earn money by completing in-game **achievements** (one-time each), paid by
   rarity: common $50, uncommon $150, rare $300, epic $600, legendary $1500.
 
