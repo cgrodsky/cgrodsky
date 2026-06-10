@@ -23,7 +23,8 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 | `/a:pvp <true\|false>` | Turns player-vs-player damage on or off. |
 | `/a:vanish <player> <true\|false>` | Makes a player invisible, or visible again. |
 | `/a:breakblock <true\|false>` | Allows or prevents breaking blocks (whole world). |
-| `/a:debug` | Prints position, chunk, claim owner, PvP/break state, etc. |
+| `/a:setmoney <player> <amount>` | Sets a player's money balance. |
+| `/a:debug` | Prints money, position, chunk, claim owner, PvP/break state, etc. |
 
 ## Land claims (everyone can use)
 | Command | What it does |
@@ -36,9 +37,28 @@ Admin commands + a land-claim system for **Minecraft Bedrock** (iPad, phone, Win
 chunk **another player already claimed**. Claimed chunks are protected from other
 players breaking, placing, and opening blocks (chests, doors, buttons).
 
+## Money (everyone can use)
+| Command | What it does |
+|---|---|
+| `/money:bal` | Shows your balance. |
+| `/money:pay <player> <amount>` | Pays another player from your balance. |
+
+- Everyone starts with **$1000**.
+- You earn money by completing in-game **achievements**, paid by rarity:
+  common $50, uncommon $150, rare $300, epic $600, legendary $1500.
+- Built-in achievements: mine diamonds (rare), mine ancient debris (epic),
+  enter the Nether (uncommon), enter the End (rare), kill the Wither (epic),
+  kill the Ender Dragon (legendary).
+
+## Daily Ender Dragon
+Every **24 real hours**, a fresh Ender Dragon is summoned in the End and a
+message is announced to everyone.
+
 ## Notes
 - Commands need a `:` prefix — Bedrock requires custom commands to be namespaced
-  (`/a:` for admin, `/land:` for claims). A bare `/sudo` isn't allowed in add-ons.
+  (`/a:` admin, `/land:` claims, `/money:` money). A bare `/sudo` isn't allowed in add-ons.
+- Real Xbox achievements can't be read by scripts, so the money rewards trigger
+  on detectable in-game milestones instead.
 - `/a:pvp false` is a script workaround (undoes player-vs-player damage), since
   Bedrock has no native PvP toggle.
 - Not on the Minecraft Marketplace — that's an approved-partner-only process.
