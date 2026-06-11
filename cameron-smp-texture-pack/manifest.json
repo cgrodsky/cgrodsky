@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Cameron SMP",
+    "description": "Replaces the Minecraft title-screen logo with the Cameron SMP creeper banner.",
+    "uuid": "a86e0e53-5a88-4e84-b0f8-ac610a81b4e4",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "description": "Cameron SMP title logo",
+      "uuid": "6524e0a8-ee1b-4dc0-8ccc-6e03a758bde5",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}
