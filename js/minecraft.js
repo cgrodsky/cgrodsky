@@ -1,5 +1,7 @@
-/* A small 2D Minecraft-style sandbox app: title menu, pixelated Options toggles,
-   and a mine/build world with gravity, a hotbar, and a follow camera. */
+/* A 2D Minecraft-style sandbox: seeded worlds, progressive block breaking with
+   per-block hardness, a survival inventory (mine to collect, place from stock),
+   health with fall/lava/drowning damage, ores, caves, water, and texture support.
+   Block textures load from assets/mc_<tex>.png (fallback to a flat color). */
 (function () {
   "use strict";
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
@@ -7,25 +9,67 @@
   const cw = (opts) => window.WM.createWindow(opts);
 
   const TILE = 28;
-  // block id -> {name, color, solid}
-  const BLOCKS = [
-    { id: 0, name: "Air", color: null, solid: false },
-    { id: 1, name: "Grass", color: "#5fa83b", top: "#7ec850", solid: true },
-    { id: 2, name: "Dirt", color: "#8a5a2b", solid: true },
-    { id: 3, name: "Stone", color: "#8c8c8c", solid: true },
-    { id: 4, name: "Wood", color: "#6b4a25", solid: true },
-    { id: 5, name: "Leaves", color: "#3e9b3e", solid: true },
-    { id: 6, name: "Sand", color: "#e3d59b", solid: true },
-    { id: 7, name: "Planks", color: "#b08243", solid: true },
-    { id: 8, name: "Glass", color: "#bfe8f5", solid: true, alpha: 0.45 },
-    { id: 9, name: "Brick", color: "#9e4636", solid: true },
-  ];
+  const SEA = 0.55; // sea level as fraction of world height
+
+  // id: {name, color, top, solid, hardness(sec), drop, tex, alpha, liquid, danger}
+  const BLOCKS = {
+    0:  { name: "Air", solid: false },
+    1:  { name: "Grass", color: "#5fa83b", top: "#7ec850", solid: true, hardness: 0.6, drop: 2, tex: "grass" },
+    2:  { name: "Dirt", color: "#8a5a2b", solid: true, hardness: 0.5, drop: 2, tex: "dirt" },
+    3:  { name: "Stone", color: "#8c8c8c", solid: true, hardness: 1.5, drop: 17, tex: "stone" },
+    4:  { name: "Log", color: "#6b4a25", solid: true, hardness: 2, drop: 4, tex: "log" },
+    5:  { name: "Leaves", color: "#3e9b3e", solid: true, hardness: 0.2, drop: 5, tex: "leaves", alpha: 0.95 },
+    6:  { name: "Sand", color: "#e3d59b", solid: true, hardness: 0.5, drop: 6, tex: "sand" },
+    7:  { name: "Planks", color: "#b08243", solid: true, hardness: 2, drop: 7, tex: "planks" },
+    8:  { name: "Glass", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 8, tex: "glass", alpha: 0.45 },
+    9:  { name: "Brick", color: "#9e4636", solid: true, hardness: 2, drop: 9, tex: "brick" },
+    10: { name: "Water", color: "#3a6ff0", solid: false, liquid: true, alpha: 0.55, tex: "water" },
+    11: { name: "Lava", color: "#e8631b", solid: false, liquid: true, alpha: 0.85, danger: true, tex: "lava" },
+    12: { name: "Coal Ore", color: "#5a5a5a", solid: true, hardness: 2.5, drop: 12, tex: "coal_ore" },
+    13: { name: "Iron Ore", color: "#caa472", solid: true, hardness: 3, drop: 13, tex: "iron_ore" },
+    14: { name: "Gold Ore", color: "#e6c34a", solid: true, hardness: 3, drop: 14, tex: "gold_ore" },
+    15: { name: "Diamond Ore", color: "#4fe0d6", solid: true, hardness: 4, drop: 15, tex: "diamond_ore" },
+    16: { name: "Bedrock", color: "#33333a", solid: true, hardness: Infinity, drop: 0, tex: "bedrock" },
+    17: { name: "Cobblestone", color: "#7d7d7d", solid: true, hardness: 1.8, drop: 17, tex: "cobblestone" },
+  };
+
+  // ---- textures ----
+  const TEX = {};
+  function loadTex(key) {
+    if (!key || TEX[key]) return;
+    const img = new Image();
+    const rec = { img, ok: false };
+    img.onload = () => { rec.ok = true; };
+    img.src = "assets/mc_" + key + ".png";
+    TEX[key] = rec;
+  }
+  Object.values(BLOCKS).forEach((b) => loadTex(b.tex));
+
+  // ---- seeded RNG ----
+  function hashSeed(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // deterministic per-cell value from seed
+  function cell(seed, x, y) {
+    let h = seed ^ Math.imul(x, 374761393) ^ Math.imul(y, 668265263);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
 
   AppRegistry.minecraft = function () {
-    const ref = cw({ title: "Mincraft", icon: Icon.mini("minecraft", "Mincraft"), width: 860, height: 600, appId: "minecraft" });
-    const body = ref.body;
+    const ref = cw({ title: "Mincraft", icon: Icon.mini("minecraft", "Mincraft"), width: 880, height: 620, appId: "minecraft" });
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
-    menu(body, ref);
+    menu(ref.body, ref);
   };
 
   function menu(body, ref) {
@@ -48,7 +92,7 @@
       <div class="mc-version">Windows 12 Edition</div>
     </div>`;
     const act = {
-      play: () => game(body, ref),
+      play: () => createWorld(body, ref),
       opts: () => options(body, ref),
       quit: () => ref.close(),
       multi: () => Notify.show({ icon: "", title: "Multiplayer", body: "No servers reachable in the simulation." }),
@@ -58,10 +102,32 @@
     body.querySelectorAll(".mc-button").forEach((b) => b.onclick = () => (act[b.dataset.act] || (() => {}))());
   }
 
+  function createWorld(body, ref) {
+    body.innerHTML = `<div class="mc-root mc-optscreen">
+      <div class="mc-title">Create New World</div>
+      <div class="mc-opts">
+        <div class="mc-opt-row"><span>World Seed</span><input id="seed" class="mc-seed" placeholder="leave blank for random"></div>
+        <div class="mc-opt-row"><span>Mode</span><span id="mode" style="cursor:pointer">Survival</span></div>
+      </div>
+      <div class="row" style="gap:10px;margin-top:18px">
+        <button class="mc-btn" id="create">Create New World</button>
+        <button class="mc-btn" id="back">Cancel</button>
+      </div>
+    </div>`;
+    let creative = false;
+    body.querySelector("#mode").onclick = (e) => { creative = !creative; e.target.textContent = creative ? "Creative" : "Survival"; };
+    body.querySelector("#back").onclick = () => menu(body, ref);
+    body.querySelector("#create").onclick = () => {
+      let seedStr = body.querySelector("#seed").value.trim();
+      if (!seedStr) seedStr = String(Math.floor(Math.random() * 1e9));
+      game(body, ref, seedStr, creative);
+    };
+  }
+
   function options(body, ref) {
     const cfg = S().appData.minecraft;
     body.innerHTML = `<div class="mc-root mc-optscreen">
-      <div class="mc-title" style="font-size:1.6rem">Options</div>
+      <div class="mc-title">Options</div>
       <div class="mc-opts">
         <div class="mc-opt-row"><span>Sound</span><label class="switch"><input class="toggle" type="checkbox" id="o-sound"><span class="slider"></span></label></div>
         <div class="mc-opt-row"><span>Fullscreen</span><label class="switch"><input class="toggle" type="checkbox" id="o-fs"><span class="slider"></span></label></div>
@@ -82,168 +148,288 @@
     body.querySelector("#back").onclick = () => menu(body, ref);
   }
 
-  function game(body, ref) {
+  function game(body, ref, seedStr, creative) {
     const cfg = S().appData.minecraft;
+    const W = 160, H = 64, seaY = Math.floor(H * SEA);
+    const seed = hashSeed(seedStr);
+    const world = genWorld(W, H, seed, seaY);
+
     body.innerHTML = `<div class="mc-root mc-game">
       <canvas class="mc-canvas"></canvas>
-      <div class="mc-hud">
-        <div class="mc-hotbar"></div>
-      </div>
-      <div class="mc-help">WASD / arrows move &middot; W or Space jump &middot; click mine &middot; right-click place &middot; 1-9 pick block &middot; Esc menu</div>
+      <div class="mc-hud"><div class="mc-hotbar"></div></div>
+      <div class="mc-help">WASD/arrows move &middot; W/Space jump &middot; hold-click mine &middot; right-click place &middot; 1-9 select &middot; Esc menu &middot; seed: ${seedStr}</div>
       <div class="mc-fps" style="display:${cfg.showFps ? "block" : "none"}">0 fps</div>
+      <div class="mc-death" style="display:none"><div class="mc-death-card"><h1>You Died!</h1><p id="deathmsg"></p><button class="mc-btn" id="respawn">Respawn</button><button class="mc-btn" id="toMenu">Title screen</button></div></div>
     </div>`;
     const canvas = body.querySelector(".mc-canvas");
     const ctx = canvas.getContext("2d");
-    const W = 100, H = 48; // world size in tiles
-    const world = genWorld(W, H);
+    const hbEl = body.querySelector(".mc-hotbar");
+    const fpsEl = body.querySelector(".mc-fps");
+    const deathEl = body.querySelector(".mc-death");
 
-    // hotbar
-    const hotbar = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    // inventory: blockId -> count ; hotbar: ordered list of blockIds
+    const inv = {};
+    let hotbar = [];
     let selected = 0;
-    const hb = body.querySelector(".mc-hotbar");
+    if (creative) {
+      hotbar = [1, 2, 3, 7, 4, 8, 9, 6, 17];
+      hotbar.forEach((b) => inv[b] = Infinity);
+    }
+    function addItem(id, n) {
+      if (!id) return;
+      inv[id] = (inv[id] || 0) + n;
+      if (!hotbar.includes(id) && hotbar.length < 9) hotbar.push(id);
+      drawHotbar();
+    }
     function drawHotbar() {
-      hb.innerHTML = "";
-      hotbar.forEach((bid, i) => {
-        const b = BLOCKS[bid];
-        const slot = el(`<div class="mc-slot ${i === selected ? "sel" : ""}"><span class="mc-slot-sw" style="background:${b.color}"></span><span class="mc-slot-n">${i + 1}</span></div>`);
+      hbEl.innerHTML = "";
+      for (let i = 0; i < 9; i++) {
+        const id = hotbar[i];
+        const b = id ? BLOCKS[id] : null;
+        const cnt = id ? inv[id] : 0;
+        const slot = el(`<div class="mc-slot ${i === selected ? "sel" : ""}">` +
+          (b ? `<span class="mc-slot-sw" style="background:${b.color}"></span>` : "") +
+          (b && cnt !== Infinity ? `<span class="mc-slot-c">${cnt}</span>` : "") +
+          `<span class="mc-slot-n">${i + 1}</span></div>`);
         slot.onclick = () => { selected = i; drawHotbar(); };
-        hb.appendChild(slot);
-      });
+        hbEl.appendChild(slot);
+      }
     }
     drawHotbar();
 
     // player
-    const player = { x: (W / 2) * TILE, y: 4 * TILE, w: TILE * 0.8, h: TILE * 1.7, vx: 0, vy: 0, onGround: false };
+    const spawnX = Math.floor(W / 2);
+    const player = { x: spawnX * TILE, y: 0, w: TILE * 0.8, h: TILE * 1.7, vx: 0, vy: 0, onGround: false,
+      hp: 20, maxHp: 20, air: 300, maxAir: 300, dead: false, fallStart: null, hurtCd: 0 };
+    respawnPlayer();
+    function respawnPlayer() {
+      // drop player at surface above spawn column
+      let ty = 0; while (ty < H && !solid(spawnX, ty) && !BLOCKS[world[ty][spawnX]].liquid) ty++;
+      player.x = spawnX * TILE + 2; player.y = (ty - 2) * TILE;
+      player.vx = player.vy = 0; player.hp = player.maxHp; player.air = player.maxAir; player.dead = false; player.fallStart = null;
+      deathEl.style.display = "none";
+    }
+
     const keys = {};
     const cam = { x: 0, y: 0 };
-
-    function solidAt(tx, ty) {
+    function solid(tx, ty) {
       if (tx < 0 || tx >= W || ty < 0 || ty >= H) return false;
-      const b = BLOCKS[world[ty][tx]];
-      return b && b.solid;
+      const b = BLOCKS[world[ty][tx]]; return b && b.solid;
     }
+    function blockAt(tx, ty) { return (tx < 0 || tx >= W || ty < 0 || ty >= H) ? 0 : world[ty][tx]; }
 
-    function resize() {
-      const r = canvas.getBoundingClientRect();
-      canvas.width = r.width; canvas.height = r.height;
-    }
+    function resize() { const r = canvas.getBoundingClientRect(); canvas.width = r.width; canvas.height = r.height; }
 
-    // input
     const onKey = (e) => {
+      const k = e.key.toLowerCase();
       if (e.type === "keydown") {
-        keys[e.key.toLowerCase()] = true;
+        keys[k] = true;
         if (e.key === "Escape") { cleanup(); menu(body, ref); }
         if (/^[1-9]$/.test(e.key)) { selected = +e.key - 1; drawHotbar(); }
-        if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
-      } else keys[e.key.toLowerCase()] = false;
+        if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) e.preventDefault();
+      } else keys[k] = false;
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("keyup", onKey);
 
-    function worldFromMouse(e) {
-      const r = canvas.getBoundingClientRect();
-      const mx = e.clientX - r.left + cam.x, my = e.clientY - r.top + cam.y;
-      return { tx: Math.floor(mx / TILE), ty: Math.floor(my / TILE) };
+    // mining state
+    let mining = null; // {tx,ty,progress}
+    let mouseBtn = -1, mouse = { x: 0, y: 0 };
+    function mouseTile() {
+      return { tx: Math.floor((mouse.x + cam.x) / TILE), ty: Math.floor((mouse.y + cam.y) / TILE) };
     }
     function inReach(tx, ty) {
       const px = (player.x + player.w / 2) / TILE, py = (player.y + player.h / 2) / TILE;
       return Math.hypot(tx + 0.5 - px, ty + 0.5 - py) < 6;
     }
-    canvas.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      const { tx, ty } = worldFromMouse(e);
-      if (tx < 0 || tx >= W || ty < 0 || ty >= H || !inReach(tx, ty)) return;
-      if (e.button === 2) { // place
-        if (world[ty][tx] === 0) world[ty][tx] = hotbar[selected];
-      } else { // mine
-        world[ty][tx] = 0;
-      }
-    });
+    canvas.addEventListener("mousemove", (e) => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    canvas.addEventListener("mousedown", (e) => {
+      e.preventDefault(); mouseBtn = e.button;
+      if (e.button === 2) placeBlock();
+    });
+    window.addEventListener("mouseup", () => { mouseBtn = -1; mining = null; });
 
-    let raf, last = 0, fpsT = 0, frames = 0;
-    const fpsEl = body.querySelector(".mc-fps");
+    function placeBlock() {
+      if (player.dead) return;
+      const { tx, ty } = mouseTile();
+      if (!inReach(tx, ty) || blockAt(tx, ty) !== 0) return;
+      const id = hotbar[selected]; if (!id || !(inv[id] > 0)) return;
+      // don't place inside the player
+      const bx = tx * TILE, by = ty * TILE;
+      if (player.x < bx + TILE && player.x + player.w > bx && player.y < by + TILE && player.y + player.h > by) return;
+      world[ty][tx] = id;
+      if (inv[id] !== Infinity) { inv[id]--; if (inv[id] <= 0 && !creative) { /* keep slot */ } }
+      drawHotbar();
+    }
+
+    function updateMining(dt) {
+      if (mouseBtn !== 0 || player.dead) { mining = null; return; }
+      const { tx, ty } = mouseTile();
+      const id = blockAt(tx, ty);
+      const b = BLOCKS[id];
+      if (!id || !b || !inReach(tx, ty) || b.hardness === Infinity || b.liquid) { mining = null; return; }
+      if (!mining || mining.tx !== tx || mining.ty !== ty) mining = { tx, ty, progress: 0 };
+      const hard = creative ? 0.05 : (b.hardness || 0.5);
+      mining.progress += (dt / 1000) / hard;
+      if (mining.progress >= 1) {
+        world[ty][tx] = 0;
+        if (b.drop) addItem(b.drop, 1);
+        mining = null;
+      }
+    }
+
+    function hurt(amount, msg) {
+      if (creative || player.dead || player.hurtCd > 0) return;
+      player.hp -= amount; player.hurtCd = 0.5;
+      if (player.hp <= 0) { player.hp = 0; die(msg || "You died."); }
+    }
+    function die(msg) {
+      player.dead = true;
+      body.querySelector("#deathmsg").textContent = msg;
+      deathEl.style.display = "flex";
+    }
+    body.querySelector("#respawn").onclick = respawnPlayer;
+    body.querySelector("#toMenu").onclick = () => { cleanup(); menu(body, ref); };
 
     function step(dt) {
-      const speed = 3.4, grav = 0.6, jump = -10.5;
+      if (player.dead) return;
+      player.hurtCd = Math.max(0, player.hurtCd - dt / 1000);
+      const inLiquid = bodyInLiquid();
+      const speed = 3.2, grav = inLiquid ? 0.18 : 0.6, jump = inLiquid ? -4 : -10.5;
       player.vx = 0;
       if (keys["a"] || keys["arrowleft"]) player.vx = -speed;
       if (keys["d"] || keys["arrowright"]) player.vx = speed;
-      if ((keys["w"] || keys["arrowup"] || keys[" "]) && player.onGround) { player.vy = jump; player.onGround = false; }
-      player.vy = Math.min(player.vy + grav, 14);
+      const wantJump = keys["w"] || keys["arrowup"] || keys[" "];
+      if (wantJump && (player.onGround || inLiquid)) { player.vy = jump; player.onGround = false; }
+      player.vy = Math.min(player.vy + grav, inLiquid ? 3 : 14);
 
-      moveAxis("x");
-      moveAxis("y");
+      // fall damage tracking
+      if (player.onGround) player.fallStart = null;
+      else if (player.fallStart === null) player.fallStart = player.y;
+
+      const wasGround = player.onGround;
+      moveAxis("x"); moveAxis("y");
+
+      if (!wasGround && player.onGround && player.fallStart !== null && !inLiquid) {
+        const fellTiles = (player.y - player.fallStart) / TILE;
+        if (fellTiles > 3.5) hurt(Math.floor(fellTiles - 3), "You fell from a high place.");
+        player.fallStart = null;
+      }
+
+      // hazards
+      const feet = { tx: Math.floor((player.x + player.w / 2) / TILE), ty: Math.floor((player.y + player.h - 2) / TILE) };
+      if (BLOCKS[blockAt(feet.tx, feet.ty)] && BLOCKS[blockAt(feet.tx, feet.ty)].danger) hurt(3, "You tried to swim in lava.");
+      // drowning
+      const head = { tx: Math.floor((player.x + player.w / 2) / TILE), ty: Math.floor((player.y + 4) / TILE) };
+      if (blockAt(head.tx, head.ty) === 10) {
+        player.air -= dt / 1000 * 60;
+        if (player.air <= 0) { player.air = 0; hurt(2, "You drowned."); }
+      } else player.air = Math.min(player.maxAir, player.air + dt / 1000 * 120);
+
+      if (player.y > H * TILE + 200) die("You fell out of the world.");
 
       function moveAxis(axis) {
         if (axis === "x") player.x += player.vx; else player.y += player.vy;
         const left = Math.floor(player.x / TILE), right = Math.floor((player.x + player.w) / TILE);
         const top = Math.floor(player.y / TILE), bot = Math.floor((player.y + player.h) / TILE);
-        for (let ty = top; ty <= bot; ty++) {
-          for (let tx = left; tx <= right; tx++) {
-            if (!solidAt(tx, ty)) continue;
-            const bx = tx * TILE, by = ty * TILE;
-            if (player.x < bx + TILE && player.x + player.w > bx && player.y < by + TILE && player.y + player.h > by) {
-              if (axis === "x") {
-                if (player.vx > 0) player.x = bx - player.w; else if (player.vx < 0) player.x = bx + TILE;
-                player.vx = 0;
-              } else {
-                if (player.vy > 0) { player.y = by - player.h; player.onGround = true; } else if (player.vy < 0) player.y = by + TILE;
-                player.vy = 0;
-              }
-            }
+        for (let ty = top; ty <= bot; ty++) for (let tx = left; tx <= right; tx++) {
+          if (!solid(tx, ty)) continue;
+          const bx = tx * TILE, by = ty * TILE;
+          if (player.x < bx + TILE && player.x + player.w > bx && player.y < by + TILE && player.y + player.h > by) {
+            if (axis === "x") { if (player.vx > 0) player.x = bx - player.w; else if (player.vx < 0) player.x = bx + TILE; player.vx = 0; }
+            else { if (player.vy > 0) { player.y = by - player.h; player.onGround = true; } else if (player.vy < 0) player.y = by + TILE; player.vy = 0; }
           }
         }
       }
-      // bounds
       player.x = Math.max(0, Math.min(W * TILE - player.w, player.x));
-      if (player.y > H * TILE) { player.y = 0; player.vy = 0; }
+    }
+    function bodyInLiquid() {
+      const tx = Math.floor((player.x + player.w / 2) / TILE), ty = Math.floor((player.y + player.h / 2) / TILE);
+      return BLOCKS[blockAt(tx, ty)] && BLOCKS[blockAt(tx, ty)].liquid;
+    }
+
+    function drawBlock(id, sx, sy) {
+      const b = BLOCKS[id]; if (!b || id === 0) return;
+      const t = TEX[b.tex];
+      ctx.globalAlpha = b.alpha || 1;
+      if (t && t.ok) ctx.drawImage(t.img, sx, sy, TILE, TILE);
+      else { ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE); if (b.top) { ctx.fillStyle = b.top; ctx.fillRect(sx, sy, TILE, 5); } }
+      ctx.globalAlpha = 1;
+      if (b.solid) { ctx.strokeStyle = "rgba(0,0,0,0.08)"; ctx.strokeRect(sx, sy, TILE, TILE); }
     }
 
     function render() {
-      cam.x = player.x + player.w / 2 - canvas.width / 2;
-      cam.y = player.y + player.h / 2 - canvas.height / 2;
-      cam.x = Math.max(0, Math.min(W * TILE - canvas.width, cam.x));
-      cam.y = Math.max(0, Math.min(H * TILE - canvas.height, cam.y));
-
-      // sky
+      cam.x = Math.max(0, Math.min(W * TILE - canvas.width, player.x + player.w / 2 - canvas.width / 2));
+      cam.y = Math.max(0, Math.min(H * TILE - canvas.height, player.y + player.h / 2 - canvas.height / 2));
       const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
       g.addColorStop(0, "#7ec0ee"); g.addColorStop(1, "#cfeaff");
       ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const x0 = Math.floor(cam.x / TILE), x1 = Math.ceil((cam.x + canvas.width) / TILE);
       const y0 = Math.floor(cam.y / TILE), y1 = Math.ceil((cam.y + canvas.height) / TILE);
-      for (let ty = y0; ty <= y1; ty++) {
-        for (let tx = x0; tx <= x1; tx++) {
-          if (tx < 0 || tx >= W || ty < 0 || ty >= H) continue;
-          const b = BLOCKS[world[ty][tx]];
-          if (!b || !b.color) continue;
-          const sx = tx * TILE - cam.x, sy = ty * TILE - cam.y;
-          ctx.globalAlpha = b.alpha || 1;
-          ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE);
-          if (b.top) { ctx.fillStyle = b.top; ctx.fillRect(sx, sy, TILE, 5); }
-          ctx.globalAlpha = 1;
-          ctx.strokeStyle = "rgba(0,0,0,0.08)"; ctx.strokeRect(sx, sy, TILE, TILE);
+      for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+        drawBlock(blockAt(tx, ty), tx * TILE - cam.x, ty * TILE - cam.y);
+      }
+      // mining cracks
+      if (mining) {
+        const sx = mining.tx * TILE - cam.x, sy = mining.ty * TILE - cam.y;
+        const stage = Math.min(9, Math.floor(mining.progress * 10));
+        ctx.strokeStyle = "rgba(0,0,0," + (0.25 + stage * 0.05) + ")"; ctx.lineWidth = 1;
+        for (let i = 0; i <= stage; i++) {
+          ctx.beginPath(); ctx.moveTo(sx + (i * 3) % TILE, sy); ctx.lineTo(sx, sy + (i * 5) % TILE); ctx.stroke();
         }
+        ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.strokeRect(sx, sy, TILE, TILE);
+      }
+      // targeted block highlight
+      const mt = mouseTile();
+      if (inReach(mt.tx, mt.ty) && blockAt(mt.tx, mt.ty) !== 0) {
+        ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
+        ctx.strokeRect(mt.tx * TILE - cam.x, mt.ty * TILE - cam.y, TILE, TILE);
       }
       // player
-      ctx.fillStyle = "#3a7bd5";
-      ctx.fillRect(player.x - cam.x, player.y - cam.y, player.w, player.h);
-      ctx.fillStyle = "#e0b487";
-      ctx.fillRect(player.x - cam.x, player.y - cam.y, player.w, player.w * 0.7);
+      ctx.fillStyle = "#3a7bd5"; ctx.fillRect(player.x - cam.x, player.y - cam.y, player.w, player.h);
+      ctx.fillStyle = "#e0b487"; ctx.fillRect(player.x - cam.x, player.y - cam.y, player.w, player.w * 0.7);
+
+      drawHud();
     }
 
-    function loop(ts) {
-      const dt = ts - last; last = ts;
-      step(dt);
-      render();
-      if (cfg.showFps) {
-        frames++; fpsT += dt;
-        if (fpsT >= 500) { fpsEl.textContent = Math.round(frames / (fpsT / 1000)) + " fps"; frames = 0; fpsT = 0; }
+    function drawHud() {
+      if (creative) return;
+      // hearts
+      const hearts = player.maxHp / 2;
+      for (let i = 0; i < hearts; i++) {
+        const hx = 10 + i * 20, hy = 10;
+        const filled = player.hp - i * 2;
+        ctx.fillStyle = "#3a0000"; heart(hx, hy);
+        if (filled >= 2) { ctx.fillStyle = "#ff3b3b"; heart(hx, hy); }
+        else if (filled === 1) { ctx.fillStyle = "#ff3b3b"; heart(hx, hy, true); }
       }
+      // air bubbles (only when low/underwater)
+      if (player.air < player.maxAir) {
+        const bubbles = Math.ceil(player.air / 30);
+        for (let i = 0; i < 10; i++) {
+          ctx.fillStyle = i < bubbles ? "#bfe8ff" : "rgba(255,255,255,0.15)";
+          ctx.beginPath(); ctx.arc(16 + i * 18, 34, 5, 0, 7); ctx.fill();
+        }
+      }
+      function heart(x, y, half) {
+        ctx.beginPath();
+        const w = half ? 8 : 16;
+        ctx.moveTo(x + 8, y + 14);
+        ctx.bezierCurveTo(x - 2, y + 5, x + 4, y - 2, x + 8, y + 4);
+        ctx.bezierCurveTo(x + 12, y - 2, x + 18, y + 5, x + 8, y + 14);
+        ctx.fill();
+      }
+    }
+
+    let raf, last = 0, fpsT = 0, frames = 0;
+    function loop(ts) {
+      const dt = Math.min(50, ts - last); last = ts;
+      step(dt); updateMining(dt); render();
+      if (cfg.showFps) { frames++; fpsT += dt; if (fpsT >= 500) { fpsEl.textContent = Math.round(frames / (fpsT / 1000)) + " fps"; frames = 0; fpsT = 0; } }
       raf = requestAnimationFrame(loop);
     }
-
     function cleanup() {
       cancelAnimationFrame(raf);
       document.removeEventListener("keydown", onKey);
@@ -252,27 +438,65 @@
     }
     window.addEventListener("resize", resize);
     body.closest(".win").addEventListener("DOMNodeRemoved", cleanup);
-
     resize();
     raf = requestAnimationFrame(loop);
   }
 
-  function genWorld(W, H) {
+  function genWorld(W, H, seed, seaY) {
     const world = Array.from({ length: H }, () => new Array(W).fill(0));
-    const base = Math.floor(H * 0.45);
+    const rng = mulberry32(seed);
+    // surface via layered sines with seed-derived phases
+    const p1 = rng() * 6.28, p2 = rng() * 6.28, p3 = rng() * 6.28;
+    const base = Math.floor(H * 0.42);
+    const surf = [];
     for (let x = 0; x < W; x++) {
-      const surf = base + Math.round(Math.sin(x * 0.25) * 3 + Math.sin(x * 0.07) * 5);
+      const h = base + Math.round(Math.sin(x * 0.18 + p1) * 4 + Math.sin(x * 0.05 + p2) * 6 + Math.sin(x * 0.5 + p3) * 1.5);
+      surf[x] = h;
+    }
+    for (let x = 0; x < W; x++) {
+      const s = surf[x];
+      const underwater = s > seaY;
       for (let y = 0; y < H; y++) {
-        if (y === surf) world[y][x] = 1;          // grass
-        else if (y > surf && y < surf + 4) world[y][x] = 2; // dirt
-        else if (y >= surf + 4) world[y][x] = 3;  // stone
+        if (y === H - 1) { world[y][x] = 16; continue; } // bedrock floor
+        if (y < s) {
+          if (y <= seaY && !underwater) {} // air
+          continue;
+        }
+        if (y === s) world[y][x] = underwater ? 6 : 1;             // sand or grass
+        else if (y < s + 4) world[y][x] = underwater ? 6 : 2;      // sand/dirt
+        else {
+          world[y][x] = 3; // stone
+          const r = cell(seed, x, y);
+          const depth = y - s;
+          if (depth > 6) {
+            if (r < 0.010 && y > H - 16) world[y][x] = 15;      // diamond (deep)
+            else if (r < 0.020) world[y][x] = 14;               // gold
+            else if (r < 0.045) world[y][x] = 13;               // iron
+            else if (r < 0.090) world[y][x] = 12;               // coal
+          }
+        }
       }
-      // occasional tree
-      if (x % 11 === 5) {
-        const ty = surf - 1;
-        for (let t = 0; t < 4; t++) world[ty - t][x] = 4; // trunk
+      // water fill in dips up to sea level
+      if (underwater) for (let y = seaY; y < s; y++) if (world[y][x] === 0) world[y][x] = 10;
+    }
+    // caves: carve where 3D-ish hash is high, leave lava pockets deep
+    for (let x = 1; x < W - 1; x++) for (let y = base; y < H - 2; y++) {
+      const n = cell(seed ^ 0x9e37, x, y) * 0.6 + cell(seed ^ 0x51ed, Math.floor(x / 2), Math.floor(y / 2)) * 0.4;
+      if (n > 0.78 && BLOCKS[world[y][x]].solid) {
+        world[y][x] = (y > H - 8 && cell(seed ^ 0xa1, x, y) > 0.7) ? 11 : 0; // lava deep, else cave
+      }
+    }
+    // trees on grass
+    const trng = mulberry32(seed ^ 0xBEEF);
+    for (let x = 2; x < W - 2; x++) {
+      const s = surf[x];
+      if (world[s][x] !== 1) continue;
+      if (trng() < 0.12) {
+        const top = s - 1;
+        const th = 3 + Math.floor(trng() * 2);
+        for (let t = 0; t < th; t++) if (top - t > 0) world[top - t][x] = 4;
         for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 0; dy++) {
-          const lx = x + dx, ly = ty - 4 + dy;
+          const lx = x + dx, ly = top - th + dy;
           if (lx >= 0 && lx < W && ly >= 0 && world[ly][lx] === 0) world[ly][lx] = 5;
         }
       }

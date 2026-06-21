@@ -482,6 +482,14 @@ input[type=range] { width: 100%; }
 .mc-slot.sel { border-color: #fff; }
 .mc-slot-sw { width: 26px; height: 26px; display: block; border: 1px solid rgba(0,0,0,0.3); }
 .mc-slot-n { position: absolute; top: 0; left: 2px; font-size: .6rem; color: #fff; text-shadow: 1px 1px 0 #000; }
+.mc-slot-c { position: absolute; bottom: 0; right: 3px; font-size: .72rem; color: #fff; text-shadow: 1px 1px 0 #000; }
+.mc-seed { background: #000; color: #fff; border: 2px solid #555; padding: 6px 10px; font-family: inherit; width: 220px; image-rendering: pixelated; }
+.mc-seed:focus { outline: none; border-color: #fff; }
+.mc-death { position: absolute; inset: 0; background: rgba(120,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.mc-death-card { text-align: center; color: #fff; text-shadow: 2px 2px #000; }
+.mc-death-card h1 { font-size: 2.4rem; margin: 0 0 10px; }
+.mc-death-card p { margin: 0 0 16px; }
+.mc-death-card .mc-btn { margin: 0 6px; }
 .mc-help { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; font-size: .72rem; text-align: center; pointer-events: none; }
 .mc-fps { position: absolute; top: 8px; left: 8px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; font-size: .72rem; border-radius: 4px; }
 
