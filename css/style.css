@@ -118,6 +118,7 @@ html, body {
 .duo-mc-opt { padding: 18px 14px; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 12px; background: #fff; color: #4b4b4b; font-weight: 700; cursor: pointer; transition: transform .08s, border-color .15s, background .15s; }
 .duo-mc-opt:hover { border-color: #84d8ff; }
 .duo-mc-opt.sel { border-color: #1cb0f6; background: #ddf4ff; color: #1899d6; }
+.duo-mc-opt:active { border-bottom-width: 2px; transform: translateY(2px); }
 .duo-pairs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .duo-col { display: flex; flex-direction: column; gap: 8px; }
 .duo-pair-btn { padding: 12px 10px; border: 2px solid #e5e5e5; border-bottom-width: 4px; border-radius: 12px; background: #fff; color: #4b4b4b; font-weight: 700; cursor: pointer; transition: transform .08s; }
@@ -125,9 +126,11 @@ html, body {
 .duo-pair-btn.sel { border-color: #1cb0f6; background: #ddf4ff; color: #1899d6; }
 .duo-pair-btn.done { border-color: #58cc02; background: #d7ffb8; color: #58a700; opacity: .55; }
 .duo-pair-btn.shake { animation: shake 0.3s; border-color: #ff4b4b; background: #ffdfe0; }
+.duo-pair-btn:active:not(:disabled) { border-bottom-width: 2px; transform: translateY(2px); }
 .duo-foot { padding: 16px 20px; border-top: 2px solid #f0f0f0; }
-.duo-check { width: 100%; padding: 14px; border: none; border-bottom: 4px solid #58a700; border-radius: 14px; background: #58cc02; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; transition: filter .12s; }
+.duo-check { width: 100%; padding: 14px; border: none; border-bottom: 4px solid #58a700; border-radius: 14px; background: #58cc02; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; transition: filter .12s, padding .05s, border-width .05s; }
 .duo-check:hover:not(:disabled) { filter: brightness(1.05); }
+.duo-check:active:not(:disabled) { border-bottom-width: 0; padding-top: 18px; }
 .duo-check:disabled { background: #e5e5e5; border-bottom-color: #c9c9c9; color: #afafaf; cursor: not-allowed; }
 .duo-banner { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 22px; display: flex; align-items: center; gap: 16px; font-weight: 800; animation: slideIn .25s ease; border-top: 4px solid; }
 .duo-banner.ok { background: #d7ffb8; color: #58a700; border-color: #58cc02; }
