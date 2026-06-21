@@ -111,6 +111,8 @@
     { id: "copilot", name: "Copilot" },
     { id: "settings", name: "Settings" },
     { id: "calculator", name: "Calculator" },
+    { id: "minecraft", name: "Mincraft" },
+    { id: "blockfinder", name: "Block Finder" },
   ];
 
   function renderDesktopIcons() {
