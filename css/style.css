@@ -399,6 +399,32 @@ input[type=range] { width: 100%; }
 .win-body { flex: 1; overflow: auto; position: relative; }
 .modal-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 700; }
 
+/* Microsoft sign-in form (Uiverse.io by csozidev, adapted) */
+.ms-login-bg { min-height: 100%; background: #f2f2f2; display: flex; align-items: center; justify-content: center; padding: 30px; }
+.form.ms-login {
+  background-color: #fff; width: 352px; box-sizing: content-box; padding: 44px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  font-family: "Segoe UI","Helvetica Neue","Roboto",sans-serif;
+}
+.ms-login .ms-brand { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600; color: #1b1b1b; margin-bottom: 18px; }
+.ms-login .ms-brand > span { line-height: 1; }
+.ms-login .ms-brand .ico-wrap { width: 24px; height: 24px; }
+.ms-login .ms-account { font-size: .9rem; color: #1b1b1b; margin-bottom: 8px; }
+.ms-login .title { color: #1b1b1b; font-size: 1.5rem; font-weight: 600; margin: 4px 0 12px; }
+.ms-login .email {
+  width: 100%; padding: 6px 10px 6px 0; border: 0; border-bottom: 1px solid rgba(0,0,0,0.8);
+  height: 36px; outline: none; background: transparent; color: #000; margin-bottom: 8px; font-size: 15px;
+}
+.ms-login .text { color: #1b1b1b; font-weight: 400; line-height: 1.25rem; margin-bottom: 16px; font-size: .8125rem; }
+.ms-login .text a { color: #0067B8; text-decoration: none; }
+.ms-login .error-msg { font-size: .8125rem; margin-bottom: 12px; }
+.ms-login .button_row { width: 100%; display: flex; justify-content: flex-end; gap: 4px; }
+.ms-login .button_row .button { width: 108px; height: 32px; box-sizing: content-box; padding: 4px 12px; border: none; font-size: 15px; }
+.ms-login .button_row .secondary_button { background-color: rgba(0,0,0,0.2); color: #000; cursor: pointer; }
+.ms-login .button_row .secondary_button:hover { background-color: rgba(0,0,0,0.3); }
+.ms-login .button_row .primary_button { background-color: #0067b8; color: #fff; cursor: pointer; }
+.ms-login .button_row .primary_button:hover { background-color: #005da6; }
+
 /* Browser home (Google-style) */
 .google-home { padding: 60px 20px 30px; min-height: 100%; display: flex; flex-direction: column; align-items: center; background: var(--bg); font-family: "Google Sans", "Open Sans", "Segoe UI", sans-serif; font-weight: 500; }
 .google-logo { font-family: "Google Sans", "Open Sans", "Segoe UI", sans-serif; font-weight: 700; font-size: 5.2rem; letter-spacing: -2px; line-height: 1; margin-bottom: 28px; user-select: none; }

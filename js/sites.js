@@ -216,16 +216,43 @@
   }
 
   function msPurchase(ctx, bd) {
-    const pw = prompt(`Enter your Microsoft account password to buy "${bd.name}" for $${bd.price.toFixed(2)}:`);
-    if (pw === null) return;
     const acct = S().account;
-    if (acct && acct.password && pw !== acct.password) { alert("Incorrect password."); return; }
-    if (S().bank.balance < bd.price) { alert("Insufficient funds in Forge Bank."); return; }
-    State.addTransaction({ vendor: "Microsoft", item: bd.name, amount: bd.price, refundable: true });
-    // grant a fresh, unused product key
-    const freshKey = State.VALID_KEYS.find((k) => !S().redeemedKeys.includes(k));
-    Notify.show({ icon: Icon.mini("microsoft", "Microsoft"), title: "Purchase complete", body: `${bd.name} — key: ${freshKey || "n/a"}`, onClick: () => Browser.openTo("bank.local") });
-    alert(`Thanks! Your Windows 12 product key:\n\n${freshKey || "All keys used"}\n\nApps: ${bd.apps.join(", ")}`);
+    const email = (acct && acct.email) || "you@outlook.com";
+    ctx.page.innerHTML = "";
+    const view = el(`<div class="ms-login-bg">
+      <div class="form ms-login">
+        <div class="ms-brand">${Icon.md("microsoft", "Microsoft")}<span>Microsoft</span></div>
+        <div class="ms-account">${email}</div>
+        <div class="title">Enter password</div>
+        <div class="text">Confirm your password to buy <b>${bd.name}</b> for <b>$${bd.price.toFixed(2)}</b>.</div>
+        <input type="password" class="email" placeholder="Password" autofocus>
+        <div class="error-msg" id="msErr"></div>
+        <div class="text"><a href="#" id="msForgot">Forgot password?</a></div>
+        <div class="button_row">
+          <button class="button secondary_button" id="msCancel">Cancel</button>
+          <button class="button primary_button" id="msSignin">Sign in</button>
+        </div>
+      </div>
+    </div>`);
+    ctx.page.appendChild(view);
+    const pwInput = view.querySelector("input");
+    const err = view.querySelector("#msErr");
+    pwInput.focus();
+    view.querySelector("#msForgot").onclick = (e) => { e.preventDefault(); err.textContent = "This is a simulation — any password works if you set one."; };
+    view.querySelector("#msCancel").onclick = () => microsoft(ctx);
+    const submit = () => {
+      const pw = pwInput.value;
+      if (acct && acct.password && pw !== acct.password) { err.textContent = "Your account or password is incorrect."; return; }
+      if (!pw) { err.textContent = "Please enter your password."; return; }
+      if (S().bank.balance < bd.price) { alert("Insufficient funds in Forge Bank."); microsoft(ctx); return; }
+      State.addTransaction({ vendor: "Microsoft", item: bd.name, amount: bd.price, refundable: true });
+      const freshKey = State.VALID_KEYS.find((k) => !S().redeemedKeys.includes(k));
+      Notify.show({ icon: Icon.mini("microsoft", "Microsoft"), title: "Purchase complete", body: `${bd.name} — key: ${freshKey || "n/a"}`, onClick: () => Browser.openTo("bank.local") });
+      alert(`Thanks! Your Windows 12 product key:\n\n${freshKey || "All keys used"}\n\nApps: ${bd.apps.join(", ")}`);
+      microsoft(ctx);
+    };
+    view.querySelector("#msSignin").onclick = submit;
+    pwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
   }
 
   // =================== YOUTUBE ===================
