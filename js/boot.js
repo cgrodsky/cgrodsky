@@ -139,12 +139,31 @@
     wrap.remove();
   }
 
+  // The very first thing every user sees — a safety notice. Must be acknowledged.
+  function safetyWarning(layer) {
+    return new Promise((resolve) => {
+      const card = el(`<div class="safety-notice">
+        <div class="safety-mark">!</div>
+        <h1>Before you start</h1>
+        <p>This is a <b>pretend computer</b> made for fun. It is <b>not real</b> and is <b>not affiliated with Microsoft</b>.</p>
+        <p class="safety-strong">Never type real passwords, real card numbers, or real personal information anywhere in here.</p>
+        <p>All money, accounts, and purchases are fake.</p>
+        <button class="safety-btn">I understand</button>
+      </div>`);
+      layer.appendChild(card);
+      card.querySelector(".safety-btn").onclick = () => { card.classList.add("fade-out"); setTimeout(() => { card.remove(); resolve(); }, 400); };
+    });
+  }
+
   async function run(done) {
     clearBoot();
     const layer = el(`<div class="boot-layer"></div>`);
     screen().appendChild(layer);
 
-    // Click anywhere to fast-forward the boot sequence (handy while testing).
+    // Safety notice is shown first and is NOT skippable.
+    await safetyWarning(layer);
+
+    // Click anywhere to fast-forward the rest of the boot sequence (handy while testing).
     const hint = el(`<div style="position:absolute;bottom:18px;width:100%;text-align:center;color:#555;font-size:.75rem">Click to skip</div>`);
     layer.appendChild(hint);
     skip = new Promise((res) => layer.addEventListener("click", () => res(), { once: true }));

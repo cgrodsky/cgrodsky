@@ -167,10 +167,12 @@
       dragging = false;
       if (x >= maxX() - 4) {
         if (S().bank.balance < total) { alert("Insufficient funds in Forge Bank."); thumb.style.left = "3px"; x = 0; return; }
-        items.forEach((it) => State.addTransaction({ vendor: "Amazon", item: it.name, amount: it.price, refundable: false }));
-        S().amazon.cart = []; State.save();
-        Notify.show({ icon: "", title: "Order placed", body: `${items.length} item(s) — $${total.toFixed(2)}`, onClick: () => Browser.openTo("bank.local") });
-        thanksPage(ctx, items, total);
+        Pay.ensureCard(() => {
+          items.forEach((it) => State.addTransaction({ vendor: "Amazon", item: it.name, amount: it.price, refundable: false }));
+          S().amazon.cart = []; State.save();
+          Notify.show({ icon: "", title: "Order placed", body: `${items.length} item(s) — $${total.toFixed(2)}`, onClick: () => Browser.openTo("bank.local") });
+          thanksPage(ctx, items, total);
+        });
       } else { thumb.style.left = "3px"; x = 0; }
     });
   }
@@ -245,11 +247,13 @@
       if (acct && acct.password && pw !== acct.password) { err.textContent = "Your account or password is incorrect."; return; }
       if (!pw) { err.textContent = "Please enter your password."; return; }
       if (S().bank.balance < bd.price) { alert("Insufficient funds in Forge Bank."); microsoft(ctx); return; }
-      State.addTransaction({ vendor: "Microsoft", item: bd.name, amount: bd.price, refundable: true });
-      const freshKey = State.VALID_KEYS.find((k) => !S().redeemedKeys.includes(k));
-      Notify.show({ icon: Icon.mini("microsoft", "Microsoft"), title: "Purchase complete", body: `${bd.name} — key: ${freshKey || "n/a"}`, onClick: () => Browser.openTo("bank.local") });
-      alert(`Thanks! Your Windows 12 product key:\n\n${freshKey || "All keys used"}\n\nApps: ${bd.apps.join(", ")}`);
-      microsoft(ctx);
+      Pay.ensureCard(() => {
+        State.addTransaction({ vendor: "Microsoft", item: bd.name, amount: bd.price, refundable: true });
+        const freshKey = State.VALID_KEYS.find((k) => !S().redeemedKeys.includes(k));
+        Notify.show({ icon: Icon.mini("microsoft", "Microsoft"), title: "Purchase complete", body: `${bd.name} — key: ${freshKey || "n/a"}`, onClick: () => Browser.openTo("bank.local") });
+        alert(`Thanks! Your Windows 12 product key:\n\n${freshKey || "All keys used"}\n\nApps: ${bd.apps.join(", ")}`);
+        microsoft(ctx);
+      });
     };
     view.querySelector("#msSignin").onclick = submit;
     pwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
@@ -274,11 +278,13 @@
       if (yt.premium) { alert("You already have Premium — no ads!"); return; }
       if (S().bank.balance < 3.99) { alert("Insufficient funds."); return; }
       if (confirm("Buy YouTube Premium for $3.99/mo? Removes all ads.")) {
-        yt.premium = true;
-        State.addTransaction({ vendor: "YouTube", item: "YouTube Premium", amount: 3.99, refundable: true, kind: "premium" });
-        State.save();
-        Notify.show({ icon: Icon.mini("youtubeApp", "YouTube"), title: "Welcome to Premium", body: "Ads are now removed.", onClick: () => Browser.openTo("bank.local") });
-        ytHome(ctx);
+        Pay.ensureCard(() => {
+          yt.premium = true;
+          State.addTransaction({ vendor: "YouTube", item: "YouTube Premium", amount: 3.99, refundable: true, kind: "premium" });
+          State.save();
+          Notify.show({ icon: Icon.mini("youtubeApp", "YouTube"), title: "Welcome to Premium", body: "Ads are now removed.", onClick: () => Browser.openTo("bank.local") });
+          ytHome(ctx);
+        });
       }
     };
     return h;
@@ -790,14 +796,16 @@
     const name = tier === "super" ? "Super Duolingo" : "Duolingo Max";
     if (S().bank.balance < price) { alert("Insufficient funds in Forge Bank."); return; }
     if (!confirm(`Subscribe to ${name} for $${price.toFixed(2)}?\n\nUnlimited hearts${tier === "max" ? " + Max features" : ""}.`)) return;
-    State.addTransaction({ vendor: "Duolingo", item: name + " (1 month)", amount: price, refundable: true });
-    S().appData.duolingo.tier = tier;
-    S().appData.duolingo.hearts = 5;
-    State.save();
-    if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
-    if (window.WM.refreshTaskbar) window.WM.refreshTaskbar();
-    Notify.show({ icon: "", title: `${name} active`, body: "Unlimited hearts unlocked.", onClick: () => Browser.openTo("duolingo.local") });
-    duolingo(ctx);
+    Pay.ensureCard(() => {
+      State.addTransaction({ vendor: "Duolingo", item: name + " (1 month)", amount: price, refundable: true });
+      S().appData.duolingo.tier = tier;
+      S().appData.duolingo.hearts = 5;
+      State.save();
+      if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
+      if (window.WM.refreshTaskbar) window.WM.refreshTaskbar();
+      Notify.show({ icon: "", title: `${name} active`, body: "Unlimited hearts unlocked.", onClick: () => Browser.openTo("duolingo.local") });
+      duolingo(ctx);
+    });
   }
 
   function startLesson(ctx, idx, onDone) {

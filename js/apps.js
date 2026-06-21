@@ -35,12 +35,15 @@
         card.querySelector(".act").onclick = () => {
           if (installed) { window.WM.open(a.id); return; }
           if (a.price && S().bank.balance < a.price) { alert("Insufficient funds."); return; }
-          if (a.price) State.addTransaction({ vendor: "App Store", item: a.name, amount: a.price, refundable: true, kind: "app", refId: a.id });
-          if (!S().installedApps.includes(a.id)) S().installedApps.push(a.id);
-          State.save();
-          if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
-          Notify.show({ icon: "", title: "Installed", body: a.name + " is now on your home screen.", onClick: () => window.WM.open(a.id) });
-          renderApps();
+          const doInstall = () => {
+            if (a.price) State.addTransaction({ vendor: "App Store", item: a.name, amount: a.price, refundable: true, kind: "app", refId: a.id });
+            if (!S().installedApps.includes(a.id)) S().installedApps.push(a.id);
+            State.save();
+            if (window.WM.refreshDesktopIcons) window.WM.refreshDesktopIcons();
+            Notify.show({ icon: "", title: "Installed", body: a.name + " is now on your home screen.", onClick: () => window.WM.open(a.id) });
+            renderApps();
+          };
+          if (a.price) Pay.ensureCard(doInstall); else doInstall();
         };
         grid.appendChild(card);
       });
