@@ -29,24 +29,38 @@
   };
 
   function menu(body, ref) {
-    body.innerHTML = `<div class="mc-root mc-menu">
-      <div class="mc-title">MINCRAFT</div>
-      <div class="mc-sub">Windows 12 Edition</div>
-      <div class="mc-menu-btns">
-        <button class="mc-btn" id="play">Singleplayer</button>
-        <button class="mc-btn" id="opts">Options</button>
-        <button class="mc-btn" id="quit">Quit Game</button>
+    body.innerHTML = `<div class="mc-root mc-home">
+      <div class="mc-header">
+        <img src="assets/minecraft_header.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="mc-header-fallback" style="display:none">MINCRAFT</div>
       </div>
-      <div class="mc-splash">100% blocky!</div>
+      <div class="mc-menu">
+        <div class="mc-button full" data-act="play"><div class="title">Singleplayer</div></div>
+        <div class="mc-button full" data-act="multi"><div class="title">Multiplayer</div></div>
+        <div class="mc-button full" data-act="realms"><div class="title">Minecraft Realms</div></div>
+        <div class="double">
+          <div class="mc-button full" data-act="opts"><div class="title">Options</div></div>
+          <div class="mc-button full" data-act="quit"><div class="title">Quit Game</div></div>
+        </div>
+        <div class="mc-button full lang" data-act="lang"><div class="title">EN</div></div>
+      </div>
+      <div class="mc-splash-text">100% blocky!</div>
+      <div class="mc-version">Windows 12 Edition</div>
     </div>`;
-    body.querySelector("#play").onclick = () => game(body, ref);
-    body.querySelector("#opts").onclick = () => options(body, ref);
-    body.querySelector("#quit").onclick = () => ref.close();
+    const act = {
+      play: () => game(body, ref),
+      opts: () => options(body, ref),
+      quit: () => ref.close(),
+      multi: () => Notify.show({ icon: "", title: "Multiplayer", body: "No servers reachable in the simulation." }),
+      realms: () => Notify.show({ icon: "", title: "Minecraft Realms", body: "Realms isn't available here." }),
+      lang: () => {},
+    };
+    body.querySelectorAll(".mc-button").forEach((b) => b.onclick = () => (act[b.dataset.act] || (() => {}))());
   }
 
   function options(body, ref) {
     const cfg = S().appData.minecraft;
-    body.innerHTML = `<div class="mc-root mc-menu">
+    body.innerHTML = `<div class="mc-root mc-optscreen">
       <div class="mc-title" style="font-size:1.6rem">Options</div>
       <div class="mc-opts">
         <div class="mc-opt-row"><span>Sound</span><label class="switch"><input class="toggle" type="checkbox" id="o-sound"><span class="slider"></span></label></div>
