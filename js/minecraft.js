@@ -33,6 +33,11 @@
     17: { name: "Cobblestone", color: "#7d7d7d", solid: true, hardness: 1.8, drop: 17, tex: "cobblestone" },
     18: { name: "Blue Concrete", color: "#2c39c4", solid: true, hardness: 1.8, drop: 18, tex: "blue_concrete" },
     19: { name: "Purple Concrete", color: "#7e2bc0", solid: true, hardness: 1.8, drop: 19, tex: "purple_concrete" },
+    20: { name: "Poppy", color: "#e74c4c", solid: false, plant: true, hardness: 0.05, drop: 20, tex: "poppy" },
+    21: { name: "Daisy", color: "#ffffff", solid: false, plant: true, hardness: 0.05, drop: 21, tex: "daisy" },
+    22: { name: "Dandelion", color: "#ffd34e", solid: false, plant: true, hardness: 0.05, drop: 22, tex: "yellow_flower" },
+    23: { name: "Red Mushroom", color: "#c62828", solid: false, plant: true, hardness: 0.05, drop: 23, tex: "red_mushroom" },
+    24: { name: "Brown Mushroom", color: "#8a5a2b", solid: false, plant: true, hardness: 0.05, drop: 24, tex: "brown_mushroom" },
   };
 
   // ---- textures ----
@@ -225,7 +230,7 @@
     let hotbar = [];
     let selected = 0;
     if (creative) {
-      hotbar = [1, 3, 4, 7, 9, 8, 17, 18, 19];
+      hotbar = [1, 3, 4, 7, 18, 19, 20, 22, 23];
       hotbar.forEach((b) => inv[b] = Infinity);
     }
     function addItem(id, n) {
@@ -559,6 +564,19 @@
           if (lx >= 0 && lx < W && ly >= 0 && world[ly][lx] === 0) world[ly][lx] = 5;
         }
       }
+    }
+    // plants & mushrooms on grass (after trees so leaves don't get overwritten)
+    const prng = mulberry32(seed ^ 0xF10E);
+    const flowers = [20, 21, 22]; // poppy, daisy, dandelion
+    const fungi = [23, 24];       // red, brown mushroom
+    for (let x = 0; x < W; x++) {
+      const s = surf[x];
+      if (s <= 0 || world[s][x] !== 1) continue;
+      const above = s - 1;
+      if (above < 0 || world[above][x] !== 0) continue;
+      const r = prng();
+      if (r < 0.06) world[above][x] = flowers[Math.floor(prng() * flowers.length)];
+      else if (r < 0.08) world[above][x] = fungi[Math.floor(prng() * fungi.length)];
     }
     return world;
   }
