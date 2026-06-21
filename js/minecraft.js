@@ -45,6 +45,56 @@
   }
   Object.values(BLOCKS).forEach((b) => loadTex(b.tex));
 
+  // ---- procedural pixel textures (original art, drawn to offscreen canvases) ----
+  // Used when no assets/mc_<tex>.png is supplied. Gives blocks a real blocky look.
+  const PROC = {};
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) + amt, g = ((n >> 8) & 255) + amt, b = (n & 255) + amt;
+    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+    return "rgb(" + r + "," + g + "," + b + ")";
+  }
+  function proc(id) {
+    if (PROC[id]) return PROC[id];
+    const b = BLOCKS[id]; if (!b || !b.color) return null;
+    const px = 8, c = document.createElement("canvas"); c.width = c.height = px;
+    const x = c.getContext("2d");
+    const rng = mulberry32((id + 1) * 2654435761 >>> 0);
+    x.fillStyle = b.color; x.fillRect(0, 0, px, px);
+    const speckle = (spread, density) => {
+      for (let i = 0; i < px; i++) for (let j = 0; j < px; j++) {
+        if (rng() < density) { x.fillStyle = shade(b.color, Math.floor((rng() - 0.5) * spread)); x.fillRect(i, j, 1, 1); }
+      }
+    };
+    if (id === 1) { // grass: green speckle + dirt strip below top
+      speckle(40, 0.5);
+      x.fillStyle = "#8a5a2b"; x.fillRect(0, 5, px, 3);
+      for (let i = 0; i < px; i++) for (let j = 5; j < px; j++) if (rng() < 0.4) { x.fillStyle = shade("#8a5a2b", Math.floor((rng() - .5) * 40)); x.fillRect(i, j, 1, 1); }
+      x.fillStyle = "#7ec850"; for (let i = 0; i < px; i++) if (rng() < 0.6) x.fillRect(i, 0, 1, 1 + Math.floor(rng() * 2));
+    } else if (id === 4) { // log: vertical grain + rings
+      speckle(30, 0.4);
+      x.fillStyle = shade(b.color, -30); x.fillRect(1, 0, 1, px); x.fillRect(6, 0, 1, px);
+      x.fillStyle = shade(b.color, 25); x.fillRect(3, 0, 1, px);
+    } else if (id === 7) { // planks: horizontal boards
+      speckle(20, 0.3);
+      x.fillStyle = shade(b.color, -45); x.fillRect(0, 2, px, 1); x.fillRect(0, 5, px, 1);
+    } else if (id === 9) { // brick pattern
+      x.fillStyle = shade(b.color, 35);
+      x.fillRect(0, 3, px, 1); x.fillRect(0, 7, px, 1);
+      x.fillRect(3, 0, 1, 3); x.fillRect(6, 4, 1, 3);
+    } else if (id >= 12 && id <= 15) { // ores: stone base + colored blobs
+      x.fillStyle = "#8c8c8c"; x.fillRect(0, 0, px, px);
+      for (let i = 0; i < px; i++) for (let j = 0; j < px; j++) if (rng() < 0.35) { x.fillStyle = shade("#8c8c8c", Math.floor((rng() - .5) * 40)); x.fillRect(i, j, 1, 1); }
+      x.fillStyle = b.color;
+      for (let k = 0; k < 5; k++) { const i = Math.floor(rng() * (px - 1)), j = Math.floor(rng() * (px - 1)); x.fillRect(i, j, 2, 2); }
+    } else if (id === 10 || id === 11) { // liquids: wavy bands
+      for (let j = 0; j < px; j++) { x.fillStyle = shade(b.color, j % 2 ? 12 : -12); x.fillRect(0, j, px, 1); }
+    } else {
+      speckle(id === 3 || id === 17 ? 35 : 28, 0.5);
+    }
+    PROC[id] = c; return c;
+  }
+
   // ---- seeded RNG ----
   function hashSeed(str) {
     let h = 2166136261 >>> 0;
@@ -353,8 +403,9 @@
       const b = BLOCKS[id]; if (!b || id === 0) return;
       const t = TEX[b.tex];
       ctx.globalAlpha = b.alpha || 1;
+      ctx.imageSmoothingEnabled = false;
       if (t && t.ok) ctx.drawImage(t.img, sx, sy, TILE, TILE);
-      else { ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE); if (b.top) { ctx.fillStyle = b.top; ctx.fillRect(sx, sy, TILE, 5); } }
+      else { const pc = proc(id); if (pc) ctx.drawImage(pc, sx, sy, TILE, TILE); else { ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE); } }
       ctx.globalAlpha = 1;
       if (b.solid) { ctx.strokeStyle = "rgba(0,0,0,0.08)"; ctx.strokeRect(sx, sy, TILE, TILE); }
     }
