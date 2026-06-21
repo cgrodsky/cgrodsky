@@ -340,7 +340,8 @@ input[type=range] { width: 100%; }
   position: absolute; inset: 0; z-index: 100;
   background-size: cover; background-position: center;
 }
-.desktop-icons { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 6px; }
+.desktop-icons { position: absolute; top: 16px; left: 16px; right: 16px; bottom: 64px; display: flex; flex-direction: column; flex-wrap: wrap; gap: 6px; align-content: flex-start; pointer-events: none; }
+.desktop-icons .dicon { pointer-events: auto; }
 .dicon { width: 84px; text-align: center; color: #fff; cursor: pointer; padding: 8px 4px; border-radius: 6px; }
 .dicon:hover { background: rgba(255,255,255,0.18); }
 .dicon .glyph { font-size: 2rem; }
