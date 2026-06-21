@@ -89,27 +89,13 @@
         <div class="pane"></div><div class="pane"></div>
         <div class="pane"></div><div class="pane"></div>
       </div>
-      <div class="boot-spin-wrap"></div>
+      <svg class="windows-loading-spinner" viewBox="0 0 16 16">
+        <circle cx="8" cy="8" r="7"></circle>
+      </svg>
     </div>`);
     layer.appendChild(wrap);
     const logo = wrap.querySelector(".win-logo");
-    const spinWrap = wrap.querySelector(".boot-spin-wrap");
     paintLogo(logo, logoSets[0]);
-
-    // build 8-dot spinner
-    for (let i = 0; i < 8; i++) {
-      const dot = document.createElement("div");
-      const ang = (i / 8) * Math.PI * 2;
-      dot.style.left = 19 + Math.cos(ang) * 18 + "px";
-      dot.style.top = 19 + Math.sin(ang) * 18 + "px";
-      dot.style.animationDelay = (i / 8) * 1.2 + "s";
-      dot.style.position = "absolute";
-      dot.style.width = "6px"; dot.style.height = "6px";
-      dot.style.borderRadius = "50%"; dot.style.background = "#fff";
-      dot.style.animation = "spinDots 1.2s linear infinite";
-      dot.style.animationDelay = (i / 8) * 1.2 + "s";
-      spinWrap.appendChild(dot);
-    }
 
     await wait(400);
     // shrink + move to top-middle
