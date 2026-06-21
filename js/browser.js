@@ -25,8 +25,20 @@
     const letters = "Google".split("").map((ch, i) => `<span style="color:${colors[i]}">${ch}</span>`).join("");
     const page = el(`<div class="google-home">
       <div class="google-logo">${letters}</div>
-      <form class="google-search" autocomplete="off">
-        <input type="text" placeholder="Search Google or type a URL" autofocus>
+      <form class="searchbar" autocomplete="off">
+        <div class="searchbar-wrapper">
+          <div class="searchbar-left"><div class="search-icon-wrapper"><span class="search-icon searchbar-icon">
+            <svg focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+          </span></div></div>
+          <div class="searchbar-center">
+            <input class="searchbar-input" type="text" placeholder="Search Google or type a URL" autofocus>
+          </div>
+          <div class="searchbar-right">
+            <button type="button" class="voice-search" title="Voice search">
+              <svg class="searchbar-icon" viewBox="0 0 24 24" style="height:24px;width:24px"><path fill="#4285f4" d="M12 15c1.66 0 3-1.31 3-2.97V5c0-1.66-1.34-3-3-3S9 3.34 9 5v7.03C9 13.69 10.34 15 12 15z"></path><path fill="#34a853" d="M11 18.08h2V21h-2z"></path><path fill="#fbbc05" d="M7.05 16.87C5.78 15.59 5 13.83 5 12h2c0 2.76 2.24 5 5 5s5-2.24 5-5h2c0 1.83-.78 3.59-2.05 4.87z" transform="translate(0 -1)"></path><path fill="#ea4335" d="M12 17c-2.76 0-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2c0 2.76-2.24 5-5 5z"></path></svg>
+            </button>
+          </div>
+        </div>
       </form>
       <div class="google-shortcuts"></div>
     </div>`);
@@ -36,7 +48,17 @@
       sc.onclick = () => ctx.navigate(b.url);
       shortcuts.appendChild(sc);
     });
-    page.querySelector("form").onsubmit = (e) => { e.preventDefault(); const q = page.querySelector("input").value.trim(); if (q) ctx.navigate(q); };
+    const input = page.querySelector(".searchbar-input");
+    page.querySelector("form").onsubmit = (e) => { e.preventDefault(); const q = input.value.trim(); if (q) ctx.navigate(q); };
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    page.querySelector(".voice-search").onclick = () => {
+      if (!SR) { input.focus(); return; }
+      try {
+        const rec = new SR(); rec.lang = "en-US"; rec.interimResults = false;
+        rec.onresult = (ev) => { input.value = ev.results[0][0].transcript; ctx.navigate(input.value.trim()); };
+        rec.start();
+      } catch (_) { input.focus(); }
+    };
     ctx.page.appendChild(page);
   }
 
