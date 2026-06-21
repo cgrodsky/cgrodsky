@@ -31,6 +31,8 @@
     15: { name: "Diamond Ore", color: "#4fe0d6", solid: true, hardness: 4, drop: 15, tex: "diamond_ore" },
     16: { name: "Bedrock", color: "#33333a", solid: true, hardness: Infinity, drop: 0, tex: "bedrock" },
     17: { name: "Cobblestone", color: "#7d7d7d", solid: true, hardness: 1.8, drop: 17, tex: "cobblestone" },
+    18: { name: "Blue Concrete", color: "#2c39c4", solid: true, hardness: 1.8, drop: 18, tex: "blue_concrete" },
+    19: { name: "Purple Concrete", color: "#7e2bc0", solid: true, hardness: 1.8, drop: 19, tex: "purple_concrete" },
   };
 
   // ---- textures ----
@@ -44,6 +46,7 @@
     TEX[key] = rec;
   }
   Object.values(BLOCKS).forEach((b) => loadTex(b.tex));
+  loadTex("missing");
 
   // ---- procedural pixel textures (original art, drawn to offscreen canvases) ----
   // Used when no assets/mc_<tex>.png is supplied. Gives blocks a real blocky look.
@@ -222,7 +225,7 @@
     let hotbar = [];
     let selected = 0;
     if (creative) {
-      hotbar = [1, 2, 3, 7, 4, 8, 9, 6, 17];
+      hotbar = [1, 3, 4, 7, 9, 8, 17, 18, 19];
       hotbar.forEach((b) => inv[b] = Infinity);
     }
     function addItem(id, n) {
@@ -405,7 +408,12 @@
       ctx.globalAlpha = b.alpha || 1;
       ctx.imageSmoothingEnabled = false;
       if (t && t.ok) ctx.drawImage(t.img, sx, sy, TILE, TILE);
-      else { const pc = proc(id); if (pc) ctx.drawImage(pc, sx, sy, TILE, TILE); else { ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE); } }
+      else {
+        const pc = proc(id);
+        if (pc) ctx.drawImage(pc, sx, sy, TILE, TILE);
+        else if (TEX.missing && TEX.missing.ok) ctx.drawImage(TEX.missing.img, sx, sy, TILE, TILE);
+        else { ctx.fillStyle = b.color; ctx.fillRect(sx, sy, TILE, TILE); }
+      }
       ctx.globalAlpha = 1;
       if (b.solid) { ctx.strokeStyle = "rgba(0,0,0,0.08)"; ctx.strokeRect(sx, sy, TILE, TILE); }
     }
