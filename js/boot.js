@@ -129,7 +129,16 @@
         <div class="core"><div class="pane"></div><div class="pane"></div><div class="pane"></div><div class="pane"></div></div>
       </div>
       <div class="ring"></div>
-      <div style="font-size:1.3rem">${I18n.t("getting_ready")}</div>
+      <div class="loader word-loader">
+        <p>${I18n.t("getting_ready")}</p>
+        <div class="words">
+          <span class="word">Setting things up</span>
+          <span class="word">Installing apps</span>
+          <span class="word">Personalizing</span>
+          <span class="word">Almost there</span>
+          <span class="word">Setting things up</span>
+        </div>
+      </div>
       <div class="muted" style="margin-top:8px;color:#aaa">${I18n.t("dont_turn_off")}</div>
     </div>`);
     layer.appendChild(wrap);

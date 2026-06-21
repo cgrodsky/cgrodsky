@@ -183,6 +183,22 @@ html, body {
 .boot-spin-wrap { position: relative; width: 44px; height: 44px; margin-top: 1.6rem; }
 @keyframes spinDots { 0%,20% { opacity:1 } 100% { opacity:0.1 } }
 
+/* Rotating word loader (Uiverse.io by kennyotsu) */
+.word-loader { color: #cfd6e4; font-family: "Nunito", "Segoe UI", sans-serif; font-weight: 500; font-size: 22px; box-sizing: content-box; height: 34px; padding: 8px 10px; display: flex; border-radius: 8px; margin-top: 6px; }
+.word-loader .words { overflow: hidden; position: relative; height: 34px; }
+.word-loader .words::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(#000 6%, transparent 30%, transparent 70%, #000 94%);
+  z-index: 20;
+}
+.word-loader .word { display: block; height: 34px; line-height: 34px; padding-left: 8px; color: #956afa; animation: word_spin 4s infinite; }
+@keyframes word_spin {
+  10% { transform: translateY(-102%); } 25% { transform: translateY(-100%); }
+  35% { transform: translateY(-202%); } 50% { transform: translateY(-200%); }
+  60% { transform: translateY(-302%); } 75% { transform: translateY(-300%); }
+  85% { transform: translateY(-402%); } 100% { transform: translateY(-400%); }
+}
+
 /* Windows-style SVG loading spinner (Uiverse.io by Siyu1017) */
 .windows-loading-spinner {
   box-sizing: border-box;
@@ -398,6 +414,15 @@ input[type=range] { width: 100%; }
 .ctl-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .win-body { flex: 1; overflow: auto; position: relative; }
 .modal-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 700; }
+
+/* Speaker mute/voice toggle (Uiverse.io by catraco) */
+.container.spk { --color: var(--text-dim); --size: 20px; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; width: 28px; height: 28px; user-select: none; fill: var(--color); }
+.container.spk .mute { position: absolute; animation: kf-fill .5s; }
+.container.spk .voice { position: absolute; display: none; animation: kf-fill .5s; fill: var(--accent); }
+.container.spk input:checked ~ .mute { display: none; }
+.container.spk input:checked ~ .voice { display: block; }
+.container.spk input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+@keyframes kf-fill { 0% { transform: rotate(0deg) scale(0); opacity: 0; } 50% { transform: rotate(-10deg) scale(1.2); } }
 
 /* First-run safety notice (very first screen) */
 .safety-notice { max-width: 460px; padding: 36px; text-align: center; color: #fff; animation: setupIn .4s ease; }

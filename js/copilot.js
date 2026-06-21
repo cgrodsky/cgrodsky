@@ -27,6 +27,11 @@
     body.innerHTML = `
       <div class="cop">
         <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
+          <label class="container spk" title="Speak replies aloud">
+            <input type="checkbox">
+            <svg class="mute" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" style="opacity:.35"></path><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
+            <svg class="voice" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>
+          </label>
           <button class="mic" title="Voice mode">${MIC_SVG}</button>
           <button class="clear">Clear</button><button class="setkey">API key</button></div>
         <div class="cop-msgs"></div>
@@ -39,6 +44,7 @@
     const ta = body.querySelector("textarea");
     const sendBtn = body.querySelector(".cop-send");
     const micBtn = body.querySelector(".mic");
+    const speakToggle = body.querySelector(".spk input");
 
     body.querySelector(".setkey").onclick = () => renderKeyForm(body);
     body.querySelector(".clear").onclick = () => { S().copilot.history = []; State.save(); paint(); };
@@ -112,7 +118,7 @@
         S().copilot.history.push({ role: "assistant", content: reply });
         State.save();
         addBubble("assistant", reply);
-        if (voiceOn) speak(reply);
+        if (voiceOn || (speakToggle && speakToggle.checked)) speak(reply);
       } catch (err) {
         typing.remove();
         addBubble("assistant", "Couldn't reach the AI service.\n\n" + (err && err.message ? err.message : err) +
