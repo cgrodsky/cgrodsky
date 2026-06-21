@@ -554,8 +554,15 @@ body.dark .google-search input { border-color: #3c4043; }
 .yt-player { padding: 16px; }
 .yt-video { background: #000; border-radius: 12px; height: 340px; display: flex; align-items: center; justify-content: center; color: #fff; position: relative; overflow: hidden; }
 .vp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.75)); z-index: 4; }
-.vp-bar button { background: none; border: none; color: #fff; cursor: pointer; font-size: .95rem; }
+.vp-bar button { background: none; border: none; color: #fff; cursor: pointer; font-size: .95rem; display: flex; align-items: center; }
 .vp-bar .vp-time, .vp-bar .vp-dur { font-size: .75rem; color: #fff; min-width: 34px; }
+.vp-bar .vp-sound svg { display: block; }
+.vp-fs { --color: #fff; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; fill: #fff; color: #fff; width: 22px; height: 22px; }
+.vp-fs input { position: absolute; opacity: 0; width: 0; height: 0; cursor: pointer; }
+.vp-fs svg { display: block; }
+.yt-video.vp-muted::after { content: "Muted"; position: absolute; top: 10px; left: 12px; background: rgba(0,0,0,0.6); color: #fff; font-size: .7rem; padding: 2px 8px; border-radius: 4px; z-index: 5; }
+.yt-video:fullscreen { display: flex; align-items: center; justify-content: center; }
+.yt-video:fullscreen canvas { width: auto; height: 100%; max-width: 100%; }
 .vp-track { flex: 1; height: 5px; background: rgba(255,255,255,0.35); border-radius: 3px; cursor: pointer; }
 .vp-fill { height: 100%; width: 0; background: #ff0000; border-radius: 3px; }
 .vp-big { position: absolute; z-index: 4; width: 68px; height: 68px; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; border: none; font-size: 1.6rem; cursor: pointer; left: 50%; top: 50%; transform: translate(-50%,-50%); transition: transform .1s, background .15s; }
