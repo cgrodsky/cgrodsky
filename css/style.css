@@ -493,6 +493,22 @@ input[type=range] { width: 100%; }
 .mc-help { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; font-size: .72rem; text-align: center; pointer-events: none; }
 .mc-fps { position: absolute; top: 8px; left: 8px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; font-size: .72rem; border-radius: 4px; }
 
+/* Block Finder app */
+.bf { display: flex; flex-direction: column; height: 100%; background: var(--window-bg); }
+.bf-bar { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.bf-bar input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-elev); color: var(--text); outline: none; font-size: .95rem; }
+.bf-bar input:focus { border-color: var(--accent); }
+.bf-grid { flex: 1; overflow: auto; padding: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; align-content: start; }
+.bf-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elev); color: var(--text); cursor: pointer; transition: transform .08s, border-color .15s; }
+.bf-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.bf-card img { width: 64px; height: 64px; image-rendering: pixelated; object-fit: cover; border-radius: 4px; background: #0001; }
+.bf-lbl { font-family: Consolas, monospace; font-size: .78rem; color: var(--text-dim); }
+.bf-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.bf-big { background: var(--window-bg); border-radius: 12px; padding: 22px; max-width: 360px; width: 100%; text-align: center; box-shadow: var(--shadow); }
+.bf-big-img { display: flex; justify-content: center; margin-bottom: 12px; }
+.bf-big-img img { width: 200px; height: 200px; image-rendering: pixelated; object-fit: cover; border-radius: 8px; background: #0001; }
+.bf-big-name { font-family: Consolas, monospace; font-weight: 700; margin-bottom: 10px; font-size: 1.1rem; }
+
 /* Minecraft pixelated toggle (Uiverse.io by zl306, CSS-drawn) */
 .switch { position: relative; display: inline-flex; align-items: center; width: 60px; height: 28px; }
 .switch .toggle { opacity: 0; width: 0; height: 0; }
