@@ -424,7 +424,38 @@ input[type=range] { width: 100%; }
 .container.spk input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
 @keyframes kf-fill { 0% { transform: rotate(0deg) scale(0); opacity: 0; } 50% { transform: rotate(-10deg) scale(1.2); } }
 
-/* First-run safety notice (very first screen) */
+/* Minecraft app */
+.mc-root { width: 100%; height: 100%; position: relative; font-family: "Courier New", monospace; }
+.mc-menu { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  background: #3a3a3a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%235a3a22'/%3E%3Crect width='8' height='8' fill='%236b4a2b'/%3E%3Crect x='8' y='8' width='8' height='8' fill='%236b4a2b'/%3E%3C/svg%3E"); background-size: 32px; }
+.mc-title { font-size: 3rem; font-weight: 800; color: #d9d9d9; letter-spacing: 4px; text-shadow: 4px 4px 0 #3f3f3f; -webkit-text-stroke: 1px #2b2b2b; }
+.mc-sub { color: #ffd34e; text-shadow: 2px 2px 0 #5a4400; transform: rotate(-8deg); margin-top: -8px; font-weight: 700; }
+.mc-menu-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.mc-btn { width: 280px; padding: 12px; background: #6b6b6b; color: #fff; border: 2px solid #2b2b2b; border-bottom-width: 4px; font-family: inherit; font-size: 1rem; cursor: pointer; text-shadow: 2px 2px 0 #2b2b2b; image-rendering: pixelated; }
+.mc-btn:hover { background: #7f8f6b; }
+.mc-btn:active { border-bottom-width: 2px; transform: translateY(2px); }
+.mc-splash { color: #ffd34e; font-size: .8rem; margin-top: 8px; animation: mcSplash 0.6s ease-in-out infinite alternate; }
+@keyframes mcSplash { from { transform: scale(1); } to { transform: scale(1.08); } }
+.mc-opts { display: flex; flex-direction: column; gap: 16px; background: rgba(0,0,0,0.45); padding: 22px 28px; border: 2px solid #2b2b2b; }
+.mc-opt-row { display: flex; align-items: center; justify-content: space-between; gap: 30px; color: #fff; text-shadow: 1px 1px 0 #000; min-width: 280px; }
+.mc-game { background: #000; overflow: hidden; }
+.mc-canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; }
+.mc-hud { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; pointer-events: none; }
+.mc-hotbar { display: flex; gap: 4px; background: rgba(0,0,0,0.35); padding: 4px; border-radius: 4px; pointer-events: auto; }
+.mc-slot { width: 42px; height: 42px; background: rgba(120,120,120,0.6); border: 2px solid #2b2b2b; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mc-slot.sel { border-color: #fff; }
+.mc-slot-sw { width: 26px; height: 26px; display: block; border: 1px solid rgba(0,0,0,0.3); }
+.mc-slot-n { position: absolute; top: 0; left: 2px; font-size: .6rem; color: #fff; text-shadow: 1px 1px 0 #000; }
+.mc-help { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; font-size: .72rem; text-align: center; pointer-events: none; }
+.mc-fps { position: absolute; top: 8px; left: 8px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; font-size: .72rem; border-radius: 4px; }
+
+/* Minecraft pixelated toggle (Uiverse.io by zl306, CSS-drawn) */
+.switch { position: relative; display: inline-flex; align-items: center; width: 60px; height: 28px; }
+.switch .toggle { opacity: 0; width: 0; height: 0; }
+.switch .slider { image-rendering: pixelated; position: absolute; cursor: pointer; inset: 0; background: #8b8b8b; box-shadow: inset -3px -3px 0 #5a5a5a, inset 3px 3px 0 #b0b0b0; transition: .15s; }
+.switch .slider:before { content: ""; position: absolute; height: 24px; width: 24px; left: 2px; top: 2px; background: #c6c6c6; box-shadow: inset -3px -3px 0 #8b8b8b, inset 3px 3px 0 #efefef; transition: .15s; }
+.switch .toggle:checked + .slider { background: #5fa83b; box-shadow: inset -3px -3px 0 #3d6e26, inset 3px 3px 0 #7ec850; }
+.switch .toggle:checked + .slider:before { transform: translateX(32px); background: #d7ffb8; box-shadow: inset -3px -3px 0 #7ec850, inset 3px 3px 0 #fff; }
 .safety-notice { max-width: 460px; padding: 36px; text-align: center; color: #fff; animation: setupIn .4s ease; }
 .safety-mark { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; background: #ffb02e; color: #1b1b1b; font-size: 2.4rem; font-weight: 900; display: flex; align-items: center; justify-content: center; }
 .safety-notice h1 { margin: 0 0 14px; font-size: 1.8rem; }
