@@ -377,25 +377,57 @@ Ethernet adapter Local Area Connection:
 
   // ---------- Maps ----------
   AppRegistry.maps = function () {
-    const { body } = cw({ title: "Maps", icon: Icon.mini("maps", "Maps"), width: 600, height: 480 });
-    body.innerHTML = `<div style="height:100%;display:flex;flex-direction:column">
-      <div class="row" style="padding:10px;background:var(--bg-elev)"><input id="q" class="grow" style="padding:8px;border-radius:18px;border:1px solid var(--border);background:var(--bg);color:var(--text)" placeholder="Search a place"><button class="pill-btn" id="go">Search</button></div>
-      <canvas id="map" style="flex:1;width:100%"></canvas></div>`;
-    const cv = body.querySelector("#map");
-    function draw(label) {
-      const r = cv.getBoundingClientRect(); cv.width = r.width; cv.height = r.height;
-      const x = cv.getContext("2d");
-      x.fillStyle = "#aadaff"; x.fillRect(0, 0, cv.width, cv.height);
-      x.strokeStyle = "#bcd0a0"; for (let i = 0; i < 40; i++) { x.beginPath(); x.moveTo((i * 53) % cv.width, 0); x.lineTo((i * 53) % cv.width, cv.height); x.stroke(); }
-      x.strokeStyle = "#fff"; x.lineWidth = 6;
-      x.beginPath(); x.moveTo(0, cv.height * .4); x.lineTo(cv.width, cv.height * .55); x.stroke();
-      x.beginPath(); x.moveTo(cv.width * .5, 0); x.lineTo(cv.width * .45, cv.height); x.stroke();
-      x.fillStyle = "#e53935"; x.beginPath(); x.arc(cv.width / 2, cv.height / 2, 10, 0, 7); x.fill();
-      x.fillStyle = "#000"; x.font = "16px Segoe UI"; x.textAlign = "center";
-      x.fillText(label || S().region, cv.width / 2, cv.height / 2 - 18);
+    const { body } = cw({ title: "Maps", icon: Icon.mini("maps", "Maps"), width: 720, height: 520 });
+    if (typeof maplibregl === "undefined") {
+      body.innerHTML = `<div class="site"><h2>Maps</h2><p class="muted">Map library failed to load. Check your connection and reopen.</p></div>`;
+      return;
     }
-    body.querySelector("#go").onclick = () => draw(body.querySelector("#q").value.trim());
-    setTimeout(() => draw(), 50);
+    body.innerHTML = `<div class="maps-app">
+      <form class="maps-search"><input id="mq" placeholder="Search for a place"><button type="submit" class="pill-btn">Search</button></form>
+      <div class="maps-stage"></div>
+      <div class="maps-controls"><button class="maps-ctrl" id="mzin" title="Zoom in">+</button><button class="maps-ctrl" id="mzout" title="Zoom out">&minus;</button><button class="maps-ctrl" id="mloc" title="My location">⊙</button></div>
+    </div>`;
+    const dark = document.body.classList.contains("dark");
+    const style = dark
+      ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+      : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+    const map = new maplibregl.Map({
+      container: body.querySelector(".maps-stage"),
+      style,
+      center: [-74, 40.7],
+      zoom: 9,
+      attributionControl: { compact: true },
+    });
+    let pin = null;
+    body.querySelector("#mzin").onclick = () => map.zoomIn();
+    body.querySelector("#mzout").onclick = () => map.zoomOut();
+    body.querySelector("#mloc").onclick = () => {
+      if (!navigator.geolocation) { Notify.show({ icon: "", title: "Maps", body: "Location not available." }); return; }
+      navigator.geolocation.getCurrentPosition(
+        (p) => map.flyTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 14, duration: 1200 }),
+        () => Notify.show({ icon: "", title: "Maps", body: "Couldn't get your location." })
+      );
+    };
+    body.querySelector(".maps-search").onsubmit = async (e) => {
+      e.preventDefault();
+      const q = body.querySelector("#mq").value.trim();
+      if (!q) return;
+      try {
+        const r = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
+        const arr = await r.json();
+        if (!arr.length) { alert("No results."); return; }
+        const lon = parseFloat(arr[0].lon), lat = parseFloat(arr[0].lat), name = arr[0].display_name;
+        if (pin) pin.remove();
+        pin = new maplibregl.Marker({ color: "#0067c0" }).setLngLat([lon, lat])
+          .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(`<b>${escapeHtml(name)}</b>`))
+          .addTo(map);
+        map.flyTo({ center: [lon, lat], zoom: 13, duration: 1200 });
+      } catch (err) { alert("Search failed: " + (err.message || err)); }
+    };
+    // Resize the map when the window's body resizes (window drag/resize)
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(body.querySelector(".maps-stage"));
+    body.closest(".win").addEventListener("DOMNodeRemoved", () => { ro.disconnect(); map.remove(); });
   };
 
   // ---------- Photos (image viewer) ----------

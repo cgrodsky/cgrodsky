@@ -14,8 +14,11 @@
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   const LOGO = (cls) => `<div class="${cls}"><div class="ring"></div><div class="dot"></div></div>`;
-  const SEND_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" fill="#fff"/></svg>`;
+  const SEND_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-7-7-1z" fill="currentColor"/></svg>`;
   const MIC_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>`;
+  const CLIP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
+  const FILE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  const X_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
   AppRegistry.copilot = function () {
     const { body } = window.WM.createWindow({ title: "Copilot", icon: LOGO("cop-logo"), width: 460, height: 620, appId: "copilot" });
@@ -35,9 +38,15 @@
           <button class="mic" title="Voice mode">${MIC_SVG}</button>
           <button class="clear">Clear</button><button class="setkey">API key</button></div>
         <div class="cop-msgs"></div>
-        <div class="cop-input">
-          <textarea rows="1" placeholder="Message Copilot..."></textarea>
-          <button class="cop-send" title="Send">${SEND_SVG}</button>
+        <div class="cop-prompt" data-empty="true">
+          <div class="cop-files"></div>
+          <textarea class="cop-ta" rows="1" placeholder="Message Copilot..."></textarea>
+          <div class="cop-prompt-bar">
+            <button class="cop-attach" title="Attach file">${CLIP_SVG}</button>
+            <span class="grow"></span>
+            <button class="cop-send" title="Send">${SEND_SVG}</button>
+          </div>
+          <input type="file" class="cop-file-input" multiple style="display:none">
         </div>
       </div>`;
     const msgs = body.querySelector(".cop-msgs");
@@ -84,6 +93,64 @@
       } catch (e) {}
     }
 
+    // ---- file attachments ----
+    const promptEl = body.querySelector(".cop-prompt");
+    const filesEl = body.querySelector(".cop-files");
+    const fileInput = body.querySelector(".cop-file-input");
+    const attachBtn = body.querySelector(".cop-attach");
+    let pendingFiles = []; // {name, type, size, dataUrl?}
+
+    function refreshPromptState() {
+      const empty = !ta.value.trim() && pendingFiles.length === 0;
+      promptEl.dataset.empty = empty ? "true" : "false";
+    }
+
+    function renderFiles() {
+      filesEl.innerHTML = "";
+      pendingFiles.forEach((f, i) => {
+        const chip = el(`<div class="cop-file">
+          ${f.dataUrl ? `<img src="${f.dataUrl}" alt="">` : `<span class="cop-file-ic">${FILE_SVG}</span>`}
+          <span class="cop-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+          <button class="cop-file-x" title="Remove">${X_SVG}</button>
+        </div>`);
+        chip.querySelector(".cop-file-x").onclick = () => { pendingFiles.splice(i, 1); renderFiles(); refreshPromptState(); };
+        filesEl.appendChild(chip);
+      });
+      filesEl.style.display = pendingFiles.length ? "flex" : "none";
+    }
+
+    function addFiles(list) {
+      for (const f of list) {
+        if (f.size > 10 * 1024 * 1024) { alert(`"${f.name}" is over 10MB and was skipped.`); continue; }
+        if (pendingFiles.length >= 5) { alert("Up to 5 files at a time."); break; }
+        const entry = { name: f.name, type: f.type, size: f.size };
+        pendingFiles.push(entry);
+        if (f.type.startsWith("image/")) {
+          const r = new FileReader();
+          r.onload = (ev) => { entry.dataUrl = ev.target.result; renderFiles(); };
+          r.readAsDataURL(f);
+        }
+      }
+      renderFiles(); refreshPromptState();
+    }
+
+    attachBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => { if (fileInput.files) addFiles(fileInput.files); fileInput.value = ""; };
+
+    // drag and drop
+    ["dragenter", "dragover"].forEach((evt) => promptEl.addEventListener(evt, (e) => { e.preventDefault(); promptEl.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach((evt) => promptEl.addEventListener(evt, (e) => { e.preventDefault(); promptEl.classList.remove("drag"); }));
+    promptEl.addEventListener("drop", (e) => { if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files); });
+
+    // paste images
+    ta.addEventListener("paste", (e) => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      const imgs = [];
+      for (const it of items) { if (it.type && it.type.startsWith("image/")) { const f = it.getAsFile(); if (f) imgs.push(f); } }
+      if (imgs.length) { e.preventDefault(); addFiles(imgs); }
+    });
+
     function paint() {
       msgs.innerHTML = "";
       if (!S().copilot.history.length) {
@@ -101,12 +168,16 @@
 
     async function send() {
       const text = ta.value.trim();
-      if (!text) return;
+      if (!text && pendingFiles.length === 0) return;
+      let fileNote = "";
+      if (pendingFiles.length) fileNote = "[Attached: " + pendingFiles.map((f) => f.name).join(", ") + "]\n";
+      const userMessage = (fileNote + text).trim();
       ta.value = ""; ta.style.height = "auto";
+      pendingFiles = []; renderFiles(); refreshPromptState();
       if (msgs.querySelector(".cop-hero")) msgs.innerHTML = "";
-      S().copilot.history.push({ role: "user", content: text });
+      S().copilot.history.push({ role: "user", content: userMessage });
       State.save();
-      addBubble("user", text);
+      addBubble("user", userMessage);
 
       const typing = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
       msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
@@ -130,7 +201,8 @@
 
     sendBtn.onclick = send;
     ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
-    ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; });
+    ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; refreshPromptState(); });
+    refreshPromptState();
     paint();
   }
 
