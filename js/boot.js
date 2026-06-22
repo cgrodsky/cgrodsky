@@ -68,12 +68,20 @@
   </svg>`;
 
   async function xpLogo(layer) {
-    const wrap = el(`<div class="center-col" style="gap:18px">
-      <div class="xp-logo">${XP_LOGO_SVG}</div>
-      <div style="color:#fff;font-size:1.6rem;letter-spacing:.04em;font-family:Tahoma,'Segoe UI',sans-serif">Windows XP</div>
+    const wrap = el(`<div class="xp-boot">
+      <div class="xp-boot-logo">
+        <p class="xp-boot-top">cameron systems</p>
+        <p class="xp-boot-mid">XP<span>™</span></p>
+        <p class="xp-boot-bottom">Windows</p>
+      </div>
+      <div class="xp-boot-container">
+        <div class="xp-boot-box" style="animation-delay:0s"></div>
+        <div class="xp-boot-box" style="animation-delay:-0.66s"></div>
+        <div class="xp-boot-box" style="animation-delay:-1.33s"></div>
+      </div>
     </div>`);
     layer.appendChild(wrap);
-    await wait(2400);
+    await wait(3600);
     wrap.classList.add("fade-out");
     await wait(700);
     wrap.remove();
