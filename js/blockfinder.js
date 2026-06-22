@@ -11,6 +11,7 @@
     body.innerHTML = `<div class="bf">
       <div class="bf-bar">
         <input id="q" placeholder="Search by number (e.g. 0451)" autofocus>
+        <button id="reload" title="Reload manifest" style="background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;padding:8px 12px;cursor:pointer;color:var(--text)">↻ Refresh</button>
         <span id="count" class="muted"></span>
       </div>
       <div id="grid" class="bf-grid"><div class="muted" style="padding:20px">Loading…</div></div>
@@ -20,10 +21,16 @@
     const count = body.querySelector("#count");
     let items = [];
 
-    fetch("assets/raw/manifest.json")
-      .then((r) => r.json())
-      .then((list) => { items = list; render(""); })
-      .catch(() => { grid.innerHTML = `<div class="muted" style="padding:20px">No raw textures found (assets/raw/manifest.json missing).</div>`; });
+    function loadManifest() {
+      grid.innerHTML = `<div class="muted" style="padding:20px">Loading…</div>`;
+      // bust cache by appending a timestamp
+      fetch("assets/raw/manifest.json?t=" + Date.now())
+        .then((r) => r.json())
+        .then((list) => { items = list; render(search.value.trim()); })
+        .catch(() => { grid.innerHTML = `<div class="muted" style="padding:20px">No raw textures found (assets/raw/manifest.json missing).</div>`; });
+    }
+    loadManifest();
+    body.querySelector("#reload").onclick = loadManifest;
 
     search.addEventListener("input", () => render(search.value.trim()));
 

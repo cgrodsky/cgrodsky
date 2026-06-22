@@ -491,6 +491,25 @@ input[type=range] { width: 100%; }
 .mc-death-card h1 { font-size: 2.4rem; margin: 0 0 10px; }
 .mc-death-card p { margin: 0 0 16px; }
 .mc-death-card .mc-btn { margin: 0 6px; }
+
+/* 3D Minecraft */
+.mc-game3d { position: relative; background: #000; overflow: hidden; }
+.mc3-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.mc3-crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none; z-index: 5; }
+.mc3-crosshair::before, .mc3-crosshair::after { content: ""; position: absolute; background: #fff; mix-blend-mode: difference; }
+.mc3-crosshair::before { left: 8px; top: 0; width: 2px; height: 18px; }
+.mc3-crosshair::after { left: 0; top: 8px; width: 18px; height: 2px; }
+.mc3-help { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.45); padding: 4px 10px; border-radius: 4px; font-size: .7rem; text-align: center; pointer-events: none; max-width: 90%; }
+.mc3-hud { position: absolute; left: 0; right: 0; bottom: 10px; display: flex; justify-content: center; pointer-events: none; z-index: 6; }
+.mc3-hud .mc-hotbar { pointer-events: auto; }
+.mc3-btn { position: absolute; bottom: 60px; width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,0.45); color: #fff; border: 2px solid rgba(255,255,255,0.35); cursor: pointer; font-size: 1.4rem; font-family: inherit; z-index: 7; display: flex; align-items: center; justify-content: center; }
+.mc3-btn:active { background: rgba(255,255,255,0.25); }
+.mc3-jump { right: 78px; }
+.mc3-place { right: 12px; }
+.mc3-hearts { position: absolute; top: 8px; left: 8px; display: flex; gap: 2px; pointer-events: none; z-index: 6; }
+.mc3-heart { width: 14px; height: 14px; display: inline-block; clip-path: path("M7 13L1 7 a3 3 0 1 1 6-4 a3 3 0 1 1 6 4 Z"); background: #3a0000; }
+.mc3-heart.h-full { background: #ff3b3b; }
+.mc3-heart.h-half { background: linear-gradient(90deg, #ff3b3b 50%, #3a0000 50%); }
 .mc-help { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; font-size: .72rem; text-align: center; pointer-events: none; }
 .mc-fps { position: absolute; top: 8px; left: 8px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; font-size: .72rem; border-radius: 4px; }
 
