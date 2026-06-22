@@ -248,7 +248,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "minecraft", "store__"].includes(id);
+    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "minecraft", "codeeditor", "store__"].includes(id);
   }
 
   function toggleStart() { startMenu.classList.toggle("open"); renderStartApps(""); }

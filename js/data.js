@@ -34,6 +34,7 @@
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
     { id: "blockfinder", name: "Block Finder", cat: "System", price: 0, builtin: "blockfinder", desc: "Browse uploaded textures by IMG number." },
+    { id: "codeeditor", name: "Code Editor", cat: "Developer", price: 0, builtin: "codeeditor", desc: "Edit HTML / CSS / JS with live preview and console." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).
