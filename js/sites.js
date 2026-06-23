@@ -340,7 +340,8 @@
 
     player.querySelector(".like").onclick = (e) => {
       const i = yt.likes.indexOf(v.id);
-      if (i >= 0) yt.likes.splice(i, 1); else yt.likes.push(v.id);
+      if (i >= 0) yt.likes.splice(i, 1);
+      else { yt.likes.push(v.id); if (window.Achievements) window.Achievements.bump("cinephile", 1); }
       State.save(); ytWatch(ctx, v);
     };
     player.querySelector(".sub").onclick = () => {
@@ -979,6 +980,7 @@
 
     function finish() {
       const failed = target.tier === "free" && target.hearts <= 0;
+      if (!failed && window.Achievements) window.Achievements.bump("speedrunner", 1);
       ctx.page.innerHTML = "";
       const wrap = el(`<div class="duo-lesson"><div class="duo-q center-col" style="justify-content:center;height:100%">
         <h1>${failed ? "Out of hearts" : "Lesson complete!"}</h1>

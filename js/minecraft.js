@@ -63,6 +63,14 @@
     54: { name: "Glass Pane", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 54, alpha: 0.45 },
     55: { name: "Barrel", color: "#7a532b", solid: true, hardness: 2.5, drop: 55 },
     56: { name: "Portal", color: "#7b3aff", solid: false, liquid: true, alpha: 0.65, danger: true },
+    60: { name: "White Stained Glass",  color: "#f9f9f9", solid: true, hardness: 0.3, drop: 60, alpha: 0.5 },
+    61: { name: "Red Stained Glass",    color: "#b02e26", solid: true, hardness: 0.3, drop: 61, alpha: 0.5 },
+    62: { name: "Orange Stained Glass", color: "#f9801d", solid: true, hardness: 0.3, drop: 62, alpha: 0.5 },
+    63: { name: "Yellow Stained Glass", color: "#fed83d", solid: true, hardness: 0.3, drop: 63, alpha: 0.5 },
+    64: { name: "Green Stained Glass",  color: "#5e7c16", solid: true, hardness: 0.3, drop: 64, alpha: 0.5 },
+    65: { name: "Blue Stained Glass",   color: "#3c44aa", solid: true, hardness: 0.3, drop: 65, alpha: 0.5 },
+    66: { name: "Purple Stained Glass", color: "#8932b8", solid: true, hardness: 0.3, drop: 66, alpha: 0.5 },
+    67: { name: "Black Stained Glass",  color: "#1d1d21", solid: true, hardness: 0.3, drop: 67, alpha: 0.5 },
   };
 
   function hashSeed(str) {
@@ -398,6 +406,7 @@
       world[y][z][x] = id;
       if (inv[id] !== Infinity) inv[id]--;
       drawHotbar();
+      if (window.Achievements) window.Achievements.bump("architect", 1);
       rebuildMeshes();
     }
     function instantMine() {

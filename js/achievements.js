@@ -11,6 +11,11 @@
     { id: "lesson1",     name: "First Steps",           desc: "Earn 10 XP in Duolingo.",           goal: 10  },
     { id: "miner",       name: "Pick & Shovel",         desc: "Mine 25 blocks in Mincraft.",       goal: 25  },
     { id: "subscriber",  name: "Notification Bell",     desc: "Subscribe to a YouTube channel.",   goal: 1   },
+    { id: "architect",   name: "Architect",             desc: "Place 100 blocks in Mincraft.",     goal: 100 },
+    { id: "speedrunner", name: "Speed Runner",          desc: "Finish 5 Duolingo lessons.",        goal: 5   },
+    { id: "cinephile",   name: "Cinephile",             desc: "Like 10 YouTube videos.",           goal: 10  },
+    { id: "globetrotter",name: "Globetrotter",          desc: "Search 3 places in Maps.",          goal: 3   },
+    { id: "code_slinger",name: "Code Slinger",          desc: "Hit Run in Code Editor 10 times.",  goal: 10  },
   ];
 
   function init() {

@@ -422,6 +422,7 @@ Ethernet adapter Local Area Connection:
           .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(`<b>${escapeHtml(name)}</b>`))
           .addTo(map);
         map.flyTo({ center: [lon, lat], zoom: 13, duration: 1200 });
+        if (window.Achievements) window.Achievements.bump("globetrotter", 1);
       } catch (err) { alert("Search failed: " + (err.message || err)); }
     };
     // Resize the map when the window's body resizes (window drag/resize)

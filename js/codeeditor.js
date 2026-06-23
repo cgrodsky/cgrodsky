@@ -76,7 +76,7 @@
       iframe.srcdoc = srcdoc;
       setTab("preview");
     }
-    body.querySelector("#ceRun").onclick = run;
+    body.querySelector("#ceRun").onclick = () => { run(); if (window.Achievements) window.Achievements.bump("code_slinger", 1); };
     body.querySelector("#ceClear").onclick = () => { consoleEl.innerHTML = '<div class="ce-empty">Console cleared.</div>'; unread = 0; badge.textContent = ""; badge.style.display = "none"; };
 
     function onMsg(e) {
