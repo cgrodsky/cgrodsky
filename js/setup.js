@@ -369,6 +369,7 @@
       }
       S().setupCompleted = true;
       State.save();
+      if (window.Achievements) window.Achievements.unlock("welcome");
       finish();
     };
     render(node, 6);

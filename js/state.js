@@ -168,6 +168,7 @@
       id, vendor, item, amount, refundable: !!refundable, refunded: false, ts: Date.now(),
     });
     save();
+    if (window.Achievements && typeof amount === "number" && amount > 0) window.Achievements.bump("big_spender", amount);
     return id;
   }
 

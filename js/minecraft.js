@@ -400,6 +400,7 @@
       world[y][z][x] = 0;
       if (b.drop) addItem(b.drop, 1);
       mining = null;
+      if (window.Achievements) window.Achievements.bump("miner", 1);
       rebuildMeshes();
     }
     function updateMining(dt) {

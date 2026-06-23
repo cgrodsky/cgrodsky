@@ -346,7 +346,7 @@
     player.querySelector(".sub").onclick = () => {
       const i = yt.subscriptions.indexOf(v.channel.id);
       if (i >= 0) yt.subscriptions.splice(i, 1);
-      else { yt.subscriptions.push(v.channel.id); Notify.show({ icon: Icon.mini(v.channel.id, v.channel.name), title: "Subscribed", body: `You subscribed to ${v.channel.name}`, onClick: () => Browser.openTo("youtube.local") }); }
+      else { yt.subscriptions.push(v.channel.id); Notify.show({ icon: Icon.mini(v.channel.id, v.channel.name), title: "Subscribed", body: `You subscribed to ${v.channel.name}`, onClick: () => Browser.openTo("youtube.local") }); if (window.Achievements) window.Achievements.unlock("subscriber"); }
       State.save(); ytWatch(ctx, v);
     };
 
@@ -912,7 +912,7 @@
     }
 
     function onCheck(isRight) {
-      if (isRight) { correct++; target.xp += 10; lessonXp += 10; }
+      if (isRight) { correct++; target.xp += 10; lessonXp += 10; if (window.Achievements) window.Achievements.bump("lesson1", 10); }
       else if (target.tier === "free") { target.hearts = Math.max(0, target.hearts - 1); }
       State.save();
       const banner = el(`<div class="duo-banner ${isRight ? "ok" : "bad"}">${isRight ? "Nice!" : "Not quite"}<button class="pill-btn">Continue</button></div>`);
