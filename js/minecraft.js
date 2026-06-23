@@ -36,6 +36,22 @@
     26: { name: "Ancient Debris", color: "#5a3434", solid: true, hardness: 30, drop: 26, tex: "ancient_debris" },
     27: { name: "Stripped Log", color: "#c6a06a", solid: true, hardness: 2, drop: 27, tex: "stripped_log" },
     28: { name: "Deepslate Diamond Ore", color: "#3b6f70", solid: true, hardness: 5, drop: 28, tex: "deepslate_diamond_ore" },
+    30: { name: "White Wool", color: "#f9f9f9", solid: true, hardness: 0.8, drop: 30 },
+    31: { name: "Light Gray Wool", color: "#9c9d97", solid: true, hardness: 0.8, drop: 31 },
+    32: { name: "Gray Wool", color: "#474f52", solid: true, hardness: 0.8, drop: 32 },
+    33: { name: "Black Wool", color: "#1d1d21", solid: true, hardness: 0.8, drop: 33 },
+    34: { name: "Brown Wool", color: "#835432", solid: true, hardness: 0.8, drop: 34 },
+    35: { name: "Red Wool", color: "#b02e26", solid: true, hardness: 0.8, drop: 35 },
+    36: { name: "Orange Wool", color: "#f9801d", solid: true, hardness: 0.8, drop: 36 },
+    37: { name: "Yellow Wool", color: "#fed83d", solid: true, hardness: 0.8, drop: 37 },
+    38: { name: "Lime Wool", color: "#80c71f", solid: true, hardness: 0.8, drop: 38 },
+    39: { name: "Green Wool", color: "#5e7c16", solid: true, hardness: 0.8, drop: 39 },
+    40: { name: "Cyan Wool", color: "#169c9c", solid: true, hardness: 0.8, drop: 40 },
+    41: { name: "Light Blue Wool", color: "#3ab3da", solid: true, hardness: 0.8, drop: 41 },
+    42: { name: "Blue Wool", color: "#3c44aa", solid: true, hardness: 0.8, drop: 42 },
+    43: { name: "Purple Wool", color: "#8932b8", solid: true, hardness: 0.8, drop: 43 },
+    44: { name: "Magenta Wool", color: "#c74ebd", solid: true, hardness: 0.8, drop: 44 },
+    45: { name: "Pink Wool", color: "#f38baa", solid: true, hardness: 0.8, drop: 45 },
   };
 
   function hashSeed(str) {
