@@ -263,6 +263,23 @@
       new THREE.LineBasicMaterial({ color: 0x000000 }));
     hl.visible = false; scene.add(hl);
 
+    // Progressive crack overlay: a translucent cube wrapping the targeted block
+    // that swaps through 5 frames as mining progress climbs from 0 to 1.
+    const crackTextures = new Array(5).fill(null);
+    const crackFrames = ["IMG_0591", "IMG_0593", "IMG_0594", "IMG_0595", "IMG_0596"];
+    crackFrames.forEach((n, i) => {
+      new THREE.TextureLoader().load("assets/raw/" + n + ".png", (t) => {
+        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+        crackTextures[i] = t;
+      });
+    });
+    const crackMat = new THREE.MeshBasicMaterial({
+      transparent: true, opacity: 0.9, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+    });
+    const crackMesh = new THREE.Mesh(new THREE.BoxGeometry(1.01, 1.01, 1.01), crackMat);
+    crackMesh.visible = false; scene.add(crackMesh);
+
     let spawnY = H - 1;
     const cx = W >> 1, cz = D >> 1;
     while (spawnY > 0 && !solid(cx, spawnY - 1, cz)) spawnY--;
@@ -557,6 +574,17 @@
       const hit = currentTarget();
       if (hit) { hl.position.set(hit.x + 0.5, hit.y + 0.5, hit.z + 0.5); hl.visible = true; }
       else hl.visible = false;
+
+      // Crack overlay: only when actively mining (progress > 0)
+      if (mining && mining.progress > 0) {
+        const stage = Math.min(crackTextures.length - 1, Math.floor(mining.progress * crackTextures.length));
+        const tex = crackTextures[stage];
+        if (tex) {
+          if (crackMat.map !== tex) { crackMat.map = tex; crackMat.needsUpdate = true; }
+          crackMesh.position.set(mining.x + 0.5, mining.y + 0.5, mining.z + 0.5);
+          crackMesh.visible = true;
+        } else crackMesh.visible = false;
+      } else crackMesh.visible = false;
 
       const r = canvas.getBoundingClientRect();
       if (Math.abs(canvas.width - r.width * renderer.getPixelRatio()) > 1) {
