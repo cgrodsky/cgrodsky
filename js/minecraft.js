@@ -10,7 +10,7 @@
 
   const BLOCKS = {
     0:  { name: "Air", solid: false },
-    1:  { name: "Grass", color: "#5fa83b", solid: true, hardness: 0.6, drop: 2, tex: "grass" },
+    1:  { name: "Grass", color: "#5fa83b", solid: true, hardness: 0.6, drop: 2, tex: "grass", texTop: "grass_top", texBottom: "dirt" },
     2:  { name: "Dirt", color: "#8a5a2b", solid: true, hardness: 0.5, drop: 2, tex: "dirt" },
     3:  { name: "Stone", color: "#8c8c8c", solid: true, hardness: 1.5, drop: 17, tex: "stone" },
     4:  { name: "Log", color: "#6b4a25", solid: true, hardness: 2, drop: 4, tex: "log" },
@@ -223,9 +223,7 @@
 
     const materials = {};
     const textures = {};
-    function materialFor(id) {
-      if (materials[id]) return materials[id];
-      const b = BLOCKS[id];
+    function makeFaceMat(b, texKey) {
       const m = new THREE.MeshLambertMaterial({
         color: new THREE.Color(b.color || "#ffffff"),
         transparent: !!b.alpha || !!b.plant,
@@ -233,19 +231,36 @@
         alphaTest: b.plant ? 0.5 : 0,
         side: b.plant ? THREE.DoubleSide : THREE.FrontSide,
       });
-      materials[id] = m;
-      if (b.tex) {
-        new THREE.TextureLoader().load("assets/mc_" + b.tex + ".png", (tex) => {
+      if (texKey) {
+        new THREE.TextureLoader().load("assets/mc_" + texKey + ".png", (tex) => {
           tex.magFilter = THREE.NearestFilter;
           tex.minFilter = THREE.NearestFilter;
           tex.generateMipmaps = false;
-          textures[b.tex] = tex;
+          textures[texKey] = tex;
           m.map = tex;
           m.color.setHex(0xffffff);
           m.needsUpdate = true;
         }, undefined, () => {});
       }
       return m;
+    }
+    function materialFor(id) {
+      if (materials[id]) return materials[id];
+      const b = BLOCKS[id];
+      // BoxGeometry group order: [+X, -X, +Y, -Y, +Z, -Z] = [right, left, top, bottom, front, back]
+      if (b.texTop || b.texBottom || b.texSide) {
+        const side = b.texSide || b.tex;
+        const top  = b.texTop  || b.tex;
+        const bot  = b.texBottom || b.tex;
+        materials[id] = [
+          makeFaceMat(b, side), makeFaceMat(b, side),
+          makeFaceMat(b, top),  makeFaceMat(b, bot),
+          makeFaceMat(b, side), makeFaceMat(b, side),
+        ];
+      } else {
+        materials[id] = makeFaceMat(b, b.tex);
+      }
+      return materials[id];
     }
 
     function solid(x, y, z) {
