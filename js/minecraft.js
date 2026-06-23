@@ -52,6 +52,17 @@
     43: { name: "Purple Wool", color: "#8932b8", solid: true, hardness: 0.8, drop: 43 },
     44: { name: "Magenta Wool", color: "#c74ebd", solid: true, hardness: 0.8, drop: 44 },
     45: { name: "Pink Wool", color: "#f38baa", solid: true, hardness: 0.8, drop: 45 },
+    46: { name: "Smooth Stone", color: "#a8a8a8", solid: true, hardness: 2, drop: 46 },
+    47: { name: "Crying Obsidian", color: "#22075e", solid: true, hardness: 35, drop: 47 },
+    48: { name: "Copper Ore", color: "#c87f5a", solid: true, hardness: 3, drop: 48 },
+    49: { name: "Deepslate Iron Ore", color: "#6e5b3b", solid: true, hardness: 4.5, drop: 49 },
+    50: { name: "Redstone Block", color: "#aa0000", solid: true, hardness: 5, drop: 50 },
+    51: { name: "Amethyst Block", color: "#8a5cc5", solid: true, hardness: 1.5, drop: 51 },
+    52: { name: "Torch Flower", color: "#f5b800", solid: false, plant: true, hardness: 0.05, drop: 52 },
+    53: { name: "Shulker Box", color: "#897691", solid: true, hardness: 2, drop: 53 },
+    54: { name: "Glass Pane", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 54, alpha: 0.45 },
+    55: { name: "Barrel", color: "#7a532b", solid: true, hardness: 2.5, drop: 55 },
+    56: { name: "Portal", color: "#7b3aff", solid: false, liquid: true, alpha: 0.65, danger: true },
   };
 
   function hashSeed(str) {
