@@ -230,6 +230,11 @@
     <text x="68" y="80" text-anchor="middle" fill="#fff" font-family="Segoe UI, sans-serif" font-weight="800" font-size="26" letter-spacing="-1">365</text>
   </svg>`);
 
+  register("netflix", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect width="128" height="128" rx="22" fill="#000"/>
+    <path fill="#e50914" d="M44 22 L44 106 C49.5 105.3 55 104.7 60.5 104.3 L60.5 62 L78 106 C84 106 90 106.4 96 107 L96 22 L80 22 L80 60 L64.5 22 Z"/>
+  </svg>`);
+
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),

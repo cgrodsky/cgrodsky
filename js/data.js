@@ -141,6 +141,7 @@
     { label: "YouTube", url: "youtube.local" },
     { label: "Discord", url: "discord.local" },
     { label: "Duolingo", url: "duolingo.local" },
+    { label: "Netflix", url: "netflix.local" },
   ];
 
   window.Catalog = { storeApps, amazonItems, channels, discordServers, bookmarks };

@@ -11,6 +11,7 @@
     "youtube": "youtube", "youtube.local": "youtube", "youtube.com": "youtube",
     "discord": "discord", "discord.local": "discord", "discord.com": "discord",
     "duolingo": "duolingo", "duolingo.local": "duolingo", "duolingo.com": "duolingo",
+    "netflix": "netflix", "netflix.local": "netflix", "netflix.com": "netflix",
   };
 
   function resolveSpecial(input) {

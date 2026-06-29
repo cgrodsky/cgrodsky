@@ -993,5 +993,296 @@
     render();
   }
 
-  window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo };
+  // =================== NETFLIX ===================
+  // Native rebuild of the user's Base44 "Netflix Clone" design: profile gate,
+  // billboard hero, horizontal rows (Continue Watching, Top 10, Trending, genres),
+  // a title detail sheet, and a faux player. Posters are the same free Unsplash
+  // stills from the original design. State persists in appData.netflix.
+  const NF_HERO = ["1506905925346-21bda4d32df4", "1536440136628-849c177e76a1", "1478760329108-5c3ed9d495a0"];
+  const NF_POS = [
+    "1500534314209-a25ddb2bd429", "1504593811423-6dd665756598", "1509347528160-9a9e33742cdb",
+    "1533106497176-45ae19e68ba2", "1462332420958-a05d1e002413", "1440404653325-ab127d49abc1",
+    "1534809027769-b00d750a6bac", "1604975701397-6365ccbd028a", "1520250497591-112f2f40a3f4",
+    "1497366216548-37526070297c", "1531297484001-80022131f5a1", "1559583109-3e7968136c99",
+    "1470229722913-7c0e2dbbafd3", "1446776811953-b23d57bd21aa", "1518709268805-4e9042af9f23",
+  ];
+  const nfPoster = (i) => `https://images.unsplash.com/photo-${NF_POS[i % NF_POS.length]}?w=400&h=600&fit=crop`;
+  const nfHero = (i) => `https://images.unsplash.com/photo-${NF_HERO[i % NF_HERO.length]}?w=1600&h=900&fit=crop`;
+
+  // id, title, year, rating, kind(film/series), runtime, match%, genres[], desc
+  const NF_LIB = [
+    ["inception", "Inception", 2010, "PG-13", "film", "2h 28m", 97, ["Sci-Fi", "Thriller", "Action"], "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O."],
+    ["breaking-bad", "Breaking Bad", 2008, "TV-MA", "series", "5 Seasons", 98, ["Drama", "Thriller"], "A high-school chemistry teacher diagnosed with cancer turns to a life of crime, producing and selling methamphetamine to secure his family's future."],
+    ["dark-knight", "The Dark Knight", 2008, "PG-13", "film", "2h 32m", 96, ["Action", "Thriller", "Drama"], "When the menace known as the Joker wreaks havoc on Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice."],
+    ["stranger-things", "Stranger Things", 2016, "TV-14", "series", "4 Seasons", 95, ["Sci-Fi", "Horror", "Drama"], "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl."],
+    ["the-matrix", "The Matrix", 1999, "R", "film", "2h 16m", 94, ["Sci-Fi", "Action"], "A computer hacker learns the true nature of his reality and his role in the war against its controllers."],
+    ["the-witcher", "The Witcher", 2019, "TV-MA", "series", "3 Seasons", 88, ["Fantasy", "Action", "Drama"], "Geralt of Rivia, a solitary monster hunter, struggles to find his place in a world where people often prove more wicked than beasts."],
+    ["interstellar", "Interstellar", 2014, "PG-13", "film", "2h 49m", 93, ["Sci-Fi", "Drama"], "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival."],
+    ["the-crown", "The Crown", 2016, "TV-MA", "series", "6 Seasons", 87, ["Drama"], "Follows the political rivalries and romance of Queen Elizabeth II's reign and the events that shaped the second half of the twentieth century."],
+    ["pulp-fiction", "Pulp Fiction", 1994, "R", "film", "2h 34m", 92, ["Thriller", "Drama"], "The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence and redemption."],
+    ["dark", "Dark", 2017, "TV-MA", "series", "3 Seasons", 90, ["Sci-Fi", "Thriller", "Drama"], "A missing child sets four families on a frantic hunt for answers as they unearth a mind-bending mystery that spans three generations."],
+    ["gladiator", "Gladiator", 2000, "R", "film", "2h 35m", 89, ["Action", "Drama"], "A former Roman general sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery."],
+    ["the-office", "The Office", 2005, "TV-14", "series", "9 Seasons", 91, ["Comedy"], "A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior and tedium."],
+    ["blade-runner", "Blade Runner 2049", 2017, "R", "film", "2h 44m", 90, ["Sci-Fi", "Thriller"], "A young blade runner's discovery of a long-buried secret leads him to track down former blade runner Rick Deckard, missing for thirty years."],
+    ["wednesday", "Wednesday", 2022, "TV-14", "series", "1 Season", 86, ["Comedy", "Horror", "Fantasy"], "Wednesday Addams investigates a monstrous mystery at Nevermore Academy while making new friends — and enemies."],
+    ["whiplash", "Whiplash", 2014, "R", "film", "1h 46m", 92, ["Drama"], "A promising young drummer enrolls at a cut-throat music conservatory where his dreams are mentored by an instructor who will stop at nothing."],
+    ["money-heist", "Money Heist", 2017, "TV-MA", "series", "5 Seasons", 88, ["Thriller", "Action", "Drama"], "Eight thieves take hostages and lock themselves in the Royal Mint of Spain as a criminal mastermind manipulates the police to carry out his plan."],
+    ["parasite", "Parasite", 2019, "R", "film", "2h 12m", 95, ["Thriller", "Drama", "Comedy"], "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan."],
+    ["the-mandalorian", "The Mandalorian", 2019, "TV-14", "series", "3 Seasons", 89, ["Sci-Fi", "Action", "Fantasy"], "A lone bounty hunter makes his way through the outer reaches of the galaxy, far from the authority of the New Republic."],
+    ["mad-max", "Mad Max: Fury Road", 2015, "R", "film", "2h 0m", 90, ["Action", "Sci-Fi"], "In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland with the aid of a group of female prisoners."],
+    ["arcane", "Arcane", 2021, "TV-14", "series", "2 Seasons", 94, ["Animation", "Action", "Fantasy"], "Amid the stark discord of twin cities Piltover and Zaun, two sisters fight on rival sides of a war between magic technologies and clashing convictions."],
+    ["it", "It", 2017, "R", "film", "2h 15m", 85, ["Horror", "Thriller"], "In the summer of 1989, a group of bullied kids band together to destroy a shape-shifting monster which disguises itself as a clown."],
+    ["the-bear", "The Bear", 2022, "TV-MA", "series", "3 Seasons", 92, ["Comedy", "Drama"], "A young chef from the fine-dining world returns to Chicago to run his family's chaotic sandwich shop after a heartbreaking death."],
+    ["dune", "Dune", 2021, "PG-13", "film", "2h 35m", 91, ["Sci-Fi", "Action"], "A noble family becomes embroiled in a war for control over the galaxy's most valuable asset while its heir confronts his destiny."],
+    ["black-mirror", "Black Mirror", 2011, "TV-MA", "series", "6 Seasons", 89, ["Sci-Fi", "Thriller", "Drama"], "An anthology series exploring a twisted, high-tech near-future where humanity's greatest innovations and darkest instincts collide."],
+  ].map((r, i) => ({
+    id: r[0], title: r[1], year: r[2], rating: r[3], kind: r[4], runtime: r[5],
+    match: r[6], genres: r[7], desc: r[8], poster: nfPoster(i), hero: nfHero(i % NF_HERO.length),
+  }));
+  const NF_BY_ID = Object.fromEntries(NF_LIB.map((t) => [t.id, t]));
+
+  function nfState() {
+    if (!S().appData) S().appData = {};
+    const d = S().appData.netflix || (S().appData.netflix = {
+      profile: null, myList: [], progress: { "breaking-bad": 30, "dark-knight": 60, "inception": 15, "stranger-things": 75 },
+    });
+    if (!d.myList) d.myList = [];
+    if (!d.progress) d.progress = {};
+    return d;
+  }
+
+  const NF_PROFILES = [
+    { name: "Cameron", color: "#e50914" }, { name: "Guest", color: "#1e88e5" },
+    { name: "Family", color: "#43a047" }, { name: "Kids", color: "#fbc02d" },
+  ];
+
+  function nfLogo(cls) {
+    return `<svg class="${cls || ""}" viewBox="0 0 111 30" xmlns="http://www.w3.org/2000/svg" aria-label="Netflix"><path fill="#e50914" d="M105.06 14.28L111 30c-1.75-.25-3.5-.57-5.28-.84l-3.35-8.69-3.42 7.99c-1.7-.29-3.36-.39-5.06-.62l6.03-13.75L94.45 0h5.03l3.06 7.86L105.85 0H111l-5.94 14.28zM90.6 0h-4.6v25.79c1.5.09 3.07.16 4.6.31V0zM82.83 25.39c-4.2-.28-8.4-.53-12.68-.62V0h4.7v20.36c2.67.06 5.34.27 7.98.43v4.6zM64.3 10.6v4.7h-6.42v10.04h-4.65V0H66.2v4.7h-8.32v5.9h6.42zM45.66 4.7v20.97c-1.57 0-3.16 0-4.7.06V4.7h-4.86V0h14.4v4.7h-4.84zM30.97 15.13c-2.08 0-4.52 0-6.28.08v6.97c2.77-.18 5.54-.39 8.33-.48v4.5l-13.03 1.03V0h13.03v4.7h-8.33v5.78c1.82 0 4.6-.08 6.28-.08v4.73zM4.86 12.94v17.34c-1.69.19-3.19.4-4.86.66V0h4.55l6.19 17.31V0h4.7v28.71c-1.65.29-3.32.39-5.12.69L4.86 12.94z"/></svg>`;
+  }
+
+  function netflix(ctx) {
+    const d = nfState();
+    const root = el(`<div class="nf"></div>`);
+    ctx.page.appendChild(root);
+    if (!d.profile) return nfProfiles(root, ctx);
+    nfBrowse(root, ctx);
+  }
+
+  function nfProfiles(root, ctx) {
+    const d = nfState();
+    root.className = "nf nf-gate";
+    root.innerHTML = `<div class="nf-gate-inner">
+      <div class="nf-gate-top">${nfLogo("nf-wm")}</div>
+      <h1>Who's watching?</h1>
+      <div class="nf-profiles"></div>
+    </div>`;
+    const wrap = root.querySelector(".nf-profiles");
+    NF_PROFILES.forEach((p) => {
+      const card = el(`<button class="nf-profile">
+        <span class="nf-avatar" style="background:${p.color}">${p.name[0]}</span>
+        <span class="nf-pname">${p.name}</span>
+      </button>`);
+      card.onclick = () => { d.profile = p.name; State.save(); root.innerHTML = ""; root.className = "nf"; nfBrowse(root, ctx); };
+      wrap.appendChild(card);
+    });
+  }
+
+  function nfBrowse(root, ctx, opts) {
+    const d = nfState();
+    opts = opts || { tab: "Home", q: "" };
+    const featured = NF_BY_ID["inception"];
+    root.innerHTML = `
+      <div class="nf-nav">
+        <div class="nf-nav-l">
+          ${nfLogo("nf-wm")}
+          <nav class="nf-links"></nav>
+        </div>
+        <div class="nf-nav-r">
+          <div class="nf-search"><span>&#128269;</span><input placeholder="Titles, genres" value="${(opts.q || "").replace(/"/g, "&quot;")}"></div>
+          <span class="nf-avatar nf-avatar-sm" style="background:${(NF_PROFILES.find((p) => p.name === d.profile) || {}).color || "#e50914"}">${(d.profile || "?")[0]}</span>
+        </div>
+      </div>
+      <div class="nf-scroll"></div>`;
+
+    const links = root.querySelector(".nf-links");
+    ["Home", "TV Shows", "Movies", "New & Popular", "My List"].forEach((t) => {
+      const a = el(`<button class="nf-link ${t === opts.tab ? "active" : ""}">${t}</button>`);
+      a.onclick = () => nfBrowse(root, ctx, { tab: t, q: "" });
+      links.appendChild(a);
+    });
+
+    const search = root.querySelector(".nf-search input");
+    let tmr;
+    search.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => nfBrowse(root, ctx, { tab: opts.tab, q: search.value }), 250); };
+
+    const scroll = root.querySelector(".nf-scroll");
+    const q = (opts.q || "").trim().toLowerCase();
+
+    if (q) {
+      const hits = NF_LIB.filter((t) => t.title.toLowerCase().includes(q) || t.genres.some((g) => g.toLowerCase().includes(q)));
+      const grid = el(`<div class="nf-results"><h2>${hits.length ? "Results for “" + q + "”" : "No titles found for “" + q + "”"}</h2><div class="nf-grid"></div></div>`);
+      const g = grid.querySelector(".nf-grid");
+      hits.forEach((t) => g.appendChild(nfCard(t, root, ctx)));
+      scroll.appendChild(grid);
+      return;
+    }
+
+    // Hero billboard
+    const myInList = d.myList.includes(featured.id);
+    const hero = el(`<div class="nf-hero" style="background-image:linear-gradient(90deg,rgba(0,0,0,.8) 0%,rgba(0,0,0,.3) 50%,transparent 70%),linear-gradient(0deg,#141414 2%,transparent 30%),url('${featured.hero}')">
+      <div class="nf-hero-body">
+        <div class="nf-hero-badge">${nfLogo("nf-wm-sm")} <span>FILM</span></div>
+        <h1 class="nf-hero-title">${featured.title}</h1>
+        <div class="nf-hero-meta"><span class="nf-match">${featured.match}% Match</span><span>${featured.year}</span><span class="nf-rate">${featured.rating}</span><span>${featured.runtime}</span></div>
+        <p class="nf-hero-desc">${featured.desc}</p>
+        <div class="nf-hero-btns">
+          <button class="nf-play">&#9654; Play</button>
+          <button class="nf-info">&#9432; More Info</button>
+        </div>
+      </div>
+    </div>`);
+    hero.querySelector(".nf-play").onclick = () => nfPlayer(featured, root, ctx);
+    hero.querySelector(".nf-info").onclick = () => nfDetail(featured, root, ctx);
+    scroll.appendChild(hero);
+
+    // Build rows depending on tab
+    const rows = [];
+    if (opts.tab === "My List") {
+      rows.push(["My List", d.myList.map((id) => NF_BY_ID[id]).filter(Boolean)]);
+    } else if (opts.tab === "TV Shows") {
+      rows.push(["Trending Series", NF_LIB.filter((t) => t.kind === "series")]);
+      ["Drama", "Sci-Fi", "Comedy", "Fantasy"].forEach((g) => rows.push([g + " Series", NF_LIB.filter((t) => t.kind === "series" && t.genres.includes(g))]));
+    } else if (opts.tab === "Movies") {
+      rows.push(["Trending Films", NF_LIB.filter((t) => t.kind === "film")]);
+      ["Action", "Sci-Fi", "Thriller", "Drama"].forEach((g) => rows.push([g + " Movies", NF_LIB.filter((t) => t.kind === "film" && t.genres.includes(g))]));
+    } else if (opts.tab === "New & Popular") {
+      rows.push(["New Releases", NF_LIB.slice().sort((a, b) => b.year - a.year)]);
+      rows.push(["Top 10 Today", NF_LIB.slice().sort((a, b) => b.match - a.match).slice(0, 10), "rank"]);
+    } else {
+      const cont = Object.keys(d.progress).map((id) => NF_BY_ID[id]).filter(Boolean);
+      if (cont.length) rows.push(["Continue Watching for " + d.profile, cont, "progress"]);
+      rows.push(["Top 10 Today", NF_LIB.slice().sort((a, b) => b.match - a.match).slice(0, 10), "rank"]);
+      rows.push(["Trending Now", NF_LIB.slice(4, 16)]);
+      if (d.myList.length) rows.push(["My List", d.myList.map((id) => NF_BY_ID[id]).filter(Boolean)]);
+      ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Thriller"].forEach((g) => rows.push([g, NF_LIB.filter((t) => t.genres.includes(g))]));
+    }
+
+    rows.forEach(([label, items, mode]) => {
+      if (!items || !items.length) return;
+      const row = el(`<div class="nf-row"><h2>${label}</h2><div class="nf-strip ${mode === "rank" ? "nf-rank-strip" : ""}"></div></div>`);
+      const strip = row.querySelector(".nf-strip");
+      items.forEach((t, i) => {
+        if (mode === "rank") {
+          const r = el(`<div class="nf-rank-item"><span class="nf-rank-num">${i + 1}</span></div>`);
+          r.appendChild(nfCard(t, root, ctx));
+          strip.appendChild(r);
+        } else {
+          const card = nfCard(t, root, ctx, mode === "progress" ? (d.progress[t.id] || 0) : null);
+          strip.appendChild(card);
+        }
+      });
+      scroll.appendChild(row);
+    });
+
+    if (opts.tab === "My List" && !d.myList.length) {
+      scroll.appendChild(el(`<div class="nf-empty">Your list is empty. Tap <b>+ My List</b> on any title to add it here.</div>`));
+    }
+
+    // Footer
+    scroll.appendChild(el(`<div class="nf-footer">
+      <div class="nf-foot-links">${["Audio Description", "Help Center", "Gift Cards", "Media Center", "Investor Relations", "Jobs", "Terms of Use", "Privacy", "Legal Notices", "Cookie Preferences", "Corporate Information", "Contact Us"].map((l) => `<span>${l}</span>`).join("")}</div>
+      <div class="nf-foot-copy">&copy; 2024 Netflix Clone &middot; built into Windows 12</div>
+    </div>`));
+  }
+
+  function nfCard(t, root, ctx, progress) {
+    const card = el(`<button class="nf-card">
+      <img loading="lazy" src="${t.poster}" alt="${t.title}">
+      <span class="nf-card-title">${t.title}</span>
+      ${progress != null ? `<span class="nf-card-prog"><span style="width:${progress}%"></span></span>` : ""}
+    </button>`);
+    card.onclick = () => nfDetail(t, root, ctx);
+    return card;
+  }
+
+  function nfOverlay(root) {
+    const old = root.querySelector(".nf-overlay");
+    if (old) old.remove();
+    const ov = el(`<div class="nf-overlay"></div>`);
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    root.appendChild(ov);
+    return ov;
+  }
+
+  function nfDetail(t, root, ctx) {
+    const d = nfState();
+    const ov = nfOverlay(root);
+    const inList = d.myList.includes(t.id);
+    const sheet = el(`<div class="nf-sheet">
+      <button class="nf-close" title="Close">&times;</button>
+      <div class="nf-sheet-hero" style="background-image:linear-gradient(0deg,#181818 5%,transparent 50%),url('${t.hero}')">
+        <div class="nf-sheet-hero-body">
+          <h1>${t.title}</h1>
+          <div class="nf-sheet-btns">
+            <button class="nf-play">&#9654; Play</button>
+            <button class="nf-add ${inList ? "on" : ""}" title="${inList ? "Remove from My List" : "Add to My List"}">${inList ? "&#10003;" : "+"}</button>
+          </div>
+        </div>
+      </div>
+      <div class="nf-sheet-body">
+        <div class="nf-sheet-main">
+          <div class="nf-sheet-meta"><span class="nf-match">${t.match}% Match</span><span>${t.year}</span><span class="nf-rate">${t.rating}</span><span>${t.runtime}</span><span class="nf-hd">HD</span></div>
+          <p>${t.desc}</p>
+        </div>
+        <div class="nf-sheet-side">
+          <div><span class="nf-dim">Genres:</span> ${t.genres.join(", ")}</div>
+          <div><span class="nf-dim">Type:</span> ${t.kind === "series" ? "Series" : "Film"}</div>
+        </div>
+      </div>
+    </div>`);
+    sheet.querySelector(".nf-close").onclick = () => ov.remove();
+    sheet.querySelector(".nf-play").onclick = () => { ov.remove(); nfPlayer(t, root, ctx); };
+    sheet.querySelector(".nf-add").onclick = (e) => {
+      const i = d.myList.indexOf(t.id);
+      if (i >= 0) d.myList.splice(i, 1); else d.myList.push(t.id);
+      State.save();
+      const on = d.myList.includes(t.id);
+      e.currentTarget.classList.toggle("on", on);
+      e.currentTarget.innerHTML = on ? "&#10003;" : "+";
+      e.currentTarget.title = on ? "Remove from My List" : "Add to My List";
+    };
+    ov.appendChild(sheet);
+  }
+
+  function nfPlayer(t, root, ctx) {
+    const d = nfState();
+    const start = d.progress[t.id] || 0;
+    const ov = nfOverlay(root);
+    ov.classList.add("nf-player-ov");
+    const player = el(`<div class="nf-player" style="background-image:linear-gradient(0deg,rgba(0,0,0,.9),rgba(0,0,0,.4)),url('${t.hero}')">
+      <button class="nf-player-back" title="Back">&#8592;</button>
+      <div class="nf-player-center"><div class="nf-player-logo">${nfLogo("nf-wm")}</div><div class="nf-player-name">${t.title}</div></div>
+      <div class="nf-player-ctrl">
+        <div class="nf-scrub"><span class="nf-scrub-fill" style="width:${start}%"></span></div>
+        <div class="nf-player-row">
+          <button class="nf-pp" title="Pause">&#10074;&#10074;</button>
+          <span class="nf-time">${t.title} &middot; ${t.runtime}</span>
+          <button class="nf-skip">Skip Intro</button>
+        </div>
+      </div>
+    </div>`);
+    let pct = start, playing = true, timer = null;
+    const fill = player.querySelector(".nf-scrub-fill");
+    const pp = player.querySelector(".nf-pp");
+    function tick() { if (!playing) return; pct = Math.min(100, pct + 0.4); fill.style.width = pct + "%"; if (pct >= 100) stop(); }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } d.progress[t.id] = Math.round(pct); State.save(); }
+    timer = setInterval(tick, 200);
+    pp.onclick = () => { playing = !playing; pp.innerHTML = playing ? "&#10074;&#10074;" : "&#9654;"; pp.title = playing ? "Pause" : "Play"; };
+    player.querySelector(".nf-skip").onclick = () => { pct = Math.min(100, pct + 12); fill.style.width = pct + "%"; };
+    player.querySelector(".nf-player-back").onclick = () => { stop(); ov.remove(); nfBrowse(root, ctx); };
+    ov.onclick = (e) => { if (e.target === ov) { stop(); ov.remove(); nfBrowse(root, ctx); } };
+    ov.appendChild(player);
+  }
+
+  window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo, netflix };
 })();
