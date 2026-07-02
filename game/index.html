@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Quest — Game Code Maker</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2a3342;
+    --ink:#e6edf3; --muted:#93a1b3; --accent:#5b8cff; --accent2:#7c5cff;
+    --good:#3fb950; --warn:#f0883e; --danger:#f85149; --gold:#ffcc4d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 700px at 70% -10%, #1a2440 0%, var(--bg) 55%);
+    color:var(--ink); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    min-height:100%;
+  }
+  a{color:var(--accent)}
+  .wrap{max-width:1040px;margin:0 auto;padding:22px 18px 60px}
+  header.top{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .logo{font-weight:800;font-size:22px;letter-spacing:.3px;display:flex;align-items:center;gap:10px}
+  .logo .badge{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:17px}
+  .sub{color:var(--muted);font-size:13px}
+  .spacer{flex:1}
+  button{
+    font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);padding:9px 14px;border-radius:9px;transition:.15s;
+  }
+  button:hover{border-color:var(--accent);background:#222c3c}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent}
+  button.active{border-color:var(--accent);background:#22314f;color:#fff}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  input,textarea{
+    font:inherit;background:#0b0f16;color:var(--ink);border:1px solid var(--line);
+    border-radius:9px;padding:10px 12px;width:100%;
+  }
+  input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:70px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.2px}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+
+  /* ---- Landing ---- */
+  #landing{display:grid;gap:18px}
+  .hero{display:grid;gap:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .templates{display:flex;gap:10px;flex-wrap:wrap}
+  .tpl{flex:1;min-width:150px;text-align:left;padding:12px 14px}
+  .tpl b{display:block;margin-bottom:2px}
+  .tpl span{color:var(--muted);font-size:12px}
+
+  /* ---- Game view ---- */
+  #game{display:none}
+  #game.show{display:block}
+  #landing.hide{display:none}
+  .gamebar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .gamebar .title{font-weight:700;font-size:18px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{border:none;border-radius:0;background:transparent;padding:8px 16px}
+  .seg button.active{background:var(--accent);color:#fff}
+  .stage{display:grid;grid-template-columns:1fr;gap:16px}
+  .canvas-wrap{background:#0b0f16;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;place-items:center;position:relative}
+  canvas{image-rendering:pixelated;max-width:100%;height:auto;touch-action:none;border-radius:6px}
+  .hud{position:absolute;top:18px;left:18px;display:flex;gap:14px;font-weight:700;font-size:14px;pointer-events:none;text-shadow:0 1px 3px #000}
+  .hud .coins{color:var(--gold)}
+  .overlay{position:absolute;inset:12px;display:none;place-items:center;background:rgba(6,10,18,.82);border-radius:6px;text-align:center}
+  .overlay.show{display:grid}
+  .overlay .msg{font-size:26px;font-weight:800}
+  .overlay .msg.win{color:var(--good)}
+  .overlay .msg.lose{color:var(--danger)}
+  .overlay small{color:var(--muted);display:block;margin-top:6px}
+
+  /* editor */
+  #editorPanel{display:none}
+  #editorPanel.show{display:block}
+  .palette{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .swatch{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+  .swatch.active{border-color:var(--accent);background:#22314f}
+  .swatch .chip{width:18px;height:18px;border-radius:4px;border:1px solid #0006}
+  .swatch small{color:var(--muted)}
+  .editnote{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .sizes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sizes input{width:70px}
+
+  .codebox{margin-top:16px}
+  .codebox textarea{min-height:80px}
+  .codewrap{position:relative}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--good);color:#04210c;font-weight:700;padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hint{color:var(--muted);font-size:12.5px}
+  .keys{display:inline-block;background:#0b0f16;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-family:ui-monospace,monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><span class="badge">🎮</span> Code Quest</div>
+    <div class="sub">Enter a game code to jump in — then edit it and share your own.</div>
+    <div class="spacer"></div>
+    <button class="ghost" id="homeBtn" style="display:none">← Home</button>
+  </header>
+
+  <!-- ============ LANDING ============ -->
+  <section id="landing">
+    <div class="card hero">
+      <div>
+        <label for="codeInput">Have a game code? Paste it here</label>
+        <textarea id="codeInput" placeholder="Paste a game code (starts with CQ1~) and press Play…"></textarea>
+      </div>
+      <div class="row">
+        <button class="primary" id="playCodeBtn">▶ Play this code</button>
+        <button id="editCodeBtn">✎ Play &amp; Edit</button>
+        <span class="hint" id="codeErr" style="align-self:center;color:var(--danger)"></span>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <label>Start something new</label>
+        <div style="font-weight:700;font-size:18px;margin-bottom:6px">Build your own level</div>
+        <p class="hint" style="margin-top:0">Pick a template, then paint your world in the editor. A shareable game code is generated automatically.</p>
+        <div class="templates">
+          <button class="tpl" data-tpl="blank"><b>Blank</b><span>Empty canvas</span></button>
+          <button class="tpl" data-tpl="starter"><b>Starter</b><span>Coins + goal</span></button>
+          <button class="tpl" data-tpl="cavern"><b>Cavern</b><span>Spikes &amp; gaps</span></button>
+        </div>
+      </div>
+      <div class="card">
+        <label>How it works</label>
+        <ol style="margin:6px 0 0;padding-left:18px;color:var(--muted)">
+          <li>Every level is stored inside its <b style="color:var(--ink)">game code</b> — no login, no server.</li>
+          <li>Paste a code to load that exact game.</li>
+          <li>Hit <b style="color:var(--ink)">Edit</b>, redesign it, and the code updates live.</li>
+          <li>Copy the new code (or link) to share your version.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="game">
+    <div class="gamebar">
+      <input id="gameName" style="max-width:240px;font-weight:700" value="My Level">
+      <div class="seg" role="tablist">
+        <button id="tabPlay" class="active">▶ Play</button>
+        <button id="tabEdit">✎ Edit</button>
+      </div>
+      <div class="spacer"></div>
+      <button id="restartBtn" class="ghost">↻ Restart</button>
+      <button id="shareBtn">🔗 Copy link</button>
+    </div>
+
+    <div class="stage">
+      <div class="canvas-wrap">
+        <div class="hud" id="hud"><span class="coins">🪙 <span id="coinCount">0</span>/<span id="coinTotal">0</span></span></div>
+        <canvas id="c" width="640" height="384"></canvas>
+        <div class="overlay" id="overlay">
+          <div>
+            <div class="msg" id="overlayMsg">You win!</div>
+            <small id="overlaySub">Press R to play again</small>
+            <div style="margin-top:14px"><button class="primary" id="overlayBtn">Play again</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- editor controls -->
+      <div class="card" id="editorPanel">
+        <label>Paint palette — click a tile, then draw on the grid</label>
+        <div class="palette" id="palette"></div>
+        <div class="row" style="align-items:flex-end">
+          <div class="sizes">
+            <div><label>Width</label><input type="number" id="gw" min="8" max="40" value="20"></div>
+            <div><label>Height</label><input type="number" id="gh" min="6" max="30" value="12"></div>
+            <button id="resizeBtn">Resize</button>
+            <button id="clearBtn" class="ghost">Clear</button>
+          </div>
+        </div>
+        <p class="editnote">Tip: left-click / drag to paint, right-click to erase. There can be only one 🧍 start and one 🏁 goal.</p>
+      </div>
+    </div>
+
+    <div class="card codebox">
+      <label>Game code — copy &amp; share this to let anyone play your level</label>
+      <div class="codewrap">
+        <textarea id="codeOut" readonly></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="copyCodeBtn">📋 Copy code</button>
+        <button id="copyLinkBtn">🔗 Copy play link</button>
+        <span class="hint" style="align-self:center">Anyone who pastes this code plays the exact level you made.</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+/* ============================================================
+   Code Quest — a tiny tile platformer whose entire level lives
+   inside a shareable "game code". Play, edit, share. All client-side.
+   ============================================================ */
+
+// ---- Tile types ----
+const TILES = {
+  '.': {name:'Empty',  color:null,        emoji:'',   solid:false},
+  '#': {name:'Wall',   color:'#3a4b63',   emoji:'',   solid:true},
+  'o': {name:'Coin',   color:null,        emoji:'🪙', solid:false},
+  '^': {name:'Spike',  color:null,        emoji:'🔺', solid:false, deadly:true},
+  'p': {name:'Start',  color:null,        emoji:'🧍', solid:false, unique:true},
+  'g': {name:'Goal',   color:null,        emoji:'🏁', solid:false, unique:true},
+};
+const PAINT_ORDER = ['#','o','^','p','g','.'];
+const PAINT_LABEL = {'#':'Wall','o':'Coin','^':'Spike','p':'Start','g':'Goal','.':'Erase'};
+
+const TS = 32; // tile size in px
+
+// ---- App state ----
+let level = null;      // {name,w,h,tiles:[]}
+let mode = 'play';     // 'play' | 'edit'
+let paint = '#';
+let anim = 0;
+
+// ---- DOM ----
+const $ = s => document.querySelector(s);
+const landing = $('#landing'), gameEl = $('#game');
+const canvas = $('#c'), ctx = canvas.getContext('2d');
+
+// ============================================================
+//  Level <-> code  (portable, URL-safe base64 of compact JSON)
+// ============================================================
+function b64urlEncode(str){
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length%4) str+='=';
+  return decodeURIComponent(escape(atob(str)));
+}
+function encodeLevel(lv){
+  const payload = {n:lv.name, w:lv.w, h:lv.h, t:lv.tiles.join('')};
+  return 'CQ1~' + b64urlEncode(JSON.stringify(payload));
+}
+function decodeLevel(code){
+  code = (code||'').trim();
+  if(code.startsWith('CQ1~')) code = code.slice(4);
+  const obj = JSON.parse(b64urlDecode(code));
+  if(!obj.w || !obj.h || typeof obj.t !== 'string') throw new Error('bad');
+  if(obj.t.length !== obj.w*obj.h) throw new Error('size mismatch');
+  return {name:obj.n||'Untitled', w:obj.w, h:obj.h, tiles:obj.t.split('')};
+}
+
+// ============================================================
+//  Templates
+// ============================================================
+function makeLevel(w,h,fill='.'){
+  const tiles = new Array(w*h).fill(fill);
+  const idx=(x,y)=>y*w+x;
+  // floor + walls border for playability
+  for(let x=0;x<w;x++){ tiles[idx(x,h-1)]='#'; }
+  return {w,h,tiles,idx};
+}
+function template(kind){
+  const w=20,h=12, idx=(x,y)=>y*w+x, t=new Array(w*h).fill('.');
+  for(let x=0;x<w;x++) t[idx(x,h-1)]='#';           // ground
+  if(kind==='blank'){
+    t[idx(2,h-2)]='p'; t[idx(w-3,h-2)]='g';
+    return {name:'Blank Level', w, h, tiles:t};
+  }
+  if(kind==='starter'){
+    t[idx(2,h-2)]='p';
+    for(let x=6;x<=8;x++) t[idx(x,h-4)]='#';
+    t[idx(7,h-5)]='o'; t[idx(11,h-2)]='o'; t[idx(12,h-2)]='o';
+    for(let x=13;x<=15;x++) t[idx(x,h-5)]='#';
+    t[idx(14,h-6)]='o';
+    t[idx(w-3,h-2)]='g';
+    return {name:'Starter Quest', w, h, tiles:t};
+  }
+  // cavern
+  t[idx(1,h-2)]='p';
+  t[idx(5,h-2)]='^'; t[idx(6,h-2)]='^';
+  for(let x=8;x<=10;x++) t[idx(x,h-4)]='#';
+  t[idx(9,h-5)]='o';
+  t[idx(12,h-2)]='^'; t[idx(13,h-2)]='^'; t[idx(14,h-2)]='^';
+  for(let x=12;x<=15;x++) t[idx(x,h-6)]='#';
+  t[idx(13,h-7)]='o'; t[idx(14,h-7)]='o';
+  t[idx(w-2,h-2)]='g';
+  return {name:'Cavern Run', w, h, tiles:t};
+}
+
+// ============================================================
+//  Physics / player
+// ============================================================
+const player = {x:0,y:0,vx:0,vy:0,w:22,h:26,onGround:false,alive:true,won:false};
+let coinsGot=0, coinsTotal=0;
+const keys={};
+const GRAV=0.5, MOVE=0.9, FRICT=0.8, MAXV=4.2, JUMP=-9.5;
+
+function tileAt(px,py){
+  const tx=Math.floor(px/TS), ty=Math.floor(py/TS);
+  if(tx<0||ty<0||tx>=level.w||ty>=level.h) return '#'; // walls outside
+  return level.tiles[ty*level.w+tx];
+}
+function solidAt(px,py){ return TILES[tileAt(px,py)]?.solid; }
+
+function resetPlayer(){
+  let sx=1,sy=1;
+  for(let i=0;i<level.tiles.length;i++){ if(level.tiles[i]==='p'){ sx=i%level.w; sy=Math.floor(i/level.w); } }
+  player.x=sx*TS+ (TS-player.w)/2; player.y=sy*TS+(TS-player.h);
+  player.vx=0;player.vy=0;player.onGround=false;player.alive=true;player.won=false;
+  coinsGot=0; coinsTotal=level.tiles.filter(t=>t==='o').length;
+  // strip nothing; coins collected tracked separately via set
+  collected.clear();
+  $('#coinTotal').textContent=coinsTotal;
+  $('#coinCount').textContent=0;
+  hideOverlay();
+}
+const collected = new Set();
+
+function updatePlayer(){
+  if(!player.alive||player.won) return;
+  // input
+  if(keys['ArrowLeft']||keys['a']) player.vx-=MOVE;
+  if(keys['ArrowRight']||keys['d']) player.vx+=MOVE;
+  player.vx*=FRICT;
+  if(player.vx>MAXV)player.vx=MAXV; if(player.vx<-MAXV)player.vx=-MAXV;
+  if(Math.abs(player.vx)<0.05)player.vx=0;
+  if((keys['ArrowUp']||keys['w']||keys[' ']) && player.onGround){ player.vy=JUMP; player.onGround=false; }
+  player.vy+=GRAV; if(player.vy>12)player.vy=12;
+
+  // horizontal
+  moveAxis('x');
+  // vertical
+  moveAxis('y');
+
+  // world hazards / pickups sampled at player center + feet
+  sampleTiles();
+
+  // fell out of world
+  if(player.y>level.h*TS+80) die();
+}
+function moveAxis(axis){
+  const step = axis==='x'?player.vx:player.vy;
+  if(axis==='y') player.onGround=false;
+  player[axis]+=step;
+  const left=player.x, right=player.x+player.w, top=player.y, bot=player.y+player.h;
+  const corners = axis==='x'
+    ? (step>0 ? [[right,top],[right,(top+bot)/2],[right,bot-1]] : [[left,top],[left,(top+bot)/2],[left,bot-1]])
+    : (step>0 ? [[left+1,bot],[right-1,bot]] : [[left+1,top],[right-1,top]]);
+  for(const [cx,cy] of corners){
+    if(solidAt(cx,cy)){
+      if(axis==='x'){
+        if(step>0) player.x = Math.floor(right/TS)*TS - player.w - 0.01;
+        else player.x = (Math.floor(left/TS)+1)*TS + 0.01;
+        player.vx=0;
+      } else {
+        if(step>0){ player.y = Math.floor(bot/TS)*TS - player.h - 0.01; player.onGround=true; }
+        else player.y = (Math.floor(top/TS)+1)*TS + 0.01;
+        player.vy=0;
+      }
+      break;
+    }
+  }
+}
+function sampleTiles(){
+  const cx=player.x+player.w/2, cy=player.y+player.h/2;
+  // spikes: check the tiles overlapping the player's lower body
+  const pts=[[player.x+3,player.y+player.h-2],[player.x+player.w-3,player.y+player.h-2],[cx,cy]];
+  for(const [x,y] of pts){ if(TILES[tileAt(x,y)]?.deadly){ die(); return; } }
+  // coins
+  const tx=Math.floor(cx/TS), ty=Math.floor(cy/TS), i=ty*level.w+tx;
+  if(level.tiles[i]==='o' && !collected.has(i)){
+    collected.add(i); coinsGot++; $('#coinCount').textContent=coinsGot;
+  }
+  // goal
+  if(level.tiles[i]==='g') win();
+}
+function die(){ if(!player.alive)return; player.alive=false; showOverlay('lose'); }
+function win(){ if(player.won)return; player.won=true; showOverlay('win'); }
+
+function showOverlay(kind){
+  const o=$('#overlay'), m=$('#overlayMsg'), s=$('#overlaySub');
+  o.classList.add('show'); m.className='msg '+kind;
+  if(kind==='win'){ m.textContent = coinsGot===coinsTotal && coinsTotal>0 ? '🏆 Perfect run!' : '🏁 You reached the goal!'; s.textContent=`Coins: ${coinsGot}/${coinsTotal}`; }
+  else { m.textContent='💀 You died'; s.textContent='Press R or click below to retry'; }
+}
+function hideOverlay(){ $('#overlay').classList.remove('show'); }
+
+// ============================================================
+//  Rendering
+// ============================================================
+function draw(){
+  anim++;
+  // fit canvas to level
+  const W=level.w*TS, H=level.h*TS;
+  if(canvas.width!==W||canvas.height!==H){ canvas.width=W; canvas.height=H; }
+  ctx.clearRect(0,0,W,H);
+  // sky gradient
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#101a30'); g.addColorStop(1,'#0b1220');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // grid in edit mode
+  if(mode==='edit'){
+    ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1;
+    for(let x=0;x<=level.w;x++){ ctx.beginPath();ctx.moveTo(x*TS,0);ctx.lineTo(x*TS,H);ctx.stroke(); }
+    for(let y=0;y<=level.h;y++){ ctx.beginPath();ctx.moveTo(0,y*TS);ctx.lineTo(W,y*TS);ctx.stroke(); }
+  }
+
+  // tiles
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let y=0;y<level.h;y++) for(let x=0;x<level.w;x++){
+    const t=level.tiles[y*level.w+x]; if(t==='.') continue;
+    const px=x*TS, py=y*TS, i=y*level.w+x;
+    if(t==='#'){
+      ctx.fillStyle='#33445e'; ctx.fillRect(px,py,TS,TS);
+      ctx.fillStyle='#3d5170'; ctx.fillRect(px+2,py+2,TS-4,4);
+      ctx.strokeStyle='#243247'; ctx.strokeRect(px+.5,py+.5,TS-1,TS-1);
+      continue;
+    }
+    if(t==='o'){
+      if(mode==='play' && collected.has(i)) continue;
+      const bob=Math.sin((anim+ i*13)/18)*3;
+      ctx.font='22px system-ui'; ctx.fillText('🪙', px+TS/2, py+TS/2+bob);
+      continue;
+    }
+    if(t==='^'){ ctx.font='24px system-ui'; ctx.fillText('🔺', px+TS/2, py+TS/2+4); continue; }
+    if(t==='g'){ const bob=Math.sin(anim/20)*2; ctx.font='26px system-ui'; ctx.fillText('🏁', px+TS/2, py+TS/2+bob); continue; }
+    if(t==='p'){
+      if(mode==='edit'){ ctx.globalAlpha=.5; ctx.font='24px system-ui'; ctx.fillText('🧍', px+TS/2, py+TS/2); ctx.globalAlpha=1; }
+      continue;
+    }
+  }
+
+  // player (only in play mode)
+  if(mode==='play'){
+    ctx.save();
+    ctx.translate(player.x+player.w/2, player.y+player.h/2);
+    const t=anim/6, sq=player.onGround?1:1.06;
+    ctx.scale(1, sq);
+    // body
+    ctx.fillStyle= player.alive? '#ffcc4d':'#8a94a6';
+    roundRect(ctx,-player.w/2,-player.h/2,player.w,player.h,6); ctx.fill();
+    ctx.fillStyle='#1a1206';
+    // eyes
+    const dir = player.vx>0.3?3: player.vx<-0.3?-3:0;
+    ctx.beginPath(); ctx.arc(-4+dir,-4,2.4,0,7); ctx.arc(5+dir,-4,2.4,0,7); ctx.fill();
+    ctx.restore();
+  }
+}
+function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+function loop(){
+  if(level){
+    if(mode==='play') updatePlayer();
+    draw();
+  }
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+//  Editor painting
+// ============================================================
+let painting=false, eraseDrag=false;
+function canvasToTile(e){
+  const r=canvas.getBoundingClientRect();
+  const sx=canvas.width/r.width, sy=canvas.height/r.height;
+  const mx=(e.clientX-r.left)*sx, my=(e.clientY-r.top)*sy;
+  return {x:Math.floor(mx/TS), y:Math.floor(my/TS)};
+}
+function setTile(x,y,val){
+  if(x<0||y<0||x>=level.w||y>=level.h) return;
+  const i=y*level.w+x;
+  if(level.tiles[i]===val) return;
+  // enforce unique start/goal
+  if(TILES[val]?.unique){
+    for(let k=0;k<level.tiles.length;k++) if(level.tiles[k]===val) level.tiles[k]='.';
+  }
+  level.tiles[i]=val;
+  syncCode();
+}
+function editorDown(e){
+  if(mode!=='edit')return; e.preventDefault();
+  painting=true; eraseDrag = e.button===2;
+  const {x,y}=canvasToTile(e);
+  setTile(x,y, eraseDrag?'.':paint);
+}
+function editorMove(e){
+  if(mode!=='edit'||!painting)return;
+  const {x,y}=canvasToTile(e);
+  setTile(x,y, eraseDrag?'.':paint);
+}
+function editorUp(){ painting=false; }
+
+// ============================================================
+//  Mode / view switching
+// ============================================================
+function setMode(m){
+  mode=m;
+  $('#tabPlay').classList.toggle('active', m==='play');
+  $('#tabEdit').classList.toggle('active', m==='edit');
+  $('#editorPanel').classList.toggle('show', m==='edit');
+  $('#hud').style.display = m==='play'?'flex':'none';
+  $('#restartBtn').style.display = m==='play'?'':'none';
+  if(m==='play') resetPlayer(); else hideOverlay();
+}
+
+function openGame(lv, startMode){
+  level = lv;
+  landing.classList.add('hide'); gameEl.classList.add('show');
+  $('#homeBtn').style.display='';
+  $('#gameName').value = lv.name;
+  $('#gw').value = lv.w; $('#gh').value = lv.h;
+  syncCode();
+  setMode(startMode||'play');
+}
+
+function goHome(){
+  landing.classList.remove('hide'); gameEl.classList.remove('show');
+  $('#homeBtn').style.display='none';
+  history.replaceState(null,'',location.pathname);
+}
+
+// ============================================================
+//  Code sync + sharing
+// ============================================================
+function syncCode(){
+  if(!level) return;
+  const code = encodeLevel(level);
+  $('#codeOut').value = code;
+  return code;
+}
+function currentLink(){
+  const code = encodeLevel(level);
+  return location.origin+location.pathname+'#'+code;
+}
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1500); }
+async function copy(text,msg){ try{ await navigator.clipboard.writeText(text); }catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } toast(msg||'Copied!'); }
+
+// ============================================================
+//  Wiring
+// ============================================================
+function buildPalette(){
+  const p=$('#palette'); p.innerHTML='';
+  for(const key of PAINT_ORDER){
+    const el=document.createElement('div');
+    el.className='swatch'+(key===paint?' active':'');
+    const chip = key==='#' ? `<span class="chip" style="background:#33445e"></span>`
+      : key==='.' ? `<span class="chip" style="background:#0b0f16"></span>`
+      : `<span style="font-size:18px">${TILES[key].emoji}</span>`;
+    el.innerHTML = chip+`<span>${PAINT_LABEL[key]}</span>`;
+    el.onclick=()=>{ paint=key; buildPalette(); };
+    p.appendChild(el);
+  }
+}
+
+function tryLoadCode(code, startMode){
+  try{ const lv=decodeLevel(code); openGame(lv,startMode); $('#codeErr').textContent=''; return true; }
+  catch(e){ $('#codeErr').textContent='That code doesn’t look valid.'; return false; }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  buildPalette();
+
+  // landing buttons
+  $('#playCodeBtn').onclick = ()=> tryLoadCode($('#codeInput').value,'play');
+  $('#editCodeBtn').onclick = ()=> tryLoadCode($('#codeInput').value,'edit');
+  document.querySelectorAll('.tpl').forEach(b=> b.onclick=()=> openGame(template(b.dataset.tpl),'edit'));
+
+  // game tabs
+  $('#tabPlay').onclick=()=>setMode('play');
+  $('#tabEdit').onclick=()=>setMode('edit');
+  $('#homeBtn').onclick=goHome;
+  $('#restartBtn').onclick=resetPlayer;
+  $('#overlayBtn').onclick=()=>{ if(player.won) resetPlayer(); else resetPlayer(); };
+  $('#gameName').oninput=e=>{ level.name=e.target.value||'Untitled'; syncCode(); };
+
+  // editor
+  $('#resizeBtn').onclick=()=>resizeLevel();
+  $('#clearBtn').onclick=()=>{ if(confirm('Clear the whole level?')){ level.tiles=level.tiles.map(()=> '.'); for(let x=0;x<level.w;x++) level.tiles[(level.h-1)*level.w+x]='#'; syncCode(); } };
+  $('#copyCodeBtn').onclick=()=>copy($('#codeOut').value,'Game code copied!');
+  $('#copyLinkBtn').onclick=()=>copy(currentLink(),'Play link copied!');
+  $('#shareBtn').onclick=()=>copy(currentLink(),'Play link copied!');
+
+  // canvas painting
+  canvas.addEventListener('mousedown',editorDown);
+  canvas.addEventListener('mousemove',editorMove);
+  window.addEventListener('mouseup',editorUp);
+  canvas.addEventListener('contextmenu',e=>{ if(mode==='edit') e.preventDefault(); });
+  // touch
+  canvas.addEventListener('touchstart',e=>{ if(mode==='edit'){ editorDown(touchEvt(e)); } },{passive:false});
+  canvas.addEventListener('touchmove',e=>{ if(mode==='edit'){ e.preventDefault(); editorMove(touchEvt(e)); } },{passive:false});
+  canvas.addEventListener('touchend',editorUp);
+
+  // keyboard
+  window.addEventListener('keydown',e=>{
+    if(mode==='play'){
+      if(['ArrowLeft','ArrowRight','ArrowUp',' '].includes(e.key)) e.preventDefault();
+      keys[e.key]=true;
+      if(e.key==='r'||e.key==='R') resetPlayer();
+    }
+  });
+  window.addEventListener('keyup',e=> keys[e.key]=false);
+
+  // load from URL hash if present
+  const hash=location.hash.slice(1);
+  if(hash){ if(!tryLoadCode(decodeURIComponent(hash),'play')) {} }
+
+  loop();
+});
+
+function touchEvt(e){ const t=e.touches[0]||e.changedTouches[0]; return {clientX:t.clientX,clientY:t.clientY,button:0,preventDefault(){}}; }
+
+function resizeLevel(){
+  const nw=Math.max(8,Math.min(40, +$('#gw').value||level.w));
+  const nh=Math.max(6,Math.min(30, +$('#gh').value||level.h));
+  const nt=new Array(nw*nh).fill('.');
+  for(let y=0;y<Math.min(nh,level.h);y++) for(let x=0;x<Math.min(nw,level.w);x++){
+    nt[y*nw+x]=level.tiles[y*level.w+x];
+  }
+  // ensure a ground row on the new bottom if empty
+  level={...level,w:nw,h:nh,tiles:nt};
+  $('#gw').value=nw; $('#gh').value=nh;
+  syncCode();
+}
+</script>
+</body>
+</html>
