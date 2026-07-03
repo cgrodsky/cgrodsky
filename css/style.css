@@ -1055,3 +1055,21 @@ body.dark .searchbar { border-color: #5f6368; }
   .nf-links { display: none; }
   .nf-sheet-body { flex-direction: column; gap: 12px; }
 }
+
+/* Block Finder — tabs + sounds */
+.bf-tabs { display: flex; gap: 4px; padding: 10px 14px 0; }
+.bf-tab { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text-dim);
+  padding: 6px 12px; cursor: pointer; font-size: .9rem; font-weight: 600; }
+.bf-tab:hover { color: var(--text); }
+.bf-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.bf-grid-sfx { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.bf-sfx-card { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg-elev); color: var(--text); cursor: pointer; transition: transform .08s, border-color .15s; }
+.bf-sfx-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.bf-sfx-play { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--accent); color: #fff; font-size: .8rem; flex: 0 0 auto; }
+.bf-sfx-lbl { font-family: Consolas, monospace; font-weight: 700; font-size: .9rem; }
+.bf-big-sfx { display: flex; justify-content: center; margin-bottom: 12px; }
+.bf-sfx-bigplay { width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent);
+  color: #fff; font-size: 2rem; cursor: pointer; box-shadow: var(--shadow); }
+.bf-sfx-bigplay:hover { filter: brightness(1.08); }
