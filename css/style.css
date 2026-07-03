@@ -1081,3 +1081,21 @@ body.dark .searchbar { border-color: #5f6368; }
   padding: 0 4px; border-radius: 4px; }
 .bf-card { position: relative; }
 .bf-sfx-info { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+
+/* Paint color picker (HeroUI-style ColorPicker in vanilla) */
+.cpk { display: inline-block; }
+.cpk-trigger { display: flex; align-items: center; gap: 8px; background: var(--bg-elev);
+  border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; cursor: pointer; color: var(--text); }
+.cpk-swatch { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(0,0,0,.25); display: block; }
+.cpk-hex { font-family: Consolas, monospace; font-size: .8rem; }
+.cpk-pop { position: fixed; z-index: 4000; width: 216px; padding: 10px; background: var(--window-bg);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+.cpk-area { position: relative; width: 196px; height: 140px; border-radius: 6px; cursor: crosshair; touch-action: none; }
+.cpk-area-thumb { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4); transform: translate(-50%, -50%); pointer-events: none; }
+.cpk-hue-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 4px; font-size: .78rem; color: var(--text); }
+.cpk-out { color: var(--text-dim); font-family: Consolas, monospace; }
+.cpk-hue { position: relative; width: 196px; height: 14px; border-radius: 7px; cursor: pointer; touch-action: none;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.cpk-hue-thumb { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4); transform: translate(-50%, -50%); pointer-events: none; background: #fff; }

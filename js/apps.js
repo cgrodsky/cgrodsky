@@ -196,18 +196,98 @@
   };
 
   // ---------- Paint ----------
+  // ---------- Color picker (vanilla port of a HeroUI-style ColorPicker) ----------
+  const clamp01 = (x) => Math.max(0, Math.min(1, x));
+  function hexToRgb(hex) { hex = hex.replace("#", ""); return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)]; }
+  function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let h = 0;
+    if (d) { if (max === r) h = ((g - b) / d) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; if (h < 0) h += 360; }
+    return [h, max ? d / max : 0, max];
+  }
+  function hsvToHex(h, s, v) {
+    const i = Math.floor(h / 60) % 6, f = h / 60 - Math.floor(h / 60);
+    const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+    const [r, g, b] = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i];
+    return "#" + [r, g, b].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+  }
+  function dragify(elm, cb) {
+    const frac = (e) => {
+      const r = elm.getBoundingClientRect(), t = e.touches && e.touches[0];
+      return [clamp01(((t ? t.clientX : e.clientX) - r.left) / r.width), clamp01(((t ? t.clientY : e.clientY) - r.top) / r.height)];
+    };
+    const down = (e) => {
+      e.preventDefault();
+      const [fx, fy] = frac(e); cb(fx, fy);
+      const mv = (ev) => { const [x, y] = frac(ev); cb(x, y); };
+      const up = () => {
+        window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up);
+        window.removeEventListener("touchmove", mv); window.removeEventListener("touchend", up);
+      };
+      window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
+      window.addEventListener("touchmove", mv, { passive: false }); window.addEventListener("touchend", up);
+    };
+    elm.addEventListener("mousedown", down);
+    elm.addEventListener("touchstart", down, { passive: false });
+  }
+  function makeColorPicker(initial, onChange) {
+    let [h, s, v] = rgbToHsv.apply(null, hexToRgb(initial));
+    const root = el(`<div class="cpk"><button type="button" class="cpk-trigger" title="Color"><span class="cpk-swatch"></span><span class="cpk-hex"></span></button></div>`);
+    const swatch = root.querySelector(".cpk-swatch"), hexLbl = root.querySelector(".cpk-hex");
+    let pop = null;
+    const hex = () => hsvToHex(h, s, v);
+    function refresh() {
+      const hx = hex();
+      swatch.style.background = hx; hexLbl.textContent = hx.toUpperCase();
+      if (pop) {
+        pop.querySelector(".cpk-area").style.background = `linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0)), hsl(${h}, 100%, 50%)`;
+        const at = pop.querySelector(".cpk-area-thumb");
+        at.style.left = (s * 100) + "%"; at.style.top = ((1 - v) * 100) + "%"; at.style.background = hx;
+        pop.querySelector(".cpk-hue-thumb").style.left = (h / 360 * 100) + "%";
+        pop.querySelector(".cpk-out").textContent = Math.round(h) + "°";
+      }
+      if (onChange) onChange(hx);
+    }
+    function positionPop() {
+      const r = root.querySelector(".cpk-trigger").getBoundingClientRect();
+      pop.style.left = Math.min(r.left, window.innerWidth - 236) + "px";
+      pop.style.top = (r.bottom + 6) + "px";
+    }
+    function closePop() { if (!pop) return; document.removeEventListener("mousedown", outside); pop.remove(); pop = null; }
+    function outside(e) { if (pop && !pop.contains(e.target) && !root.contains(e.target)) closePop(); }
+    function openPop() {
+      pop = el(`<div class="cpk-pop">
+        <div class="cpk-area"><div class="cpk-area-thumb"></div></div>
+        <div class="cpk-hue-row"><span>Hue</span><span class="cpk-out"></span></div>
+        <div class="cpk-hue"><div class="cpk-hue-thumb"></div></div></div>`);
+      document.getElementById("screen").appendChild(pop);
+      positionPop();
+      dragify(pop.querySelector(".cpk-area"), (fx, fy) => { s = fx; v = 1 - fy; refresh(); });
+      dragify(pop.querySelector(".cpk-hue"), (fx) => { h = fx * 360; refresh(); });
+      refresh();
+      setTimeout(() => document.addEventListener("mousedown", outside), 0);
+    }
+    root.querySelector(".cpk-trigger").onclick = () => { if (pop) closePop(); else openPop(); };
+    refresh();
+    return { el: root, getValue: hex, destroy: closePop };
+  }
+
   AppRegistry.paint = function () {
     const { body } = cw({ title: "Paint", icon: Icon.mini("paint", "Paint"), width: 640, height: 520, appId: "paint" });
     body.innerHTML = `<div style="padding:8px;display:flex;flex-direction:column;height:100%;gap:8px">
-      <div class="row"><input type="color" id="col" value="#0067c0"><input type="range" id="sz" min="1" max="30" value="5"><button class="pill-btn" id="clr">Clear</button></div>
+      <div class="row"><span id="col-host"></span><input type="range" id="sz" min="1" max="30" value="5"><button class="pill-btn" id="clr">Clear</button></div>
       <canvas width="600" height="420" style="background:#fff;border:1px solid var(--border);border-radius:6px;cursor:crosshair"></canvas></div>`;
+    const picker = makeColorPicker("#0485F7", () => {});
+    body.querySelector("#col-host").replaceWith(picker.el);
     const cv = body.querySelector("canvas"), ctx = cv.getContext("2d");
     let drawing = false;
     const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     cv.onmousedown = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-    cv.onmousemove = (e) => { if (!drawing) return; const p = pos(e); ctx.strokeStyle = body.querySelector("#col").value; ctx.lineWidth = body.querySelector("#sz").value; ctx.lineCap = "round"; ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    cv.onmousemove = (e) => { if (!drawing) return; const p = pos(e); ctx.strokeStyle = picker.getValue(); ctx.lineWidth = body.querySelector("#sz").value; ctx.lineCap = "round"; ctx.lineTo(p.x, p.y); ctx.stroke(); };
     window.addEventListener("mouseup", () => drawing = false);
     body.querySelector("#clr").onclick = () => ctx.clearRect(0, 0, 600, 420);
+    body.closest(".win").addEventListener("DOMNodeRemoved", () => picker.destroy());
   };
 
   // ---------- Clock ----------
