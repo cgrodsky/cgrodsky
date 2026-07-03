@@ -8,7 +8,9 @@
   const CHAT_URL = window.AIML_BASE + "/chat/completions";
   const COMPLETIONS_URL = window.AIML_BASE + "/completions";
   const TTS_URL = window.AIML_BASE + "/tts";
+  const IMAGES_URL = window.AIML_BASE + "/images/generations";
   const DEFAULT_MODEL = "openai/gpt-4o-mini";
+  const IMAGE_MODEL = "google/nano-banana-2";
   const activeKey = () => S().copilot.apiKey || window.AIML_KEY;
   const activeModel = () => DEFAULT_MODEL;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -35,13 +37,13 @@
             <svg class="mute" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" style="opacity:.35"></path><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
             <svg class="voice" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>
           </label>
-          <button class="mic" title="Voice mode">${MIC_SVG}</button>
           <button class="clear">Clear</button><button class="setkey">API key</button></div>
         <div class="cop-msgs"></div>
         <div class="cop-prompt" data-empty="true">
           <div class="cop-files"></div>
           <textarea class="cop-ta" rows="1" placeholder="Message Copilot..."></textarea>
           <div class="cop-prompt-bar">
+            <button class="cop-mic mic" title="Voice mode">${MIC_SVG}</button>
             <button class="cop-attach" title="Attach file">${CLIP_SVG}</button>
             <span class="grow"></span>
             <button class="cop-send" title="Send">${SEND_SVG}</button>
@@ -52,7 +54,7 @@
     const msgs = body.querySelector(".cop-msgs");
     const ta = body.querySelector("textarea");
     const sendBtn = body.querySelector(".cop-send");
-    const micBtn = body.querySelector(".mic");
+    const micBtn = body.querySelector(".cop-mic");
     const speakToggle = body.querySelector(".spk input");
 
     body.querySelector(".setkey").onclick = () => renderKeyForm(body);
@@ -62,7 +64,7 @@
     let voiceOn = false, rec = null, audioEl = null;
     function setMicVisual() { micBtn.classList.toggle("active", voiceOn); }
     micBtn.onclick = () => {
-      if (!SR) { addBubble("assistant", "Voice mode needs Chrome or Edge — your browser doesn't support speech recognition."); return; }
+      if (!SR) { addBubble({ role: "assistant", content: "Voice mode needs Chrome or Edge — your browser doesn't support speech recognition." }); return; }
       voiceOn = !voiceOn; setMicVisual();
       if (voiceOn) startListening(); else stopListening();
     };
@@ -91,6 +93,20 @@
         audioEl.onended = () => { if (voiceOn) { try { rec && rec.start(); } catch (_) {} } };
         audioEl.play();
       } catch (e) {}
+    }
+
+    async function generateImage(prompt) {
+      const r = await fetch(IMAGES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },
+        body: JSON.stringify({ model: IMAGE_MODEL, prompt }),
+      });
+      if (!r.ok) { let d = "HTTP " + r.status; try { const j = await r.json(); d += " — " + (j.error?.message || j.message || JSON.stringify(j)); } catch (_) {} throw new Error(d); }
+      const j = await r.json();
+      const url = j.images?.[0]?.url || j.data?.[0]?.url || j.image?.url || j.url ||
+        (j.data?.[0]?.b64_json ? "data:image/png;base64," + j.data[0].b64_json : null);
+      if (!url) throw new Error("No image in response.");
+      return url;
     }
 
     // ---- file attachments ----
@@ -154,30 +170,45 @@
     function paint() {
       msgs.innerHTML = "";
       if (!S().copilot.history.length) {
-        msgs.appendChild(el(`<div class="cop-hero">${LOGO("cop-logo big-logo")}<h2>Hi, I'm Copilot</h2><p class="muted">Ask me anything to get started.</p></div>`));
+        msgs.appendChild(el(`<div class="cop-hero">${LOGO("cop-logo big-logo")}<h2>Hi, I'm Copilot</h2><p class="muted">Ask me anything, send a photo, or ask me to create an image.</p></div>`));
         return;
       }
-      S().copilot.history.forEach((m) => addBubble(m.role, m.content));
+      S().copilot.history.forEach((m) => addBubble(m));
     }
-    function addBubble(role, content) {
-      const who = role === "user" ? "user" : "bot";
+    function viewImage(src) {
+      const ov = el(`<div class="bf-mask"><div class="bf-big"><div class="bf-big-img"><img src="${src}" alt=""></div><div class="row" style="justify-content:center"><button class="btn-text" id="cl">Close</button></div></div></div>`);
+      ov.querySelector("#cl").onclick = () => ov.remove();
+      ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+      document.getElementById("screen").appendChild(ov);
+    }
+    function addBubble(msg) {
+      const who = msg.role === "user" ? "user" : "bot";
       const avatar = who === "bot" ? LOGO("cop-logo") : `${Icon.mini("user", S().profile.username)}`;
-      msgs.appendChild(el(`<div class="cop-msg ${who}"><div style="flex:0 0 auto">${avatar}</div><div class="cop-bubble">${escapeHtml(content)}</div></div>`));
+      let inner = "";
+      if (msg.content) inner += `<div class="cop-text">${escapeHtml(msg.content)}</div>`;
+      const imgs = (msg.images || []).concat(msg.image ? [msg.image] : []);
+      imgs.forEach((u) => inner += `<img class="cop-img" src="${u}" alt="">`);
+      const bubble = el(`<div class="cop-msg ${who}"><div style="flex:0 0 auto">${avatar}</div><div class="cop-bubble">${inner || "&nbsp;"}</div></div>`);
+      bubble.querySelectorAll(".cop-img").forEach((im) => im.onclick = () => viewImage(im.src));
+      msgs.appendChild(bubble);
       msgs.scrollTop = msgs.scrollHeight;
+      return bubble;
     }
 
     async function send() {
       const text = ta.value.trim();
       if (!text && pendingFiles.length === 0) return;
-      let fileNote = "";
-      if (pendingFiles.length) fileNote = "[Attached: " + pendingFiles.map((f) => f.name).join(", ") + "]\n";
-      const userMessage = (fileNote + text).trim();
+      const images = pendingFiles.filter((f) => f.dataUrl).map((f) => f.dataUrl);
+      const otherNames = pendingFiles.filter((f) => !f.dataUrl).map((f) => f.name);
+      const note = otherNames.length ? "[Attached: " + otherNames.join(", ") + "]" : "";
+      const content = [note, text].filter(Boolean).join("\n").trim();
       ta.value = ""; ta.style.height = "auto";
       pendingFiles = []; renderFiles(); refreshPromptState();
       if (msgs.querySelector(".cop-hero")) msgs.innerHTML = "";
-      S().copilot.history.push({ role: "user", content: userMessage });
-      State.save();
-      addBubble("user", userMessage);
+      const userMsg = { role: "user", content };
+      if (images.length) userMsg.images = images;
+      S().copilot.history.push(userMsg); State.save();
+      addBubble(userMsg);
 
       const typing = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
       msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
@@ -186,14 +217,31 @@
       try {
         const reply = await callApi(S().copilot.history);
         typing.remove();
-        S().copilot.history.push({ role: "assistant", content: reply });
-        State.save();
-        addBubble("assistant", reply);
-        if (voiceOn || (speakToggle && speakToggle.checked)) speak(reply);
+        const m = reply.match(/\[\[IMAGE:\s*([\s\S]+?)\]\]/i);
+        if (m) {
+          const imgPrompt = m[1].trim();
+          const caption = reply.replace(/\[\[IMAGE:[\s\S]+?\]\]/i, "").trim();
+          const gen = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><span class="cop-text">Creating your image…</span><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
+          msgs.appendChild(gen); msgs.scrollTop = msgs.scrollHeight;
+          try {
+            const url = await generateImage(imgPrompt);
+            gen.remove();
+            const am = { role: "assistant", content: caption || `Here's "${imgPrompt}".`, image: url };
+            S().copilot.history.push(am); State.save(); addBubble(am);
+          } catch (e) {
+            gen.remove();
+            const am = { role: "assistant", content: "I couldn't create that image.\n\n" + (e.message || e) };
+            S().copilot.history.push(am); State.save(); addBubble(am);
+          }
+        } else {
+          const am = { role: "assistant", content: reply };
+          S().copilot.history.push(am); State.save(); addBubble(am);
+          if (voiceOn || (speakToggle && speakToggle.checked)) speak(reply);
+        }
       } catch (err) {
         typing.remove();
-        addBubble("assistant", "Couldn't reach the AI service.\n\n" + (err && err.message ? err.message : err) +
-          "\n\nIf this is a CORS or network error, the API likely needs to be called from a small backend rather than directly from the browser.");
+        addBubble({ role: "assistant", content: "Couldn't reach the AI service.\n\n" + (err && err.message ? err.message : err) +
+          "\n\nIf this is a CORS or network error, the API likely needs to be called from a small backend rather than directly from the browser." });
       } finally {
         sendBtn.disabled = false;
       }
@@ -208,7 +256,11 @@
 
   function systemPrompt() {
     const langName = ((window.I18n && I18n.languages.find((l) => l.code === I18n.lang)) || { name: "English" }).name;
-    return `You are Copilot, a friendly and helpful AI assistant built into Windows 12. Always respond in ${langName}, regardless of the language of the question.`;
+    return `You are Copilot, a friendly and helpful AI assistant built into Windows 12. Always respond in ${langName}, regardless of the language of the question.
+
+If the user asks you to create, generate, draw, make, or design an image, picture, photo, wallpaper, logo, or artwork, do NOT describe it in words. Instead reply with exactly one line in this format and nothing else:
+[[IMAGE: a vivid, detailed description of the image to generate]]
+Write that description in English for best results. When the user sends you an image, look at it and answer their question about it normally.`;
   }
 
   async function callApi(history) {
@@ -231,8 +283,20 @@
       const t = (data.choices?.[0]?.text || "").trim();
       return t || "(no response)";
     }
-    const messages = [{ role: "system", content: systemPrompt() }]
-      .concat(history.slice(-20));
+    const messages = [{ role: "system", content: systemPrompt() }];
+    history.slice(-20).forEach((m) => {
+      if (m.role === "user" && m.images && m.images.length) {
+        // Vision format: text + one or more image parts.
+        const parts = [];
+        if (m.content) parts.push({ type: "text", text: m.content });
+        m.images.forEach((u) => parts.push({ type: "image_url", image_url: { url: u } }));
+        messages.push({ role: "user", content: parts });
+      } else if (m.role === "assistant" && m.image) {
+        messages.push({ role: "assistant", content: m.content || "[generated an image]" });
+      } else {
+        messages.push({ role: m.role, content: m.content });
+      }
+    });
     const res = await fetch(CHAT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + activeKey() },

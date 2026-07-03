@@ -1126,3 +1126,12 @@ body.dark .searchbar { border-color: #5f6368; }
 .files-editor { position: absolute; inset: 0; background: var(--window-bg); display: flex; flex-direction: column; z-index: 5; }
 .files-ed-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .files-ta { flex: 1; border: 0; outline: none; resize: none; padding: 16px; background: var(--window-bg); color: var(--text); font-family: Consolas, monospace; font-size: .9rem; line-height: 1.5; }
+
+/* Copilot: mic in prompt bar + in-chat images */
+.cop-mic { background: none; border: 0; color: var(--text); cursor: pointer; padding: 4px 6px; border-radius: 6px; display: flex; align-items: center; }
+.cop-mic:hover { background: rgba(127,127,127,.15); }
+.cop-mic.active { color: #fff; background: var(--accent); }
+.cop-img { display: block; max-width: 220px; width: 100%; border-radius: 10px; margin-top: 6px; cursor: pointer; border: 1px solid var(--border); }
+.cop-msg.user .cop-img { margin-left: auto; }
+.cop-text { white-space: pre-wrap; }
+.cop-text:empty { display: none; }
