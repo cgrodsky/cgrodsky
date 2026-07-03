@@ -112,7 +112,7 @@
     { id: "settings", name: "Settings" },
     { id: "calculator", name: "Calculator" },
     { id: "minecraft", name: "Mincraft" },
-    { id: "blockfinder", name: "Block Finder" },
+    { id: "blockfinder", name: "Assets" },
   ];
 
   function renderDesktopIcons() {

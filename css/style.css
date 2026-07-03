@@ -1073,3 +1073,10 @@ body.dark .searchbar { border-color: #5f6368; }
 .bf-sfx-bigplay { width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent);
   color: #fff; font-size: 2rem; cursor: pointer; box-shadow: var(--shadow); }
 .bf-sfx-bigplay:hover { filter: brightness(1.08); }
+
+/* Assets app — numbers + sound info layout */
+.bf-num { font-family: Consolas, monospace; font-weight: 700; font-size: .72rem; color: var(--accent); }
+.bf-card .bf-num { position: absolute; top: 4px; left: 6px; background: var(--window-bg);
+  padding: 0 4px; border-radius: 4px; }
+.bf-card { position: relative; }
+.bf-sfx-info { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
