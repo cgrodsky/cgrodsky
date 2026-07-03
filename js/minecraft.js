@@ -73,6 +73,14 @@
     67: { name: "Black Stained Glass",  color: "#1d1d21", solid: true, hardness: 0.3, drop: 67, alpha: 0.5 },
   };
 
+  // Non-block items live in a separate map so they don't get "placed" as blocks.
+  const ENDER_PEARL = 200;
+  const ITEMS = {
+    200: { name: "Ender Pearl", color: "#14c7a8", item: true },
+  };
+  // Every teleport in the game shares this sound (ender pearl, portal, …).
+  const TELEPORT_SFX = "SFX_008";
+
   function hashSeed(str) {
     let h = 2166136261 >>> 0;
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -194,7 +202,7 @@
       <canvas class="mc3-canvas"></canvas>
       <div class="mc3-crosshair"></div>
       <div class="mc3-hud"><div class="mc-hotbar"></div></div>
-      <div class="mc3-help">Drag right side to look · drag left to move · tap right to mine · + to place · seed: ${seedStr}</div>
+      <div class="mc3-help">Drag right side to look · drag left to move · tap right to mine · + to place · ender pearl + place to teleport · seed: ${seedStr}</div>
       <button class="mc3-btn mc3-jump" title="Jump">▲</button>
       <button class="mc3-btn mc3-place" title="Place">+</button>
       <div class="mc-fps" style="display:${cfg.showFps ? "block" : "none"}">0 fps</div>
@@ -342,9 +350,13 @@
     const inv = {};
     let hotbar = [], selected = 0;
     if (creative) {
-      hotbar = [1, 3, 4, 7, 18, 19, 25, 20, 23];
+      hotbar = [1, 3, 4, 7, 18, 19, 25, 20];
       hotbar.forEach((id) => inv[id] = Infinity);
     }
+    // Everyone starts with ender pearls — the throwable teleport item.
+    hotbar.push(ENDER_PEARL);
+    inv[ENDER_PEARL] = creative ? Infinity : 16;
+    const meta = (id) => BLOCKS[id] || ITEMS[id] || null;
     const hbEl = body.querySelector(".mc-hotbar");
     function addItem(id, n) {
       if (!id) return;
@@ -356,10 +368,10 @@
       hbEl.innerHTML = "";
       for (let i = 0; i < 9; i++) {
         const id = hotbar[i];
-        const b = id ? BLOCKS[id] : null;
+        const b = id ? meta(id) : null;
         const cnt = id ? inv[id] : 0;
-        const slot = el(`<div class="mc-slot ${i === selected ? "sel" : ""}">` +
-          (b ? `<span class="mc-slot-sw" style="background:${b.color || "#888"}"></span>` : "") +
+        const slot = el(`<div class="mc-slot ${i === selected ? "sel" : ""}" title="${b ? b.name : ""}">` +
+          (b ? `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>` : "") +
           (b && cnt !== Infinity ? `<span class="mc-slot-c">${cnt}</span>` : "") +
           `<span class="mc-slot-n">${i + 1}</span></div>`);
         slot.onclick = () => { selected = i; drawHotbar(); };
@@ -406,9 +418,35 @@
       return raycastVoxel(eyePos(), lookDir(), 6);
     }
 
+    // Fire-and-forget sound, gated by the in-game Sound toggle.
+    function playSfx(name) {
+      if (!cfg.sound) return;
+      try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.55; a.play().catch(() => {}); } catch (_) {}
+    }
+    function surfaceY(bx, bz) { let yy = H - 1; while (yy > 0 && !solid(bx, yy - 1, bz)) yy--; return yy; }
+    function teleportTo(x, y, z) {
+      player.pos.set(x, y, z); player.vel.set(0, 0, 0);
+      player.onGround = false; player.fallStart = null;
+      playSfx(TELEPORT_SFX);
+    }
+    function throwPearl() {
+      if (player.dead || !(inv[ENDER_PEARL] > 0)) return;
+      const hit = raycastVoxel(eyePos(), lookDir(), 28);
+      let bx, by, bz;
+      if (hit && hit.prev) { bx = hit.prev.x; by = hit.prev.y; bz = hit.prev.z; }
+      else { const d = lookDir(); bx = Math.floor(player.pos.x + d.x * 18); by = Math.floor(player.pos.y); bz = Math.floor(player.pos.z + d.z * 18); }
+      bx = Math.max(0, Math.min(W - 1, bx)); bz = Math.max(0, Math.min(D - 1, bz));
+      // Never land inside terrain: if the spot or head space is blocked, drop to that column's surface.
+      if (by < 0 || by >= H - 1 || solid(bx, by, bz) || solid(bx, by + 1, bz)) by = surfaceY(bx, bz);
+      teleportTo(bx + 0.5, by + 0.1, bz + 0.5);
+      if (inv[ENDER_PEARL] !== Infinity) { inv[ENDER_PEARL]--; drawHotbar(); }
+    }
+
     let mining = null;
     function tryPlace() {
       if (player.dead) return;
+      const heldId = hotbar[selected];
+      if (heldId && ITEMS[heldId]) { if (heldId === ENDER_PEARL) throwPearl(); return; }
       const hit = currentTarget();
       if (!hit || !hit.prev) return;
       const { x, y, z } = hit.prev;
@@ -529,9 +567,20 @@
     body.querySelector(".mc3-jump").onclick = () => { if (player.onGround && !player.dead) { player.vel.y = 8.5; player.onGround = false; } };
     body.querySelector(".mc3-place").onclick = () => tryPlace();
 
+    let portalCd = 0;
     function step(dt) {
       if (player.dead) return;
       player.hurtCd = Math.max(0, player.hurtCd - dt / 1000);
+      // Standing in a Portal block flings you to a random surface, same teleport sound.
+      portalCd = Math.max(0, portalCd - dt);
+      const fbx = Math.floor(player.pos.x), fbz = Math.floor(player.pos.z);
+      const inPortal = blockAt(fbx, Math.floor(player.pos.y), fbz) === 56 || blockAt(fbx, Math.floor(player.pos.y + 1), fbz) === 56;
+      if (inPortal && portalCd === 0) {
+        portalCd = 2000;
+        const rx = Math.floor(Math.random() * W), rz = Math.floor(Math.random() * D);
+        teleportTo(rx + 0.5, surfaceY(rx, rz) + 0.1, rz + 0.5);
+        return;
+      }
       const speed = 4.2, grav = 22, jumpVel = 8.5;
 
       let fx = 0, fz = 0;

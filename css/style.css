@@ -490,6 +490,7 @@ input[type=range] { width: 100%; }
 .mc-slot { width: 42px; height: 42px; background: rgba(120,120,120,0.6); border: 2px solid #2b2b2b; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mc-slot.sel { border-color: #fff; }
 .mc-slot-sw { width: 26px; height: 26px; display: block; border: 1px solid rgba(0,0,0,0.3); }
+.mc-slot-item { border-radius: 50%; box-shadow: inset -3px -3px 5px rgba(0,0,0,.45), inset 2px 2px 4px rgba(255,255,255,.5); border-color: rgba(0,0,0,.2); }
 .mc-slot-n { position: absolute; top: 0; left: 2px; font-size: .6rem; color: #fff; text-shadow: 1px 1px 0 #000; }
 .mc-slot-c { position: absolute; bottom: 0; right: 3px; font-size: .72rem; color: #fff; text-shadow: 1px 1px 0 #000; }
 .mc-seed { background: #000; color: #fff; border: 2px solid #555; padding: 6px 10px; font-family: inherit; width: 220px; image-rendering: pixelated; }
