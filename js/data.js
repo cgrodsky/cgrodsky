@@ -31,6 +31,7 @@
     { id: "imagestudio", name: "Image Studio", cat: "Multimedia", price: 0, builtin: "imagestudio", desc: "Generate images from text with AI." },
     { id: "textgen", name: "AI Text", cat: "Productivity", price: 0, builtin: "textgen", desc: "Continue any text with phi-2." },
     { id: "fileexplorer", name: "File Explorer", cat: "System", price: 0, builtin: "fileexplorer", desc: "Browse and open files from your device." },
+    { id: "files", name: "Files", cat: "System", price: 0, builtin: "files", desc: "Your file manager — folders, notes, and pictures saved in this browser." },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
     { id: "blockfinder", name: "Assets", cat: "System", price: 0, builtin: "blockfinder", desc: "Manage every uploaded asset — textures and sounds — each with a number." },

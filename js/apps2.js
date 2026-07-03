@@ -530,5 +530,136 @@ Ethernet adapter Local Area Connection:
     };
   };
 
+  // ---------- Files (a virtual, persistent file manager) ----------
+  const FILE_SEED = () => ({
+    Desktop: { type: "folder", children: {} },
+    Documents: { type: "folder", children: {
+      "Welcome.txt": { type: "file", kind: "text", content: "Welcome to Windows 12!\n\nThis is your Files app. Create folders, make text notes, and organize things — everything is saved in this browser.", ts: 0 },
+      "Notes.txt": { type: "file", kind: "text", content: "- Try the Ender Pearl in Mincraft\n- Pick a color in Paint\n- Watch something on Netflix", ts: 0 },
+    } },
+    Downloads: { type: "folder", children: {} },
+    Pictures: { type: "folder", children: {} },
+    Music: { type: "folder", children: {} },
+  });
+
+  AppRegistry.files = function () {
+    const { body } = cw({ title: "Files", icon: Icon.mini("files", "Files"), width: 800, height: 540, appId: "files" });
+    if (S().appData.files == null) S().appData.files = { root: FILE_SEED() };
+    const root = S().appData.files.root;
+    let path = []; // array of folder names from root
+
+    function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
+    function currentChildren() { const f = folderAt(path); return f ? (path.length ? f.children : root) : root; }
+    function uniqueName(children, base, ext) {
+      let name = base + (ext || ""); let i = 1;
+      while (children[name]) { name = base + " (" + (i++) + ")" + (ext || ""); }
+      return name;
+    }
+
+    function render() {
+      const children = currentChildren();
+      const entries = Object.entries(children).sort((a, b) => {
+        if ((a[1].type === "folder") !== (b[1].type === "folder")) return a[1].type === "folder" ? -1 : 1;
+        return a[0].localeCompare(b[0]);
+      });
+      body.innerHTML = `<div style="display:flex;height:100%">
+        <div class="files-side">
+          <div class="muted files-side-h">This PC</div>
+          ${["Desktop", "Documents", "Downloads", "Pictures", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div class="files-toolbar">
+            <button class="files-tb" id="up" title="Up">&#8593;</button>
+            <div class="files-crumbs" id="crumbs"></div>
+            <span class="grow"></span>
+            <button class="files-tb" id="newfolder">New folder</button>
+            <button class="files-tb" id="newfile">New text file</button>
+          </div>
+          <div class="files-grid" id="grid"></div>
+        </div></div>`;
+
+      // Breadcrumbs
+      const crumbs = body.querySelector("#crumbs");
+      const mk = (label, p) => { const c = el(`<button class="files-crumb">${escapeHtml(label)}</button>`); c.onclick = () => { path = p; render(); }; crumbs.appendChild(c); };
+      mk("This PC", []);
+      path.forEach((seg, i) => { crumbs.appendChild(el(`<span class="files-sep">&#8250;</span>`)); mk(seg, path.slice(0, i + 1)); });
+
+      // Grid
+      const grid = body.querySelector("#grid");
+      if (!entries.length) grid.appendChild(el(`<div class="muted" style="padding:20px">This folder is empty.</div>`));
+      entries.forEach(([name, node]) => {
+        const isFolder = node.type === "folder";
+        const glyph = isFolder ? "&#128193;" : (node.kind === "image" ? "&#128444;" : "&#128196;");
+        const item = el(`<div class="files-item" title="${escapeHtml(name)}">
+          <div class="files-ic">${glyph}</div>
+          <div class="files-name">${escapeHtml(name)}</div>
+          <button class="files-menu" title="More">&#8942;</button>
+        </div>`);
+        item.querySelector(".files-ic").onclick = item.querySelector(".files-name").onclick = () => {
+          if (isFolder) { path = path.concat(name); render(); } else openFile(name, node);
+        };
+        item.querySelector(".files-menu").onclick = (e) => { e.stopPropagation(); itemMenu(e.currentTarget, name, node); };
+        grid.appendChild(item);
+      });
+
+      body.querySelector("#up").onclick = () => { if (path.length) { path = path.slice(0, -1); render(); } };
+      body.querySelector("#newfolder").onclick = () => {
+        const ch = currentChildren(); const name = uniqueName(ch, "New folder", "");
+        ch[name] = { type: "folder", children: {} }; State.save(); render();
+      };
+      body.querySelector("#newfile").onclick = () => {
+        const ch = currentChildren(); const name = uniqueName(ch, "New text file", ".txt");
+        ch[name] = { type: "file", kind: "text", content: "", ts: Date.now() }; State.save(); openFile(name, ch[name]);
+      };
+      body.querySelectorAll(".files-quick").forEach((q) => q.onclick = () => { path = [q.dataset.q]; render(); });
+    }
+
+    function itemMenu(anchor, name, node) {
+      closeMenus();
+      const ch = currentChildren();
+      const menu = el(`<div class="files-pop">
+        <button data-a="rename">Rename</button>
+        <button data-a="delete">Delete</button>
+      </div>`);
+      document.getElementById("screen").appendChild(menu);
+      const r = anchor.getBoundingClientRect();
+      menu.style.left = Math.min(r.left, window.innerWidth - 140) + "px";
+      menu.style.top = (r.bottom + 4) + "px";
+      menu.querySelector('[data-a="rename"]').onclick = () => {
+        closeMenus();
+        const nn = prompt("Rename to:", name); if (!nn || nn === name) return;
+        if (ch[nn]) { alert("A file with that name already exists."); return; }
+        ch[nn] = node; delete ch[name]; State.save(); render();
+      };
+      menu.querySelector('[data-a="delete"]').onclick = () => {
+        closeMenus();
+        if (confirm('Delete "' + name + '"?')) { delete ch[name]; State.save(); render(); }
+      };
+      setTimeout(() => document.addEventListener("mousedown", closeMenus), 0);
+    }
+    function closeMenus() {
+      document.querySelectorAll(".files-pop").forEach((m) => m.remove());
+      document.removeEventListener("mousedown", closeMenus);
+    }
+
+    function openFile(name, node) {
+      if (node.kind === "image" && node.src) {
+        const ov = el(`<div class="bf-mask"><div class="bf-big"><div class="bf-big-img"><img src="${node.src}" alt=""></div><div class="bf-big-name">${escapeHtml(name)}</div><div class="row" style="justify-content:center"><button class="btn-text" id="cl">Close</button></div></div></div>`);
+        ov.querySelector("#cl").onclick = () => ov.remove(); ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+        document.getElementById("screen").appendChild(ov); return;
+      }
+      // Text editor
+      const ov = el(`<div class="files-editor">
+        <div class="files-ed-bar"><b>${escapeHtml(name)}</b><span class="grow"></span><button class="pill-btn" id="save">Save</button><button class="btn-text" id="close">Close</button></div>
+        <textarea class="files-ta" spellcheck="false">${escapeHtml(node.content || "")}</textarea></div>`);
+      body.appendChild(ov);
+      const ta = ov.querySelector(".files-ta"); ta.focus();
+      ov.querySelector("#save").onclick = () => { node.content = ta.value; node.ts = Date.now(); State.save(); ov.remove(); };
+      ov.querySelector("#close").onclick = () => ov.remove();
+    }
+
+    render();
+  };
+
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 })();
