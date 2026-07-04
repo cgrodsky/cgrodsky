@@ -91,6 +91,16 @@ html, body {
 .xp-boot-bottom { font-size: 30px; font-weight: 300; line-height: 30px; margin-left: 5px; margin-top: 6px !important; }
 .xp-boot-container { width: 150px; height: 10px; border: 2px solid #b2b2b2; border-radius: 7px; margin: 0 auto; padding: 2px 1px; overflow: hidden; font-size: 0; }
 .xp-boot-box { width: 9px; height: 100%; background: linear-gradient(to bottom, #2838c7 0%, #5979ef 17%, #869ef3 32%, #869ef3 45%, #5979ef 59%, #2838c7 100%); display: inline-block; margin-right: 2px; animation: xp-boot-loader 2s linear infinite; }
+.xp-boot-img { width: 150px; height: auto; display: block; margin: 0 auto 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+
+/* Modern "Windows 12" gradient wordmark boot screen */
+.w12-boot { color: #fff; }
+.w12-mark { display: flex; align-items: center; gap: 22px; }
+.w12-flag { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 5px; width: 54px; height: 54px; }
+.w12-flag i { display: block; border-radius: 4px; background: linear-gradient(135deg, #ff2fb0, #7b5cff 55%, #2f6bff); }
+.w12-word { font: 300 46px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .5px;
+  background: linear-gradient(90deg, #ff4fc3, #8a6cff 55%, #2f8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.w12-word b { font-weight: 600; margin-left: 10px; }
 @keyframes xp-boot-loader { 0% { transform: translateX(-30px); } 100% { transform: translateX(150px); } }
 
 /* Duolingo site — Feather Bold with Nunito fallback */

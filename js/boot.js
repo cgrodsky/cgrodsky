@@ -13,6 +13,11 @@
   let skip = null;
   function wait(ms) { return Promise.race([new Promise((r) => setTimeout(r, ms)), skip || new Promise(() => {})]); }
 
+  // Boot sound effects (assets/raw/SFX_*.mp3). Safe to call before audio is unlocked.
+  function playSound(name) {
+    try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.6; a.play().catch(() => {}); } catch (_) {}
+  }
+
   function clearBoot() {
     const layer = document.querySelector(".boot-layer");
     if (layer) layer.remove();
@@ -70,9 +75,8 @@
   async function xpLogo(layer) {
     const wrap = el(`<div class="xp-boot">
       <div class="xp-boot-logo">
-        <p class="xp-boot-top">cameron systems</p>
-        <p class="xp-boot-mid">XP<span>™</span></p>
-        <p class="xp-boot-bottom">Windows</p>
+        <img class="xp-boot-img" src="assets/xp_logo.png" alt="">
+        <p class="xp-boot-bottom">cameron systems</p>
       </div>
       <div class="xp-boot-container">
         <div class="xp-boot-box" style="animation-delay:0s"></div>
@@ -81,7 +85,23 @@
       </div>
     </div>`);
     layer.appendChild(wrap);
+    playSound("SFX_023"); // XP startup sound
     await wait(3600);
+    wrap.classList.add("fade-out");
+    await wait(700);
+    wrap.remove();
+  }
+
+  // The modern "Windows 12" gradient wordmark on black (matches the reference boot).
+  async function windows12Wordmark(layer) {
+    const wrap = el(`<div class="w12-boot center-col">
+      <div class="w12-mark">
+        <span class="w12-flag"><i></i><i></i><i></i><i></i></span>
+        <span class="w12-word">Windows<b>12</b></span>
+      </div>
+    </div>`);
+    layer.appendChild(wrap);
+    await wait(2600);
     wrap.classList.add("fade-out");
     await wait(700);
     wrap.remove();
@@ -189,6 +209,7 @@
     await disclaimer(layer);
     await xpLogo(layer);
     await logoMorph(layer);
+    await windows12Wordmark(layer);
     await gettingReady(layer);
 
     layer.remove();

@@ -1191,7 +1191,7 @@
     // Footer
     scroll.appendChild(el(`<div class="nf-footer">
       <div class="nf-foot-links">${["Audio Description", "Help Center", "Gift Cards", "Media Center", "Investor Relations", "Jobs", "Terms of Use", "Privacy", "Legal Notices", "Cookie Preferences", "Corporate Information", "Contact Us"].map((l) => `<span>${l}</span>`).join("")}</div>
-      <div class="nf-foot-copy">&copy; 2024 Netflix Clone &middot; built into Windows 12</div>
+      <div class="nf-foot-copy">&copy; 2026 Netflix Clone &middot; built into Windows 12</div>
     </div>`));
   }
 
