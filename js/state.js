@@ -6,7 +6,9 @@
 
   const defaults = () => ({
     bootCompleted: false,
+    installerDone: false, // Windows Setup installer stage (product key) finished
     setupCompleted: false,
+    setup: { restore: "fresh", categories: [] }, // OOBE "customize your experience" choices
     // setup choices
     region: "United States",
     language: "English (United States)",

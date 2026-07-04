@@ -1145,3 +1145,125 @@ body.dark .searchbar { border-color: #5f6368; }
 .cop-msg.user .cop-img { margin-left: auto; }
 .cop-text { white-space: pre-wrap; }
 .cop-text:empty { display: none; }
+
+/* ============ Windows Setup installer (windowed) ============ */
+.installer-bg { background: #0b1020 !important; display: flex; align-items: center; justify-content: center; }
+.installer-bg::before, .installer-bg::after { display: none !important; }
+.installer-win { width: min(760px, 92vw); max-height: 88vh; background: #141a2e; color: #e9edf6; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: flex; flex-direction: column; overflow: hidden;
+  animation: stepIn .35s cubic-bezier(.2,.7,.2,1); }
+.installer-titlebar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: rgba(255,255,255,.04); font-size: .82rem; }
+.installer-tt { display: flex; align-items: center; gap: 8px; opacity: .9; }
+.installer-tt svg, .installer-tt img, .installer-tt span[style] { width: 16px; height: 16px; }
+.installer-x { opacity: .5; }
+.installer-body { padding: 26px 34px; overflow: auto; }
+.installer-body h1 { font-size: 1.7rem; margin: 0 0 14px; font-weight: 400; }
+.installer-body p { color: #b9c2d6; line-height: 1.5; margin: 0 0 14px; font-size: .92rem; }
+.installer-body .mono { font-family: Consolas, monospace; letter-spacing: .12em; color: #e9edf6; }
+.installer-body .field input { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); color: #fff; }
+.installer-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
+.installer-body .btn-text { color: #b9c2d6; }
+.installer-body .link-blue { color: #8ea6ff; cursor: pointer; }
+.installer-foot { padding: 12px 34px 18px; border-top: 1px solid rgba(255,255,255,.06); }
+.installer-dashes { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+.installer-dashes span { width: 90px; max-width: 26vw; height: 4px; border-radius: 2px; background: rgba(255,255,255,.16); }
+.installer-dashes span.on { background: #7c5cff; }
+.installer-stepnote { text-align: center; font-size: .8rem; color: #9aa6c0; }
+
+/* ============ OOBE (glassy orb panel) ============ */
+.oobe-bg { background: radial-gradient(120% 90% at 50% -10%, #17306a 0%, #0c1630 45%, #070b18 100%) !important;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.oobe-bg::before, .oobe-bg::after { display: none !important; }
+.oobe-brand { position: absolute; top: 26px; left: 0; right: 0; text-align: center; color: #fff; font-size: 1.2rem; font-weight: 300;
+  display: flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: .3px; z-index: 3; }
+.oobe-brand b { font-weight: 600; }
+.oobe-brand sup { font-size: .5em; opacity: .7; margin-left: 2px; }
+.oobe-flag { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 2px; width: 20px; height: 20px; }
+.oobe-flag i { background: linear-gradient(135deg,#7fd0ff,#5b8fff); border-radius: 2px; }
+.oobe-orb { position: absolute; top: 4%; left: 50%; transform: translateX(-50%); width: 460px; height: 460px; border-radius: 50%;
+  background: radial-gradient(circle at 60% 40%, #ff8a4c 0%, #ff5aa0 22%, #7a5bff 48%, #2f6bff 68%, transparent 72%);
+  filter: blur(6px); opacity: .55; z-index: 1; }
+.oobe-panel { position: relative; z-index: 2; width: min(880px, 94vw); min-height: 480px; max-height: 88vh;
+  background: rgba(10,16,32,.62); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,.09); border-radius: 16px; box-shadow: 0 30px 90px rgba(0,0,0,.55); color: #eef2fb;
+  padding: 20px 30px 30px; display: flex; flex-direction: column; animation: stepIn .4s cubic-bezier(.2,.7,.2,1); }
+.oobe-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #c7d0e6; margin-bottom: 8px; }
+.oobe-breadcrumb svg, .oobe-breadcrumb img, .oobe-breadcrumb span[style] { width: 15px; height: 15px; }
+.oobe-back { background: none; border: 0; color: #c7d0e6; font-size: 1.1rem; cursor: pointer; padding: 0 4px 0 0; }
+.oobe-stage { display: flex; gap: 26px; flex: 1; align-items: center; overflow: auto; }
+.oobe-illus { flex: 0 0 34%; display: flex; align-items: center; justify-content: center; min-height: 260px; }
+.oobe-content { flex: 1; min-width: 0; padding-right: 6px; }
+.oobe-content h1 { font-size: 1.7rem; font-weight: 500; margin: 0 0 10px; }
+.oobe-content .sub { color: #aeb8d2; line-height: 1.5; margin: 0 0 18px; font-size: .92rem; }
+.oobe-content .field label { color: #aeb8d2; }
+.oobe-content .field input[type=text], .oobe-content .field input[type=email], .oobe-content .field input[type=password], .oobe-content select {
+  background: transparent; border: 0; border-bottom: 2px solid rgba(255,255,255,.28); border-radius: 0; color: #fff; padding: 8px 2px; }
+.oobe-content .field input:focus, .oobe-content select:focus { border-bottom-color: #7c5cff; outline: none; }
+.oobe-content select option { color: #111; }
+.oobe-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 22px; }
+.oobe-actions.spread { justify-content: space-between; }
+.oobe-panel .btn-primary { background: #7c5cff; border-radius: 6px; padding: 9px 26px; }
+.oobe-panel .btn-primary:hover { background: #8f74ff; }
+.oobe-panel .btn-text { color: #c7d0e6; }
+.oobe-panel .link-blue { color: #8ea6ff; cursor: pointer; }
+.oobe-corner { position: absolute; right: 18px; bottom: 14px; display: flex; gap: 14px; color: #aeb8d2; font-size: 1rem; }
+.oobe-list { max-height: 220px; background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.12); }
+.oobe-list .opt { border-color: rgba(255,255,255,.08); color: #dde3f2; }
+.oobe-list .opt:hover { background: rgba(124,92,255,.14); }
+.oobe-list .opt.sel { background: rgba(124,92,255,.28); }
+
+/* illustrations */
+.il-cluster { display: flex; gap: 6px; align-items: center; justify-content: center; font-size: 3.6rem;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,.4)); }
+.il-cluster span { display: inline-block; transform: rotate(-6deg); }
+.il-cluster span:nth-child(2) { transform: rotate(4deg) translateY(-6px); font-size: 4.4rem; }
+.il-cluster span:nth-child(3) { transform: rotate(9deg); }
+.il-bolt { font-size: 5rem; background: radial-gradient(circle,#ff7a59,#e0245e); -webkit-background-clip: text; background-clip: text; }
+.fp-anim { transition: filter .2s; }
+
+/* Microsoft account */
+.ms-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin: 4px 0 10px; }
+.ms-links { font-size: .82rem; margin: 10px 0; line-height: 1.8; }
+.ms-return { color: #aeb8d2; font-size: .9rem; margin-bottom: 6px; }
+.pw-wrap { display: flex; align-items: center; border-bottom: 2px solid rgba(255,255,255,.28); }
+.pw-wrap input { flex: 1; border: 0 !important; border-bottom: 0 !important; }
+.pw-eye { background: none; border: 0; color: #aeb8d2; cursor: pointer; font-size: .95rem; padding: 4px 6px; }
+
+/* just a moment */
+.oobe-moment { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; width: 100%; min-height: 260px; }
+.moment-tiles { position: relative; width: 90px; height: 90px; }
+.moment-tiles span { position: absolute; width: 40px; height: 40px; border-radius: 8px; }
+.moment-tiles span:nth-child(1) { background: #5b8fff; left: 0; top: 0; }
+.moment-tiles span:nth-child(2) { background: #eef2fb; right: 0; top: 6px; }
+.moment-tiles span:nth-child(3) { background: #37d3b5; left: 14px; bottom: 0; border-radius: 50%; }
+.moment-row { display: flex; align-items: center; gap: 12px; font-size: 1.1rem; color: #eef2fb; }
+.spinner-ring { width: 22px; height: 22px; border: 3px solid rgba(255,255,255,.25); border-top-color: #7c5cff; border-radius: 50%; animation: spin 0.9s linear infinite; }
+
+/* fingerprint */
+.oobe-fp-status { margin: 0 0 4px; }
+.oobe-fp-pct { font-size: 2.4rem; font-weight: 300; margin-top: 10px; }
+
+/* welcome back choices */
+.oobe-choice { display: block; width: 100%; text-align: left; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 14px 16px; margin: 10px 0; cursor: pointer; color: #eef2fb; }
+.oobe-choice b { display: block; margin-bottom: 4px; }
+.oobe-choice span { font-size: .82rem; color: #aeb8d2; }
+.oobe-choice.sel { border-color: #7c5cff; background: rgba(124,92,255,.2); }
+
+/* customize categories */
+.oobe-cats { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow: auto; margin-bottom: 6px; }
+.oobe-cat { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 12px 14px; cursor: pointer; color: #eef2fb; }
+.oobe-cat-ic { font-size: 1.4rem; }
+.oobe-cat-txt { flex: 1; display: flex; flex-direction: column; }
+.oobe-cat-txt b { font-size: .95rem; }
+.oobe-cat-txt span { font-size: .78rem; color: #aeb8d2; }
+.oobe-cat-check { opacity: 0; color: #7c5cff; font-weight: 800; }
+.oobe-cat.sel { border-color: #7c5cff; background: rgba(124,92,255,.18); }
+.oobe-cat.sel .oobe-cat-check { opacity: 1; }
+
+@media (max-width: 680px) {
+  .oobe-stage { flex-direction: column; gap: 10px; }
+  .oobe-illus { flex-basis: auto; min-height: 90px; }
+  .il-cluster { font-size: 2.6rem; }
+}
