@@ -114,6 +114,7 @@
     { id: "calculator", name: "Calculator" },
     { id: "minecraft", name: "Mincraft" },
     { id: "blockfinder", name: "Assets" },
+    { id: "messenger", name: "Messenger" },
   ];
 
   function hiddenIcons() { return (S().desktop && S().desktop.hiddenIcons) || []; }
@@ -464,7 +465,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

@@ -235,6 +235,13 @@
     <path fill="#e50914" d="M44 22 L44 106 C49.5 105.3 55 104.7 60.5 104.3 L60.5 62 L78 106 C84 106 90 106.4 96 107 L96 22 L80 22 L80 60 L64.5 22 Z"/>
   </svg>`);
 
+  register("messenger", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="msgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f9bff"/><stop offset="1" stop-color="#0067c0"/></linearGradient></defs>
+    <rect width="128" height="128" rx="26" fill="url(#msgr)"/>
+    <path d="M32 34h64a8 8 0 0 1 8 8v34a8 8 0 0 1-8 8H58l-18 16v-16h-8a8 8 0 0 1-8-8V42a8 8 0 0 1 8-8Z" fill="#fff"/>
+    <circle cx="50" cy="59" r="5" fill="#0067c0"/><circle cx="68" cy="59" r="5" fill="#0067c0"/><circle cx="86" cy="59" r="5" fill="#0067c0"/>
+  </svg>`);
+
   register("recyclebin", `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M4 7h16" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>
     <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>
