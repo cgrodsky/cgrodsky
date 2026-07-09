@@ -548,6 +548,21 @@
   const DC_TEXT_CHANNELS = ["general", "off-topic", "memes"];
   function playDcSfx(name) { try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.5; a.play().catch(() => {}); } catch (_) {} }
 
+  // AI-generated Discord replies so members sound human (uses the AIML key).
+  async function dcAiReply(srvName, channel, msgs, member) {
+    const key = (S().copilot && S().copilot.apiKey) || window.AIML_KEY;
+    const recent = msgs.slice(-8).map((m) => ({ role: m.self ? "user" : "assistant", content: m.text }));
+    const sys = `You are ${member.name}, a real person hanging out in the "${srvName}" Discord server, in the #${channel} channel. Reply like a casual Discord user: very short (usually under 12 words), lowercase, relaxed, the occasional emoji, no formal punctuation. Never say you are an AI or a bot. Just react naturally to the latest message.`;
+    const res = await fetch(window.AIML_BASE + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ model: "openai/gpt-4o-mini", messages: [{ role: "system", content: sys }].concat(recent), max_tokens: 60, temperature: 0.9 }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const j = await res.json();
+    return ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "").trim();
+  }
+
   function discord(ctx) {
     // Always re-verify on every visit so reCAPTCHA fires each time you open Discord.
     session.discord = false;
@@ -683,18 +698,32 @@
       });
       renderMsgs();
 
+      function showTyping(member) {
+        const t = el(`<div class="dc-typing"><span class="dc-msg-ava" style="background:${member.color}">${member.name[0]}</span><span class="dc-typing-name">${escapeHtml(member.name)}</span><span class="dc-typing-dots"><span></span><span></span><span></span></span></div>`);
+        msgsEl.appendChild(t); msgsEl.scrollTop = msgsEl.scrollHeight;
+        return t;
+      }
       function send() {
         const text = input.value.trim(); if (!text) return;
         const me = (S().profile && S().profile.username) || "You";
         d.messages[srv.id][active].push({ author: me, color: "#00a8fc", text, self: true });
         State.save(); input.value = ""; renderMsgs();
         const chan = active;
-        setTimeout(() => {
-          const m = DC_MEMBERS[Math.floor(Math.random() * DC_MEMBERS.length)];
-          const r = DC_REPLIES[Math.floor(Math.random() * DC_REPLIES.length)];
-          d.messages[srv.id][chan].push({ author: m.name, color: m.color, text: r });
+        const member = DC_MEMBERS[Math.floor(Math.random() * DC_MEMBERS.length)];
+        const typing = (active === chan) ? showTyping(member) : null;
+        const deliver = (replyText) => {
+          if (typing) typing.remove();
+          d.messages[srv.id][chan].push({ author: member.name, color: member.color, text: replyText });
           State.save(); if (active === chan) renderMsgs();
-        }, 1000 + Math.random() * 900);
+        };
+        const started = Date.now();
+        dcAiReply(srv.name, chan, d.messages[srv.id][chan], member)
+          .then((reply) => {
+            const txt = reply || DC_REPLIES[Math.floor(Math.random() * DC_REPLIES.length)];
+            const wait = Math.max(0, 700 - (Date.now() - started)); // keep the typing indicator visible a beat
+            setTimeout(() => deliver(txt), wait);
+          })
+          .catch(() => setTimeout(() => deliver(DC_REPLIES[Math.floor(Math.random() * DC_REPLIES.length)]), 500));
       }
       view.querySelector(".dc-send").onclick = send;
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); send(); } });
