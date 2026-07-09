@@ -246,10 +246,8 @@
   function applyWallpaper() {
     const wp = S().desktop.wallpaper;
     if (!wp || wp === "default") {
-      desktop.style.background = S().theme === "dark"
-        ? "radial-gradient(circle at 50% 30%, #1b3a66, #0a1f3f 70%)"
-        : "radial-gradient(circle at 50% 30%, #4a90e2, #0a3d8f 80%)";
-    } else if (wp.startsWith("data:") || wp.startsWith("http")) {
+      desktop.style.background = "url(assets/wall3.jpg) center/cover"; // Windows 12 default
+    } else if (wp.startsWith("data:") || wp.startsWith("http") || wp.startsWith("assets/")) {
       desktop.style.background = `url(${wp}) center/cover`;
     } else {
       desktop.style.background = wp; // color
@@ -259,16 +257,23 @@
 
   // ---------------- Taskbar ----------------
   function buildTaskbar() {
-    taskbar = el(`<div class="taskbar">
-      <div class="tb-btn start" title="Start">${Icon.mini("start", "Windows")}</div>
-      <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
-      <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
-      <div class="tb-btn" data-open="duolingo" title="Duolingo">${Icon.mini(duoIconKey(false), "Duolingo")}</div>
-      <div class="tb-btn" data-open="settings" title="Settings">${Icon.mini("settings", "Settings")}</div>
+    taskbar = el(`<div class="taskbar tb-float">
+      <div class="tb-dock">
+        <button class="tb-search"><span class="tb-search-ic">&#128269;</span><span class="tb-search-lbl">Search Anything</span></button>
+        <div class="tb-apps">
+          <div class="tb-btn start" title="Start">${Icon.mini("start", "Windows")}</div>
+          <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
+          <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
+          <div class="tb-btn" data-open="files" title="Files">${Icon.mini("files", "Files")}</div>
+          <div class="tb-btn" data-open="photos" title="Photos">${Icon.mini("photos", "Photos")}</div>
+        </div>
+      </div>
+      <button class="tb-copilot" data-open="copilot" title="Copilot">${Icon.mini("copilot", "Copilot")}</button>
       <div class="tb-clock" id="tbClock"></div>
     </div>`);
     screen().appendChild(taskbar);
     taskbar.querySelector(".start").onclick = toggleStart;
+    taskbar.querySelector(".tb-search").onclick = toggleStart;
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
     // Right-click: jump list on an app button, layout menu on empty taskbar.
     taskbar.addEventListener("contextmenu", (e) => {
@@ -339,7 +344,7 @@
     }
     const btn = el(`<div class="tb-btn" title="${entry.title}">${entry.icon || Icon.mini(entry.appId || "app", entry.title)}</div>`);
     btn.onclick = () => toggleWindow(entry);
-    taskbar.insertBefore(btn, taskbar.querySelector(".tb-clock"));
+    (taskbar.querySelector(".tb-apps") || taskbar).appendChild(btn);
     entry.taskBtn = btn;
     refreshTaskbarActive();
   }

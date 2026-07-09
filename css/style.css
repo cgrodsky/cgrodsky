@@ -366,13 +366,38 @@ input[type=range] { width: 100%; }
 .dicon .glyph { font-size: 2rem; }
 .dicon .label { font-size: 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
 
-/* Taskbar */
+/* Taskbar — floating rounded dock (Search Anything + apps + Copilot) */
 .taskbar {
   position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
   background: var(--taskbar); backdrop-filter: blur(20px);
   display: flex; align-items: center; justify-content: center; gap: 6px;
   border-top: 1px solid var(--border); z-index: 500;
 }
+.taskbar.tb-float {
+  background: none; backdrop-filter: none; border-top: 0; height: 70px; bottom: 0;
+  left: 0; right: 0; gap: 12px; padding: 0 14px 12px;
+}
+.tb-dock {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 16px;
+  background: var(--taskbar); backdrop-filter: blur(22px); border: 1px solid var(--border);
+  box-shadow: 0 8px 30px rgba(0,0,0,.28);
+}
+.tb-apps { display: flex; align-items: center; gap: 4px; }
+.tb-search {
+  display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 12px; margin-right: 4px;
+  border-radius: 20px; border: 1px solid var(--border); background: var(--bg-elev); color: var(--text);
+  cursor: pointer; font-size: .85rem;
+}
+.tb-search:hover { background: var(--window-bg); }
+.tb-search-ic { opacity: .7; }
+.tb-copilot {
+  width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--border); background: var(--taskbar);
+  backdrop-filter: blur(22px); box-shadow: 0 8px 30px rgba(0,0,0,.28); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 6px;
+}
+.tb-copilot:hover { transform: translateY(-2px); }
+.tb-float .tb-clock { bottom: 22px; right: 16px; }
+@media (max-width: 620px) { .tb-search-lbl { display: none; } .tb-search { padding: 0 12px; } }
 .taskbar .tb-btn {
   width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
   font-size: 1.3rem; cursor: pointer; position: relative; transition: background 0.15s;

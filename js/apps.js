@@ -135,10 +135,26 @@
       sb.innerHTML = "";
       if (p === "personal") {
         sb.appendChild(el(`<h2>Background</h2>`));
-        const colors = ["default", "#0067c0", "#7b5cff", "#e53935", "#43a047", "#fb8c00", "#00897b", "#222", "#111827", "#5a189a", "#b5179e", "#006466"];
+        // Windows 12 default wallpapers (wall3 = default) then a color palette.
+        const walls = [
+          { v: "default", img: "assets/wall3.jpg" },
+          { v: "assets/wall1.jpg", img: "assets/wall1.jpg" },
+          { v: "assets/wall2.jpg", img: "assets/wall2.jpg" },
+        ];
+        const wgrid = el(`<div class="swatch-grid"></div>`);
+        walls.forEach((w) => {
+          const sw = el(`<div class="swatch swatch-wall" style="background:url(${w.img}) center/cover"></div>`);
+          const cur = S().desktop.wallpaper || "default";
+          if (cur === w.v) sw.classList.add("sel");
+          sw.onclick = () => { S().desktop.wallpaper = w.v; State.save(); window.applyWallpaper(); render("personal"); };
+          wgrid.appendChild(sw);
+        });
+        sb.appendChild(wgrid);
+        sb.appendChild(el(`<h2 style="margin-top:18px">Solid colors</h2>`));
+        const colors = ["#0067c0", "#7b5cff", "#e53935", "#43a047", "#fb8c00", "#00897b", "#222", "#111827", "#5a189a", "#b5179e", "#006466"];
         const grid = el(`<div class="swatch-grid"></div>`);
         colors.forEach((c) => {
-          const sw = el(`<div class="swatch" style="background:${c === "default" ? "linear-gradient(135deg,#4a90e2,#0a3d8f)" : c}"></div>`);
+          const sw = el(`<div class="swatch" style="background:${c}"></div>`);
           if (S().desktop.wallpaper === c) sw.classList.add("sel");
           sw.onclick = () => { S().desktop.wallpaper = c; State.save(); window.applyWallpaper(); render("personal"); };
           grid.appendChild(sw);
