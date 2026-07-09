@@ -85,7 +85,6 @@
       </div>
     </div>`);
     layer.appendChild(wrap);
-    playSound("SFX_023"); // XP startup sound
     await wait(3600);
     wrap.classList.add("fade-out");
     await wait(700);

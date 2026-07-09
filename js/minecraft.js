@@ -201,7 +201,10 @@
     body.innerHTML = `<div class="mc-root mc-game3d">
       <canvas class="mc3-canvas"></canvas>
       <div class="mc3-crosshair"></div>
-      <div class="mc3-hud"><div class="mc-hotbar"></div></div>
+      <div class="mc3-hud">
+        <div class="mc3-xprow" style="display:${creative ? "none" : "flex"}"><span class="mc3-xp-lvl">0</span><div class="mc3-xp"><div class="mc3-xp-fill"></div></div></div>
+        <div class="mc-hotbar"></div>
+      </div>
       <div class="mc3-help">Drag right side to look · drag left to move · tap right to mine · + to place · ender pearl + place to teleport · seed: ${seedStr}</div>
       <button class="mc3-btn mc3-jump" title="Jump">▲</button>
       <button class="mc3-btn mc3-place" title="Place">+</button>
@@ -423,6 +426,27 @@
       if (!cfg.sound) return;
       try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.55; a.play().catch(() => {}); } catch (_) {}
     }
+
+    // Experience points: mining ores grants XP (green bar + level), with the
+    // XP pickup sound (SFX_023).
+    const ORE_XP = { 12: 1, 13: 2, 14: 2, 15: 5, 25: 6, 26: 4, 28: 6, 48: 1, 49: 3, 50: 4, 51: 4 };
+    let xp = 0, xpLevel = 0;
+    const xpFill = body.querySelector(".mc3-xp-fill");
+    const xpLvlEl = body.querySelector(".mc3-xp-lvl");
+    const xpForLevel = (l) => 5 + l * 2;
+    function drawXp() {
+      const need = xpForLevel(xpLevel);
+      if (xpFill) xpFill.style.width = Math.min(100, xp / need * 100) + "%";
+      if (xpLvlEl) xpLvlEl.textContent = xpLevel;
+    }
+    function addXp(n) {
+      xp += n;
+      let need = xpForLevel(xpLevel);
+      while (xp >= need) { xp -= need; xpLevel++; need = xpForLevel(xpLevel); }
+      drawXp();
+      playSfx("SFX_023");
+    }
+    drawXp();
     function surfaceY(bx, bz) { let yy = H - 1; while (yy > 0 && !solid(bx, yy - 1, bz)) yy--; return yy; }
     function teleportTo(x, y, z) {
       player.pos.set(x, y, z); player.vel.set(0, 0, 0);
@@ -472,6 +496,7 @@
       if (!b || !b.solid || b.hardness === Infinity) return;
       world[y][z][x] = 0;
       if (b.drop) addItem(b.drop, 1);
+      if (ORE_XP[id]) addXp(ORE_XP[id]);
       mining = null;
       if (window.Achievements) window.Achievements.bump("miner", 1);
       rebuildMeshes();
