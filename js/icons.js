@@ -235,6 +235,13 @@
     <path fill="#e50914" d="M44 22 L44 106 C49.5 105.3 55 104.7 60.5 104.3 L60.5 62 L78 106 C84 106 90 106.4 96 107 L96 22 L80 22 L80 60 L64.5 22 Z"/>
   </svg>`);
 
+  register("recyclebin", `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 7h16" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M6 7l1 12a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8L18 7Z" fill="#6c7a92" stroke="#c7d0e6" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M10 10.5v6M14 10.5v6" stroke="#e9edf6" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`);
+
   register("files", `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="24" height="24" rx="5" fill="#0b6bcb"/>
     <path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9V4a1 1 0 0 0-1-1H8.914a1 1 0 0 0-.707.293L4.293 7.207A1 1 0 0 0 4 7.914V20a1 1 0 0 0 1 1h6M9 3v4a1 1 0 0 1-1 1H4m11 13a11.426 11.426 0 0 1-3.637-3.99A11.139 11.139 0 0 1 10 11.833L15 10l5 1.833a11.137 11.137 0 0 1-1.363 5.176A11.425 11.425 0 0 1 15.001 21Z"/>

@@ -116,31 +116,120 @@
     { id: "blockfinder", name: "Assets" },
   ];
 
+  function hiddenIcons() { return (S().desktop && S().desktop.hiddenIcons) || []; }
+  function binItems() { if (!S().desktop.bin) S().desktop.bin = []; return S().desktop.bin; }
+  function removeFromDesktop(id, name) {
+    if (!S().desktop.hiddenIcons) S().desktop.hiddenIcons = [];
+    if (!S().desktop.hiddenIcons.includes(id)) S().desktop.hiddenIcons.push(id);
+    const bin = binItems();
+    if (!bin.some((b) => b.id === id)) bin.push({ id, name: name || id });
+    const i = S().installedApps.indexOf(id); if (i >= 0) S().installedApps.splice(i, 1); // uninstall Store apps
+    State.save();
+    renderDesktopIcons();
+    if (window.Notify) Notify.show({ icon: Icon.mini("recyclebin", "Recycle Bin"), title: "Recycle Bin", body: (name || "Item") + " moved to Recycle Bin", onClick: () => open("recyclebin") });
+  }
+  function restoreFromBin(id) {
+    const h = S().desktop.hiddenIcons || []; const hi = h.indexOf(id); if (hi >= 0) h.splice(hi, 1);
+    S().desktop.bin = binItems().filter((b) => b.id !== id);
+    // Re-install store apps that aren't default shortcuts.
+    const isDefault = DEFAULT_SHORTCUTS.some((s) => s.id === id);
+    const app = Catalog.storeApps.find((a) => a.id === id);
+    if (app && !isDefault && !S().installedApps.includes(id)) S().installedApps.push(id);
+    State.save();
+    renderDesktopIcons();
+  }
+
+  AppRegistry.recyclebin = function () {
+    const { body } = createWindow({ title: "Recycle Bin", icon: Icon.mini("recyclebin", "Recycle Bin"), width: 520, height: 420, appId: "recyclebin" });
+    function render() {
+      const items = binItems();
+      body.innerHTML = `<div class="rbin">
+        <div class="rbin-bar"><b>Recycle Bin</b><span class="grow"></span><button class="pill-btn" id="empty" ${items.length ? "" : "disabled"}>Empty Recycle Bin</button></div>
+        <div class="rbin-list"></div>
+      </div>`;
+      const list = body.querySelector(".rbin-list");
+      if (!items.length) { list.innerHTML = `<div class="muted" style="padding:24px;text-align:center">Recycle Bin is empty.</div>`; }
+      items.forEach((it) => {
+        const ikey = it.id === "duolingo" ? duoIconKey(true) : it.id;
+        const row = el(`<div class="rbin-row"><span class="rbin-ic">${Icon.md(ikey, it.name)}</span><span class="grow">${it.name}</span><button class="btn-text rbin-restore">Restore</button></div>`);
+        row.querySelector(".rbin-restore").onclick = () => { restoreFromBin(it.id); render(); };
+        list.appendChild(row);
+      });
+      body.querySelector("#empty").onclick = () => { S().desktop.bin = []; State.save(); render(); };
+    }
+    render();
+  };
+
   function renderDesktopIcons() {
     const iconWrap = desktop.querySelector(".desktop-icons");
     iconWrap.innerHTML = "";
     const seen = new Set();
+    const hidden = hiddenIcons();
     const items = DEFAULT_SHORTCUTS.slice();
-    // Installed apps from the Store stay on the home screen.
     S().installedApps.forEach((id) => {
       if (DEFAULT_SHORTCUTS.some((s) => s.id === id)) return;
       const app = Catalog.storeApps.find((a) => a.id === id);
       if (app) items.push({ id: app.id, name: app.name });
     });
+
+    // Recycle Bin is always first and is the drop target.
+    const bin = el(`<div class="dicon dbin" data-bin="1"><div class="glyph">${Icon.big("recyclebin", "Recycle Bin")}</div><div class="label">Recycle Bin</div></div>`);
+    bin.onclick = (e) => { e.stopPropagation(); if (bin.classList.contains("selected")) { open("recyclebin"); return; } iconWrap.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); bin.classList.add("selected"); };
+    iconWrap.appendChild(bin);
+
     items.forEach((s) => {
-      if (seen.has(s.id)) return; seen.add(s.id);
+      if (seen.has(s.id) || hidden.includes(s.id)) return; seen.add(s.id);
       const ikey = s.id === "duolingo" ? duoIconKey(true) : s.id;
       const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(ikey, s.name)}</div><div class="label">${s.name}</div></div>`);
-      // Click selects; clicking an already-selected icon opens it (works for
-      // slow taps on touch and a normal double-click on desktop).
-      ic.onclick = (e) => {
-        e.stopPropagation();
-        if (ic.classList.contains("selected")) { open(s.id); return; }
-        iconWrap.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected"));
-        ic.classList.add("selected");
-      };
+      makeDesktopIcon(ic, s, iconWrap, bin);
       iconWrap.appendChild(ic);
     });
+  }
+
+  // Pointer-based select / open / drag-to-bin (works with mouse and touch).
+  function makeDesktopIcon(ic, s, iconWrap, bin) {
+    let startX = 0, startY = 0, dragging = false, ghost = null, moved = false;
+    const onMove = (e) => {
+      const pt = e.touches ? e.touches[0] : e;
+      const dx = pt.clientX - startX, dy = pt.clientY - startY;
+      if (!dragging && Math.hypot(dx, dy) > 8) {
+        dragging = true; moved = true;
+        ghost = ic.cloneNode(true); ghost.classList.add("dicon-ghost"); document.getElementById("screen").appendChild(ghost);
+        ic.classList.add("dragging");
+      }
+      if (dragging) {
+        e.preventDefault();
+        ghost.style.left = pt.clientX + "px"; ghost.style.top = pt.clientY + "px";
+        const overBin = bin.getBoundingClientRect();
+        const on = pt.clientX >= overBin.left && pt.clientX <= overBin.right && pt.clientY >= overBin.top && pt.clientY <= overBin.bottom;
+        bin.classList.toggle("drop-hover", on);
+      }
+    };
+    const onUp = (e) => {
+      window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onUp);
+      if (dragging) {
+        const pt = e.changedTouches ? e.changedTouches[0] : e;
+        const r = bin.getBoundingClientRect();
+        const on = pt.clientX >= r.left && pt.clientX <= r.right && pt.clientY >= r.top && pt.clientY <= r.bottom;
+        if (ghost) ghost.remove();
+        ic.classList.remove("dragging"); bin.classList.remove("drop-hover");
+        if (on) removeFromDesktop(s.id, s.name);
+      } else {
+        // treated as a tap: select, or open if already selected
+        if (ic.classList.contains("selected")) open(s.id);
+        else { iconWrap.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); ic.classList.add("selected"); }
+      }
+      dragging = false;
+    };
+    const onDown = (e) => {
+      const pt = e.touches ? e.touches[0] : e;
+      startX = pt.clientX; startY = pt.clientY; dragging = false; moved = false;
+      window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+      window.addEventListener("touchmove", onMove, { passive: false }); window.addEventListener("touchend", onUp);
+    };
+    ic.addEventListener("mousedown", onDown);
+    ic.addEventListener("touchstart", onDown, { passive: true });
   }
 
   function buildDesktop() {
@@ -395,6 +484,7 @@
   function open(appId) {
     recordRecent(appId);
     if (appId === "store__") { AppRegistry.store(); return; }
+    if (appId === "recyclebin") { AppRegistry.recyclebin(); return; }
     const app = Catalog.storeApps.find((a) => a.id === appId);
     if (!app) return;
     if (app.game) { return Games.launch(app, createWindow); }

@@ -47,7 +47,7 @@
     ["File Explorer", "System"], ["Terminal", "Developer"], ["VS Codey", "Developer"], ["Phone Link", "System"],
     ["Xboxy", "Games"], ["Solitaire", "Games"], ["Mahjong", "Games"], ["Chess Titan", "Games"],
     ["Pinball", "Games"], ["Sudoku", "Games"], ["Skypey", "Social"], ["Teamz", "Social"],
-    ["Power BI", "Developer"], ["OneNote", "Productivity"], ["Translator", "Lifestyle"], ["Money", "Finance"],
+    ["OneNote", "Productivity"], ["Translator", "Lifestyle"], ["Money", "Finance"],
     ["Health", "Lifestyle"], ["Fitness", "Lifestyle"], ["Drawboard", "Multimedia"], ["Code Writer", "Developer"],
     ["Audible", "Multimedia"], ["Comic Reader", "Lifestyle"], ["Sketch It", "Multimedia"], ["Quick PDF", "Productivity"],
   ];

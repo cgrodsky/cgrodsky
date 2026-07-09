@@ -55,6 +55,7 @@
     // desktop
     desktop: {
       wallpaper: "default", // 'default' | color hex | dataURL
+      hiddenIcons: [], // desktop shortcuts dragged to the Recycle Bin
     },
     // amazon
     amazon: { cart: [] },
