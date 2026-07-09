@@ -74,6 +74,7 @@
       if (opts.onClose) opts.onClose();
       refreshTaskbarActive();
     }
+    entry.close = close;
     controls.querySelector(".close").onclick = () => { if (!opts.noClose) close(); };
     controls.querySelector(".min").onclick = () => { if (opts.noMin) return; win.style.display = "none"; refreshTaskbarActive(); };
     let maximized = false, prev;
@@ -171,7 +172,62 @@
     screen().appendChild(taskbar);
     taskbar.querySelector(".start").onclick = toggleStart;
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
+    // Right-click: jump list on an app button, layout menu on empty taskbar.
+    taskbar.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      const btn = e.target.closest(".tb-btn[data-open]");
+      if (btn) showJumpList(btn.dataset.open, btn);
+      else showTaskbarLayoutMenu(e.clientX);
+    });
+    applyTaskbarLayout();
     buildStartMenu();
+  }
+
+  // Per-app quick actions for taskbar jump lists.
+  const JUMP_ACTIONS = {
+    notepad: [{ label: "New note", act: () => open("notepad") }],
+    browser: [{ label: "New tab", act: () => open("browser") }],
+    paint: [{ label: "New drawing", act: () => open("paint") }],
+    files: [{ label: "New window", act: () => open("files") }],
+    copilot: [{ label: "New chat", act: () => open("copilot") }],
+    minecraft: [{ label: "Play", act: () => open("minecraft") }],
+  };
+  function appDisplayName(id) { const a = Catalog.storeApps.find((x) => x.id === id); return a ? a.name : id; }
+  function showJumpList(appId, anchor) {
+    document.querySelectorAll(".jumplist,.tb-layoutmenu").forEach((m) => m.remove());
+    const running = openWindows.some((e) => e.appId === appId);
+    const acts = JUMP_ACTIONS[appId] || [];
+    const jl = el(`<div class="jumplist"></div>`);
+    if (acts.length) { jl.appendChild(el(`<div class="jl-head">${appDisplayName(appId)}</div>`)); acts.forEach((a) => { const b = el(`<button>${a.label}</button>`); b.onclick = () => { jl.remove(); a.act(); }; jl.appendChild(b); }); jl.appendChild(el(`<div class="jl-sep"></div>`)); }
+    const openBtn = el(`<button>Open</button>`); openBtn.onclick = () => { jl.remove(); open(appId); }; jl.appendChild(openBtn);
+    if (running) { const cl = el(`<button>Close all windows</button>`); cl.onclick = () => { jl.remove(); openWindows.filter((e) => e.appId === appId).slice().forEach((e) => e.close && e.close()); }; jl.appendChild(cl); }
+    screen().appendChild(jl);
+    const r = anchor.getBoundingClientRect();
+    jl.style.left = Math.min(r.left, window.innerWidth - jl.offsetWidth - 8) + "px";
+    jl.style.bottom = (window.innerHeight - r.top + 6) + "px";
+    setTimeout(() => document.addEventListener("click", function h(ev) { if (!jl.contains(ev.target)) { jl.remove(); document.removeEventListener("click", h); } }), 0);
+  }
+
+  const TB_LAYOUTS = ["Default", "Joined", "Classic", "Compact"];
+  function applyTaskbarLayout() {
+    if (!taskbar) return;
+    const layout = (S().appData && S().appData.taskbarLayout) || "Default";
+    TB_LAYOUTS.forEach((l) => taskbar.classList.remove("tb-" + l.toLowerCase()));
+    taskbar.classList.add("tb-" + layout.toLowerCase());
+  }
+  function showTaskbarLayoutMenu(x) {
+    document.querySelectorAll(".jumplist,.tb-layoutmenu").forEach((m) => m.remove());
+    const cur = (S().appData && S().appData.taskbarLayout) || "Default";
+    const menu = el(`<div class="tb-layoutmenu"><div class="jl-head">Taskbar layout</div></div>`);
+    TB_LAYOUTS.forEach((l) => {
+      const b = el(`<button>${l === cur ? "&#10003; " : ""}${l}</button>`);
+      b.onclick = () => { if (!S().appData) S().appData = {}; S().appData.taskbarLayout = l; State.save(); applyTaskbarLayout(); menu.remove(); };
+      menu.appendChild(b);
+    });
+    screen().appendChild(menu);
+    menu.style.left = Math.min(x, window.innerWidth - menu.offsetWidth - 8) + "px";
+    menu.style.bottom = "56px";
+    setTimeout(() => document.addEventListener("click", function h(ev) { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("click", h); } }), 0);
   }
 
   function addTaskButton(entry) {
@@ -211,15 +267,31 @@
     tick(); setInterval(tick, 1000);
   }
 
-  // ---------------- Start menu ----------------
+  // ---------------- Start menu ("Meet the new Start") ----------------
   function buildStartMenu() {
     startMenu = el(`<div class="start-menu">
-      <input class="search" placeholder="${I18n.t("search_apps")}">
-      <div class="app-grid"></div>
+      <div class="start-search"><span class="start-search-ic">&#128269;</span><input class="search" placeholder="${I18n.t("search_apps")}"></div>
+      <div class="start-scroll">
+        <div class="start-sec">
+          <div class="start-sec-head"><span>Pinned</span></div>
+          <div class="app-grid pinned-grid"></div>
+        </div>
+        <div class="start-sec recents-sec">
+          <div class="start-sec-head"><span>Recommended</span></div>
+          <div class="recents-row"></div>
+        </div>
+      </div>
+      <div class="start-foot">
+        <button class="start-user"><span class="start-ava"></span><span class="start-uname"></span></button>
+        <button class="start-power" title="Power">&#9211;</button>
+      </div>
     </div>`);
     screen().appendChild(startMenu);
     const search = startMenu.querySelector(".search");
     search.oninput = () => renderStartApps(search.value);
+    updateStartUser();
+    startMenu.querySelector(".start-user").onclick = () => { startMenu.classList.remove("open"); open("settings"); };
+    startMenu.querySelector(".start-power").onclick = (e) => { e.stopPropagation(); showPowerMenu(); };
     renderStartApps("");
     document.addEventListener("click", (e) => {
       if (startMenu.classList.contains("open") && !startMenu.contains(e.target) && !e.target.closest(".start")) {
@@ -228,33 +300,91 @@
     });
   }
 
-  function renderStartApps(filter) {
-    const grid = startMenu.querySelector(".app-grid");
-    grid.innerHTML = "";
-    // Store is always available; plus installed + builtin apps
+  function updateStartUser() {
+    if (!startMenu) return;
+    const pr = S().profile || {};
+    const ava = startMenu.querySelector(".start-ava");
+    ava.innerHTML = pr.picture ? `<img src="${pr.picture}" alt="">` : Icon.mini("user", pr.username || "User");
+    startMenu.querySelector(".start-uname").textContent = pr.username || "User";
+  }
+
+  function allInstalledApps() {
     const list = [{ id: "store__", name: "Store" }];
     Catalog.storeApps.forEach((a) => {
-      const installed = a.builtin || a.game ? S().installedApps.includes(a.id) || isDefaultInstalled(a.id) : false;
       if (a.decorative) return;
+      const installed = (a.builtin || a.game) ? (S().installedApps.includes(a.id) || isDefaultInstalled(a.id)) : false;
       if (installed) list.push({ id: a.id, name: a.name });
     });
+    return list;
+  }
+
+  function appTile(a, small) {
+    const ikey = a.id === "duolingo" ? duoIconKey(true) : a.id;
+    const tile = el(`<div class="app-tile ${small ? "small" : ""}"><div class="ic">${Icon.md(ikey, a.name)}</div><div class="nm">${a.name}</div></div>`);
+    tile.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
+    return tile;
+  }
+
+  function renderStartApps(filter) {
+    const pinnedGrid = startMenu.querySelector(".pinned-grid");
+    const recentsSec = startMenu.querySelector(".recents-sec");
+    const recentsRow = startMenu.querySelector(".recents-row");
+    pinnedGrid.innerHTML = "";
     const f = (filter || "").toLowerCase();
-    list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => {
-      const ikey = a.id === "duolingo" ? duoIconKey(true) : a.id;
-      const tile = el(`<div class="app-tile"><div class="ic">${Icon.md(ikey, a.name)}</div><div class="nm">${a.name}</div></div>`);
-      tile.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
-      grid.appendChild(tile);
-    });
+    const list = allInstalledApps();
+    list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => pinnedGrid.appendChild(appTile(a)));
+    const recents = (S().appData.recentApps || []).map((id) => list.find((a) => a.id === id)).filter(Boolean);
+    if (f || !recents.length) { recentsSec.style.display = "none"; }
+    else {
+      recentsSec.style.display = "";
+      recentsRow.innerHTML = "";
+      recents.slice(0, 6).forEach((a) => recentsRow.appendChild(appTile(a, true)));
+    }
+  }
+
+  function showPowerMenu() {
+    startMenu.querySelectorAll(".start-powmenu").forEach((m) => m.remove());
+    const m = el(`<div class="start-powmenu">
+      <button data-a="lock">&#128274; Lock</button>
+      <button data-a="restart">&#8635; Restart</button>
+      <button data-a="shutdown">&#9211; Shut down</button>
+    </div>`);
+    startMenu.appendChild(m);
+    const close = () => m.remove();
+    m.querySelector('[data-a="lock"]').onclick = () => { close(); startMenu.classList.remove("open"); if (window.Lock) Lock.run(() => {}); };
+    m.querySelector('[data-a="restart"]').onclick = () => location.reload();
+    m.querySelector('[data-a="shutdown"]').onclick = () => {
+      const off = el(`<div class="power-off"></div>`); screen().appendChild(off);
+      setTimeout(() => location.reload(), 1400);
+    };
+    setTimeout(() => document.addEventListener("click", function h(e) { if (!m.contains(e.target)) { close(); document.removeEventListener("click", h); } }), 0);
   }
 
   function isDefaultInstalled(id) {
     return ["browser", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
-  function toggleStart() { startMenu.classList.toggle("open"); renderStartApps(""); }
+  function toggleStart() {
+    startMenu.classList.toggle("open");
+    if (startMenu.classList.contains("open")) {
+      updateStartUser();
+      renderStartApps("");
+      const s = startMenu.querySelector(".search"); s.value = ""; setTimeout(() => s.focus(), 50);
+    }
+  }
 
   // ---------------- App opening dispatch ----------------
+  function recordRecent(id) {
+    if (!id) return;
+    if (!S().appData) S().appData = {};
+    const r = S().appData.recentApps || (S().appData.recentApps = []);
+    const i = r.indexOf(id); if (i >= 0) r.splice(i, 1);
+    r.unshift(id); if (r.length > 8) r.length = 8;
+    State.save();
+    if (startMenu && startMenu.classList.contains("open")) renderStartApps(startMenu.querySelector(".search").value);
+  }
   function open(appId) {
+    recordRecent(appId);
     if (appId === "store__") { AppRegistry.store(); return; }
     const app = Catalog.storeApps.find((a) => a.id === appId);
     if (!app) return;
