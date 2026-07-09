@@ -589,7 +589,7 @@ Ethernet adapter Local Area Connection:
       if (!entries.length) grid.appendChild(el(`<div class="muted" style="padding:20px">This folder is empty.</div>`));
       entries.forEach(([name, node]) => {
         const isFolder = node.type === "folder";
-        const glyph = isFolder ? "&#128193;" : (node.kind === "image" ? "&#128444;" : "&#128196;");
+        const glyph = isFolder ? `<img class="files-folder-img" src="assets/folder.png" alt="">` : (node.kind === "image" ? "&#128444;" : "&#128196;");
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
           <div class="files-name">${escapeHtml(name)}</div>

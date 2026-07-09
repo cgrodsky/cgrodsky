@@ -1437,3 +1437,5 @@ body.dark .searchbar { border-color: #5f6368; }
 .msgr-compose input { flex: 1; border: 1px solid var(--border); border-radius: 20px; padding: 10px 14px; background: var(--window-bg); color: var(--text); outline: none; }
 .msgr-send { background: #0067c0; color: #fff; border: 0; border-radius: 20px; padding: 0 20px; cursor: pointer; font-weight: 600; }
 .msgr-settings { padding: 22px; }
+
+.files-folder-img { width: 46px; height: 46px; object-fit: contain; }
