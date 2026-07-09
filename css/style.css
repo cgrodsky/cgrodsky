@@ -1267,3 +1267,8 @@ body.dark .searchbar { border-color: #5f6368; }
   .oobe-illus { flex-basis: auto; min-height: 90px; }
   .il-cluster { font-size: 2.6rem; }
 }
+
+/* Skip setup button (installer titlebar + OOBE breadcrumb) */
+.setup-skip { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #e9edf6;
+  font-size: .78rem; padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+.setup-skip:hover { background: rgba(255,255,255,.16); }

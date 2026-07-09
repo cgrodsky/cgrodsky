@@ -32,7 +32,7 @@
       <div class="installer-win">
         <div class="installer-titlebar">
           <span class="installer-tt">${Icon.mini("settings", "Setup")} Windows Setup</span>
-          <span class="installer-x">&#215;</span>
+          <span class="row" style="gap:12px"><button class="setup-skip">Skip setup</button><span class="installer-x">&#215;</span></span>
         </div>
         <div class="installer-body">${inner}</div>
         <div class="installer-foot">
@@ -40,6 +40,7 @@
           <div class="installer-stepnote">Step ${step} of 3: Collecting Information</div>
         </div>
       </div>`;
+    wireSkip();
     return bg.querySelector(".installer-body");
   }
 
@@ -98,6 +99,19 @@
     oobeRegion();
   }
 
+  // Jump straight to the desktop with sensible defaults (available on every screen).
+  function skipSetup() {
+    if (!S().profile || !S().profile.username) {
+      S().profile = Object.assign({ picture: null, username: "User", authType: "pin", secret: "" }, S().profile || {});
+    }
+    S().installerDone = true;
+    S().setupCompleted = true;
+    State.save();
+    if (window.Achievements) window.Achievements.unlock("welcome");
+    finish();
+  }
+  function wireSkip() { bg.querySelectorAll(".setup-skip").forEach((x) => x.onclick = skipSetup); }
+
   // ============================================================
   //  STAGE 2 — OOBE (glassy orb panel)
   // ============================================================
@@ -109,7 +123,7 @@
       <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12</b><sup>${EDITION_YEAR}</sup></div>
       <div class="oobe-orb"></div>
       <div class="oobe-panel">
-        <div class="oobe-breadcrumb">${opts.back ? '<button class="oobe-back">&#8592;</button>' : ""}<span>${Icon.mini("settings", "Setup")} Set up Windows</span></div>
+        <div class="oobe-breadcrumb">${opts.back ? '<button class="oobe-back">&#8592;</button>' : ""}<span>${Icon.mini("settings", "Setup")} Set up Windows</span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
         <div class="oobe-stage">
           <div class="oobe-illus">${opts.illustration || ""}</div>
           <div class="oobe-content"></div>
@@ -118,6 +132,7 @@
       </div>`;
     bg.querySelector(".oobe-content").appendChild(contentNode);
     if (opts.back) bg.querySelector(".oobe-back").onclick = opts.back;
+    wireSkip();
     return bg;
   }
 
