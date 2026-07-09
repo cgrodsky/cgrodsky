@@ -131,7 +131,14 @@
       if (seen.has(s.id)) return; seen.add(s.id);
       const ikey = s.id === "duolingo" ? duoIconKey(true) : s.id;
       const ic = el(`<div class="dicon"><div class="glyph">${Icon.big(ikey, s.name)}</div><div class="label">${s.name}</div></div>`);
-      ic.ondblclick = () => open(s.id);
+      // Click selects; clicking an already-selected icon opens it (works for
+      // slow taps on touch and a normal double-click on desktop).
+      ic.onclick = (e) => {
+        e.stopPropagation();
+        if (ic.classList.contains("selected")) { open(s.id); return; }
+        iconWrap.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected"));
+        ic.classList.add("selected");
+      };
       iconWrap.appendChild(ic);
     });
   }
@@ -139,6 +146,8 @@
   function buildDesktop() {
     desktop = el(`<div class="desktop"><div class="desktop-icons"></div></div>`);
     screen().appendChild(desktop);
+    // Click empty desktop to clear icon selection.
+    desktop.addEventListener("click", (e) => { if (e.target === desktop || e.target.classList.contains("desktop-icons")) desktop.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); });
     applyWallpaper();
     renderDesktopIcons();
     buildTaskbar();

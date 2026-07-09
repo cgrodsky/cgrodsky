@@ -3,6 +3,7 @@
   "use strict";
 
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   const S = () => State.data;
 
   const session = { bank: false, discord: false };
@@ -542,6 +543,11 @@
   }
 
   // =================== DISCORD ===================
+  const DC_MEMBERS = [{ name: "Nova", color: "#5865f2" }, { name: "Pixel", color: "#3ba55d" }, { name: "Waffle", color: "#faa61a" }, { name: "Echo", color: "#eb459e" }];
+  const DC_REPLIES = ["lol", "nice", "for real 😂", "agreed", "welcome!", "gg", "🔥", "who's on tonight?", "same", "let's goo", "based", "real"];
+  const DC_TEXT_CHANNELS = ["general", "off-topic", "memes"];
+  function playDcSfx(name) { try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.5; a.play().catch(() => {}); } catch (_) {} }
+
   function discord(ctx) {
     // Always re-verify on every visit so reCAPTCHA fires each time you open Discord.
     session.discord = false;
@@ -610,20 +616,101 @@
 
     function selectServer(srv) {
       content.innerHTML = "";
-      const joined = d.joinedServers.includes(srv.id);
-      const view = el(`<div>
-        <div style="height:120px;border-radius:10px;background:${srv.color};display:flex;align-items:flex-end;padding:14px;font-size:2rem;font-weight:700;color:#fff">${srv.name}</div>
-        <h1>${srv.name}</h1>
-        <p style="white-space:pre-line">${srv.desc}</p>
-        <p class="muted">${srv.members || ""} members</p>
-        <button class="pill-btn join">${joined ? "Leave server" : "Join server"}</button>
+      // Not a member yet: show the join card.
+      if (!d.joinedServers.includes(srv.id)) {
+        const view = el(`<div>
+          <div style="height:120px;border-radius:10px;background:${srv.color};display:flex;align-items:flex-end;padding:14px;font-size:2rem;font-weight:700;color:#fff">${srv.name}</div>
+          <h1>${srv.name}</h1>
+          <p style="white-space:pre-line">${srv.desc || ""}</p>
+          <p class="muted">${srv.members || ""} members</p>
+          <button class="pill-btn join">Join server</button>
+        </div>`);
+        view.querySelector(".join").onclick = () => { d.joinedServers.push(srv.id); State.save(); selectServer(srv); };
+        content.appendChild(view);
+        return;
+      }
+      // Joined: a usable server with text channels, chat, and a voice channel.
+      if (!d.messages) d.messages = {};
+      if (!d.messages[srv.id]) {
+        d.messages[srv.id] = {};
+        DC_TEXT_CHANNELS.forEach((c) => d.messages[srv.id][c] = []);
+        d.messages[srv.id].general.push({ author: "Nova", color: "#5865f2", text: `Welcome to ${srv.name}! 👋` });
+        d.messages[srv.id].memes.push({ author: "Waffle", color: "#faa61a", text: "posted a fresh meme 😎" });
+        State.save();
+      }
+      let active = DC_TEXT_CHANNELS[0];
+      const view = el(`<div class="dc-srv">
+        <div class="dc-chans">
+          <div class="dc-srv-name">${srv.name}</div>
+          <div class="dc-chan-cat">Text</div>
+          <div class="dc-chan-list"></div>
+          <div class="dc-chan-cat">Voice</div>
+          <div class="dc-chan dc-voice">&#128266; General Voice</div>
+          <button class="pill-btn dc-leave">Leave server</button>
+        </div>
+        <div class="dc-chat">
+          <div class="dc-chan-head"># <span class="dc-chan-title">general</span></div>
+          <div class="dc-msgs"></div>
+          <div class="dc-compose"><input placeholder="Message #general"><button class="dc-send">Send</button></div>
+        </div>
       </div>`);
-      view.querySelector(".join").onclick = () => {
-        const i = d.joinedServers.indexOf(srv.id);
-        if (i >= 0) d.joinedServers.splice(i, 1); else d.joinedServers.push(srv.id);
-        State.save(); selectServer(srv);
-      };
       content.appendChild(view);
+      const chanList = view.querySelector(".dc-chan-list");
+      const msgsEl = view.querySelector(".dc-msgs");
+      const title = view.querySelector(".dc-chan-title");
+      const input = view.querySelector(".dc-compose input");
+      const compose = view.querySelector(".dc-compose");
+      const voiceEl = view.querySelector(".dc-voice");
+
+      function renderMsgs() {
+        msgsEl.innerHTML = "";
+        (d.messages[srv.id][active] || []).forEach((m) => {
+          msgsEl.appendChild(el(`<div class="dc-msg"><span class="dc-msg-ava" style="background:${m.color || "#5865f2"}">${(m.author || "?")[0].toUpperCase()}</span><div><div class="dc-msg-head"><b style="color:${m.color || "#fff"}">${escapeHtml(m.author)}</b></div><div class="dc-msg-text">${escapeHtml(m.text)}</div></div></div>`));
+        });
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+      function selectChan(c) {
+        active = c;
+        chanList.querySelectorAll(".dc-chan").forEach((x) => x.classList.toggle("active", x.dataset.c === c));
+        voiceEl.classList.remove("active");
+        title.textContent = c; input.placeholder = "Message #" + c; compose.style.display = "flex";
+        renderMsgs();
+      }
+      DC_TEXT_CHANNELS.forEach((c) => {
+        const ch = el(`<div class="dc-chan ${c === active ? "active" : ""}" data-c="${c}"># ${c}</div>`);
+        ch.onclick = () => selectChan(c);
+        chanList.appendChild(ch);
+      });
+      renderMsgs();
+
+      function send() {
+        const text = input.value.trim(); if (!text) return;
+        const me = (S().profile && S().profile.username) || "You";
+        d.messages[srv.id][active].push({ author: me, color: "#00a8fc", text, self: true });
+        State.save(); input.value = ""; renderMsgs();
+        const chan = active;
+        setTimeout(() => {
+          const m = DC_MEMBERS[Math.floor(Math.random() * DC_MEMBERS.length)];
+          const r = DC_REPLIES[Math.floor(Math.random() * DC_REPLIES.length)];
+          d.messages[srv.id][chan].push({ author: m.name, color: m.color, text: r });
+          State.save(); if (active === chan) renderMsgs();
+        }, 1000 + Math.random() * 900);
+      }
+      view.querySelector(".dc-send").onclick = send;
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); send(); } });
+
+      voiceEl.onclick = () => {
+        chanList.querySelectorAll(".dc-chan").forEach((x) => x.classList.remove("active"));
+        voiceEl.classList.add("active");
+        title.textContent = "General Voice"; compose.style.display = "none";
+        playDcSfx("SFX_014"); // Discord calling noise
+        msgsEl.innerHTML = "";
+        const vc = el(`<div class="dc-voice-panel"><div class="dc-voice-ring">&#128266;</div><h2>General Voice</h2><p class="muted">You're connected.</p><button class="pill-btn dc-disc">Disconnect</button></div>`);
+        msgsEl.appendChild(vc);
+        vc.querySelector(".dc-disc").onclick = () => { playDcSfx("SFX_015"); selectChan("general"); };
+      };
+
+      view.querySelector(".dc-leave").onclick = () => { const i = d.joinedServers.indexOf(srv.id); if (i >= 0) d.joinedServers.splice(i, 1); State.save(); selectServer(srv); };
     }
 
     function rebuildRail() {
@@ -1064,8 +1151,69 @@
     const d = nfState();
     const root = el(`<div class="nf"></div>`);
     ctx.page.appendChild(root);
+    if (!d.signedIn) return nfSignIn(root, ctx);
     if (!d.profile) return nfProfiles(root, ctx);
     nfBrowse(root, ctx);
+  }
+
+  function nfSignIn(root, ctx) {
+    const d = nfState();
+    root.className = "nf nf-gate";
+    root.innerHTML = `<div class="nf-signin">
+      <div class="nf-gate-top">${nfLogo("nf-wm")}</div>
+      <form class="nf-signin-card">
+        <h1>Sign In</h1>
+        <input type="email" id="nfEmail" placeholder="Email or phone number" autocomplete="off">
+        <input type="password" id="nfPw" placeholder="Password">
+        <button type="submit" class="nf-signin-btn">Sign In</button>
+        <p class="nf-signin-sub">New to Netflix? <b>Sign up now.</b></p>
+      </form>
+    </div>`;
+    root.querySelector(".nf-signin-card").onsubmit = (e) => {
+      e.preventDefault();
+      d._pendingEmail = root.querySelector("#nfEmail").value.trim() || "you@example.com";
+      nf2FA(root, ctx);
+    };
+  }
+
+  function nf2FA(root, ctx) {
+    const d = nfState();
+    root.className = "nf nf-gate";
+    root.innerHTML = `<div class="nf-signin">
+      <div class="nf-gate-top">${nfLogo("nf-wm")}</div>
+      <form class="nf-signin-card">
+        <h1>Verify it's you</h1>
+        <p class="nf-2fa-sub">We sent a 6-digit code to <b>${escapeHtml(d._pendingEmail || "your device")}</b> as a notification. Enter it below.</p>
+        <input type="text" id="nfCode" class="nf-2fa-input" placeholder="XXX-XXX" maxlength="7" inputmode="numeric">
+        <button type="submit" class="nf-signin-btn">Verify</button>
+        <button type="button" class="nf-2fa-resend" id="nfResend">Resend code</button>
+        <div class="nf-2fa-err" id="nfErr"></div>
+      </form>
+    </div>`;
+    const codeInput = root.querySelector("#nfCode");
+    codeInput.addEventListener("input", () => {
+      const v = codeInput.value.replace(/\D/g, "").slice(0, 6);
+      codeInput.value = v.length > 3 ? v.slice(0, 3) + "-" + v.slice(3) : v;
+    });
+    let expected = null;
+    function sendCode() {
+      expected = null;
+      // ~1s after arriving, generate a code and deliver it as a notification.
+      setTimeout(() => {
+        const n = Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
+        expected = n.slice(0, 3) + "-" + n.slice(3);
+        if (window.Notify) Notify.show({ icon: Icon.mini("netflix", "Netflix"), title: "Netflix", body: "Your sign-in code is " + expected });
+      }, 1000);
+    }
+    sendCode();
+    root.querySelector("#nfResend").onclick = () => { root.querySelector("#nfErr").textContent = ""; sendCode(); };
+    root.querySelector(".nf-signin-card").onsubmit = (e) => {
+      e.preventDefault();
+      const err = root.querySelector("#nfErr");
+      if (!expected) { err.textContent = "Code not sent yet — wait a second for the notification."; return; }
+      if (codeInput.value === expected) { d.signedIn = true; State.save(); root.innerHTML = ""; root.className = "nf"; nfProfiles(root, ctx); }
+      else err.textContent = "That code isn't right. Check your notification.";
+    };
   }
 
   function nfProfiles(root, ctx) {
