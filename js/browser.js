@@ -63,8 +63,9 @@
     ctx.page.appendChild(page);
   }
 
-  function openBrowser(createWindow, startUrl) {
-    const { body, win } = createWindow({ title: "Edge", icon: Icon.mini("browser", "Edge"), width: 920, height: 620, appId: "browser" });
+  function openBrowser(createWindow, startUrl, opts) {
+    opts = opts || {};
+    const { body, win } = createWindow({ title: opts.title || "Edge", icon: opts.icon || Icon.mini("browser", "Edge"), width: 920, height: 620, appId: opts.appId || "browser" });
 
     body.innerHTML = `
       <div class="browser-bar">
@@ -129,6 +130,7 @@
   // Registered launcher + a programmatic opener used by other apps.
   let lastBrowserCreate = null;
   AppRegistry.browser = function (createWindow) { lastBrowserCreate = createWindow; return openBrowser(createWindow); };
+  AppRegistry.chrome = function (createWindow) { lastBrowserCreate = createWindow; return openBrowser(createWindow, "home", { title: "Chrome", icon: Icon.mini("chrome", "Chrome"), appId: "chrome" }); };
 
   window.Browser = {
     openTo(url) {
