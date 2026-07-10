@@ -169,6 +169,8 @@
   calc &lt;expression&gt;            e.g. calc (2+3)*4
   color &lt;name&gt;                 green, red, blue, yellow, white, cyan
   weather, ping &lt;host&gt;, ipconfig
+  curl &lt;url&gt; / wget &lt;url&gt;      real HTTP request (CORS permitting)
+  last, who                    login history / current user
   open &lt;app&gt;                   browser, settings, calculator, copilot...
   wsl --install arch           install Arch Linux, then run: arch
   history</pre>`),
@@ -286,8 +288,8 @@ Ethernet adapter Local Area Connection:
 .\`                                \`/</pre>`);
     }
     const archCmds = {
-      help: () => printHTML(`<pre style="margin:0;color:#ccc">arch: ls, pwd, cd, echo &lt;text&gt;, whoami, uname [-a], cat /etc/os-release,
-      pacman -S &lt;pkg&gt;, pacman -Syu, neofetch, clear, exit (back to Windows)</pre>`),
+      help: () => printHTML(`<pre style="margin:0;color:#ccc">arch: ls, pwd, cd, echo &lt;text&gt;, whoami, who, last, uname [-a], cat /etc/os-release,
+      curl &lt;url&gt;, wget &lt;url&gt;, pacman -S &lt;pkg&gt;, pacman -Syu, neofetch, clear, exit</pre>`),
       ls: () => print("Desktop  Documents  Downloads  Music  Pictures  Videos"),
       pwd: () => print("/home/" + archUser),
       cd: () => {},
@@ -326,6 +328,33 @@ Ethernet adapter Local Area Connection:
       setTermChrome("linuxterminal", "Arch", "Arch Linux");
       print("Welcome to Arch Linux on WSL. Type 'neofetch' or 'help'. 'exit' returns to Windows.", "#1793d1");
     }
+
+    // ---- Real networking + login history (work in both shells) ----
+    const tscroll = () => { body.querySelector("#term").scrollTop = 1e9; };
+    function doCurl(a) {
+      let url = (a || []).filter((x) => !x.startsWith("-"))[0];
+      if (!url) { print("usage: curl <url>   e.g. curl https://api.ipify.org", "#ff4b4b"); return; }
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      print("*   Trying " + url + " ...", "#888");
+      fetch(url).then(async (r) => {
+        const t = await r.text();
+        print("< HTTP " + r.status + " " + r.statusText, r.ok ? "#16c60c" : "#ffe000");
+        print(t.slice(0, 2000));
+        if (t.length > 2000) print("... (" + t.length + " bytes total, truncated)", "#888");
+        tscroll();
+      }).catch((e) => { print("curl: (6) request failed — the site blocked it (CORS) or is unreachable. " + (e.message || ""), "#ff4b4b"); tscroll(); });
+    }
+    function doLast() {
+      const u = mode === "arch" ? archUser : ((S().profile && S().profile.username) || "User");
+      printHTML(`<pre style="margin:0;color:#ccc">${u}     pts/0    192.168.1.5    ${new Date().toDateString()}   still logged in
+${u}     pts/0    192.168.1.5    ${new Date(Date.now() - 864e5).toDateString()} - down
+reboot   system   boot ${mode === "arch" ? "6.9.1-arch1-1" : "Windows 12"}   ${new Date(Date.now() - 864e5).toDateString()}
+
+wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
+    }
+    function doWho() { print(`${mode === "arch" ? archUser : ((S().profile && S().profile.username) || "User")}   pts/0   ${State.formatClock()}`); }
+    cmds.curl = doCurl; cmds.wget = doCurl; cmds.last = doLast; cmds.who = doWho;
+    archCmds.curl = doCurl; archCmds.wget = doCurl; archCmds.last = doLast; archCmds.who = doWho; archCmds.w = doWho;
 
     cmd.focus();
     cmd.addEventListener("keydown", (e) => {
