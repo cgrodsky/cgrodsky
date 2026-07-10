@@ -294,7 +294,7 @@ Ethernet adapter Local Area Connection:
       echo: (a) => print(a.join(" ")),
       whoami: () => print(archUser),
       clear: () => { out.innerHTML = ""; },
-      exit: () => { mode = "cmd"; setPrompt(); promptEl.style.color = "#16c60c"; print("logout"); },
+      exit: () => { mode = "cmd"; setPrompt(); promptEl.style.color = "#16c60c"; setTermChrome("terminal", "Terminal", "Terminal"); print("logout"); },
       uname: (a) => print(a.includes("-a") ? "Linux arch 6.9.1-arch1-1 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux" : "Linux"),
       cat: (a) => { if (a[0] === "/etc/os-release") print(OS_RELEASE); else print("cat: " + (a[0] || "") + ": No such file or directory", "#ff4b4b"); },
       neofetch: () => archNeofetch(),
@@ -315,8 +315,15 @@ Ethernet adapter Local Area Connection:
         body.querySelector("#term").scrollTop = 1e9;
       }, 350);
     }
+    function setTermChrome(iconKey, label, title) {
+      const ic = winRef.win.querySelector(".win-titlebar .title span:first-child");
+      if (ic) ic.innerHTML = Icon.mini(iconKey, label);
+      const tt = winRef.win.querySelector(".win-titlebar .t-text");
+      if (tt) tt.textContent = title;
+    }
     function enterArch() {
       mode = "arch"; setPrompt(); promptEl.style.color = "#1793d1";
+      setTermChrome("linuxterminal", "Arch", "Arch Linux");
       print("Welcome to Arch Linux on WSL. Type 'neofetch' or 'help'. 'exit' returns to Windows.", "#1793d1");
     }
 
