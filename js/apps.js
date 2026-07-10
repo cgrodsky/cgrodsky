@@ -114,6 +114,31 @@
     };
   };
 
+  // ---------- VLC media player (Store app) ----------
+  AppRegistry.vlc = function () {
+    const { body } = cw({ title: "VLC media player", icon: Icon.mini("vlc", "VLC"), width: 680, height: 500, appId: "vlc" });
+    body.innerHTML = `<div class="vlc">
+      <div class="vlc-head">${Icon.mini("vlc", "VLC")} <b>VLC media player</b><span class="grow"></span><button class="pill-btn" id="pick">Open media…</button></div>
+      <div class="vlc-stage" id="stage"><div class="center-col" style="justify-content:center;height:100%"><div style="transform:scale(2);margin-bottom:16px">${Icon.big("vlc", "VLC")}</div><p class="muted">Open a video or audio file to start playback.</p></div></div>
+    </div>`;
+    const stage = body.querySelector("#stage");
+    body.querySelector("#pick").onclick = () => {
+      const inp = document.getElementById("globalFileInput");
+      inp.accept = "video/*,audio/*"; inp.value = "";
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        const url = URL.createObjectURL(f);
+        stage.innerHTML = "";
+        const elem = f.type.startsWith("audio")
+          ? el(`<audio src="${url}" controls autoplay style="width:90%"></audio>`)
+          : el(`<video src="${url}" controls autoplay style="max-width:100%;max-height:100%"></video>`);
+        stage.appendChild(elem);
+        stage.appendChild(el(`<p class="muted" style="margin-top:8px">${f.name}</p>`));
+      };
+      inp.click();
+    };
+  };
+
   // ---------- Settings ----------
   AppRegistry.settings = function () {
     const { body } = cw({ title: "Settings", icon: Icon.mini("settings", "Settings"), width: 760, height: 540, appId: "settings" });
