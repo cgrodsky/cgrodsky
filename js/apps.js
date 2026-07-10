@@ -191,6 +191,38 @@
         });
         sb.appendChild(el(`<p class="muted" style="margin:6px 0">Windows XP applies the classic Bliss wallpaper and retro accent.</p>`));
         sb.appendChild(themeRow2);
+        // Accent color: two preset rows + current chip + custom picker (HSB box + hue slider + hex)
+        sb.appendChild(el(`<h2 style="margin-top:18px">Accent color</h2>`));
+        const cur = S().accent || "#0067c0";
+        const accentHead = el(`<div class="accent-head"><span class="accent-current" style="background:${cur}"></span><span class="accent-cur-hex">${cur.toUpperCase()}</span></div>`);
+        sb.appendChild(accentHead);
+        const ACCENTS = [
+          ["#0067c0", "#0078d4", "#2a5bd7", "#6b57ff", "#8a5cf6", "#b146c2", "#e3008c", "#e81123"],
+          ["#da3b01", "#ff8c00", "#ffb900", "#107c10", "#00b294", "#038387", "#4a5459", "#1d1d21"],
+        ];
+        function setAccent(hx) {
+          S().accent = hx; State.save();
+          document.documentElement.style.setProperty("--accent", hx);
+          accentHead.querySelector(".accent-current").style.background = hx;
+          accentHead.querySelector(".accent-cur-hex").textContent = hx.toUpperCase();
+          sb.querySelectorAll(".accent-sw").forEach((s) => s.classList.toggle("sel", s.dataset.c && s.dataset.c.toLowerCase() === hx.toLowerCase()));
+        }
+        ACCENTS.forEach((rowColors) => {
+          const row = el(`<div class="accent-row"></div>`);
+          rowColors.forEach((c) => {
+            const sw = el(`<button class="accent-sw ${c.toLowerCase() === cur.toLowerCase() ? "sel" : ""}" data-c="${c}" style="background:${c}"></button>`);
+            sw.onclick = () => setAccent(c);
+            row.appendChild(sw);
+          });
+          sb.appendChild(row);
+        });
+        // Custom color: a rainbow swatch that opens the custom picker
+        const customRow = el(`<div class="accent-row" style="margin-top:4px"><span class="muted" style="font-size:.82rem;margin-right:8px">Custom</span><span id="accent-custom-host"></span></div>`);
+        sb.appendChild(customRow);
+        const accentPicker = makeColorPicker(cur, (hx) => setAccent(hx));
+        accentPicker.el.classList.add("accent-custom");
+        customRow.querySelector("#accent-custom-host").replaceWith(accentPicker.el);
+
         sb.appendChild(el(`<h2 style="margin-top:18px">Solid colors</h2>`));
         const colors = ["#0067c0", "#7b5cff", "#e53935", "#43a047", "#fb8c00", "#00897b", "#222", "#111827", "#5a189a", "#b5179e", "#006466"];
         const grid = el(`<div class="swatch-grid"></div>`);
@@ -303,6 +335,8 @@
         at.style.left = (s * 100) + "%"; at.style.top = ((1 - v) * 100) + "%"; at.style.background = hx;
         pop.querySelector(".cpk-hue-thumb").style.left = (h / 360 * 100) + "%";
         pop.querySelector(".cpk-out").textContent = Math.round(h) + "°";
+        const hi = pop.querySelector(".cpk-hex-input");
+        if (hi && document.activeElement !== hi) hi.value = hx.replace("#", "").toUpperCase();
       }
       if (onChange) onChange(hx);
     }
@@ -317,11 +351,17 @@
       pop = el(`<div class="cpk-pop">
         <div class="cpk-area"><div class="cpk-area-thumb"></div></div>
         <div class="cpk-hue-row"><span>Hue</span><span class="cpk-out"></span></div>
-        <div class="cpk-hue"><div class="cpk-hue-thumb"></div></div></div>`);
+        <div class="cpk-hue"><div class="cpk-hue-thumb"></div></div>
+        <div class="cpk-hex-row"><span>#</span><input class="cpk-hex-input" maxlength="6" spellcheck="false"></div></div>`);
       document.getElementById("screen").appendChild(pop);
       positionPop();
       dragify(pop.querySelector(".cpk-area"), (fx, fy) => { s = fx; v = 1 - fy; refresh(); });
       dragify(pop.querySelector(".cpk-hue"), (fx) => { h = fx * 360; refresh(); });
+      const hi = pop.querySelector(".cpk-hex-input");
+      hi.addEventListener("input", () => {
+        const val = hi.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+        if (val.length === 6) { [h, s, v] = rgbToHsv.apply(null, hexToRgb("#" + val)); refresh(); }
+      });
       refresh();
       setTimeout(() => document.addEventListener("mousedown", outside), 0);
     }
@@ -549,9 +589,11 @@
     const p2 = prompt(`Enter your ${label} again:`);
     if (p2 == null) return false;
     if (secret && p2 !== secret) { alert("Incorrect."); return false; }
-    const c = prompt('Type CONFIRM (all caps) to wipe this PC:');
+    const c = prompt('Type CONFIRM (all caps) to reset this PC:');
     if (c !== "CONFIRM") { alert("Not confirmed."); return false; }
-    State.reset();
+    // Keep icons/apps/desktop by default so you can "set up as new" without losing them.
+    const keep = confirm("Keep your icons, installed apps and wallpaper?\n\nOK = keep them (recommended)\nCancel = wipe everything");
+    State.reset(keep);
     location.reload();
     return true;
   }

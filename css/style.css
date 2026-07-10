@@ -1452,3 +1452,17 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .vlc-head span[style], .vlc-head svg, .vlc-head img { width: 22px; height: 22px; }
 .vlc-stage { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #000; overflow: hidden; padding: 10px; }
 .vlc-stage .muted { color: #aaa; }
+
+/* Settings accent color picker */
+.accent-head { display: flex; align-items: center; gap: 10px; margin: 6px 0 12px; }
+.accent-current { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(0,0,0,.2); display: inline-block; }
+.accent-cur-hex { font-family: Consolas, monospace; font-size: .85rem; color: var(--text-dim); }
+.accent-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.accent-sw { width: 30px; height: 30px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.accent-sw:hover { transform: scale(1.08); }
+.accent-sw.sel { border-color: var(--text); box-shadow: 0 0 0 2px var(--window-bg), 0 0 0 4px var(--accent); }
+.accent-custom .cpk-trigger .cpk-swatch { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red) !important; }
+/* Custom picker hex input row */
+.cpk-hex-row { display: flex; align-items: center; gap: 4px; margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+.cpk-hex-row span { color: var(--text-dim); font-family: Consolas, monospace; }
+.cpk-hex-input { flex: 1; border: 0; background: none; color: var(--text); outline: none; font-family: Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; }

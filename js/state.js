@@ -14,6 +14,7 @@
     language: "English (United States)",
     langCode: "en",
     theme: "light", // light | dark
+    accent: "#0067c0", // system accent color
     textScale: 100, // percent
     productKey: null,
     hasProductKey: false,
@@ -85,8 +86,19 @@
     } catch (e) {}
   }
 
-  function reset() {
+  function reset(preserveIcons) {
+    let keepIcons, keepApps, keepDesktop;
+    if (preserveIcons) {
+      keepIcons = data.appData && data.appData.customIcons;
+      keepApps = data.installedApps;
+      keepDesktop = data.desktop; // wallpaper, hiddenIcons, bin, xpTheme
+    }
     data = defaults();
+    if (preserveIcons) {
+      if (keepIcons) data.appData.customIcons = keepIcons;
+      if (keepApps) data.installedApps = keepApps;
+      if (keepDesktop) data.desktop = keepDesktop;
+    }
     save();
   }
 

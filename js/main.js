@@ -5,6 +5,7 @@
   function applyPrefs() {
     document.body.classList.toggle("dark", State.data.theme === "dark");
     document.body.classList.toggle("xp-theme", !!(State.data.desktop && State.data.desktop.xpTheme));
+    if (State.data.accent) document.documentElement.style.setProperty("--accent", State.data.accent);
     document.documentElement.style.setProperty("--scale", State.data.textScale / 100);
   }
 
