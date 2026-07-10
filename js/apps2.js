@@ -140,9 +140,13 @@
     };
 
     let cwd = "C:\\Users\\User";
+    let mode = "cmd"; // "cmd" (Windows) | "arch" (Arch Linux WSL)
+    if (!S().appData) S().appData = {};
+    const term = S().appData.terminal || (S().appData.terminal = { archInstalled: false });
+    const archUser = (((S().profile && S().profile.username) || "user").toLowerCase().replace(/\s+/g, "") || "user");
     const history = [];
     let histIdx = -1;
-    const setPrompt = () => { promptEl.textContent = cwd + ">"; };
+    const setPrompt = () => { promptEl.textContent = mode === "arch" ? `[${archUser}@arch ~]$` : cwd + ">"; };
     setPrompt();
 
     function resolvePath(p) {
@@ -166,6 +170,7 @@
   color &lt;name&gt;                 green, red, blue, yellow, white, cyan
   weather, ping &lt;host&gt;, ipconfig
   open &lt;app&gt;                   browser, settings, calculator, copilot...
+  wsl --install arch           install Arch Linux, then run: arch
   history</pre>`),
       cls: () => { out.innerHTML = ""; },
       clear: () => { out.innerHTML = ""; },
@@ -257,16 +262,82 @@ Ethernet adapter Local Area Connection:
       else print("File not found: " + name, "#ff4b4b");
     }
 
+    // ---- Arch Linux (WSL) simulation ----
+    const OS_RELEASE = `NAME="Arch Linux"\nPRETTY_NAME="Arch Linux"\nID=arch\nBUILD_ID=rolling\nHOME_URL="https://archlinux.org/"`;
+    function archNeofetch() {
+      printHTML(`<pre style="margin:0;color:#1793d1;line-height:1.15">                  -\`                 <span style="color:#fff">${archUser}@arch</span>
+                 .o+\`                -----------
+                \`ooo/                <span style="color:#1793d1">OS</span>: Arch Linux (WSL on Windows 12)
+               \`+oooo:               <span style="color:#1793d1">Kernel</span>: 6.9.1-arch1-1
+              \`+oooooo:              <span style="color:#1793d1">Shell</span>: bash 5.2
+              -+oooooo+:             <span style="color:#1793d1">Packages</span>: 148 (pacman)
+            \`/:-:++oooo+:            <span style="color:#1793d1">Uptime</span>: 3 mins
+           \`/++++/+++++++:           <span style="color:#1793d1">CPU</span>: Cameron Virtual CPU
+          \`/++++++++++++++:          <span style="color:#1793d1">Memory</span>: 512MiB / 4096MiB
+         \`/+++ooooooooooooo/\`        <span style="color:#1793d1">DE</span>: none (tty)
+        ./ooosssso++osssssso+\`
+       .oossssso-\`\`\`\`/ossssss+\`
+      -osssssso.      :ssssssso.
+     :osssssss/        osssso+++.
+    /ossssssss/        +ssssooo/-
+  \`/ossssso+/:-        -:/+osssso+-
+ \`+sso+:-\`                 \`.-/+oso:
+\`++:.                          \`-/+/
+.\`                                \`/</pre>`);
+    }
+    const archCmds = {
+      help: () => printHTML(`<pre style="margin:0;color:#ccc">arch: ls, pwd, cd, echo &lt;text&gt;, whoami, uname [-a], cat /etc/os-release,
+      pacman -S &lt;pkg&gt;, pacman -Syu, neofetch, clear, exit (back to Windows)</pre>`),
+      ls: () => print("Desktop  Documents  Downloads  Music  Pictures  Videos"),
+      pwd: () => print("/home/" + archUser),
+      cd: () => {},
+      echo: (a) => print(a.join(" ")),
+      whoami: () => print(archUser),
+      clear: () => { out.innerHTML = ""; },
+      exit: () => { mode = "cmd"; setPrompt(); promptEl.style.color = "#16c60c"; print("logout"); },
+      uname: (a) => print(a.includes("-a") ? "Linux arch 6.9.1-arch1-1 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux" : "Linux"),
+      cat: (a) => { if (a[0] === "/etc/os-release") print(OS_RELEASE); else print("cat: " + (a[0] || "") + ": No such file or directory", "#ff4b4b"); },
+      neofetch: () => archNeofetch(),
+      pacman: (a) => {
+        if (a[0] === "-S" && a[1]) { print("resolving dependencies..."); print(":: Retrieving packages..."); setTimeout(() => { print(`installing ${a[1]}...`); print(`${a[1]} installed successfully.`, "#16c60c"); body.querySelector("#term").scrollTop = 1e9; }, 400); }
+        else if (a[0] === "-Syu") { print(":: Synchronizing package databases..."); print(":: Starting full system upgrade... nothing to do.", "#16c60c"); }
+        else print("usage: pacman -S <pkg> | pacman -Syu", "#ff4b4b");
+      },
+      sudo: (a) => { const sub = a[0]; if (archCmds[sub]) archCmds[sub](a.slice(1)); else print("sudo: " + (sub || "") + ": command not found", "#ff4b4b"); },
+    };
+    function installArch() {
+      if (term.archInstalled) { print("Arch Linux is already installed. Launch it with: arch", "#16c60c"); return; }
+      const lines = ["Downloading Arch Linux rootfs...", ":: Synchronizing package databases...", "  core   is up to date", "  extra  is up to date", ":: Running pacstrap (base linux linux-firmware)...", ":: Configuring system (locale, keyring, fstab)...", ":: Finalizing installation..."];
+      print("Installing Arch Linux — this is a simulation, no real Linux is installed.", "#16c60c");
+      let i = 0; const iv = setInterval(() => {
+        if (i < lines.length) print(lines[i++]);
+        else { clearInterval(iv); term.archInstalled = true; State.save(); print("Arch Linux has been installed. Launch it with: arch", "#16c60c"); }
+        body.querySelector("#term").scrollTop = 1e9;
+      }, 350);
+    }
+    function enterArch() {
+      mode = "arch"; setPrompt(); promptEl.style.color = "#1793d1";
+      print("Welcome to Arch Linux on WSL. Type 'neofetch' or 'help'. 'exit' returns to Windows.", "#1793d1");
+    }
+
     cmd.focus();
     cmd.addEventListener("keydown", (e) => {
       if (e.key === "ArrowUp") { if (histIdx > 0) histIdx--; else histIdx = Math.max(0, history.length - 1); cmd.value = history[histIdx] || ""; e.preventDefault(); return; }
       if (e.key === "ArrowDown") { histIdx++; if (histIdx >= history.length) { histIdx = history.length; cmd.value = ""; } else cmd.value = history[histIdx] || ""; e.preventDefault(); return; }
       if (e.key !== "Enter") return;
-      const line = cmd.value; print(cwd + "> " + line); cmd.value = "";
+      const line = cmd.value; print(promptEl.textContent + " " + line); cmd.value = "";
       if (line.trim()) { history.push(line); histIdx = history.length; }
       const [c, ...args] = line.trim().split(/\s+/);
       if (!c) return;
-      (cmds[c.toLowerCase()] || (() => print(`'${c}' is not recognized as a command. Try 'help'.`, "#ff4b4b")))(args);
+      if (mode === "arch") {
+        (archCmds[c.toLowerCase()] || (() => print("bash: " + c + ": command not found", "#ff4b4b")))(args);
+      } else {
+        const lc = c.toLowerCase();
+        if ((lc === "wsl" || lc === "install") && args.join(" ").toLowerCase().includes("arch")) installArch();
+        else if (lc === "wsl") print("Usage: wsl --install arch", "#ffe000");
+        else if (lc === "arch") { if (term.archInstalled) enterArch(); else print("Arch is not installed. Run: wsl --install arch", "#ff4b4b"); }
+        else (cmds[lc] || (() => print(`'${c}' is not recognized as a command. Try 'help'.`, "#ff4b4b")))(args);
+      }
       body.querySelector("#term").scrollTop = 1e9;
     });
   };

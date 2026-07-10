@@ -150,6 +150,22 @@
           wgrid.appendChild(sw);
         });
         sb.appendChild(wgrid);
+        // Themes
+        sb.appendChild(el(`<h2 style="margin-top:18px">Theme</h2>`));
+        const xpOn = !!(S().desktop && S().desktop.xpTheme);
+        const themeRow2 = el(`<div class="toggle-row" id="themeSel">
+          <button data-t="default" class="${xpOn ? "" : "sel"}">Windows 12</button>
+          <button data-t="xp" class="${xpOn ? "sel" : ""}">Windows XP</button>
+        </div>`);
+        themeRow2.querySelectorAll("button").forEach((b) => b.onclick = () => {
+          const xp = b.dataset.t === "xp";
+          S().desktop.xpTheme = xp;
+          S().desktop.wallpaper = xp ? "assets/xp_wallpaper.png" : "default";
+          document.body.classList.toggle("xp-theme", xp);
+          State.save(); window.applyWallpaper(); render("personal");
+        });
+        sb.appendChild(el(`<p class="muted" style="margin:6px 0">Windows XP applies the classic Bliss wallpaper and retro accent.</p>`));
+        sb.appendChild(themeRow2);
         sb.appendChild(el(`<h2 style="margin-top:18px">Solid colors</h2>`));
         const colors = ["#0067c0", "#7b5cff", "#e53935", "#43a047", "#fb8c00", "#00897b", "#222", "#111827", "#5a189a", "#b5179e", "#006466"];
         const grid = el(`<div class="swatch-grid"></div>`);

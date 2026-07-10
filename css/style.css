@@ -1439,3 +1439,9 @@ body.dark .searchbar { border-color: #5f6368; }
 .msgr-settings { padding: 22px; }
 
 .files-folder-img { width: 46px; height: 46px; object-fit: contain; }
+
+/* Windows XP retro theme accent */
+body.xp-theme { --accent: #2a5bd7; --accent-light: #3b6fe0; }
+body.xp-theme .tb-dock, body.xp-theme .taskbar { background: linear-gradient(#3f8ae8, #245edb) !important; }
+body.xp-theme .tb-btn.start { background: linear-gradient(#5bbf5b, #2f8f2f); border-radius: 8px; }
+body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); color: #fff; }
