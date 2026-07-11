@@ -19,7 +19,7 @@
           <button type="submit" class="lock-go" title="Sign in">&#8594;</button>
         </form>
         <div class="lock-err"></div>
-        <div class="lock-actions"><button type="button" class="btn-text lock-auth0">Verify with Auth0</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
+        <div class="lock-actions"><button type="button" class="btn-text lock-forgot">Forgot PIN?</button><button type="button" class="btn-text lock-auth0">Verify with Auth0</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
       </div>
     </div>`);
     screen().appendChild(layer);
@@ -49,6 +49,18 @@
       else { err.textContent = "Incorrect — try again."; inp.value = ""; layer.querySelector(".lock-card").classList.add("shake"); setTimeout(() => layer.querySelector(".lock-card").classList.remove("shake"), 350); }
     };
     layer.querySelector(".lock-skip").onclick = unlock;
+    // Forgot PIN/password — set a new one without the old (personal sim).
+    layer.querySelector(".lock-forgot").onclick = () => {
+      const isPin = pr.authType === "pin";
+      const nv = prompt(`Set a new ${isPin ? "PIN (4 or 6 digits)" : "password"}:`);
+      if (nv == null) return;
+      if (isPin && !/^(\d{4}|\d{6})$/.test(nv)) { err.textContent = "PIN must be 4 or 6 digits."; return; }
+      if (!isPin && !nv) { err.textContent = "Password can't be empty."; return; }
+      pr.secret = nv; State.save();
+      err.textContent = ""; inp.value = "";
+      alert("Your " + (isPin ? "PIN" : "password") + " has been reset. Signing you in.");
+      unlock();
+    };
     // Auth0 verification — the only place the Auth0 popup surfaces.
     const a0btn = layer.querySelector(".lock-auth0");
     a0btn.onclick = () => {
