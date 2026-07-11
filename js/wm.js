@@ -116,6 +116,7 @@
     { id: "minecraft", name: "Mincraft" },
     { id: "blockfinder", name: "Assets" },
     { id: "messenger", name: "Messenger" },
+    { id: "word", name: "Word" },
   ];
 
   function hiddenIcons() { return (S().desktop && S().desktop.hiddenIcons) || []; }
