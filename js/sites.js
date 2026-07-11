@@ -1190,19 +1190,32 @@
     root.className = "nf nf-gate";
     root.innerHTML = `<div class="nf-signin">
       <div class="nf-gate-top">${nfLogo("nf-wm")}</div>
-      <form class="nf-signin-card">
+      <div class="nf-signin-card">
         <h1>Sign In</h1>
-        <input type="email" id="nfEmail" placeholder="Email or phone number" autocomplete="off">
-        <input type="password" id="nfPw" placeholder="Password">
-        <button type="submit" class="nf-signin-btn">Sign In</button>
-        <p class="nf-signin-sub">New to Netflix? <b>Sign up now.</b></p>
-      </form>
+        <p class="nf-2fa-sub">Sign in to Netflix with your Auth0 account.</p>
+        <button class="nf-signin-btn" id="nfAuth">Sign in with Auth0</button>
+        <button class="nf-signin-btn" id="nfSignup" style="background:#333;margin-top:8px">Sign up</button>
+        <div class="nf-2fa-err" id="nfErr"></div>
+        <p class="nf-signin-sub"><span class="link" id="nfGuest" style="cursor:pointer;text-decoration:underline">Continue without signing in</span></p>
+      </div>
     </div>`;
-    root.querySelector(".nf-signin-card").onsubmit = (e) => {
-      e.preventDefault();
-      d._pendingEmail = root.querySelector("#nfEmail").value.trim() || "you@example.com";
-      nf2FA(root, ctx);
-    };
+    const err = root.querySelector("#nfErr");
+    function done(user) {
+      d.signedIn = true;
+      d.authUser = user ? { name: user.name || user.nickname, email: user.email, picture: user.picture } : null;
+      State.save();
+      root.innerHTML = ""; root.className = "nf"; nfProfiles(root, ctx);
+    }
+    function go(opts) {
+      if (!window.Auth0) { err.textContent = "Auth0 unavailable — check your connection."; return; }
+      err.textContent = "Opening Auth0…";
+      // prompt:login forces your customized Auth0 login page to show each time.
+      const params = Object.assign({ prompt: "login" }, (opts && opts.authorizationParams) || {});
+      window.Auth0.verify(done, (msg) => { err.textContent = msg || "Sign in failed."; }, { authorizationParams: params });
+    }
+    root.querySelector("#nfAuth").onclick = () => go();
+    root.querySelector("#nfSignup").onclick = () => go({ authorizationParams: { screen_hint: "signup" } });
+    root.querySelector("#nfGuest").onclick = () => done(null);
   }
 
   function nf2FA(root, ctx) {
