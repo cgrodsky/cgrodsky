@@ -19,7 +19,7 @@
           <button type="submit" class="lock-go" title="Sign in">&#8594;</button>
         </form>
         <div class="lock-err"></div>
-        <div class="lock-actions"><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
+        <div class="lock-actions"><button type="button" class="btn-text lock-auth0">Verify with Auth0</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
       </div>
     </div>`);
     screen().appendChild(layer);
@@ -27,8 +27,8 @@
     // Apply current wallpaper to the lock background
     const wp = S().desktop.wallpaper;
     const bg = layer.querySelector(".lock-bg");
-    if (!wp || wp === "default") bg.style.background = "radial-gradient(circle at 50% 30%, #4a90e2, #0a3d8f 80%)";
-    else if (wp.startsWith("data:") || wp.startsWith("http")) bg.style.background = `url(${wp}) center/cover`;
+    if (!wp || wp === "default") bg.style.background = "url(assets/wall3.jpg) center/cover";
+    else if (wp.startsWith("data:") || wp.startsWith("http") || wp.startsWith("assets/")) bg.style.background = `url(${wp}) center/cover`;
     else bg.style.background = wp;
 
     // Live time
@@ -49,6 +49,16 @@
       else { err.textContent = "Incorrect — try again."; inp.value = ""; layer.querySelector(".lock-card").classList.add("shake"); setTimeout(() => layer.querySelector(".lock-card").classList.remove("shake"), 350); }
     };
     layer.querySelector(".lock-skip").onclick = unlock;
+    // Auth0 verification — the only place the Auth0 popup surfaces.
+    const a0btn = layer.querySelector(".lock-auth0");
+    a0btn.onclick = () => {
+      if (!window.Auth0) { err.textContent = "Auth0 unavailable."; return; }
+      err.textContent = "Opening Auth0…";
+      window.Auth0.verify(
+        () => { err.textContent = ""; unlock(); },
+        (msg) => { err.textContent = msg || "Verification failed."; }
+      );
+    };
   }
 
   window.Lock = { run };
