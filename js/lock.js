@@ -68,7 +68,8 @@
       err.textContent = "Opening Auth0…";
       window.Auth0.verify(
         () => { err.textContent = ""; unlock(); },
-        (msg) => { err.textContent = msg || "Verification failed."; }
+        (msg) => { err.textContent = msg || "Verification failed."; },
+        { authorizationParams: { prompt: "login" } }
       );
     };
   }
