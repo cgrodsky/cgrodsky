@@ -1507,3 +1507,12 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .key-sheet-row:hover { background: #eef4ff; }
 .key-sheet-row.used { color: #c00; text-decoration: line-through; cursor: default; }
 .key-sheet-row.used:hover { background: none; }
+
+/* Auth0 app */
+.a0 { padding: 20px; }
+.a0-status { font-size: .85rem; padding: 9px 12px; border-radius: 8px; margin-bottom: 16px; background: var(--bg-elev); }
+.a0-status.ok { color: #1a7f37; } .a0-status.bad { color: #c0392b; }
+.a0-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.a0-profile img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--bg-elev); }
+.a0-signup { background: #0a9d6e !important; }
+.a0-raw { background: var(--bg-elev); border-radius: 8px; padding: 10px; font-size: .74rem; overflow: auto; max-height: 200px; margin-top: 14px; }
