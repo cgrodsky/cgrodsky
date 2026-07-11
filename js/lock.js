@@ -19,7 +19,7 @@
           <button type="submit" class="lock-go" title="Sign in">&#8594;</button>
         </form>
         <div class="lock-err"></div>
-        <div class="lock-actions"><button type="button" class="btn-text lock-forgot">Forgot PIN?</button><button type="button" class="btn-text lock-auth0">Verify with Auth0</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
+        <div class="lock-actions"><button type="button" class="btn-text lock-forgot">Forgot PIN?</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
       </div>
     </div>`);
     screen().appendChild(layer);
@@ -60,17 +60,6 @@
       err.textContent = ""; inp.value = "";
       alert("Your " + (isPin ? "PIN" : "password") + " has been reset. Signing you in.");
       unlock();
-    };
-    // Auth0 verification — the only place the Auth0 popup surfaces.
-    const a0btn = layer.querySelector(".lock-auth0");
-    a0btn.onclick = () => {
-      if (!window.Auth0) { err.textContent = "Auth0 unavailable."; return; }
-      err.textContent = "Opening Auth0…";
-      window.Auth0.verify(
-        () => { err.textContent = ""; unlock(); },
-        (msg) => { err.textContent = msg || "Verification failed."; },
-        { authorizationParams: { prompt: "login" } }
-      );
     };
   }
 
