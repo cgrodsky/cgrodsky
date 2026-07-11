@@ -1289,7 +1289,14 @@
         </div>
         <div class="nf-nav-r">
           <div class="nf-search"><span>&#128269;</span><input placeholder="Titles, genres" value="${(opts.q || "").replace(/"/g, "&quot;")}"></div>
-          <span class="nf-avatar nf-avatar-sm" style="background:${(NF_PROFILES.find((p) => p.name === d.profile) || {}).color || "#e50914"}">${(d.profile || "?")[0]}</span>
+          <div class="nf-account">
+            <span class="nf-avatar nf-avatar-sm" style="background:${(NF_PROFILES.find((p) => p.name === d.profile) || {}).color || "#e50914"}">${(d.profile || "?")[0]}</span>
+            <div class="nf-account-menu">
+              <button class="nf-am" data-a="switch">Switch profiles</button>
+              <button class="nf-am" data-a="account">Account</button>
+              <button class="nf-am" data-a="signout">Sign out of Netflix</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="nf-scroll"></div>`;
@@ -1304,6 +1311,22 @@
     const search = root.querySelector(".nf-search input");
     let tmr;
     search.oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => nfBrowse(root, ctx, { tab: opts.tab, q: search.value }), 250); };
+
+    // Account menu: switch profiles / account / sign out
+    const acct = root.querySelector(".nf-account");
+    acct.querySelector(".nf-avatar-sm").onclick = (e) => { e.stopPropagation(); acct.classList.toggle("open"); };
+    acct.querySelector('[data-a="switch"]').onclick = () => { d.profile = null; State.save(); root.innerHTML = ""; root.className = "nf"; nfProfiles(root, ctx); };
+    acct.querySelector('[data-a="account"]').onclick = () => {
+      const u = d.authUser || {};
+      alert("Netflix account\n\n" + (u.email ? "Signed in as: " + u.email : "Signed in") + "\nProfile: " + (d.profile || "—"));
+    };
+    acct.querySelector('[data-a="signout"]').onclick = () => {
+      // Sign out of Netflix (back to the sign-in screen). The next sign-in
+      // still shows the Auth0 page because of prompt:login.
+      d.signedIn = false; d.profile = null; d.authUser = null; State.save();
+      root.innerHTML = ""; root.className = "nf"; nfSignIn(root, ctx);
+    };
+    document.addEventListener("click", function h(ev) { if (!acct.contains(ev.target)) { acct.classList.remove("open"); if (!root.isConnected) document.removeEventListener("click", h); } });
 
     const scroll = root.querySelector(".nf-scroll");
     const q = (opts.q || "").trim().toLowerCase();
