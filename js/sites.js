@@ -1209,9 +1209,9 @@
     function go(opts) {
       if (!window.Auth0) { err.textContent = "Auth0 unavailable — check your connection."; return; }
       err.textContent = "Opening Auth0…";
-      // No prompt:login — Auth0 remembers your session (SSO), so you don't log
-      // in every time. The customized page shows only when there's no session.
-      window.Auth0.verify(done, (msg) => { err.textContent = msg || "Sign in failed."; }, opts);
+      // Force the Auth0 login page to show every time (prompt:login).
+      const params = Object.assign({ prompt: "login" }, (opts && opts.authorizationParams) || {});
+      window.Auth0.verify(done, (msg) => { err.textContent = msg || "Sign in failed."; }, { authorizationParams: params });
     }
     root.querySelector("#nfAuth").onclick = () => go();
     root.querySelector("#nfSignup").onclick = () => go({ authorizationParams: { screen_hint: "signup" } });
