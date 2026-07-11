@@ -1501,3 +1501,9 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 }
 .oobe-brand { font-weight: 400; }
 .oobe-content .sub, .installer-body p { letter-spacing: 0; }
+
+/* Product key sheet — clickable rows */
+.key-sheet-row { padding: 3px 6px; border-radius: 4px; cursor: pointer; }
+.key-sheet-row:hover { background: #eef4ff; }
+.key-sheet-row.used { color: #c00; text-decoration: line-through; cursor: default; }
+.key-sheet-row.used:hover { background: none; }

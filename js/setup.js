@@ -236,14 +236,34 @@
     function emailView() {
       stage.innerHTML = `
         <div class="field"><label>Sign in</label><input type="email" id="email" placeholder="Email, phone, or Skype" value="${S().account ? S().account.email : ""}"></div>
-        <p class="ms-links"><span class="link-blue">No account? Create one!</span><br><span class="link-blue">Sign-in options</span></p>
+        <p class="ms-links"><span class="link-blue" id="createLink">No account? Create one!</span><br><span class="link-blue">Sign-in options</span></p>
         <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="next">Next</button></div>`;
       stage.querySelector("#skip").onclick = () => oobeJustAMoment(oobePersonalize);
+      stage.querySelector("#createLink").onclick = createView;
       stage.querySelector("#next").onclick = () => {
         const email = stage.querySelector("#email").value.trim();
         if (!email) { stage.querySelector("#email").focus(); return; }
         S().account = { email, password: "" };
         pwView(email);
+      };
+    }
+    function createView() {
+      stage.innerHTML = `
+        <div class="field"><label>Create account</label><input type="email" id="cemail" placeholder="someone@example.com"></div>
+        <div class="field"><div class="pw-wrap"><input type="password" id="cpw" placeholder="Create a password"><button class="pw-eye" id="ceye">&#128065;</button></div></div>
+        <div class="field"><input type="password" id="cpw2" placeholder="Confirm password"></div>
+        <div class="error-msg" id="cerr"></div>
+        <div class="oobe-actions spread"><button class="btn-text" id="cback">Back to sign in</button><button class="btn-primary" id="ccreate">Create account</button></div>`;
+      const cpw = stage.querySelector("#cpw"), cpw2 = stage.querySelector("#cpw2"), cerr = stage.querySelector("#cerr");
+      stage.querySelector("#ceye").onclick = () => { const t = cpw.type === "password" ? "text" : "password"; cpw.type = t; cpw2.type = t; };
+      stage.querySelector("#cback").onclick = emailView;
+      stage.querySelector("#ccreate").onclick = () => {
+        const email = stage.querySelector("#cemail").value.trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { cerr.textContent = "Enter a valid email address."; return; }
+        if (cpw.value.length < 4) { cerr.textContent = "Password must be at least 4 characters."; return; }
+        if (cpw.value !== cpw2.value) { cerr.textContent = "Those passwords don't match."; return; }
+        S().account = { email, password: cpw.value, created: true }; State.save();
+        oobeJustAMoment(oobePersonalize);
       };
     }
     function pwView(email) {
@@ -462,14 +482,23 @@
     const overlay = el(`<div class="modal-mask" style="z-index:9999;overflow:auto;padding:40px">
       <div style="background:#fff;color:#111;max-width:700px;margin:0 auto;padding:30px;border-radius:12px">
         <h2 style="margin-top:0">Windows 12 — Product Key Sheet (100 keys)</h2>
-        <p style="color:#666">Each key works once. After use it becomes "Already Redeemed".</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:monospace;font-size:13px"></div>
+        <p style="color:#666">Tap any key to copy it and fill the box. Each key works once.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-family:monospace;font-size:13px"></div>
         <div style="text-align:right;margin-top:16px"><button class="pill-btn" id="closeSheet">Close</button></div>
       </div></div>`);
     const grid = overlay.querySelector("div[style*='grid']");
     State.VALID_KEYS.forEach((k, i) => {
       const used = S().redeemedKeys.includes(k);
-      grid.appendChild(el(`<div style="${used ? "color:#c00;text-decoration:line-through" : ""}">${(i + 1).toString().padStart(3, "0")}. ${k}</div>`));
+      const row = el(`<div class="key-sheet-row ${used ? "used" : ""}">${(i + 1).toString().padStart(3, "0")}. ${k}</div>`);
+      if (!used) row.onclick = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(k).catch(() => {});
+        // Fill the activate-key / product-key input if one is on screen.
+        const inp = document.querySelector(".activate-key, .key-input");
+        if (inp) { inp.value = k; inp.dispatchEvent(new Event("input", { bubbles: true })); }
+        row.textContent = "Copied ✓  " + k;
+        setTimeout(() => overlay.remove(), 550);
+      };
+      grid.appendChild(row);
     });
     overlay.querySelector("#closeSheet").onclick = () => overlay.remove();
     screen().appendChild(overlay);
