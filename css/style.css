@@ -1474,3 +1474,30 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .oobe-cat-ic svg { display: block; }
 /* Files folder hover swap */
 .files-item:hover .files-folder-img { content: url(assets/folder_hover.png); }
+
+/* OOBE motion — makes setup feel alive */
+.oobe-orb { animation: orbBreathe 9s ease-in-out infinite; will-change: transform, opacity; }
+@keyframes orbBreathe {
+  0%   { transform: translateX(-50%) scale(1) rotate(0deg); opacity: .48; }
+  50%  { transform: translateX(-52%) scale(1.12) rotate(10deg); opacity: .72; }
+  100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: .48; }
+}
+.oobe-content.oobe-in { animation: oobeSlideIn .5s cubic-bezier(.22,.7,.2,1); }
+.oobe-illus.oobe-in { animation: oobeIllusIn .55s cubic-bezier(.22,.7,.2,1); }
+@keyframes oobeSlideIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes oobeIllusIn { from { opacity: 0; transform: translateY(12px) scale(.92); } to { opacity: 1; transform: none; } }
+.oobe-illus .il-svg { animation: illusFloat 5.5s ease-in-out infinite; }
+@keyframes illusFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.oobe-back { transition: transform .15s; }
+.oobe-back:hover { transform: translateX(-3px); }
+
+/* OOBE/installer typography — match Windows (Segoe UI), not the app's Nunito */
+.oobe-panel, .oobe-brand, .installer-win {
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+.oobe-content h1, .installer-body h1 {
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-weight: 600; letter-spacing: -0.012em;
+}
+.oobe-brand { font-weight: 400; }
+.oobe-content .sub, .installer-body p { letter-spacing: 0; }

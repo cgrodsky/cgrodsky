@@ -119,22 +119,39 @@
   //  STAGE 2 — OOBE (glassy orb panel)
   // ============================================================
   // opts: { illustration, back, wide }
-  function oobe(contentNode, opts) {
-    opts = opts || {};
+  // Build the persistent OOBE chrome once (animated orb + panel) so it stays
+  // put between steps; only the illustration + content swap, with a slide-in.
+  function ensureOobeChrome() {
+    if (bg.querySelector(".oobe-panel")) return;
     bg.className = "setup-bg oobe-bg";
     bg.innerHTML = `
       <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12</b><sup>${EDITION_YEAR}</sup></div>
       <div class="oobe-orb"></div>
       <div class="oobe-panel">
-        <div class="oobe-breadcrumb">${opts.back ? '<button class="oobe-back">&#8592;</button>' : ""}<span>${Icon.mini("settings", "Setup")} Set up Windows</span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
+        <div class="oobe-breadcrumb"><span class="oobe-crumb"><span>${Icon.mini("settings", "Setup")} Set up Windows</span></span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
         <div class="oobe-stage">
-          <div class="oobe-illus">${opts.illustration || ""}</div>
+          <div class="oobe-illus"></div>
           <div class="oobe-content"></div>
         </div>
         ${CORNER}
       </div>`;
-    bg.querySelector(".oobe-content").appendChild(contentNode);
-    if (opts.back) bg.querySelector(".oobe-back").onclick = opts.back;
+  }
+  function oobe(contentNode, opts) {
+    opts = opts || {};
+    ensureOobeChrome();
+    // Back button in the breadcrumb
+    const crumb = bg.querySelector(".oobe-crumb");
+    let back = crumb.querySelector(".oobe-back");
+    if (opts.back) { if (!back) { back = el(`<button class="oobe-back">&#8592;</button>`); crumb.insertBefore(back, crumb.firstChild); } back.onclick = opts.back; }
+    else if (back) back.remove();
+    // Swap illustration + content with a slide-in animation
+    const illus = bg.querySelector(".oobe-illus");
+    const content = bg.querySelector(".oobe-content");
+    illus.innerHTML = opts.illustration || "";
+    content.innerHTML = ""; content.appendChild(contentNode);
+    illus.classList.remove("oobe-in"); content.classList.remove("oobe-in");
+    void content.offsetWidth; // reflow to restart the animation
+    illus.classList.add("oobe-in"); content.classList.add("oobe-in");
     wireSkip();
     return bg;
   }
