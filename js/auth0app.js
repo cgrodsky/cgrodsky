@@ -30,7 +30,10 @@
       try { client = await getClient(); }
       catch (e) { (onError || function () {})(e.message); return; }
       try {
-        if (!(await client.isAuthenticated())) await client.loginWithPopup(opts);
+        // If prompt:login is requested, ALWAYS show the login popup — even when
+        // there's an existing session. Otherwise reuse the session (SSO).
+        const force = !!(opts && opts.authorizationParams && opts.authorizationParams.prompt === "login");
+        if (force || !(await client.isAuthenticated())) await client.loginWithPopup(opts);
         (onSuccess || function () {})(await client.getUser());
       } catch (e) {
         (onError || function () {})(e && (e.message || String(e)) || "Verification cancelled.");
