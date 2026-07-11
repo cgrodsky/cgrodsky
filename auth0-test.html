@@ -3,95 +3,122 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <title>Auth0 Login Test</title>
-<!-- Only PUBLIC config here: Auth0 domain + SPA client id. No client secret (PKCE). -->
+<!-- Public config only: Auth0 domain + SPA client id. PKCE, no client secret. -->
 <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
 <style>
-  :root { color-scheme: light dark; }
   body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; margin: 0; min-height: 100vh;
     display: flex; align-items: center; justify-content: center; background: #0b1020; color: #e9edf6; }
-  .card { width: min(440px, 92vw); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
-    border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
-  h1 { margin: 0 0 6px; font-size: 1.5rem; }
-  .muted { color: #aeb8d2; font-size: .9rem; margin: 0 0 20px; }
-  button { border: 0; border-radius: 8px; padding: 12px 22px; font-size: 1rem; font-weight: 600; cursor: pointer; }
-  .primary { background: #635dff; color: #fff; }
-  .primary:hover { background: #766fff; }
-  .ghost { background: rgba(255,255,255,.08); color: #e9edf6; margin-left: 8px; }
+  .card { width: min(460px, 92vw); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  h1 { margin: 0 0 4px; font-size: 1.4rem; }
+  .muted { color: #aeb8d2; font-size: .85rem; margin: 0 0 16px; }
+  button { border: 0; border-radius: 8px; padding: 11px 20px; font-size: 1rem; font-weight: 600; cursor: pointer; margin: 4px 6px 4px 0; }
+  .primary { background: #635dff; color: #fff; } .primary:hover { background: #766fff; }
+  .green { background: #0a9d6e; color: #fff; }
+  .ghost { background: rgba(255,255,255,.08); color: #e9edf6; }
+  #status { font-size: .82rem; padding: 10px 12px; border-radius: 8px; margin: 0 0 16px; background: rgba(255,255,255,.06); white-space: pre-wrap; word-break: break-word; }
+  .ok { color: #46d369; } .bad { color: #ff6b6b; } .warn { color: #ffcf5c; }
   .profile { display: none; }
-  .profile img { width: 64px; height: 64px; border-radius: 50%; display: block; margin-bottom: 12px; }
-  .profile pre { background: rgba(0,0,0,.35); border-radius: 8px; padding: 12px; overflow: auto; font-size: .78rem; max-height: 260px; }
-  .row { display: flex; align-items: center; }
+  .profile img { width: 60px; height: 60px; border-radius: 50%; display: block; margin-bottom: 10px; }
+  pre { background: rgba(0,0,0,.35); border-radius: 8px; padding: 10px; overflow: auto; font-size: .74rem; max-height: 220px; }
   code { background: rgba(0,0,0,.3); padding: 1px 5px; border-radius: 4px; font-size: .8rem; }
-  .note { margin-top: 18px; font-size: .78rem; color: #8794b0; line-height: 1.5; }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>Auth0 login test</h1>
-    <p class="muted">Single-Page App · Authorization Code + PKCE · no client secret.</p>
+    <p class="muted">SPA · Authorization Code + PKCE · no secret</p>
+    <div id="status">Starting…</div>
 
-    <div id="loggedOut">
-      <button class="primary" id="login">Log in with Auth0</button>
-      <button class="primary" id="signup" style="background:#0a9d6e">Sign up</button>
+    <div id="loggedOut" style="display:none">
+      <button class="primary" id="login">Log in</button>
+      <button class="green" id="signup">Sign up</button>
     </div>
-
     <div class="profile" id="loggedIn">
       <img id="avatar" alt="" />
-      <div class="row">
-        <div><b id="name"></b><br><span class="muted" id="email"></span></div>
-        <span style="flex:1"></span>
-        <button class="ghost" id="logout">Log out</button>
-      </div>
+      <div><b id="name"></b> — <span id="email"></span></div>
+      <button class="ghost" id="logout" style="margin-top:8px">Log out</button>
       <pre id="raw"></pre>
     </div>
 
-    <p class="note">
-      Add this page's URL to your Auth0 app:<br>
-      <b>Allowed Callback URLs</b> and <b>Allowed Logout URLs</b>: <code id="thisUrl"></code><br>
-      <b>Allowed Web Origins</b>: <code id="thisOrigin"></code>
-    </p>
+    <p class="muted" style="margin-top:16px">Whitelist in Auth0 → Settings:<br>
+      Callback + Logout URLs: <code id="thisUrl"></code><br>
+      Web Origins: <code id="thisOrigin"></code></p>
   </div>
 
 <script>
-  const AUTH0 = {
-    domain: "windows12.us.auth0.com",
-    clientId: "LQ7egZhMvDppMjHn7IQWO6MAGLWhJslX",
-  };
+  const AUTH0 = { domain: "windows12.us.auth0.com", clientId: "LQ7egZhMvDppMjHn7IQWO6MAGLWhJslX" };
   const redirectUri = window.location.origin + window.location.pathname;
-  document.getElementById("thisUrl").textContent = redirectUri;
-  document.getElementById("thisOrigin").textContent = window.location.origin;
+  const $ = (id) => document.getElementById(id);
+  $("thisUrl").textContent = redirectUri;
+  $("thisOrigin").textContent = window.location.origin;
+  const setStatus = (html) => { $("status").innerHTML = html; };
 
-  let client;
+  let client = null;
+
+  window.addEventListener("error", (e) => setStatus(`<span class="bad">Page error:</span> ${e.message}`));
+
   async function init() {
-    client = await auth0.createAuth0Client({
-      domain: AUTH0.domain,
-      clientId: AUTH0.clientId,
-      authorizationParams: { redirect_uri: redirectUri },
-      cacheLocation: "localstorage",
-    });
-    // Complete the login round-trip when Auth0 redirects back with ?code=&state=
+    // 1) Did the Auth0 SDK load from the CDN?
+    if (typeof auth0 === "undefined" || !auth0.createAuth0Client) {
+      setStatus(`<span class="bad">✗ Auth0 SDK didn't load.</span>\nThe CDN script was blocked — check your network/adblock, and make sure you're opening this page in a normal browser tab (not inside the Windows 12 sim's Edge).`);
+      return;
+    }
+    try {
+      client = await auth0.createAuth0Client({
+        domain: AUTH0.domain,
+        clientId: AUTH0.clientId,
+        authorizationParams: { redirect_uri: redirectUri },
+        cacheLocation: "localstorage",
+      });
+    } catch (e) {
+      setStatus(`<span class="bad">✗ createAuth0Client failed:</span> ${e.message}\nUsually a wrong Domain. Confirm it is exactly <b>${AUTH0.domain}</b>.`);
+      return;
+    }
+    // 2) Returning from Auth0 with a code?
     if (location.search.includes("code=") && location.search.includes("state=")) {
-      try { await client.handleRedirectCallback(); } catch (e) { console.error(e); }
-      window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        await client.handleRedirectCallback();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {
+        setStatus(`<span class="bad">✗ Login callback error:</span> ${e.message}`);
+      }
+    }
+    // 3) Show an error Auth0 sent back in the URL (e.g. callback mismatch, no connection)
+    const q = new URLSearchParams(location.search);
+    if (q.get("error")) {
+      setStatus(`<span class="bad">✗ Auth0 returned:</span> ${q.get("error")}\n${q.get("error_description") || ""}`);
     }
     await render();
   }
+
   async function render() {
     const isAuth = await client.isAuthenticated();
-    document.getElementById("loggedOut").style.display = isAuth ? "none" : "block";
-    document.getElementById("loggedIn").style.display = isAuth ? "block" : "none";
+    $("loggedOut").style.display = isAuth ? "none" : "block";
+    $("loggedIn").style.display = isAuth ? "block" : "none";
     if (isAuth) {
       const user = await client.getUser();
-      document.getElementById("avatar").src = user.picture || "";
-      document.getElementById("name").textContent = user.name || user.nickname || "(no name)";
-      document.getElementById("email").textContent = user.email || "";
-      document.getElementById("raw").textContent = JSON.stringify(user, null, 2);
+      $("avatar").src = user.picture || "";
+      $("name").textContent = user.name || user.nickname || "";
+      $("email").textContent = user.email || "";
+      $("raw").textContent = JSON.stringify(user, null, 2);
+      setStatus(`<span class="ok">✓ Signed in.</span>`);
+    } else {
+      setStatus(`<span class="ok">✓ SDK ready.</span> Click Log in.`);
     }
   }
-  document.getElementById("login").onclick = () => client.loginWithRedirect();
-  document.getElementById("signup").onclick = () => client.loginWithRedirect({ authorizationParams: { screen_hint: "signup" } });
-  document.getElementById("logout").onclick = () => client.logout({ logoutParams: { returnTo: redirectUri } });
+
+  async function guardedLogin(opts) {
+    if (!client) { setStatus(`<span class="bad">✗ Not initialized yet.</span> See the message above.`); return; }
+    try { await client.loginWithRedirect(opts); }
+    catch (e) { setStatus(`<span class="bad">✗ loginWithRedirect failed:</span> ${e.message}`); }
+  }
+  $("login").onclick  = () => guardedLogin();
+  $("signup").onclick = () => guardedLogin({ authorizationParams: { screen_hint: "signup" } });
+  $("logout").onclick = () => client && client.logout({ logoutParams: { returnTo: redirectUri } });
+
   init();
 </script>
 </body>
