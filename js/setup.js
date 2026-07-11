@@ -21,7 +21,10 @@
   }
 
   // ---------- shared corner icons (accessibility + volume) ----------
-  const CORNER = `<div class="oobe-corner"><span title="Accessibility">&#9855;</span><span title="Volume">&#128266;</span></div>`;
+  const CORNER = `<div class="oobe-corner">
+    <span title="Accessibility"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="4.2" r="1.8" fill="currentColor" stroke="none"/><path d="M4 8 h16 M12 8 v7 M12 15 l-3.5 5 M12 15 l3.5 5"/></svg></span>
+    <span title="Volume"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M4 9 h3.5 L13 5 v14 L7.5 15 H4 z"/><path d="M16 8.5 a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>
+  </div>`;
 
   // ============================================================
   //  STAGE 1 — INSTALLER (windowed "Windows Setup")
@@ -137,13 +140,13 @@
   }
 
   const ILLUS = {
-    apps: `<div class="il-cluster"><span>&#127918;</span><span>&#127925;</span><span>&#128444;&#65039;</span></div>`,
-    lock: `<div class="il-cluster"><span>&#128272;</span></div>`,
-    finger: `<div class="il-cluster"><span>&#128070;</span></div>`,
-    restore: `<div class="il-cluster il-bolt">&#9889;</div>`,
-    cards: `<div class="il-cluster"><span>&#128221;</span><span>&#9824;&#65039;</span><span>&#9654;&#65039;</span></div>`,
-    globe: `<div class="il-cluster"><span>&#127760;</span></div>`,
-    gear: `<div class="il-cluster"><span>&#9881;&#65039;</span></div>`,
+    globe: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilGl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilGl)"/><g fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="2.5"><ellipse cx="100" cy="100" rx="30" ry="72"/><ellipse cx="100" cy="100" rx="58" ry="72"/><line x1="28" y1="100" x2="172" y2="100"/><path d="M40 62 H160"/><path d="M40 138 H160"/></g></svg>`,
+    gear: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilAc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilAc)"/><circle cx="100" cy="62" r="13" fill="#fff"/><path d="M62 84 H138 M100 84 V132 M100 132 L74 168 M100 132 L126 168" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round"/></svg>`,
+    apps: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilPad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5cf6"/><stop offset="1" stop-color="#5b3ee0"/></linearGradient><linearGradient id="ilMus" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc7"/><stop offset="1" stop-color="#e3008c"/></linearGradient><linearGradient id="ilPic" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#43d69a"/><stop offset="1" stop-color="#0a9d6e"/></linearGradient></defs><g transform="translate(24 74) rotate(-8)"><path d="M30 20 Q30 0 55 2 H115 Q140 0 140 20 L152 66 Q158 92 130 92 Q114 92 108 78 L104 68 H66 L62 78 Q56 92 40 92 Q12 92 18 66 Z" fill="url(#ilPad)"/><rect x="42" y="34" width="9" height="27" rx="3" fill="#fff"/><rect x="33" y="43" width="27" height="9" rx="3" fill="#fff"/><circle cx="112" cy="40" r="6" fill="#fff"/><circle cx="128" cy="52" r="6" fill="#fff"/><circle cx="112" cy="64" r="6" fill="#fff"/></g><g transform="translate(150 22)"><rect x="40" y="0" width="10" height="58" rx="5" fill="url(#ilMus)"/><circle cx="30" cy="60" r="15" fill="url(#ilMus)"/><path d="M40 0 q22 4 22 22 V6 q0 -8 -22 -6 Z" fill="url(#ilMus)"/></g><g transform="translate(178 98)"><rect x="0" y="0" width="64" height="52" rx="8" fill="url(#ilPic)"/><circle cx="18" cy="18" r="7" fill="#fff"/><path d="M6 44 L26 24 L40 38 L50 30 L58 44 Z" fill="#fff"/></g></svg>`,
+    lock: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilLk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><path d="M100 20 L160 42 V96 Q160 150 100 178 Q40 150 40 96 V42 Z" fill="url(#ilLk)"/><rect x="76" y="88" width="48" height="40" rx="6" fill="#fff"/><path d="M84 88 V76 a16 16 0 0 1 32 0 V88" fill="none" stroke="#fff" stroke-width="7"/><circle cx="100" cy="104" r="6" fill="#2f6bff"/><rect x="97" y="106" width="6" height="12" rx="3" fill="#2f6bff"/></svg>`,
+    finger: `<svg class="il-svg il-fp" viewBox="0 0 200 200" fill="none" stroke="#5ea0ff" stroke-width="6" stroke-linecap="round"><path d="M50 96 q4 -46 50 -46 q46 0 50 46" stroke-opacity=".5"/><path d="M60 120 q0 -55 40 -55 q40 0 40 55"/><path d="M74 128 q0 -40 26 -40 q26 0 26 40"/><path d="M88 134 q0 -26 12 -26 q12 0 12 26 v6"/><path d="M100 108 v34"/></svg>`,
+    restore: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilBolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#e0245e"/></linearGradient></defs><rect x="40" y="40" width="120" height="120" rx="28" fill="url(#ilBolt)"/><path d="M108 62 L78 108 H98 L92 138 L124 90 H104 Z" fill="#fff"/></svg>`,
+    cards: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilNote" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd3ff"/><stop offset="1" stop-color="#4aa8ff"/></linearGradient></defs><g transform="translate(28 55) rotate(-6)"><rect x="0" y="0" width="78" height="96" rx="8" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><rect x="0" y="0" width="78" height="20" rx="8" fill="url(#ilNote)"/><path d="M12 40 H62 M12 54 H62 M12 68 H46" stroke="#c6d2e6" stroke-width="4" stroke-linecap="round"/><path d="M52 74 l18 -18 8 8 -18 18 -10 2 2 -10Z" fill="#f5a623"/></g><g transform="translate(118 48) rotate(6)"><rect x="0" y="0" width="76" height="104" rx="10" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><path d="M38 24 C58 46 60 58 46 66 C40 70 40 62 40 62 C40 62 40 70 34 70 C20 62 22 46 38 24Z" fill="#1d1d21"/><rect x="34" y="70" width="8" height="14" fill="#1d1d21"/></g><g transform="translate(196 108)"><circle cx="24" cy="24" r="24" fill="#e50914"/><path d="M18 14 L36 24 L18 34 Z" fill="#fff"/></g></svg>`,
   };
 
   // ---- Region & language ----
@@ -339,7 +342,7 @@
       <div class="oobe-fp-pct" id="pct">0%</div>
       <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
     </div>`);
-    const illus = `<div class="il-cluster"><span class="fp-anim" id="fp">&#128070;</span></div>`;
+    const illus = `<div class="fp-anim" id="fp">${ILLUS.finger}</div>`;
     oobe(node, { illustration: illus, back: oobeFingerprintIntro });
     const pctEl = bg.querySelector("#pct"), fp = bg.querySelector("#fp");
     let pct = 0;
@@ -374,12 +377,13 @@
 
   // ---- Customize your experience ----
   function oobeCustomize() {
+    const svg = (inner, c) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="${c}">${inner}</svg>`;
     const cats = [
-      { id: "entertainment", name: "Entertainment", desc: "Watch videos, browse the web, connect on social media", icon: "&#127916;" },
-      { id: "gaming", name: "Gaming", desc: "Play and discover games, keep up with new releases", icon: "&#127918;" },
-      { id: "school", name: "School", desc: "Take notes, write essays and collaborate on projects", icon: "&#127891;" },
-      { id: "creativity", name: "Creativity", desc: "Draw, edit photos and make things", icon: "&#127912;" },
-      { id: "business", name: "Business", desc: "Manage work, email and meetings", icon: "&#128188;" },
+      { id: "entertainment", name: "Entertainment", desc: "Watch videos, browse the web, connect on social media", icon: svg('<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M10 8 l6 3 -6 3 z" fill="#fff"/>', "#e50914") },
+      { id: "gaming", name: "Gaming", desc: "Play and discover games, keep up with new releases", icon: svg('<path d="M6 8 h12 a5 5 0 0 1 5 5 a3 3 0 0 1 -5.5 1.8 H8.5 A3 3 0 0 1 3 13 a5 5 0 0 1 3 -5 z"/><circle cx="16.5" cy="12" r="1.2" fill="#fff"/><rect x="6" y="11" width="4" height="1.6" fill="#fff"/><rect x="7.2" y="9.8" width="1.6" height="4" fill="#fff"/>', "#7c5cff") },
+      { id: "school", name: "School", desc: "Take notes, write essays and collaborate on projects", icon: svg('<path d="M12 4 L22 9 L12 14 L2 9 z"/><path d="M6 11 v4 c0 1.5 3 3 6 3 s6 -1.5 6 -3 v-4" fill="none" stroke="#0a7d3a" stroke-width="1.6"/>', "#0a7d3a") },
+      { id: "creativity", name: "Creativity", desc: "Draw, edit photos and make things", icon: svg('<path d="M12 3 a9 9 0 1 0 0 18 c1.5 0 2 -1 2 -2 a2 2 0 0 1 2 -2 h1 a4 4 0 0 0 4 -4 c0 -5 -4 -8 -9 -8 z"/><circle cx="8" cy="10" r="1.3" fill="#fff"/><circle cx="12" cy="7.5" r="1.3" fill="#fff"/><circle cx="16" cy="10" r="1.3" fill="#fff"/>', "#e3008c") },
+      { id: "business", name: "Business", desc: "Manage work, email and meetings", icon: svg('<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M9 8 V6 a2 2 0 0 1 2 -2 h2 a2 2 0 0 1 2 2 v2" fill="none" stroke="#0067c0" stroke-width="1.6"/>', "#0067c0") },
     ];
     const chosen = new Set((S().setup && S().setup.categories) || []);
     const node = el(`<div>

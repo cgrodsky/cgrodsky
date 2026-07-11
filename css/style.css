@@ -1466,3 +1466,11 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .cpk-hex-row { display: flex; align-items: center; gap: 4px; margin-top: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
 .cpk-hex-row span { color: var(--text-dim); font-family: Consolas, monospace; }
 .cpk-hex-input { flex: 1; border: 0; background: none; color: var(--text); outline: none; font-family: Consolas, monospace; text-transform: uppercase; letter-spacing: .1em; }
+
+/* OOBE real SVG illustrations */
+.oobe-illus .il-svg { width: 200px; max-width: 100%; height: auto; filter: drop-shadow(0 10px 26px rgba(0,0,0,.45)); }
+.oobe-illus .il-wide { width: 244px; }
+.fp-anim { display: inline-block; transition: filter .2s; }
+.oobe-cat-ic svg { display: block; }
+/* Files folder hover swap */
+.files-item:hover .files-folder-img { content: url(assets/folder_hover.png); }

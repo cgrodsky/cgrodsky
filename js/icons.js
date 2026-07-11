@@ -235,6 +235,10 @@
     <path fill="#e50914" d="M44 22 L44 106 C49.5 105.3 55 104.7 60.5 104.3 L60.5 62 L78 106 C84 106 90 106.4 96 107 L96 22 L80 22 L80 60 L64.5 22 Z"/>
   </svg>`);
 
+  // Calculator uses an animated gif; box() tries assets/calculator.png first,
+  // fails (none), then falls back to this registered markup.
+  register("calculator", `<img src="assets/calculator.gif" alt="" style="width:100%;height:100%;object-fit:contain;border-radius:6px">`);
+
   register("messenger", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="msgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f9bff"/><stop offset="1" stop-color="#0067c0"/></linearGradient></defs>
     <rect width="128" height="128" rx="26" fill="url(#msgr)"/>
