@@ -1526,3 +1526,24 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .nf-am { background: none; border: 0; color: #fff; text-align: left; padding: 12px 16px; cursor: pointer; font-size: .85rem; }
 .nf-am:hover { background: rgba(255,255,255,.14); }
 .nf-am[data-a="signout"] { border-top: 1px solid rgba(255,255,255,.12); }
+
+/* Microsoft Word */
+.wd { display: flex; flex-direction: column; height: 100%; background: #f3f3f3; }
+.wd-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #2b579a; color: #fff; }
+.wd-ic { width: 20px; height: 20px; display: inline-flex; }
+.wd-name { background: rgba(255,255,255,.15); border: 0; color: #fff; border-radius: 5px; padding: 5px 10px; font-size: .9rem; min-width: 160px; }
+.wd-name::placeholder { color: rgba(255,255,255,.7); }
+.wd-count { color: rgba(255,255,255,.85); font-size: .78rem; }
+.wd-ribbon { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; align-items: center; }
+.wd-grp { display: flex; align-items: center; gap: 3px; padding-right: 8px; margin-right: 4px; border-right: 1px solid #eee; }
+.wd-ribbon button { min-width: 30px; height: 30px; border: 1px solid transparent; background: none; border-radius: 5px; cursor: pointer; font-size: .95rem; color: #333; }
+.wd-ribbon button:hover { background: #eef3fb; border-color: #cdd4e6; }
+.wd-ribbon select { height: 30px; border: 1px solid #ccc; border-radius: 5px; background: #fff; color: #333; padding: 0 4px; }
+.wd-color { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 5px; cursor: pointer; font-size: .85rem; color: #333; }
+.wd-color:hover { background: #eef3fb; }
+.wd-color input[type=color] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.wd-color-bar { width: 18px; height: 4px; border-radius: 2px; }
+.wd-canvas { flex: 1; overflow: auto; padding: 24px; display: flex; justify-content: center; }
+.wd-page { width: 100%; max-width: 720px; min-height: 100%; background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.15);
+  padding: 60px 72px; font-family: Calibri, "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.5; color: #111; outline: none; }
+.wd-page:empty::before { content: "Start typing your document…"; color: #aaa; }

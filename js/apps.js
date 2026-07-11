@@ -53,7 +53,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "minecraft", "codeeditor", "achievements", "store__"];
+    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "minecraft", "codeeditor", "achievements", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 
