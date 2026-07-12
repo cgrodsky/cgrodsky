@@ -117,6 +117,7 @@
     { id: "blockfinder", name: "Assets" },
     { id: "messenger", name: "Messenger" },
     { id: "word", name: "Word" },
+    { id: "powerpoint", name: "PowerPoint" },
   ];
 
   function hiddenIcons() { return (S().desktop && S().desktop.hiddenIcons) || []; }
@@ -467,7 +468,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

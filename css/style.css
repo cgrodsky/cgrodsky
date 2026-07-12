@@ -1577,3 +1577,37 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .fdlg-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); }
 .fdlg-fn { font-size: .85rem; display: flex; align-items: center; gap: 8px; }
 .fdlg-name { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; background: var(--bg-elev); color: var(--text); min-width: 200px; }
+
+/* Microsoft PowerPoint */
+.pp { display: flex; flex-direction: column; height: 100%; background: #f0f0f0; }
+.pp-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #c43e1c; color: #fff; }
+.pp-ic { width: 20px; height: 20px; display: inline-flex; }
+.pp-filemenu { display: flex; gap: 2px; }
+.pp-filemenu button { background: rgba(255,255,255,.15); border: 0; color: #fff; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: .82rem; }
+.pp-filemenu button:hover { background: rgba(255,255,255,.3); }
+.pp-bg { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; position: relative; background: rgba(255,255,255,.15); padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+.pp-bg input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pp-present { background: #fff; color: #c43e1c; border: 0; border-radius: 5px; padding: 6px 14px; font-weight: 700; cursor: pointer; }
+.pp-main { flex: 1; display: flex; min-height: 0; }
+.pp-rail { width: 160px; flex: 0 0 auto; background: #e6e6e6; border-right: 1px solid #ccc; overflow: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.pp-thumb { display: flex; gap: 6px; align-items: stretch; background: none; border: 0; padding: 0; cursor: pointer; }
+.pp-thumb-n { color: #666; font-size: .75rem; width: 14px; flex: 0 0 auto; padding-top: 4px; }
+.pp-thumb-slide { flex: 1; aspect-ratio: 16/9; border: 2px solid #ccc; border-radius: 4px; overflow: hidden; padding: 8px; }
+.pp-thumb.active .pp-thumb-slide { border-color: #c43e1c; }
+.pp-thumb-title { font-size: .6rem; font-weight: 700; line-height: 1.1; overflow: hidden; }
+.pp-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; }
+.pp-slide { width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #fff; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; justify-content: center; padding: 8% 9%; gap: 14px; }
+.pp-title { font-size: 2rem; font-weight: 700; outline: none; }
+.pp-body { font-size: 1.1rem; outline: none; min-height: 1.4em; }
+.pp-title:empty::before, .pp-body:empty::before { content: attr(data-ph); color: #bbb; }
+.pp-tools { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border-top: 1px solid #ddd; }
+.pp-tools button { background: #f3f3f3; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #333; font-size: .82rem; }
+.pp-tools button:hover { background: #eef; border-color: #c43e1c; }
+.pp-present-ov { position: absolute; inset: 0; z-index: 9500; background: #000; display: flex; flex-direction: column; }
+.pp-present-slide { flex: 1; margin: auto; width: 100%; max-width: 100vw; aspect-ratio: 16/9; display: flex; flex-direction: column; justify-content: center; padding: 6% 8%; gap: 20px; }
+.pp-p-title { font-size: 4vw; font-weight: 800; }
+.pp-p-body { font-size: 2.4vw; }
+.pp-present-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px; background: rgba(0,0,0,.6); }
+.pp-present-bar button { background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 1.1rem; }
+.pp-present-bar #pc { color: #ccc; }

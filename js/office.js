@@ -147,5 +147,124 @@
 
   AppRegistry.word = function () { openWord(null); };
 
-  window.Office = { openWord: openWord };
+  // ===================== POWERPOINT =====================
+  const screen = () => document.getElementById("screen");
+  function newSlide(title, sub) { return { bg: "#ffffff", title: title || "", body: sub || "", titleColor: "#17181c", bodyColor: "#5a5f6b" }; }
+  function defaultDeck() { return { slides: [newSlide("Presentation title", "Add your subtitle")] }; }
+
+  function openPowerPoint(fileRef) {
+    const ref = cw({ title: "PowerPoint", icon: Icon.mini("powerpoint", "PowerPoint"), width: 980, height: 680, appId: "powerpoint" });
+    const body = ref.body, win = ref.win;
+    if (!S().appData) S().appData = {};
+    let current = null, deck;
+    if (fileRef && fileRef.node) { try { deck = JSON.parse(fileRef.node.content || ""); } catch (_) { deck = defaultDeck(); } current = { name: fileRef.name, node: fileRef.node }; }
+    else { deck = (S().appData.powerpoint && S().appData.powerpoint.deck) || defaultDeck(); }
+    if (!deck.slides || !deck.slides.length) deck = defaultDeck();
+    let idx = 0;
+    const titleText = () => win.querySelector(".win-titlebar .t-text");
+
+    body.innerHTML = `<div class="pp">
+      <div class="pp-top">
+        <span class="pp-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>
+        <div class="pp-filemenu">
+          <button data-f="new">New</button><button data-f="open">Open</button><button data-f="save">Save</button><button data-f="saveas">Save As</button>
+        </div>
+        <span class="grow"></span>
+        <label class="pp-bg" title="Slide background">Background<input type="color" class="pp-bgc" value="#ffffff"></label>
+        <button class="pp-present">▶ Present</button>
+      </div>
+      <div class="pp-main">
+        <div class="pp-rail"></div>
+        <div class="pp-stage"><div class="pp-slide" id="slide"></div></div>
+      </div>
+      <div class="pp-tools">
+        <button data-a="add">+ New slide</button>
+        <button data-a="dup">Duplicate</button>
+        <button data-a="del">Delete</button>
+        <span class="grow"></span>
+        <span class="pp-pos muted"></span>
+      </div>
+    </div>`;
+
+    const rail = body.querySelector(".pp-rail");
+    const stage = body.querySelector(".pp-slide");
+    const pos = body.querySelector(".pp-pos");
+    const bgc = body.querySelector(".pp-bgc");
+
+    function persist() {
+      if (current) { current.node.content = JSON.stringify(deck); current.node.ts = Date.now(); }
+      else S().appData.powerpoint = { deck };
+      State.save();
+    }
+    function setTitleBar() { if (titleText()) titleText().textContent = (current ? current.name : "Presentation") + " — PowerPoint"; }
+
+    function renderRail() {
+      rail.innerHTML = "";
+      deck.slides.forEach((s, i) => {
+        const th = el(`<button class="pp-thumb ${i === idx ? "active" : ""}"><span class="pp-thumb-n">${i + 1}</span><div class="pp-thumb-slide" style="background:${s.bg}"><div class="pp-thumb-title" style="color:${s.titleColor}">${escapeHtml((s.title || "").replace(/<[^>]+>/g, "")).slice(0, 40)}</div></div></button>`);
+        th.onclick = () => { idx = i; renderAll(); };
+        rail.appendChild(th);
+      });
+    }
+    function renderSlide() {
+      const s = deck.slides[idx];
+      stage.style.background = s.bg;
+      bgc.value = /^#/.test(s.bg) ? s.bg : "#ffffff";
+      stage.innerHTML = `
+        <div class="pp-title" contenteditable="true" data-ph="Click to add title" style="color:${s.titleColor}">${s.title || ""}</div>
+        <div class="pp-body" contenteditable="true" data-ph="Click to add text" style="color:${s.bodyColor}">${s.body || ""}</div>`;
+      const t = stage.querySelector(".pp-title"), bd = stage.querySelector(".pp-body");
+      t.addEventListener("input", () => { s.title = t.innerHTML; persist(); renderRailTitle(); });
+      bd.addEventListener("input", () => { s.body = bd.innerHTML; persist(); });
+      pos.textContent = "Slide " + (idx + 1) + " of " + deck.slides.length;
+    }
+    function renderRailTitle() { const th = rail.children[idx]; if (th) { const el2 = th.querySelector(".pp-thumb-title"); if (el2) el2.textContent = (deck.slides[idx].title || "").replace(/<[^>]+>/g, "").slice(0, 40); } }
+    function renderAll() { renderRail(); renderSlide(); }
+
+    body.querySelector('[data-a="add"]').onclick = () => { deck.slides.splice(idx + 1, 0, newSlide("", "")); idx++; persist(); renderAll(); };
+    body.querySelector('[data-a="dup"]').onclick = () => { deck.slides.splice(idx + 1, 0, JSON.parse(JSON.stringify(deck.slides[idx]))); idx++; persist(); renderAll(); };
+    body.querySelector('[data-a="del"]').onclick = () => { if (deck.slides.length <= 1) return; deck.slides.splice(idx, 1); idx = Math.max(0, idx - 1); persist(); renderAll(); };
+    bgc.oninput = () => { deck.slides[idx].bg = bgc.value; persist(); renderSlide(); renderRail(); };
+
+    // File menu
+    body.querySelectorAll(".pp-filemenu [data-f]").forEach((b) => b.onclick = () => {
+      const f = b.dataset.f;
+      if (f === "new") { deck = defaultDeck(); idx = 0; current = null; setTitleBar(); persist(); renderAll(); }
+      else if (f === "open") window.VFS.pickFile({ title: "Open presentation", accept: ["pptx"] }, (res) => openPowerPoint(res) && ref.close());
+      else if (f === "save") { if (!current) return saveAs(); persist(); toast("Saved " + current.name); }
+      else if (f === "saveas") saveAs();
+    });
+    function saveAs() {
+      window.VFS.pickSave({ title: "Save presentation", defaultName: current ? current.name.replace(/\.[a-z0-9]+$/i, "") : "Presentation", kind: "pptx" }, (res) => {
+        const node = { type: "file", kind: "pptx", content: JSON.stringify(deck), ts: Date.now() };
+        res.children[res.name] = node; State.save();
+        current = { name: res.name, node }; setTitleBar(); toast("Saved " + res.name);
+      });
+    }
+
+    // Present mode
+    body.querySelector(".pp-present").onclick = () => {
+      let i = idx;
+      const ov = el(`<div class="pp-present-ov">
+        <div class="pp-present-slide" id="ps"></div>
+        <div class="pp-present-bar"><button id="prev">‹</button><span id="pc" class="muted"></span><button id="next">›</button><button id="exit">Exit</button></div>
+      </div>`);
+      function show() { const s = deck.slides[i]; const el2 = ov.querySelector("#ps"); el2.style.background = s.bg; el2.innerHTML = `<div class="pp-p-title" style="color:${s.titleColor}">${s.title || ""}</div><div class="pp-p-body" style="color:${s.bodyColor}">${s.body || ""}</div>`; ov.querySelector("#pc").textContent = (i + 1) + " / " + deck.slides.length; }
+      const next = () => { if (i < deck.slides.length - 1) { i++; show(); } };
+      const prev = () => { if (i > 0) { i--; show(); } };
+      function close() { ov.remove(); document.removeEventListener("keydown", key); }
+      function key(e) { if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); next(); } else if (e.key === "ArrowLeft") prev(); else if (e.key === "Escape") close(); }
+      ov.querySelector("#next").onclick = next; ov.querySelector("#prev").onclick = prev; ov.querySelector("#exit").onclick = close;
+      ov.querySelector("#ps").onclick = next;
+      document.addEventListener("keydown", key);
+      screen().appendChild(ov); show();
+    };
+
+    setTitleBar();
+    renderAll();
+  }
+
+  AppRegistry.powerpoint = function () { openPowerPoint(null); };
+
+  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint };
 })();
