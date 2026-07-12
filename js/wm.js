@@ -429,7 +429,57 @@
     const ikey = a.id === "duolingo" ? duoIconKey(true) : a.id;
     const tile = el(`<div class="app-tile ${small ? "small" : ""}"><div class="ic">${Icon.md(ikey, a.name)}</div><div class="nm">${a.name}</div></div>`);
     tile.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
+    tile.oncontextmenu = (e) => { e.preventDefault(); appGroupMenu(a, e); };
     return tile;
+  }
+
+  // ---------------- App Groups (Start folders) ----------------
+  function appGroups() {
+    if (!S().appData) S().appData = {};
+    if (!S().appData.appGroups) S().appData.appGroups = [
+      { name: "Office", apps: ["word", "powerpoint", "notepad"] },
+      { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
+    ];
+    return S().appData.appGroups;
+  }
+  function appMeta(id) { const a = Catalog.storeApps.find((x) => x.id === id); return { id, name: a ? a.name : id }; }
+  function groupTile(group, gi) {
+    const icons = group.apps.slice(0, 4).map((id) => `<span class="grp-mini">${Icon.mini(id === "duolingo" ? duoIconKey(true) : id, id)}</span>`).join("");
+    const tile = el(`<div class="app-tile grp-tile"><div class="grp-folder">${icons}</div><div class="nm">${group.name}</div></div>`);
+    tile.onclick = () => openGroup(group);
+    tile.oncontextmenu = (e) => { e.preventDefault(); groupCtxMenu(group, gi, e); };
+    return tile;
+  }
+  function openGroup(group) {
+    startMenu.querySelectorAll(".grp-pop").forEach((m) => m.remove());
+    const pop = el(`<div class="grp-pop"><div class="grp-pop-head"><b>${group.name}</b><button class="grp-close" title="Close">&times;</button></div><div class="app-grid grp-pop-grid"></div></div>`);
+    const grid = pop.querySelector(".grp-pop-grid");
+    if (!group.apps.length) grid.innerHTML = `<div class="muted" style="grid-column:1/-1;padding:16px;text-align:center">Empty group. Right-click an app to add it here.</div>`;
+    group.apps.forEach((id) => grid.appendChild(appTile(appMeta(id))));
+    pop.querySelector(".grp-close").onclick = () => pop.remove();
+    startMenu.appendChild(pop);
+    setTimeout(() => document.addEventListener("mousedown", function h(e) { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener("mousedown", h); } }), 0);
+  }
+  function appGroupMenu(a, e) {
+    document.querySelectorAll(".start-ctx").forEach((m) => m.remove());
+    const menu = el(`<div class="start-ctx"><div class="jl-head">Add “${a.name}” to group</div></div>`);
+    appGroups().forEach((g) => { const b = el(`<button>${g.name}</button>`); b.onclick = () => { if (!g.apps.includes(a.id)) g.apps.push(a.id); State.save(); menu.remove(); renderStartApps(""); }; menu.appendChild(b); });
+    menu.appendChild(el(`<div class="jl-sep"></div>`));
+    const nb = el(`<button>＋ New group…</button>`); nb.onclick = () => { menu.remove(); const nm = prompt("Group name:"); if (nm) { appGroups().push({ name: nm, apps: [a.id] }); State.save(); renderStartApps(""); } }; menu.appendChild(nb);
+    placeCtx(menu, e);
+  }
+  function groupCtxMenu(group, gi, e) {
+    document.querySelectorAll(".start-ctx").forEach((m) => m.remove());
+    const menu = el(`<div class="start-ctx"><button data-a="rename">Rename group</button><button data-a="ungroup">Delete group</button></div>`);
+    menu.querySelector('[data-a="rename"]').onclick = () => { menu.remove(); const nm = prompt("Rename group:", group.name); if (nm) { group.name = nm; State.save(); renderStartApps(""); } };
+    menu.querySelector('[data-a="ungroup"]').onclick = () => { menu.remove(); appGroups().splice(gi, 1); State.save(); renderStartApps(""); };
+    placeCtx(menu, e);
+  }
+  function placeCtx(menu, e) {
+    screen().appendChild(menu);
+    menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8) + "px";
+    menu.style.top = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8) + "px";
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("mousedown", h); } }), 0);
   }
 
   function renderStartApps(filter) {
@@ -439,6 +489,12 @@
     pinnedGrid.innerHTML = "";
     const f = (filter || "").toLowerCase();
     const list = allInstalledApps();
+    if (!f) {
+      appGroups().forEach((g, gi) => pinnedGrid.appendChild(groupTile(g, gi)));
+      const addTile = el(`<div class="app-tile grp-tile grp-new"><div class="grp-folder grp-add">＋</div><div class="nm">New group</div></div>`);
+      addTile.onclick = () => { const nm = prompt("Group name:"); if (nm) { appGroups().push({ name: nm, apps: [] }); State.save(); renderStartApps(""); } };
+      pinnedGrid.appendChild(addTile);
+    }
     list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => pinnedGrid.appendChild(appTile(a)));
     const recents = (S().appData.recentApps || []).map((id) => list.find((a) => a.id === id)).filter(Boolean);
     if (f || !recents.length) { recentsSec.style.display = "none"; }

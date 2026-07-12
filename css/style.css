@@ -1611,3 +1611,20 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .pp-present-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px; background: rgba(0,0,0,.6); }
 .pp-present-bar button { background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 1.1rem; }
 .pp-present-bar #pc { color: #ccc; }
+
+/* Start menu App Groups */
+.grp-tile .grp-folder { width: 46px; height: 46px; border-radius: 12px; background: rgba(127,127,127,.16);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px; padding: 5px; margin: 0 auto 2px; }
+.grp-mini { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+.grp-mini > * { width: 100%; height: 100%; }
+.grp-folder.grp-add { display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: var(--text-dim); }
+.grp-tile:hover .grp-folder { background: rgba(127,127,127,.26); }
+.grp-pop { position: absolute; left: 50%; top: 60px; transform: translateX(-50%); width: min(420px, 88%);
+  background: var(--window-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; z-index: 10; }
+.grp-pop-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 1rem; }
+.grp-close { background: none; border: 0; color: var(--text); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+.grp-pop-grid { grid-template-columns: repeat(4, 1fr); max-height: 46vh; overflow: auto; }
+.start-ctx { position: fixed; z-index: 9000; background: var(--window-bg); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: var(--shadow); padding: 5px; display: flex; flex-direction: column; min-width: 170px; }
+.start-ctx button { background: none; border: 0; text-align: left; padding: 9px 12px; border-radius: 6px; cursor: pointer; color: var(--text); font-size: .85rem; }
+.start-ctx button:hover { background: rgba(127,127,127,.15); }
