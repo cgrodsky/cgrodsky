@@ -1192,8 +1192,8 @@
       <div class="nf-gate-top">${nfLogo("nf-wm")}</div>
       <div class="nf-signin-card">
         <h1>Sign In</h1>
-        <p class="nf-2fa-sub">Sign in to Netflix with your Auth0 account.</p>
-        <button class="nf-signin-btn" id="nfAuth">Sign in with Auth0</button>
+        <p class="nf-2fa-sub">Sign in to continue to Netflix.</p>
+        <button class="nf-signin-btn" id="nfAuth">Sign In</button>
         <button class="nf-signin-btn" id="nfSignup" style="background:#333;margin-top:8px">Sign up</button>
         <div class="nf-2fa-err" id="nfErr"></div>
         <p class="nf-signin-sub"><span class="link" id="nfGuest" style="cursor:pointer;text-decoration:underline">Continue without signing in</span></p>
