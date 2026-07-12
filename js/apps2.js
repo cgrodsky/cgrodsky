@@ -681,6 +681,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
             <span class="grow"></span>
             <button class="files-tb" id="newfolder">New folder</button>
             <button class="files-tb" id="newfile">New text file</button>
+            <button class="files-tb" id="newdoc">New Word document</button>
           </div>
           <div class="files-grid" id="grid"></div>
         </div></div>`;
@@ -696,7 +697,8 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       if (!entries.length) grid.appendChild(el(`<div class="muted" style="padding:20px">This folder is empty.</div>`));
       entries.forEach(([name, node]) => {
         const isFolder = node.type === "folder";
-        const glyph = isFolder ? `<img class="files-folder-img" src="assets/folder.png" alt="">` : (node.kind === "image" ? "&#128444;" : "&#128196;");
+        const fileGlyph = node.kind === "image" ? "&#128444;&#65039;" : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>` : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>` : "&#128196;";
+        const glyph = isFolder ? `<img class="files-folder-img" src="assets/folder.png" alt="">` : fileGlyph;
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
           <div class="files-name">${escapeHtml(name)}</div>
@@ -716,7 +718,12 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       };
       body.querySelector("#newfile").onclick = () => {
         const ch = currentChildren(); const name = uniqueName(ch, "New text file", ".txt");
-        ch[name] = { type: "file", kind: "text", content: "", ts: Date.now() }; State.save(); openFile(name, ch[name]);
+        ch[name] = { type: "file", kind: "text", content: "", ts: Date.now() }; State.save(); render(); openFile(name, ch[name]);
+      };
+      const nd = body.querySelector("#newdoc");
+      if (nd) nd.onclick = () => {
+        const ch = currentChildren(); const name = uniqueName(ch, "Document", ".docx");
+        ch[name] = { type: "file", kind: "word", content: "", ts: Date.now() }; State.save(); render(); openFile(name, ch[name]);
       };
       body.querySelectorAll(".files-quick").forEach((q) => q.onclick = () => { path = [q.dataset.q]; render(); });
     }
@@ -750,12 +757,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     }
 
     function openFile(name, node) {
-      if (node.kind === "image" && node.src) {
-        const ov = el(`<div class="bf-mask"><div class="bf-big"><div class="bf-big-img"><img src="${node.src}" alt=""></div><div class="bf-big-name">${escapeHtml(name)}</div><div class="row" style="justify-content:center"><button class="btn-text" id="cl">Close</button></div></div></div>`);
-        ov.querySelector("#cl").onclick = () => ov.remove(); ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
-        document.getElementById("screen").appendChild(ov); return;
+      // Documents open in Word/PowerPoint; images in a lightbox (via the VFS).
+      if (window.VFS && (node.kind === "word" || node.kind === "text" || node.kind === "pptx" || node.kind === "image")) {
+        window.VFS.openNode(name, node); return;
       }
-      // Text editor
+      // Fallback inline text editor
       const ov = el(`<div class="files-editor">
         <div class="files-ed-bar"><b>${escapeHtml(name)}</b><span class="grow"></span><button class="pill-btn" id="save">Save</button><button class="btn-text" id="close">Close</button></div>
         <textarea class="files-ta" spellcheck="false">${escapeHtml(node.content || "")}</textarea></div>`);

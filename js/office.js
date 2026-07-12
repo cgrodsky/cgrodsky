@@ -1,5 +1,5 @@
-/* Microsoft 365 apps. Word first — a real rich-text editor with a ribbon,
-   an editable page, and autosave. (Excel, PowerPoint, etc. to follow.) */
+/* Microsoft 365 apps. Word (rich text) with real file save/open via the VFS
+   (word .docx = html, or plain .txt). PowerPoint added alongside. */
 (function () {
   "use strict";
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
@@ -8,17 +8,26 @@
   const cw = (opts) => window.WM.createWindow(opts);
 
   const FONTS = ["Calibri", "Arial", "Times New Roman", "Georgia", "Verdana", "Courier New", "Comic Sans MS"];
-  const SIZES = [["1", "10"], ["2", "13"], ["3", "16"], ["4", "18"], ["5", "24"], ["6", "32"], ["7", "48"]]; // execCommand fontSize -> label
+  const SIZES = [["1", "10"], ["2", "13"], ["3", "16"], ["4", "18"], ["5", "24"], ["6", "32"], ["7", "48"]];
 
-  AppRegistry.word = function () {
-    const { body } = cw({ title: "Word", icon: Icon.mini("word", "Word"), width: 860, height: 620, appId: "word" });
+  function toast(msg) { if (window.Notify) Notify.show({ icon: "", title: msg, body: "" }); }
+
+  // ===================== WORD =====================
+  function openWord(fileRef) {
+    const ref = cw({ title: "Word", icon: Icon.mini("word", "Word"), width: 900, height: 640, appId: "word" });
+    const body = ref.body, win = ref.win;
     if (!S().appData) S().appData = {};
-    const data = S().appData.word || (S().appData.word = { name: "Document1", content: "" });
 
     body.innerHTML = `<div class="wd">
       <div class="wd-top">
         <span class="wd-ic">${Icon.mini("word", "Word")}</span>
-        <input class="wd-name" value="${escapeHtml(data.name)}">
+        <input class="wd-name" title="Document name">
+        <div class="wd-filemenu">
+          <button data-f="new">New</button>
+          <button data-f="open">Open</button>
+          <button data-f="save">Save</button>
+          <button data-f="saveas">Save As</button>
+        </div>
         <span class="grow"></span>
         <span class="wd-count muted"></span>
       </div>
@@ -55,44 +64,88 @@
     const page = body.querySelector(".wd-page");
     const nameInput = body.querySelector(".wd-name");
     const count = body.querySelector(".wd-count");
-    page.innerHTML = data.content || "";
-    try { document.execCommand("styleWithCSS", false, true); } catch (_) {}
+    const titleText = () => win.querySelector(".win-titlebar .t-text");
+
+    // current doc: { name, node } bound to a VFS file, or null (unsaved scratch)
+    let current = null, isText = false;
+
+    function loadDoc(fr) {
+      if (fr && fr.node) {
+        current = { name: fr.name, node: fr.node };
+        isText = fr.node.kind === "text";
+        if (isText) page.textContent = fr.node.content || "";
+        else page.innerHTML = fr.node.content || "";
+        nameInput.value = fr.name;
+      } else {
+        current = null; isText = false;
+        page.innerHTML = "";
+        nameInput.value = "Document1";
+      }
+      if (titleText()) titleText().textContent = (current ? current.name : "Document1") + " — Word";
+      updateCount();
+    }
 
     let savedRange = null;
     const saveSel = () => { const s = window.getSelection(); if (s.rangeCount && page.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange(); };
     const restoreSel = () => { page.focus(); if (savedRange) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); } };
-    const exec = (cmd, val) => { restoreSel(); try { document.execCommand("styleWithCSS", false, true); } catch (_) {} document.execCommand(cmd, false, val); save(); };
+    const exec = (cmd, val) => { restoreSel(); try { document.execCommand("styleWithCSS", false, true); } catch (_) {} document.execCommand(cmd, false, val); autosave(); };
 
-    function updateCount() {
-      const text = (page.innerText || "").trim();
-      const words = text ? text.split(/\s+/).length : 0;
-      count.textContent = words + (words === 1 ? " word" : " words");
+    function updateCount() { const t = (page.innerText || "").trim(); const w = t ? t.split(/\s+/).length : 0; count.textContent = w + (w === 1 ? " word" : " words"); }
+    function contentOut() { return isText ? page.innerText : page.innerHTML; }
+    function autosave() { if (current) { current.node.content = contentOut(); current.node.ts = Date.now(); State.save(); } updateCount(); }
+
+    function doSave() {
+      if (!current) return doSaveAs();
+      current.node.content = contentOut(); current.node.ts = Date.now(); State.save();
+      toast("Saved " + current.name);
     }
-    function save() { data.content = page.innerHTML; State.save(); updateCount(); }
+    function doSaveAs() {
+      window.VFS.pickSave({ title: "Save document", defaultName: (current ? current.name.replace(/\.[a-z0-9]+$/i, "") : nameInput.value) || "Document1", kind: "word" }, (res) => {
+        const node = { type: "file", kind: "word", content: page.innerHTML, ts: Date.now() };
+        res.children[res.name] = node;
+        State.save();
+        current = { name: res.name, node }; isText = false;
+        nameInput.value = res.name;
+        if (titleText()) titleText().textContent = res.name + " — Word";
+        toast("Saved " + res.name);
+        if (window.WM.refreshDesktopIcons) { /* files app refresh happens on next open */ }
+      });
+    }
+    function doOpen() {
+      window.VFS.pickFile({ title: "Open document", accept: ["word", "text"] }, (res) => loadDoc(res));
+    }
 
-    // toolbar buttons — mousedown+preventDefault keeps the selection
-    body.querySelectorAll(".wd-ribbon [data-cmd]").forEach((b) => {
-      b.addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand(b.dataset.cmd, false, null); save(); });
+    body.querySelectorAll(".wd-filemenu [data-f]").forEach((b) => b.onclick = () => {
+      const f = b.dataset.f;
+      if (f === "new") loadDoc(null);
+      else if (f === "open") doOpen();
+      else if (f === "save") doSave();
+      else if (f === "saveas") doSaveAs();
     });
-    body.querySelector(".wd-clear").addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand("removeFormat", false, null); save(); });
 
-    // selects + color pickers — save selection, then apply
+    body.querySelectorAll(".wd-ribbon [data-cmd]").forEach((b) => b.addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand(b.dataset.cmd, false, null); autosave(); }));
+    body.querySelector(".wd-clear").addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand("removeFormat", false, null); autosave(); });
+
     page.addEventListener("keyup", saveSel);
     page.addEventListener("mouseup", saveSel);
     const fontSel = body.querySelector(".wd-font"), sizeSel = body.querySelector(".wd-size");
-    fontSel.addEventListener("mousedown", saveSel);
-    sizeSel.addEventListener("mousedown", saveSel);
+    fontSel.addEventListener("mousedown", saveSel); sizeSel.addEventListener("mousedown", saveSel);
     fontSel.onchange = () => exec("fontName", fontSel.value);
     sizeSel.onchange = () => exec("fontSize", sizeSel.value);
     const fore = body.querySelector(".wd-fore"), back = body.querySelector(".wd-back");
-    fore.parentElement.addEventListener("mousedown", saveSel);
-    back.parentElement.addEventListener("mousedown", saveSel);
+    fore.parentElement.addEventListener("mousedown", saveSel); back.parentElement.addEventListener("mousedown", saveSel);
     fore.oninput = () => { fore.nextElementSibling.style.background = fore.value; exec("foreColor", fore.value); };
     back.oninput = () => { back.nextElementSibling.style.background = back.value; exec("hiliteColor", back.value); };
+    page.addEventListener("input", autosave);
+    nameInput.oninput = () => { if (current) return; };
+    // Ctrl+S to save
+    body.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); doSave(); } });
 
-    page.addEventListener("input", save);
-    nameInput.oninput = () => { data.name = nameInput.value || "Document1"; State.save(); };
-    updateCount();
+    loadDoc(fileRef || null);
     setTimeout(() => page.focus(), 60);
-  };
+  }
+
+  AppRegistry.word = function () { openWord(null); };
+
+  window.Office = { openWord: openWord };
 })();
