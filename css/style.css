@@ -454,6 +454,52 @@ input[type=range] { width: 100%; }
 .tb-wifi svg, .tb-wifi img { width: 20px; height: 20px; }
 .tb-sysic { display: inline-flex; align-items: center; }
 
+/* Widgets launcher on the taskbar */
+.tb-widgets { position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 6px; height: 46px; padding: 0 14px 0 10px; border-radius: 23px; border: 1px solid var(--border); background: var(--taskbar); backdrop-filter: blur(22px); box-shadow: 0 8px 30px rgba(0,0,0,.28); cursor: pointer; color: var(--text); }
+.tb-widgets:hover { transform: translateY(-2px); }
+.tb-wx-temp { font-size: .9rem; font-weight: 600; }
+
+/* Widgets board (slides in from the left) */
+.widgets-panel { position: fixed; left: 12px; bottom: 74px; top: 12px; width: 380px; z-index: 9999; overflow: auto; padding: 16px; border-radius: 18px;
+  background: var(--window-bg, rgba(245,247,251,.92)); color: var(--text, #1c1c1e);
+  box-shadow: 0 24px 70px rgba(0,0,0,.4); border: 1px solid var(--border, rgba(255,255,255,.25)); backdrop-filter: blur(34px);
+  animation: wgIn .2s ease; }
+.widgets-panel.closing { animation: wgOut .2s ease forwards; }
+@keyframes wgIn { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes wgOut { to { transform: translateX(-24px); opacity: 0; } }
+.wg-head { display: flex; align-items: center; margin-bottom: 12px; }
+.wg-head b { flex: 1; font-size: 1.05rem; }
+.wg-close { border: 0; background: none; font-size: 1.4rem; cursor: pointer; color: inherit; opacity: .7; }
+.wg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wg-card { background: rgba(127,140,180,.1); border-radius: 14px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.wg-weather { grid-column: 1 / -1; background: linear-gradient(135deg, #3a7bd5, #6aa9ff); color: #fff; }
+.wg-wx-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.wg-wx-temp { font-size: 2.6rem; font-weight: 300; line-height: 1; }
+.wg-wx-city { font-size: .9rem; opacity: .9; margin-top: 4px; }
+.wg-wx-label { font-size: .82rem; opacity: .95; margin-top: 6px; }
+.wg-wx-days { display: flex; justify-content: space-between; margin-top: 14px; gap: 6px; }
+.wg-day { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .72rem; flex: 1; }
+.wg-day b { font-size: .8rem; }
+.wg-clock { text-align: center; display: flex; flex-direction: column; justify-content: center; }
+.wg-clock-time { font-size: 1.8rem; font-weight: 600; }
+.wg-clock-date { font-size: .78rem; opacity: .7; margin-top: 4px; }
+.wg-card-h { font-weight: 600; font-size: .85rem; margin-bottom: 8px; opacity: .8; }
+.wg-todo { grid-column: 1 / -1; }
+.wg-todo-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+.wg-todo-row { display: flex; align-items: center; gap: 8px; font-size: .88rem; padding: 4px 0; cursor: pointer; }
+.wg-todo-row span { flex: 1; }
+.wg-todo-row.done span { text-decoration: line-through; opacity: .5; }
+.wg-todo-x { border: 0; background: none; color: #999; cursor: pointer; font-size: 1rem; }
+.wg-empty { font-size: .82rem; opacity: .5; padding: 4px 0; }
+.wg-todo-add { display: flex; gap: 6px; }
+.wg-todo-in { flex: 1; border: 1px solid var(--border, #ddd); border-radius: 8px; padding: 7px 10px; background: var(--bg-elev, #fff); color: inherit; font-size: .85rem; }
+.wg-todo-btn { border: 0; background: var(--accent, #4c8dff); color: #fff; border-radius: 8px; padding: 0 14px; cursor: pointer; font-size: .85rem; }
+.wg-stocks { grid-column: 1 / -1; }
+.wg-stock { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: .86rem; border-bottom: 1px solid rgba(127,140,180,.12); }
+.wg-stk-t { flex: 1; font-weight: 600; }
+.wg-stk-c.up { color: #2ea043; }
+.wg-stk-c.down { color: #e0483d; }
+
 /* Display effects overlays (night light + brightness) */
 #displayFx, #displayDim { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: background .3s, opacity .3s; }
 #displayDim { z-index: 9997; }

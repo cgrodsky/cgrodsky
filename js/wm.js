@@ -447,6 +447,76 @@
   }
   window.applyWallpaper = applyWallpaper;
 
+  // ---------------- Widgets ----------------
+  const WX_SVG = {
+    sun: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f5b301" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="#ffd75e" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M19.4 4.6l-1.8 1.8M6.4 17.6l-1.8 1.8"/></svg>`,
+    cloud: `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A4 4 0 0 1 17 18Z" fill="#cfd8e6"/></svg>`,
+    partly: `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="8" cy="8" r="3.5" fill="#ffd75e"/><path d="M9 19a3.5 3.5 0 0 1 0-7 4.4 4.4 0 0 1 8.4-1.1A3.5 3.5 0 0 1 17 19Z" fill="#cfd8e6"/></svg>`,
+    rain: `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 15a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A4 4 0 0 1 17 15Z" fill="#b7c2d4"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" stroke="#4c8dff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  };
+  const WX_STATES = [
+    { icon: "sun", label: "Sunny", temp: 74, hi: 78, lo: 61 },
+    { icon: "partly", label: "Partly cloudy", temp: 68, hi: 72, lo: 58 },
+    { icon: "cloud", label: "Cloudy", temp: 63, hi: 66, lo: 55 },
+    { icon: "rain", label: "Light rain", temp: 59, hi: 62, lo: 52 },
+  ];
+  function weatherToday() { const d = new Date(State.now ? State.now() : Date.now()); return WX_STATES[(d.getFullYear() + d.getMonth() * 31 + d.getDate()) % WX_STATES.length]; }
+  function widgetTodos() { if (!S().appData) S().appData = {}; if (!S().appData.widgetTodos) S().appData.widgetTodos = [{ text: "Explore Windows 12", done: false }]; return S().appData.widgetTodos; }
+
+  function toggleWidgets() {
+    const ex = document.getElementById("widgetsPanel"); if (ex) { ex.classList.add("closing"); setTimeout(() => ex.remove(), 200); return; }
+    const w = weatherToday();
+    const city = (S().region && S().region.city) || "Seattle";
+    const now = new Date(State.now ? State.now() : Date.now());
+    const panel = el(`<div id="widgetsPanel" class="widgets-panel">
+      <div class="wg-head"><b>Widgets</b><button class="wg-close" title="Close">&times;</button></div>
+      <div class="wg-grid">
+        <div class="wg-card wg-weather">
+          <div class="wg-wx-top"><div><div class="wg-wx-temp">${w.temp}&deg;</div><div class="wg-wx-city">${city}</div></div><div class="wg-wx-ic">${WX_SVG[w.icon]}</div></div>
+          <div class="wg-wx-label">${w.label} &middot; H:${w.hi}&deg; L:${w.lo}&deg;</div>
+          <div class="wg-wx-days"></div>
+        </div>
+        <div class="wg-card wg-clock"><div class="wg-clock-time">${State.formatClock()}</div><div class="wg-clock-date">${State.formatDate()}</div></div>
+        <div class="wg-card wg-todo">
+          <div class="wg-card-h">To do</div>
+          <div class="wg-todo-list"></div>
+          <div class="wg-todo-add"><input placeholder="Add a task" class="wg-todo-in"><button class="wg-todo-btn">Add</button></div>
+        </div>
+        <div class="wg-card wg-stocks">
+          <div class="wg-card-h">Watchlist</div>
+          <div class="wg-stock-list"></div>
+        </div>
+      </div>
+    </div>`);
+    // 4-day mini forecast
+    const days = panel.querySelector(".wg-wx-days");
+    const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 1; i <= 4; i++) { const st = WX_STATES[(now.getDate() + i) % WX_STATES.length]; days.appendChild(el(`<div class="wg-day"><span>${dow[(now.getDay() + i) % 7]}</span>${WX_SVG[st.icon]}<b>${st.hi}&deg;</b></div>`)); }
+    // To-do
+    const list = panel.querySelector(".wg-todo-list");
+    function renderTodos() {
+      list.innerHTML = "";
+      widgetTodos().forEach((t, i) => {
+        const row = el(`<label class="wg-todo-row ${t.done ? "done" : ""}"><input type="checkbox" ${t.done ? "checked" : ""}><span>${escAttr(t.text)}</span><button class="wg-todo-x" title="Remove">&times;</button></label>`);
+        row.querySelector("input").onchange = (e) => { t.done = e.target.checked; State.save(); renderTodos(); };
+        row.querySelector(".wg-todo-x").onclick = (e) => { e.preventDefault(); widgetTodos().splice(i, 1); State.save(); renderTodos(); };
+        list.appendChild(row);
+      });
+      if (!widgetTodos().length) list.innerHTML = `<div class="wg-empty">No tasks yet</div>`;
+    }
+    renderTodos();
+    const addTodo = () => { const inp = panel.querySelector(".wg-todo-in"); const v = inp.value.trim(); if (!v) return; widgetTodos().push({ text: v, done: false }); State.save(); inp.value = ""; renderTodos(); };
+    panel.querySelector(".wg-todo-btn").onclick = addTodo;
+    panel.querySelector(".wg-todo-in").onkeydown = (e) => { if (e.key === "Enter") addTodo(); };
+    // Stocks (stable sample values)
+    const stocks = [["MSFT", 441.2, +1.3], ["AAPL", 229.8, -0.4], ["NVDA", 128.6, +2.1], ["GOOGL", 182.4, +0.6]];
+    const sl = panel.querySelector(".wg-stock-list");
+    stocks.forEach(([t, p, ch]) => sl.appendChild(el(`<div class="wg-stock"><span class="wg-stk-t">${t}</span><span class="wg-stk-p">$${p.toFixed(2)}</span><span class="wg-stk-c ${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : ""}${ch}%</span></div>`)));
+    panel.querySelector(".wg-close").onclick = () => { panel.classList.add("closing"); setTimeout(() => panel.remove(), 200); };
+    screen().appendChild(panel);
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!panel.contains(ev.target) && !ev.target.closest(".tb-widgets")) { panel.classList.add("closing"); setTimeout(() => panel.remove(), 200); document.removeEventListener("mousedown", h); } }), 0);
+  }
+
   // ---------------- System tray SVGs ----------------
   const SYS_SVG = {
     volume: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/></svg>`,
@@ -552,7 +622,9 @@
 
   // ---------------- Taskbar ----------------
   function buildTaskbar() {
+    const w = weatherToday();
     taskbar = el(`<div class="taskbar tb-float">
+      <button class="tb-widgets" title="Widgets">${WX_SVG[w.icon] || WX_SVG.sun}<span class="tb-wx-temp">${w.temp}&deg;</span></button>
       <div class="tb-dock">
         <button class="tb-search"><span class="tb-search-ic">${Icon.mini("searchglass", "Search")}</span><span class="tb-search-lbl">Search Anything</span></button>
         <div class="tb-apps">
@@ -578,6 +650,7 @@
     taskbar.querySelector(".tb-search").onclick = toggleStart;
     taskbar.querySelector(".tb-qs").onclick = toggleQuickSettings;
     taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
+    taskbar.querySelector(".tb-widgets").onclick = toggleWidgets;
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
     // Right-click: jump list on an app button, layout menu on empty taskbar.
     taskbar.addEventListener("contextmenu", (e) => {
