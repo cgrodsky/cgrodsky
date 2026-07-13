@@ -1628,3 +1628,12 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
   box-shadow: var(--shadow); padding: 5px; display: flex; flex-direction: column; min-width: 170px; }
 .start-ctx button { background: none; border: 0; text-align: left; padding: 9px 12px; border-radius: 6px; cursor: pointer; color: var(--text); font-size: .85rem; }
 .start-ctx button:hover { background: rgba(127,127,127,.15); }
+
+/* Word splash (3s on open) */
+.wd-splash { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+.wd-splash-ic { width: 104px; height: 104px; object-fit: contain; animation: wdPop .5s cubic-bezier(.2,.8,.2,1); }
+.wd-splash-name { font: 300 2.3rem "Segoe UI", system-ui, sans-serif; color: #2b579a; }
+.wd-splash-bar { width: 190px; height: 4px; background: #e3e9f5; border-radius: 2px; overflow: hidden; }
+.wd-splash-bar span { display: block; width: 40%; height: 100%; background: #2b579a; border-radius: 2px; animation: wdLoad 1.1s ease-in-out infinite; }
+@keyframes wdLoad { 0% { margin-left: -42%; } 100% { margin-left: 100%; } }
+@keyframes wdPop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }

@@ -18,6 +18,11 @@
     const body = ref.body, win = ref.win;
     if (!S().appData) S().appData = {};
 
+    // 3-second Office-style splash, then the editor.
+    body.innerHTML = `<div class="wd-splash"><img class="wd-splash-ic" src="assets/word.png" alt=""><div class="wd-splash-name">Word</div><div class="wd-splash-bar"><span></span></div></div>`;
+    setTimeout(buildWord, 3000);
+
+    function buildWord() {
     body.innerHTML = `<div class="wd">
       <div class="wd-top">
         <span class="wd-ic">${Icon.mini("word", "Word")}</span>
@@ -143,6 +148,7 @@
 
     loadDoc(fileRef || null);
     setTimeout(() => page.focus(), 60);
+    } // end buildWord
   }
 
   AppRegistry.word = function () { openWord(null); };
