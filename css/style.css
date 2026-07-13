@@ -445,10 +445,62 @@ input[type=range] { width: 100%; }
 }
 .tb-copilot:hover { transform: translateY(-2px); }
 .tb-float .tb-clock { bottom: 22px; right: 16px; }
-.tb-tray { position: absolute; bottom: 20px; right: 16px; display: flex; align-items: center; gap: 12px; }
-.tb-tray .tb-clock { position: static; text-align: right; }
+.tb-tray { position: absolute; bottom: 14px; right: 16px; display: flex; align-items: center; gap: 6px; }
+.tb-qs { display: flex; align-items: center; gap: 7px; background: none; border: 0; cursor: pointer; color: var(--text); padding: 6px 8px; border-radius: 8px; }
+.tb-qs:hover { background: var(--bg-elev); }
+.tb-tray .tb-clock { position: static; text-align: right; background: none; border: 0; color: var(--text); cursor: pointer; padding: 6px 8px; border-radius: 8px; font: inherit; line-height: 1.15; }
+.tb-tray .tb-clock:hover { background: var(--bg-elev); }
 .tb-wifi { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; opacity: .9; }
 .tb-wifi svg, .tb-wifi img { width: 20px; height: 20px; }
+.tb-sysic { display: inline-flex; align-items: center; }
+
+/* Display effects overlays (night light + brightness) */
+#displayFx, #displayDim { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: background .3s, opacity .3s; }
+#displayDim { z-index: 9997; }
+
+/* Quick Settings panel */
+.qs-panel {
+  position: fixed; right: 14px; bottom: 72px; width: 340px; z-index: 9999; padding: 16px; border-radius: 16px;
+  background: var(--window-bg, rgba(255,255,255,.92)); color: var(--text, #1c1c1e);
+  box-shadow: 0 24px 70px rgba(0,0,0,.4); border: 1px solid var(--border, rgba(255,255,255,.25)); backdrop-filter: blur(34px);
+  animation: qsPop .16s ease;
+}
+@keyframes qsPop { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.qs-tiles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.qs-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border: 0; border-radius: 12px; background: rgba(127,140,180,.16); color: inherit; cursor: pointer; }
+.qs-tile:hover { background: rgba(127,140,180,.28); }
+.qs-tile.on { background: var(--accent, #4c8dff); color: #fff; }
+.qs-tile-ic { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+.qs-tile-ic svg, .qs-tile-ic img { width: 20px; height: 20px; }
+.qs-tile-lbl { font-size: .68rem; text-align: center; line-height: 1.1; }
+.qs-slider { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.qs-slider input[type=range] { flex: 1; accent-color: var(--accent, #4c8dff); }
+.qs-sl-ic { display: inline-flex; opacity: .8; }
+.qs-foot { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: .84rem; opacity: .85; }
+.qs-batt { display: inline-flex; align-items: center; gap: 5px; }
+.qs-settings { background: rgba(127,140,180,.16); border: 0; border-radius: 8px; padding: 6px; cursor: pointer; color: inherit; display: inline-flex; }
+.qs-settings:hover { background: rgba(127,140,180,.28); }
+
+/* Notification Center */
+.notif-panel {
+  position: fixed; right: 14px; bottom: 72px; width: 360px; max-height: 74vh; overflow: auto; z-index: 9999; padding: 16px; border-radius: 16px;
+  background: var(--window-bg, rgba(255,255,255,.92)); color: var(--text, #1c1c1e);
+  box-shadow: 0 24px 70px rgba(0,0,0,.4); border: 1px solid var(--border, rgba(255,255,255,.25)); backdrop-filter: blur(34px);
+  animation: qsPop .16s ease;
+}
+.notif-head { display: flex; align-items: center; margin-bottom: 12px; }
+.notif-head b { flex: 1; font-size: 1rem; }
+.notif-clear { border: 0; background: none; color: var(--accent, #4c8dff); cursor: pointer; font-size: .82rem; }
+.notif-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.notif-empty { text-align: center; padding: 22px; opacity: .6; font-size: .9rem; }
+.notif-item { background: rgba(127,140,180,.14); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.notif-item b { font-size: .88rem; }
+.notif-item span { font-size: .8rem; opacity: .8; }
+.cal-head { font-weight: 600; margin-bottom: 8px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.cal-dow { font-size: .68rem; opacity: .5; padding: 4px 0; }
+.cal-day { font-size: .8rem; padding: 6px 0; border-radius: 8px; }
+.cal-day.today { background: var(--accent, #4c8dff); color: #fff; font-weight: 700; }
 @media (max-width: 620px) { .tb-search-lbl { display: none; } .tb-search { padding: 0 12px; } }
 .taskbar .tb-btn {
   width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center;

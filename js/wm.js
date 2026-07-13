@@ -447,6 +447,109 @@
   }
   window.applyWallpaper = applyWallpaper;
 
+  // ---------------- System tray SVGs ----------------
+  const SYS_SVG = {
+    volume: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/></svg>`,
+    battery: `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="16" height="9" rx="2"/><rect x="5" y="10" width="10" height="5" rx="1" fill="currentColor" stroke="none"/><path d="M21 11v3" stroke-linecap="round"/></svg>`,
+    bt: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 7l8 10-4 3V4l4 3-8 10"/></svg>`,
+    plane: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 15v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V8l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5.5L21 15Z"/></svg>`,
+    moon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20 14A8 8 0 0 1 10 4a7 7 0 1 0 10 10Z"/></svg>`,
+    sun: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>`,
+    focus: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>`,
+    cast: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 6h18v12h-6"/><path d="M3 12a6 6 0 0 1 6 6M3 16a2 2 0 0 1 2 2M3 20h.01"/></svg>`,
+    access: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M4 8h16M12 8v6M12 14l-3 6M12 14l3 6"/></svg>`,
+  };
+
+  function qs() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55 }; return S().appData.quickSettings; }
+  function notifLog() { if (!S().appData) S().appData = {}; if (!S().appData.notifLog) S().appData.notifLog = []; return S().appData.notifLog; }
+
+  // Warm overlay for Night light + dimming for Brightness.
+  function applyDisplayFx() {
+    const st = qs();
+    let fx = document.getElementById("displayFx");
+    if (!fx) { fx = el(`<div id="displayFx"></div>`); screen().appendChild(fx); }
+    const dim = Math.max(0, (100 - st.brightness) / 100 * 0.55);
+    fx.style.background = st.night ? "rgba(255,170,80,0.18)" : "transparent";
+    fx.style.boxShadow = "none";
+    fx.style.opacity = "1";
+    let dimEl = document.getElementById("displayDim");
+    if (!dimEl) { dimEl = el(`<div id="displayDim"></div>`); screen().appendChild(dimEl); }
+    dimEl.style.background = "#000";
+    dimEl.style.opacity = String(dim);
+  }
+  window.applyDisplayFx = applyDisplayFx;
+
+  function toggleQuickSettings() {
+    const ex = document.getElementById("qsPanel"); if (ex) { ex.remove(); return; }
+    document.getElementById("notifPanel") && document.getElementById("notifPanel").remove();
+    const st = qs();
+    const tiles = [
+      { k: "wifi", label: "Wi-Fi", icon: Icon.mini("wifi", "Wi-Fi") },
+      { k: "bt", label: "Bluetooth", icon: SYS_SVG.bt },
+      { k: "plane", label: "Airplane mode", icon: SYS_SVG.plane },
+      { k: "focus", label: "Focus", icon: SYS_SVG.focus },
+      { k: "night", label: "Night light", icon: SYS_SVG.moon },
+      { k: "cast", label: "Cast", icon: SYS_SVG.cast, momentary: true },
+    ];
+    const panel = el(`<div id="qsPanel" class="qs-panel">
+      <div class="qs-tiles"></div>
+      <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.sun}</span><input type="range" min="10" max="100" value="${st.brightness}" class="qs-brightness"></div>
+      <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.volume}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
+      <div class="qs-foot"><span class="qs-batt">${SYS_SVG.battery} 100%</span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
+    </div>`);
+    const tilesWrap = panel.querySelector(".qs-tiles");
+    tiles.forEach((t) => {
+      const on = !t.momentary && st[t.k];
+      const b = el(`<button class="qs-tile ${on ? "on" : ""}"><span class="qs-tile-ic">${t.icon}</span><span class="qs-tile-lbl">${t.label}</span></button>`);
+      b.onclick = () => {
+        if (t.momentary) { Notify.show({ icon: "", title: t.label, body: t.label + " is not available" }); return; }
+        st[t.k] = !st[t.k];
+        if (t.k === "plane" && st.plane) { st.wifi = false; st.bt = false; }
+        State.save(); b.classList.toggle("on", st[t.k]);
+        tilesWrap.querySelector(".qs-tile:nth-child(1)").classList.toggle("on", st.wifi);
+        tilesWrap.querySelector(".qs-tile:nth-child(2)").classList.toggle("on", st.bt);
+        const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = st.wifi ? "0.9" : "0.3";
+        if (t.k === "night") applyDisplayFx();
+      };
+      tilesWrap.appendChild(b);
+    });
+    panel.querySelector(".qs-brightness").oninput = (e) => { st.brightness = +e.target.value; State.save(); applyDisplayFx(); };
+    panel.querySelector(".qs-volume").oninput = (e) => { st.volume = +e.target.value; State.save(); };
+    panel.querySelector(".qs-settings").onclick = () => { panel.remove(); open("settings"); };
+    screen().appendChild(panel);
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!panel.contains(ev.target) && !ev.target.closest(".tb-qs")) { panel.remove(); document.removeEventListener("mousedown", h); } }), 0);
+  }
+
+  function toggleNotifCenter() {
+    const ex = document.getElementById("notifPanel"); if (ex) { ex.remove(); return; }
+    document.getElementById("qsPanel") && document.getElementById("qsPanel").remove();
+    const log = notifLog();
+    const panel = el(`<div id="notifPanel" class="notif-panel">
+      <div class="notif-head"><b>Notifications</b>${log.length ? `<button class="notif-clear">Clear all</button>` : ""}</div>
+      <div class="notif-list"></div>
+      <div class="notif-cal"></div>
+    </div>`);
+    const list = panel.querySelector(".notif-list");
+    if (!log.length) list.innerHTML = `<div class="notif-empty">No new notifications</div>`;
+    else log.slice().reverse().forEach((n) => list.appendChild(el(`<div class="notif-item"><b>${n.title || "Notification"}</b><span>${n.body || ""}</span></div>`)));
+    if (log.length) panel.querySelector(".notif-clear").onclick = () => { S().appData.notifLog = []; State.save(); panel.remove(); toggleNotifCenter(); };
+    panel.querySelector(".notif-cal").appendChild(buildCalendar());
+    screen().appendChild(panel);
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!panel.contains(ev.target) && !ev.target.closest(".tb-clock")) { panel.remove(); document.removeEventListener("mousedown", h); } }), 0);
+  }
+  function buildCalendar() {
+    const now = new Date(State.now ? State.now() : Date.now());
+    const y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+    const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const cal = el(`<div class="cal"><div class="cal-head">${months[m]} ${y}</div><div class="cal-grid"></div></div>`);
+    const grid = cal.querySelector(".cal-grid");
+    ["S", "M", "T", "W", "T", "F", "S"].forEach((d) => grid.appendChild(el(`<span class="cal-dow">${d}</span>`)));
+    for (let i = 0; i < first; i++) grid.appendChild(el(`<span></span>`));
+    for (let d = 1; d <= days; d++) grid.appendChild(el(`<span class="cal-day ${d === today ? "today" : ""}">${d}</span>`));
+    return cal;
+  }
+
   // ---------------- Taskbar ----------------
   function buildTaskbar() {
     taskbar = el(`<div class="taskbar tb-float">
@@ -462,13 +565,19 @@
       </div>
       <button class="tb-copilot" data-open="copilot" title="Copilot">${Icon.mini("copilot", "Copilot")}</button>
       <div class="tb-tray">
-        <span class="tb-wifi" title="Wi-Fi — Connected">${Icon.mini("wifi", "Wi-Fi")}</span>
-        <div class="tb-clock" id="tbClock"></div>
+        <button class="tb-qs" title="Quick settings">
+          <span class="tb-wifi">${Icon.mini("wifi", "Wi-Fi")}</span>
+          <span class="tb-sysic">${SYS_SVG.volume}</span>
+          <span class="tb-sysic">${SYS_SVG.battery}</span>
+        </button>
+        <button class="tb-clock" id="tbClock"></button>
       </div>
     </div>`);
     screen().appendChild(taskbar);
     taskbar.querySelector(".start").onclick = toggleStart;
     taskbar.querySelector(".tb-search").onclick = toggleStart;
+    taskbar.querySelector(".tb-qs").onclick = toggleQuickSettings;
+    taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
     // Right-click: jump list on an app button, layout menu on empty taskbar.
     taskbar.addEventListener("contextmenu", (e) => {
@@ -479,6 +588,8 @@
     });
     applyTaskbarLayout();
     buildStartMenu();
+    const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = qs().wifi ? "0.9" : "0.3";
+    applyDisplayFx();
   }
 
   // Per-app quick actions for taskbar jump lists.
@@ -788,6 +899,9 @@
 
   // ---------------- Notifications ----------------
   function notify({ icon, title, body, onClick }) {
+    // Keep a short history for the Notification Center.
+    try { const lg = notifLog(); lg.push({ title: title || "", body: body || "" }); if (lg.length > 30) lg.shift(); State.save(); } catch (_) {}
+    if (S().appData && S().appData.quickSettings && S().appData.quickSettings.focus) return; // Focus mutes toasts
     const n = el(`<div class="notif"><div class="nic">${icon || Icon.mini("notify", title || "N")}</div><div><div class="ntitle">${title || ""}</div><div class="nbody">${body || ""}</div></div></div>`);
     n.onclick = () => {
       if (onClick) {
