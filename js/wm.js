@@ -114,7 +114,6 @@
     { id: "settings", name: "Settings" },
     { id: "calculator", name: "Calculator" },
     { id: "minecraft", name: "Mincraft" },
-    { id: "blockfinder", name: "Assets" },
     { id: "messenger", name: "Messenger" },
     { id: "word", name: "Word" },
     { id: "powerpoint", name: "PowerPoint" },
@@ -190,7 +189,81 @@
   // Current multi-selection on the desktop, keyed by icon "key"
   // (app id, "dup:"+uid, or "grp:"+gid).
   let deskSel = new Set();
-  function clearDeskSel() { deskSel.clear(); if (desktop) desktop.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); }
+  function clearDeskSel() { deskSel.clear(); if (desktop) { desktop.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); desktop.querySelectorAll(".desk-appgroup.sel").forEach((x) => x.classList.remove("sel")); } }
+
+  function groupBoxMenu(g, anchor) {
+    document.querySelectorAll(".desk-ctx").forEach((m) => m.remove());
+    const menu = el(`<div class="desk-ctx"></div>`);
+    const add = (label, fn, cls) => { const b = el(`<button class="${cls || ""}">${label}</button>`); b.onclick = () => { menu.remove(); fn(); }; menu.appendChild(b); };
+    add("Rename group", () => { const nm = promptName("Rename group", g.name); if (nm) { g.name = nm; State.save(); renderDesktopIcons(); } });
+    add("Ungroup", () => { const gs = deskGroups(); const i = gs.findIndex((x) => x.id === g.id); if (i >= 0) gs.splice(i, 1); State.save(); clearDeskSel(); renderDesktopIcons(); });
+    add("Delete group", () => { const gs = deskGroups(); const i = gs.findIndex((x) => x.id === g.id); if (i >= 0) gs.splice(i, 1); State.save(); clearDeskSel(); renderDesktopIcons(); }, "danger");
+    screen().appendChild(menu);
+    const r = anchor.getBoundingClientRect();
+    menu.style.left = Math.min(r.left, window.innerWidth - menu.offsetWidth - 10) + "px";
+    menu.style.top = Math.min(r.bottom + 4, window.innerHeight - menu.offsetHeight - 10) + "px";
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("mousedown", h); } }), 0);
+  }
+
+  // Right-click on empty desktop — Windows 12 style context menu.
+  function desktopContextMenu(e) {
+    document.querySelectorAll(".desk-ctx, .desk-submenu").forEach((m) => m.remove());
+    const menu = el(`<div class="desk-ctx desk-rightclick"></div>`);
+    const iconRow = (icon, label, arrow) => `<span class="dctx-ic">${icon}</span><span class="dctx-lbl">${label}</span>${arrow ? '<span class="dctx-arrow">&rsaquo;</span>' : ""}`;
+    const ICN = {
+      view: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
+      sort: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 4v16l-3-3M17 20V4l3 3"/></svg>`,
+      add: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+      group: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg>`,
+      refresh: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4v6h6"/><path d="M20 12a8 8 0 1 0-2.3 5.6"/></svg>`,
+      brush: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l5 5-9 9H6v-5z"/><path d="M13 6l5 5"/></svg>`,
+      display: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6"/></svg>`,
+    };
+    const mkItem = (html, fn, arrow) => { const b = el(`<button>${html}</button>`); if (fn) b.onclick = () => { menu.remove(); fn(); }; if (arrow) b.classList.add("has-sub"); return b; };
+    // View — icon size
+    const viewBtn = mkItem(iconRow(ICN.view, "View", true), null, true);
+    viewBtn.onmouseenter = () => openSub(viewBtn, [
+      ["Large icons", () => setIconSize("lg")], ["Medium icons", () => setIconSize("md")], ["Small icons", () => setIconSize("sm")],
+    ]);
+    menu.appendChild(viewBtn);
+    // Sort by
+    const sortBtn = mkItem(iconRow(ICN.sort, "Sort by", true), null, true);
+    sortBtn.onmouseenter = () => openSub(sortBtn, [
+      ["Name", () => sortIcons("name")], ["Type", () => sortIcons("type")],
+    ]);
+    menu.appendChild(sortBtn);
+    // New
+    const newBtn = mkItem(iconRow(ICN.add, "New", true), null, true);
+    newBtn.onmouseenter = () => openSub(newBtn, [
+      ["App group", () => { const apps = [...deskSel].map((k) => keyToApp(k)).filter(Boolean).map((a) => a.id); const nm = promptName("New App Group", "New Group"); if (nm) { deskGroups().push({ id: newGid(), name: nm, apps: apps }); State.save(); clearDeskSel(); renderDesktopIcons(); } }],
+    ]);
+    menu.appendChild(newBtn);
+    menu.appendChild(mkItem(iconRow(ICN.group, "Add to app group"), () => { if (deskSel.size) makeGroupFromSelection(); else Notify.show({ icon: "", title: "App groups", body: "Select icons first, then add them to a group." }); }));
+    menu.appendChild(mkItem(iconRow(ICN.refresh, "Refresh"), () => renderDesktopIcons()));
+    menu.appendChild(el(`<div class="dctx-sep"></div>`));
+    menu.appendChild(mkItem(iconRow(ICN.brush, "Personalize"), () => open("settings")));
+    menu.appendChild(mkItem(iconRow(ICN.display, "Display settings"), () => open("settings")));
+    function openSub(anchor, items) {
+      document.querySelectorAll(".desk-submenu").forEach((m) => m.remove());
+      const sub = el(`<div class="desk-ctx desk-submenu"></div>`);
+      items.forEach(([label, fn]) => { const b = el(`<button>${label}</button>`); b.onclick = () => { menu.remove(); sub.remove(); fn(); }; sub.appendChild(b); });
+      screen().appendChild(sub);
+      const r = anchor.getBoundingClientRect();
+      let left = r.right + 2; if (left + 180 > window.innerWidth) left = r.left - 182;
+      sub.style.left = left + "px"; sub.style.top = Math.min(r.top, window.innerHeight - sub.offsetHeight - 10) + "px";
+    }
+    menu.querySelectorAll("button:not(.has-sub)").forEach((b) => b.addEventListener("mouseenter", () => document.querySelectorAll(".desk-submenu").forEach((m) => m.remove())));
+    screen().appendChild(menu);
+    menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 10) + "px";
+    menu.style.top = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 10) + "px";
+    setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!menu.contains(ev.target) && !ev.target.closest(".desk-submenu")) { menu.remove(); document.querySelectorAll(".desk-submenu").forEach((m) => m.remove()); document.removeEventListener("mousedown", h); } }), 0);
+  }
+  function setIconSize(sz) { if (!S().desktop) S().desktop = {}; S().desktop.iconSize = sz; State.save(); desktop.classList.remove("icons-sm", "icons-md", "icons-lg"); desktop.classList.add("icons-" + sz); }
+  function sortIcons(by) {
+    // Sort loose shortcuts by name or type (persisted order).
+    if (!S().desktop) S().desktop = {};
+    S().desktop.sortBy = by; State.save(); renderDesktopIcons();
+  }
 
   function renderDesktopIcons() {
     const iconWrap = desktop.querySelector(".desktop-icons");
@@ -204,20 +277,35 @@
       const app = Catalog.storeApps.find((a) => a.id === id);
       if (app) items.push({ id: app.id, name: app.name });
     });
+    const sortBy = S().desktop && S().desktop.sortBy;
+    if (sortBy === "name") items.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === "type") items.sort((a, b) => { const ca = (Catalog.storeApps.find((x) => x.id === a.id) || {}).cat || ""; const cb = (Catalog.storeApps.find((x) => x.id === b.id) || {}).cat || ""; return ca.localeCompare(cb) || a.name.localeCompare(b.name); });
 
     // Recycle Bin is always first and is the drop target.
     const bin = el(`<div class="dicon dbin" data-bin="1"><div class="glyph">${Icon.big("recyclebin", "Recycle Bin")}</div><div class="label">Recycle Bin</div></div>`);
     bin.onclick = (e) => { e.stopPropagation(); if (bin.classList.contains("selected")) { open("recyclebin"); return; } clearDeskSel(); bin.classList.add("selected"); };
     iconWrap.appendChild(bin);
 
-    // App Group folders.
+    // App Groups render as translucent containers holding their app tiles.
     deskGroups().forEach((g) => {
       const key = "grp:" + g.id;
-      const mini = g.apps.slice(0, 4).map((id) => `<span class="grp-mini">${Icon.mini(id === "duolingo" ? duoIconKey(true) : id, id)}</span>`).join("");
-      const gEl = el(`<div class="dicon dgroup" data-key="${key}"><div class="glyph"><div class="grp-folder-lg">${mini || ""}</div></div><div class="label">${escAttr(g.name)}</div></div>`);
-      makeDesktopIcon(gEl, { key, kind: "group", group: g, name: g.name }, iconWrap, bin);
-      iconWrap.appendChild(gEl);
-      if (deskSel.has(key)) gEl.classList.add("selected");
+      const box = el(`<div class="desk-appgroup ${deskSel.has(key) ? "sel" : ""}" data-key="${key}">
+        <div class="dag-head"><span class="dag-name">${escAttr(g.name)}</span></div>
+        <div class="dag-tiles"></div>
+      </div>`);
+      const tw = box.querySelector(".dag-tiles");
+      g.apps.forEach((id) => {
+        const a = Catalog.storeApps.find((x) => x.id === id);
+        const nm = a ? a.name : id;
+        const ik = id === "duolingo" ? duoIconKey(true) : id;
+        const t = el(`<div class="dag-tile"><div class="dag-ic">${Icon.big(ik, nm)}</div><div class="dag-lbl">${escAttr(nm)}</div></div>`);
+        t.onclick = (e) => { e.stopPropagation(); open(id); };
+        tw.appendChild(t);
+      });
+      const head = box.querySelector(".dag-head");
+      head.onclick = (e) => { e.stopPropagation(); if (deskSel.has(key)) { groupBoxMenu(g, head); } else { clearDeskSel(); deskSel.add(key); box.classList.add("sel"); } };
+      head.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); groupBoxMenu(g, head); };
+      iconWrap.appendChild(box);
     });
 
     // App shortcuts (skip hidden and grouped).
@@ -428,6 +516,8 @@
     screen().appendChild(desktop);
     // Click empty desktop to clear icon selection.
     desktop.addEventListener("click", (e) => { if (e.target === desktop || e.target.classList.contains("desktop-icons")) clearDeskSel(); });
+    desktop.addEventListener("contextmenu", (e) => { if (e.target === desktop || e.target.classList.contains("desktop-icons")) { e.preventDefault(); desktopContextMenu(e); } });
+    if (S().desktop && S().desktop.iconSize) desktop.classList.add("icons-" + S().desktop.iconSize);
     enableMarquee();
     applyWallpaper();
     renderDesktopIcons();
@@ -895,7 +985,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

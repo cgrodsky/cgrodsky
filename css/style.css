@@ -376,6 +376,35 @@ input[type=range] { width: 100%; }
 .dicon.dgroup .grp-folder-lg .grp-mini > * { width: 100%; height: 100%; }
 .dicon.dgroup:hover .grp-folder-lg { background: rgba(255,255,255,.32); }
 
+/* App Group container on the desktop (translucent rounded box of tiles) */
+.desk-appgroup { pointer-events: auto; margin: 2px 4px 10px; padding: 8px; border-radius: 18px;
+  background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(16px);
+  box-shadow: 0 8px 26px rgba(0,0,0,.18); max-width: 300px; }
+.desk-appgroup.sel { border-color: rgba(150,200,255,.85); background: rgba(120,170,255,.24); }
+.dag-head { display: flex; align-items: center; padding: 2px 6px 6px; cursor: pointer; }
+.dag-name { color: #fff; font-size: .82rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.dag-tiles { display: flex; flex-wrap: wrap; gap: 2px; }
+.dag-tile { width: 78px; text-align: center; padding: 8px 4px; border-radius: 10px; cursor: pointer; }
+.dag-tile:hover { background: rgba(255,255,255,.2); }
+.dag-ic { font-size: 1.8rem; }
+.dag-ic svg, .dag-ic img { width: 40px; height: 40px; }
+.dag-lbl { color: #fff; font-size: .72rem; margin-top: 3px; text-shadow: 0 1px 2px rgba(0,0,0,.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Desktop icon sizes (View submenu) */
+.desktop.icons-sm .dicon .glyph svg, .desktop.icons-sm .dicon .glyph img { width: 32px; height: 32px; }
+.desktop.icons-sm .dicon { width: 68px; }
+.desktop.icons-lg .dicon .glyph svg, .desktop.icons-lg .dicon .glyph img { width: 60px; height: 60px; }
+.desktop.icons-lg .dicon { width: 100px; }
+
+/* Desktop right-click context menu extras */
+.desk-rightclick { min-width: 220px; }
+.desk-ctx .dctx-ic { display: inline-flex; align-items: center; width: 20px; opacity: .85; }
+.desk-ctx .dctx-lbl { flex: 1; }
+.desk-ctx .dctx-arrow { opacity: .5; font-size: 1.1rem; }
+.desk-ctx button.has-sub { }
+.desk-ctx .dctx-sep { height: 1px; background: rgba(127,140,180,.2); margin: 6px 4px; }
+.desk-submenu { position: fixed; z-index: 9601; min-width: 160px; }
+
 /* Rubber-band marquee selection */
 .desk-marquee { position: fixed; z-index: 40; border: 1px solid rgba(150,200,255,.9); background: rgba(90,150,255,.22); border-radius: 3px; pointer-events: none; }
 
@@ -1727,6 +1756,31 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .fdlg-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); }
 .fdlg-fn { font-size: .85rem; display: flex; align-items: center; gap: 8px; }
 .fdlg-name { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; background: var(--bg-elev); color: var(--text); min-width: 200px; }
+
+/* Clock — Timer + Stopwatch */
+.clk-host { padding: 0; }
+.clk { display: flex; flex-direction: column; height: 100%; background: #1c2029; color: #fff; }
+.clk-tabs { display: flex; gap: 6px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.clk-tab { background: none; border: 0; color: #9aa3b2; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: .9rem; }
+.clk-tab:hover { background: rgba(255,255,255,.06); color: #fff; }
+.clk-tab.on { background: rgba(255,255,255,.1); color: #fff; font-weight: 600; }
+.clk-stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; }
+.clk-timer { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 20px; }
+.clk-dial { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
+.clk-ring { position: absolute; inset: 0; }
+.clk-ring-p { transition: stroke-dashoffset .2s linear; }
+.clk-time { font-size: 2.6rem; font-weight: 300; letter-spacing: 1px; font-variant-numeric: tabular-nums; cursor: default; }
+.clk-timer:not(.running) .clk-time { cursor: pointer; }
+.clk-presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.clk-presets button { background: rgba(255,255,255,.08); border: 0; color: #dfe4ee; padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: .82rem; }
+.clk-presets button:hover { background: rgba(255,255,255,.16); }
+.clk-controls { display: flex; align-items: center; gap: 18px; }
+.clk-play { width: 62px; height: 62px; border-radius: 50%; border: 0; background: var(--accent, #e0483d); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+.clk-play:hover { filter: brightness(1.1); }
+.clk-reset, .clk-lap { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #cfd6e2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.clk-reset:hover, .clk-lap:hover { background: rgba(255,255,255,.14); }
+.clk-laps { width: 260px; max-height: 120px; overflow: auto; }
+.clk-lap-row { display: flex; justify-content: space-between; padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: .85rem; font-variant-numeric: tabular-nums; }
 
 /* Microsoft Forms */
 .fm { display: flex; flex-direction: column; height: 100%; background: #f0f3f5; font-family: "Segoe UI", system-ui, sans-serif; }

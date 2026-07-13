@@ -262,6 +262,13 @@
     <line x1="28" y1="27" x2="39" y2="38" stroke="#1e9fe0" stroke-width="7" stroke-linecap="round"/>
   </svg>`);
 
+  register("clock", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect width="128" height="128" rx="26" fill="#1f2430"/>
+    <circle cx="64" cy="64" r="42" fill="none" stroke="#3a4152" stroke-width="7"/>
+    <circle cx="64" cy="64" r="42" fill="none" stroke="#4c8dff" stroke-width="7" stroke-linecap="round" stroke-dasharray="180 300" transform="rotate(-90 64 64)"/>
+    <path d="M64 40 V64 L80 74" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`);
+
   register("forms", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect x="22" y="14" width="66" height="100" rx="9" fill="#f6f4f8"/>
     <rect x="22" y="14" width="66" height="100" rx="9" fill="none" stroke="#e0dbe6" stroke-width="2"/>
