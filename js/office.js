@@ -224,9 +224,9 @@
     const ref = cw({ title: "Excel", icon: Icon.mini("excel", "Excel"), width: 980, height: 640, appId: "excel" });
     const body = ref.body, win = ref.win;
     if (!S().appData) S().appData = {};
-    let cells = {}, current = null;
-    if (fileRef && fileRef.node) { try { cells = (JSON.parse(fileRef.node.content || "{}").cells) || {}; } catch (_) {} current = { name: fileRef.name, node: fileRef.node }; }
-    else if (S().appData.excel && S().appData.excel.cells) cells = S().appData.excel.cells;
+    let cells = {}, styles = {}, current = null;
+    if (fileRef && fileRef.node) { try { const j = JSON.parse(fileRef.node.content || "{}"); cells = j.cells || {}; styles = j.styles || {}; } catch (_) {} current = { name: fileRef.name, node: fileRef.node }; }
+    else if (S().appData.excel) { cells = S().appData.excel.cells || {}; styles = S().appData.excel.styles || {}; }
 
     body.innerHTML = `<div class="wd-splash xl-splash">
       <img class="wd-splash-ic" src="assets/excel.png" onerror="this.style.display='none'" alt="">
@@ -237,7 +237,7 @@
     setTimeout(build, 3000);
 
     const titleText = () => win.querySelector(".win-titlebar .t-text");
-    function persist() { if (current) { current.node.content = JSON.stringify({ cells }); current.node.ts = Date.now(); } else S().appData.excel = { cells }; State.save(); }
+    function persist() { const data = { cells, styles }; if (current) { current.node.content = JSON.stringify(data); current.node.ts = Date.now(); } else S().appData.excel = data; State.save(); }
 
     // ---- formula engine ----
     function rawOf(r) { return cells[r] != null ? String(cells[r]) : ""; }
@@ -258,13 +258,37 @@
         if (fn === "MIN") return vals.length ? Math.min.apply(null, vals) : 0;
         if (fn === "MAX") return vals.length ? Math.max.apply(null, vals) : 0;
         if (fn === "COUNT") return vals.length;
+        if (fn === "ROUND") return vals.length ? Math.round((vals[0]) * Math.pow(10, vals[1] || 0)) / Math.pow(10, vals[1] || 0) : 0;
         if (fn === "PRODUCT") return vals.reduce((a, b) => a * b, 1);
         return 0;
       });
       expr = expr.replace(/[A-Z]+\d+/gi, (r) => { const v = valOf(r, seen); return typeof v === "number" ? v : JSON.stringify(v); });
       try { const r = Function('"use strict";return (' + expr + ")")(); return (r == null) ? "" : r; } catch (e) { return "#ERR"; }
     }
-    function display(r) { const raw = rawOf(r); if (raw === "") return ""; if (raw[0] === "=") return String(evalF(raw.slice(1), new Set([r]))); return raw; }
+    // Numeric value of a cell (for stats / formats).
+    function numOf(r) { const raw = rawOf(r); if (raw === "") return null; const v = raw[0] === "=" ? evalF(raw.slice(1), new Set([r])) : parseFloat(raw); return typeof v === "number" && !isNaN(v) ? v : null; }
+    function fmtNum(v, fmt) {
+      if (fmt === "cur") return "$" + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (fmt === "pct") return (v * 100).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "%";
+      if (fmt === "comma") return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return String(v);
+    }
+    function display(r) {
+      const raw = rawOf(r); if (raw === "") return "";
+      const st = styles[r] || {};
+      if (raw[0] === "=") { const v = evalF(raw.slice(1), new Set([r])); return (typeof v === "number" && st.fmt) ? fmtNum(v, st.fmt) : String(v); }
+      if (st.fmt) { const n = parseFloat(raw); if (!isNaN(n) && String(n) === raw.trim()) return fmtNum(n, st.fmt); }
+      return raw;
+    }
+    function isNumericCell(r) { const raw = rawOf(r); if (raw === "") return false; return raw[0] === "=" || !isNaN(parseFloat(raw)); }
+
+    const FILLS = ["", "#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fecaca", "#e9d5ff", "#217346", "#1f2937"];
+    const COLORS = ["#1f2937", "#217346", "#2563eb", "#dc2626", "#7c3aed", "#d97706", "#0891b2", "#ffffff"];
+    const ALIGN_SVG = {
+      left: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h10M4 18h13"/></svg>`,
+      center: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M7 12h10M6 18h12"/></svg>`,
+      right: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M10 12h10M7 18h13"/></svg>`,
+    };
 
     let active = "A1";
     function build() {
@@ -276,54 +300,149 @@
             <button data-f="new">New</button><button data-f="open">Open</button><button data-f="import">Open from device</button><button data-f="save">Save</button><button data-f="saveas">Save As</button>
           </div>
         </div>
+        <div class="xl-ribbon">
+          <button class="xl-tb" data-c="bold" title="Bold"><b>B</b></button>
+          <button class="xl-tb" data-c="italic" title="Italic"><i>I</i></button>
+          <span class="xl-div"></span>
+          <button class="xl-tb" data-c="left" title="Align left">${ALIGN_SVG.left}</button>
+          <button class="xl-tb" data-c="center" title="Align center">${ALIGN_SVG.center}</button>
+          <button class="xl-tb" data-c="right" title="Align right">${ALIGN_SVG.right}</button>
+          <span class="xl-div"></span>
+          <button class="xl-tb xl-palbtn" data-c="fill" title="Fill color">Fill<span class="xl-swatch" data-sw="fill"></span></button>
+          <button class="xl-tb xl-palbtn" data-c="color" title="Font color"><b style="text-decoration:underline">A</b><span class="xl-swatch" data-sw="color"></span></button>
+          <span class="xl-div"></span>
+          <button class="xl-tb" data-c="cur" title="Currency">$</button>
+          <button class="xl-tb" data-c="pct" title="Percent">%</button>
+          <button class="xl-tb" data-c="comma" title="Thousands separator">,</button>
+          <span class="xl-div"></span>
+          <button class="xl-tb" data-c="clear" title="Clear formatting">Clear</button>
+        </div>
         <div class="xl-formula"><span class="xl-namebox">A1</span><span class="xl-fx">fx</span><input class="xl-fbar" spellcheck="false"></div>
         <div class="xl-grid"></div>
+        <div class="xl-status"><span class="xl-stat-ready">Ready</span><span class="grow"></span><span class="xl-stats"></span></div>
       </div>`;
       const gridWrap = body.querySelector(".xl-grid");
       const nameBox = body.querySelector(".xl-namebox");
       const fbar = body.querySelector(".xl-fbar");
+      const statsEl = body.querySelector(".xl-stats");
 
       let html = `<table class="xl-table"><thead><tr><th class="xl-corner"></th>`;
-      for (let c = 0; c < XCOLS; c++) html += `<th>${colName(c)}</th>`;
+      for (let c = 0; c < XCOLS; c++) html += `<th data-col="${c}">${colName(c)}</th>`;
       html += `</tr></thead><tbody>`;
       for (let r = 1; r <= XROWS; r++) {
         html += `<tr><th class="xl-rownum">${r}</th>`;
-        for (let c = 0; c < XCOLS; c++) { const cr = colName(c) + r; html += `<td class="xl-cell" data-ref="${cr}" contenteditable="true">${escapeHtml(display(cr))}</td>`; }
+        for (let c = 0; c < XCOLS; c++) { const cr = colName(c) + r; html += `<td class="xl-cell" data-ref="${cr}" contenteditable="true"></td>`; }
         html += `</tr>`;
       }
       html += `</tbody></table>`;
       gridWrap.innerHTML = html;
 
-      function setActive(cr) { active = cr; body.querySelectorAll(".xl-cell.active").forEach((c) => c.classList.remove("active")); const td = gridWrap.querySelector(`[data-ref="${cr}"]`); if (td) td.classList.add("active"); nameBox.textContent = cr; fbar.value = rawOf(cr); }
-      function renderValues() { gridWrap.querySelectorAll(".xl-cell").forEach((td) => { if (document.activeElement !== td) td.textContent = display(td.dataset.ref); }); }
-      function commit(cr, v) { v = (v || "").trim(); if (v === "") delete cells[cr]; else cells[cr] = v; persist(); renderValues(); }
+      function styleCell(td, cr) {
+        const st = styles[cr] || {};
+        td.style.fontWeight = st.b ? "700" : "";
+        td.style.fontStyle = st.i ? "italic" : "";
+        td.style.background = st.fill || "";
+        td.style.color = st.color || "";
+        td.style.textAlign = st.align || (isNumericCell(cr) ? "right" : "left");
+      }
+      function paint(cr) { const td = gridWrap.querySelector(`[data-ref="${cr}"]`); if (!td) return; if (document.activeElement !== td) td.textContent = display(cr); styleCell(td, cr); }
+      function renderValues() { gridWrap.querySelectorAll(".xl-cell").forEach((td) => paint(td.dataset.ref)); }
+
+      function updateToolbar() {
+        const st = styles[active] || {};
+        const set = (c, on) => { const b = body.querySelector(`.xl-tb[data-c="${c}"]`); if (b) b.classList.toggle("on", !!on); };
+        set("bold", st.b); set("italic", st.i);
+        set("left", st.align === "left"); set("center", st.align === "center"); set("right", st.align === "right");
+        set("cur", st.fmt === "cur"); set("pct", st.fmt === "pct"); set("comma", st.fmt === "comma");
+      }
+      function updateStats() {
+        // Sum / Average / Count over the active cell's column.
+        const p = parseRef(active); if (!p) { statsEl.textContent = ""; return; }
+        const nums = [];
+        for (let r = 1; r <= XROWS; r++) { const v = numOf(colName(p.c) + r); if (v != null) nums.push(v); }
+        if (!nums.length) { statsEl.innerHTML = ""; return; }
+        const sum = nums.reduce((a, b) => a + b, 0);
+        statsEl.innerHTML = `<span class="xl-stat">Sum ${sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span class="xl-stat">Average ${(sum / nums.length).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span class="xl-stat">Count ${nums.length}</span>`;
+      }
+      function setActive(cr) {
+        active = cr;
+        body.querySelectorAll(".xl-cell.active").forEach((c) => c.classList.remove("active"));
+        gridWrap.querySelectorAll(".xl-colhi,.xl-rowhi").forEach((c) => c.classList.remove("xl-colhi", "xl-rowhi"));
+        const td = gridWrap.querySelector(`[data-ref="${cr}"]`); if (td) td.classList.add("active");
+        const p = parseRef(cr);
+        if (p) { const ch = gridWrap.querySelector(`thead th[data-col="${p.c}"]`); if (ch) ch.classList.add("xl-colhi"); const rows = gridWrap.querySelectorAll("tbody tr")[p.r - 1]; if (rows) rows.querySelector(".xl-rownum").classList.add("xl-rowhi"); }
+        nameBox.textContent = cr; fbar.value = rawOf(cr);
+        updateToolbar(); updateStats();
+      }
+      function commit(cr, v) { v = (v || "").trim(); if (v === "") delete cells[cr]; else cells[cr] = v; persist(); renderValues(); updateStats(); }
+
+      function applyFmt(cmd) {
+        const st = styles[active] || (styles[active] = {});
+        if (cmd === "bold") st.b = !st.b;
+        else if (cmd === "italic") st.i = !st.i;
+        else if (cmd === "left" || cmd === "center" || cmd === "right") st.align = (st.align === cmd ? "" : cmd);
+        else if (cmd === "cur" || cmd === "pct" || cmd === "comma") st.fmt = (st.fmt === cmd ? "" : cmd);
+        else if (cmd === "clear") delete styles[active];
+        if (styles[active] && !Object.keys(styles[active]).some((k) => styles[active][k])) delete styles[active];
+        persist(); paint(active); updateToolbar(); updateStats();
+      }
+      function openPalette(kind, anchor) {
+        body.querySelectorAll(".xl-pal").forEach((m) => m.remove());
+        const list = kind === "fill" ? FILLS : COLORS;
+        const pal = document.createElement("div"); pal.className = "xl-pal";
+        list.forEach((c) => {
+          const sw = document.createElement("button"); sw.className = "xl-pal-sw" + (c === "" ? " none" : "");
+          sw.style.background = c || "#fff"; sw.title = c || "None";
+          sw.onclick = () => { const st = styles[active] || (styles[active] = {}); st[kind] = c; if (!c) delete st[kind]; if (!Object.keys(st).some((k) => st[k])) delete styles[active]; persist(); paint(active); refreshSwatches(); pal.remove(); };
+          pal.appendChild(sw);
+        });
+        body.appendChild(pal);
+        const r = anchor.getBoundingClientRect(), br = body.getBoundingClientRect();
+        pal.style.left = (r.left - br.left) + "px"; pal.style.top = (r.bottom - br.top + 3) + "px";
+        setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!pal.contains(ev.target)) { pal.remove(); document.removeEventListener("mousedown", h); } }), 0);
+      }
+      function refreshSwatches() {
+        const fb = body.querySelector('.xl-swatch[data-sw="fill"]'); const cb = body.querySelector('.xl-swatch[data-sw="color"]');
+        const st = styles[active] || {};
+        if (fb) fb.style.background = st.fill || "#ffffff";
+        if (cb) cb.style.background = st.color || "#1f2937";
+      }
 
       gridWrap.querySelectorAll(".xl-cell").forEach((td) => {
         const cr = td.dataset.ref;
-        td.addEventListener("focus", () => { td.textContent = rawOf(cr); setActive(cr); });
+        paint(cr);
+        td.addEventListener("focus", () => { td.textContent = rawOf(cr); td.style.textAlign = "left"; setActive(cr); });
         td.addEventListener("input", () => { fbar.value = td.textContent; });
-        td.addEventListener("blur", () => commit(cr, td.textContent));
+        td.addEventListener("blur", () => { commit(cr, td.textContent); paint(cr); });
         td.addEventListener("keydown", (e) => {
           if (e.key === "Enter") { e.preventDefault(); const p = parseRef(cr); td.blur(); const nx = gridWrap.querySelector(`[data-ref="${colName(p.c) + (p.r + 1)}"]`); if (nx) nx.focus(); }
+          else if (e.key === "Tab") { e.preventDefault(); const p = parseRef(cr); td.blur(); const nx = gridWrap.querySelector(`[data-ref="${colName(p.c + 1) + p.r}"]`); if (nx) nx.focus(); }
           else if (e.key === "Escape") { td.textContent = display(cr); td.blur(); }
         });
         td.addEventListener("click", () => { if (document.activeElement !== td) setActive(cr); });
       });
-      fbar.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(active, fbar.value); const td = gridWrap.querySelector(`[data-ref="${active}"]`); if (td) td.textContent = display(active); } });
+      fbar.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(active, fbar.value); paint(active); updateStats(); } });
+
+      body.querySelectorAll(".xl-tb").forEach((b) => b.onclick = () => {
+        const c = b.dataset.c;
+        if (c === "fill" || c === "color") openPalette(c, b);
+        else applyFmt(c);
+      });
 
       body.querySelectorAll(".xl-filemenu [data-f]").forEach((b) => b.onclick = () => {
         const f = b.dataset.f;
-        if (f === "new") { cells = {}; current = null; if (titleText()) titleText().textContent = "Book1 — Excel"; persist(); build(); }
+        if (f === "new") { cells = {}; styles = {}; current = null; if (titleText()) titleText().textContent = "Book1 — Excel"; persist(); build(); }
         else if (f === "open") window.VFS.pickFile({ title: "Open workbook", accept: ["xlsx"] }, (res) => { if (res) { ref.close(); openExcel(res); } });
         else if (f === "import") importCsv();
         else if (f === "save") { if (!current) return saveAs(); persist(); toast("Saved " + current.name); }
         else if (f === "saveas") saveAs();
       });
+      refreshSwatches();
       setActive("A1");
     }
     function saveAs() {
       window.VFS.pickSave({ title: "Save workbook", defaultName: current ? current.name.replace(/\.[a-z0-9]+$/i, "") : "Book1", kind: "xlsx" }, (res) => {
-        const node = { type: "file", kind: "xlsx", content: JSON.stringify({ cells }), ts: Date.now() };
+        const node = { type: "file", kind: "xlsx", content: JSON.stringify({ cells, styles }), ts: Date.now() };
         res.children[res.name] = node; State.save();
         current = { name: res.name, node }; if (titleText()) titleText().textContent = res.name + " — Excel"; toast("Saved " + res.name);
       });

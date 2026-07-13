@@ -34,7 +34,14 @@
     return name;
   }
 
-  const KIND_ICON = { folder: "📁", text: "📄", word: "📘", pptx: "📙", xlsx: "📗", image: "🖼️", other: "📄" };
+  const svg = (inner) => `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:-3px">${inner}</svg>`;
+  const doc = (color) => svg(`<path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" fill="${color}"/><path d="M14 3v4h4" fill="#fff" opacity=".55"/>`);
+  const KIND_ICON = {
+    folder: svg(`<path d="M3 6a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" fill="#f6c945"/>`),
+    text: doc("#8a94a6"), word: doc("#2b579a"), pptx: doc("#c43e1c"), xlsx: doc("#217346"),
+    image: svg(`<rect x="4" y="4" width="16" height="16" rx="2" fill="#5a8def"/><circle cx="9" cy="9" r="2" fill="#fff"/><path d="M5 18l4-4 3 3 3-4 4 5Z" fill="#fff"/>`),
+    other: doc("#8a94a6"),
+  };
   const KIND_EXT = { text: ".txt", word: ".docx", pptx: ".pptx", xlsx: ".xlsx", image: ".png" };
 
   // Windows-style Open / Save dialog.

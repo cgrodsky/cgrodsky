@@ -246,6 +246,16 @@
     <path d="M80 44 H108 M80 60 H108 M80 76 H108 M80 92 H100" stroke="#2b579a" stroke-width="4" stroke-linecap="round"/>
   </svg>`);
 
+  register("winflag", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="wfg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/><stop offset=".5" stop-color="#a855f7"/><stop offset="1" stop-color="#e879f9"/>
+    </linearGradient></defs>
+    <rect x="1" y="1" width="19" height="19" rx="5" fill="url(#wfg)"/>
+    <rect x="24" y="1" width="19" height="19" rx="5" fill="url(#wfg)"/>
+    <rect x="1" y="24" width="19" height="19" rx="5" fill="url(#wfg)"/>
+    <rect x="24" y="24" width="19" height="19" rx="5" fill="url(#wfg)"/>
+  </svg>`);
+
   register("excel", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect x="8" y="20" width="112" height="88" rx="10" fill="#fff"/>
     <path d="M8 30 A10 10 0 0 1 18 20 H70 V108 H18 A10 10 0 0 1 8 98 Z" fill="#217346"/>
