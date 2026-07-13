@@ -58,6 +58,7 @@
     gear: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>`,
     attach: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>`,
     image: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>`,
+    sparkle: `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z"/><path d="M18 14l.9 2.5L21.5 17l-2.6.9L18 20l-.9-2.1L14.5 17l2.6-.5z"/></svg>`,
     trash: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>`,
     archive: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>`,
   };
@@ -83,8 +84,10 @@
   const BRANDS = {
     "xbox": { img: "assets/xbox.png", verified: true },
     "xbox game pass": { img: "assets/xbox.png", verified: true },
+    "linkedin": { img: "assets/linkedin.png", verified: true },
     "microsoft account team": { verified: true },
     "microsoft store": { verified: true },
+    "github": { verified: true },
   };
   function brandOf(name) { return BRANDS[String(name || "").toLowerCase()] || {}; }
   function avatar(name, cls) {
@@ -165,7 +168,7 @@
         <div class="ol-module"></div>
       </div>`;
       body.querySelectorAll(".ol-rail-btn[data-m]").forEach((b) => b.onclick = () => {
-        if (b.dataset.m === "settings") { open("settings"); return; }
+        if (b.dataset.m === "settings") { openSettings(); return; }
         module = b.dataset.m; build();
       });
       const mount = body.querySelector(".ol-module");
@@ -222,8 +225,9 @@
       renderList(); renderRead();
 
       function visible() {
+        const focusedOn = data.focusedOn !== false;
         let ms = data.messages.filter((m) => m.folder === folder);
-        if (folder === "inbox") ms = ms.filter((m) => (tab === "focused" ? m.focused : !m.focused));
+        if (folder === "inbox" && focusedOn) ms = ms.filter((m) => (tab === "focused" ? m.focused : !m.focused));
         if (query) { const q = query.toLowerCase(); ms = data.messages.filter((m) => m.folder === folder && (m.from + m.subject + m.body).toLowerCase().includes(q)); }
         return ms.sort((a, b) => b.ts - a.ts);
       }
@@ -231,7 +235,7 @@
         const listEl = mount.querySelector(".ol-list");
         const ms = visible();
         const fname = (FOLDERS.find((f) => f.id === folder) || {}).name || "";
-        const tabs = folder === "inbox" && !query ? `<div class="ol-tabs"><button class="ol-tab ${tab === "focused" ? "on" : ""}" data-t="focused">Focused</button><button class="ol-tab ${tab === "other" ? "on" : ""}" data-t="other">Other</button></div>` : "";
+        const tabs = folder === "inbox" && !query && (data.focusedOn !== false) ? `<div class="ol-tabs"><button class="ol-tab ${tab === "focused" ? "on" : ""}" data-t="focused">Focused</button><button class="ol-tab ${tab === "other" ? "on" : ""}" data-t="other">Other</button></div>` : "";
         listEl.innerHTML = `<div class="ol-list-head"><b>${fname}</b><span class="muted">${ms.length} item${ms.length === 1 ? "" : "s"}</span></div>${tabs}<div class="ol-list-scroll"></div>`;
         listEl.querySelectorAll(".ol-tab").forEach((b) => b.onclick = () => { tab = b.dataset.t; renderList(); });
         const scroll = listEl.querySelector(".ol-list-scroll");
@@ -328,6 +332,7 @@
           <button data-f="createLink" title="Link">&#128279;</button>
           <span class="ol-fsep"></span>
           <button class="ol-insert-img" title="Insert image">${IC.image}</button>
+          <button class="ol-copilot-draft" title="Draft with Copilot">${IC.sparkle} Copilot</button>
           <span class="grow"></span>
           <button class="ol-attach" title="Attach file">${IC.attach}</button>
         </div>
@@ -353,6 +358,25 @@
         const inp = document.getElementById("globalFileInput"); inp.accept = "*/*"; inp.value = "";
         inp.onchange = () => { const f = inp.files[0]; if (!f) return; atts.push({ name: f.name, size: (f.size < 1024 ? f.size + " B" : Math.round(f.size / 1024) + " KB") }); renderAtts(); };
         inp.click();
+      };
+      // Draft the email with Copilot (AI), with a graceful offline note.
+      ov.querySelector(".ol-copilot-draft").onclick = async () => {
+        const topic = prompt("What should this email say? (Copilot will draft it)");
+        if (!topic) return;
+        const btn = ov.querySelector(".ol-copilot-draft");
+        const orig = btn.innerHTML; btn.innerHTML = IC.sparkle + " Drafting…"; btn.disabled = true;
+        try {
+          const subjHint = ov.querySelector(".ol-subj").value.trim();
+          const txt = await aiChat([
+            { role: "system", content: "You are Copilot, drafting a clear, friendly, professional email body. No subject line. Sign off with the sender's first name if known, otherwise 'Best regards'. Plain text." },
+            { role: "user", content: "Write an email about: " + topic + (subjHint ? "\nSubject: " + subjHint : "") },
+          ]);
+          bodyEl.innerHTML = textToHtml(txt);
+        } catch (_) {
+          bodyEl.innerHTML = textToHtml("Hi,\n\n" + topic + "\n\nBest regards,\n" + ((S().profile && S().profile.username) || ""));
+          if (window.Notify) Notify.show({ icon: "", title: "Copilot offline", body: "Used a quick draft instead." });
+        }
+        btn.innerHTML = orig; btn.disabled = false;
       };
       // Insert an image inline into the email body.
       ov.querySelector(".ol-insert-img").onclick = () => {
@@ -492,6 +516,40 @@
       </div>`;
       det.querySelector('[data-a="email"]').onclick = () => { module = "mail"; build(); compose({ to: c.email, subject: "", body: "" }); };
       det.querySelector(".ol-del-c").onclick = () => { data.contacts = data.contacts.filter((x) => x.id !== c.id); selContact = null; State.save(); build(); };
+    }
+
+    // ============================ SETTINGS ============================
+    function openSettings() {
+      const dark = document.body.classList.contains("dark");
+      const ov = el(`<div class="ol-set-ov"><div class="ol-set-win">
+        <div class="ol-set-bar"><b>Settings</b><span class="grow"></span><button class="ol-set-close" title="Close">&times;</button></div>
+        <div class="ol-set-body">
+          <div class="ol-set-sec">
+            <div class="ol-set-h">Mail</div>
+            <label class="ol-set-row"><span>Focused Inbox</span><input type="checkbox" class="ol-set-focused" ${data.focusedOn === false ? "" : "checked"}></label>
+            <label class="ol-set-row ol-set-col"><span>Signature</span><textarea class="ol-set-sig" rows="2">${esc(data.signature || "")}</textarea></label>
+          </div>
+          <div class="ol-set-sec">
+            <div class="ol-set-h">Appearance</div>
+            <label class="ol-set-row"><span>Dark mode</span><input type="checkbox" class="ol-set-dark" ${dark ? "checked" : ""}></label>
+          </div>
+          <div class="ol-set-sec">
+            <div class="ol-set-h">Account</div>
+            <div class="ol-set-acct">${avatar((S().profile && S().profile.username) || "You")}<div><b>${esc((S().profile && S().profile.username) || "You")}</b><div class="muted">${esc((S().account && S().account.email) || "you@outlook.com")}</div></div></div>
+            <button class="ol-set-reset">Reset mailbox to defaults</button>
+          </div>
+        </div>
+        <div class="ol-set-foot"><button class="ol-set-save">Done</button></div>
+      </div></div>`);
+      const close = () => ov.remove();
+      ov.querySelector(".ol-set-close").onclick = close;
+      ov.onclick = (e) => { if (e.target === ov) close(); };
+      ov.querySelector(".ol-set-dark").onchange = (e) => { document.body.classList.toggle("dark", e.target.checked); if (S().theme !== undefined) { S().theme = e.target.checked ? "dark" : "light"; State.save(); } };
+      ov.querySelector(".ol-set-focused").onchange = (e) => { data.focusedOn = e.target.checked; State.save(); };
+      ov.querySelector(".ol-set-sig").oninput = (e) => { data.signature = e.target.value; State.save(); };
+      ov.querySelector(".ol-set-reset").onclick = () => { if (confirm("Reset all mailbox data to the defaults?")) { S().appData.outlook = seedOutlook(); State.save(); close(); location.reload(); } };
+      ov.querySelector(".ol-set-save").onclick = close;
+      body.appendChild(ov);
     }
 
     build();

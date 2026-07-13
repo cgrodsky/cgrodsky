@@ -680,7 +680,7 @@
       function renderMsgs() {
         msgsEl.innerHTML = "";
         (d.messages[srv.id][active] || []).forEach((m) => {
-          msgsEl.appendChild(el(`<div class="dc-msg"><span class="dc-msg-ava" style="background:${m.color || "#5865f2"}">${(m.author || "?")[0].toUpperCase()}</span><div><div class="dc-msg-head"><b style="color:${m.color || "#fff"}">${escapeHtml(m.author)}</b></div><div class="dc-msg-text">${escapeHtml(m.text)}</div></div></div>`));
+          msgsEl.appendChild(el(`<div class="dc-msg"><span class="dc-msg-ava" style="background:${m.color || "#5865f2"}">${(m.author || "?")[0].toUpperCase()}</span><div><div class="dc-msg-head"><b style="color:${m.color || "#fff"}">${escapeHtml(m.author)}</b>${m.self ? `<img class="dc-nitro" src="assets/nitro.png" alt="Nitro" title="Discord Nitro">` : ""}</div><div class="dc-msg-text">${escapeHtml(m.text)}</div></div></div>`));
         });
         msgsEl.scrollTop = msgsEl.scrollHeight;
       }

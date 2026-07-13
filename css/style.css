@@ -1552,6 +1552,8 @@ body.dark .searchbar { border-color: #5f6368; }
 .dc-msg { display: flex; gap: 12px; align-items: flex-start; }
 .dc-msg-ava { width: 38px; height: 38px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; }
 .dc-msg-head b { font-size: .92rem; }
+.dc-msg-head { display: inline-flex; align-items: center; gap: 5px; }
+.dc-nitro { width: 15px; height: 15px; vertical-align: -2px; }
 .dc-msg-text { color: #dbdee1; font-size: .92rem; }
 .dc-compose { display: flex; gap: 8px; padding: 12px 18px; }
 .dc-compose input { flex: 1; background: #383a40; border: 0; border-radius: 8px; padding: 11px 14px; color: #fff; outline: none; }
@@ -1917,6 +1919,29 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .ol-format button:hover { background: #e8e6e4; }
 .ol-fsep { width: 1px; height: 18px; background: #d2d0ce; margin: 0 4px; }
 .ol-attach { color: #0f6cbd; }
+.ol-copilot-draft { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; height: 28px; border: 0; border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600; color: #fff; background: linear-gradient(90deg, #0f6cbd, #8764b8); }
+.ol-copilot-draft:hover { filter: brightness(1.08); }
+.ol-copilot-draft:disabled { opacity: .7; cursor: default; }
+
+/* Outlook settings overlay */
+.ol-set-ov { position: absolute; inset: 0; z-index: 300; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; }
+.ol-set-win { width: min(460px, 92%); max-height: 84%; overflow: auto; background: #fff; border-radius: 12px; box-shadow: 0 24px 70px rgba(0,0,0,.4); display: flex; flex-direction: column; }
+.ol-set-bar { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid #edebe9; font-size: 1.05rem; }
+.ol-set-bar button { background: none; border: 0; font-size: 1.4rem; cursor: pointer; color: #605e5c; }
+.ol-set-body { padding: 10px 18px; }
+.ol-set-sec { padding: 12px 0; border-bottom: 1px solid #f3f2f1; }
+.ol-set-h { font-size: .74rem; text-transform: uppercase; letter-spacing: .5px; color: #605e5c; margin-bottom: 8px; }
+.ol-set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: .9rem; }
+.ol-set-row.ol-set-col { flex-direction: column; align-items: stretch; }
+.ol-set-sig { width: 100%; border: 1px solid #d2d0ce; border-radius: 6px; padding: 8px; font-family: inherit; font-size: .86rem; margin-top: 6px; resize: vertical; }
+.ol-set-acct { display: flex; align-items: center; gap: 12px; padding: 6px 0 12px; }
+.ol-set-reset { background: none; border: 1px solid #d2d0ce; color: #d83b01; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: .84rem; }
+.ol-set-reset:hover { background: #fdf3f2; border-color: #d83b01; }
+.ol-set-foot { padding: 14px 18px; border-top: 1px solid #edebe9; text-align: right; }
+.ol-set-save { background: #0f6cbd; color: #fff; border: 0; padding: 9px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+body.dark .ol-set-win { background: #242322; color: #f3f2f1; }
+body.dark .ol-set-bar, body.dark .ol-set-sec, body.dark .ol-set-foot { border-color: #3b3a39; }
+body.dark .ol-set-sig { background: #1b1a19; color: #f3f2f1; border-color: #3b3a39; }
 .ol-compose-body { flex: 1; padding: 16px; overflow: auto; outline: none; font-size: .92rem; line-height: 1.55; }
 .ol-att-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px; }
 .ol-att-row:not(:empty) { padding-bottom: 8px; }
