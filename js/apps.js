@@ -53,7 +53,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "minecraft", "codeeditor", "achievements", "store__"];
+    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "codeeditor", "achievements", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 

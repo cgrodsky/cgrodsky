@@ -117,7 +117,8 @@
     const rnd = seededRandom(20261225);
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     const keys = [];
-    for (let i = 0; i < 100; i++) {
+    // 1100 valid product keys (was 100 — 1000 more added).
+    for (let i = 0; i < 1100; i++) {
       const groups = [];
       for (let g = 0; g < 4; g++) {
         let grp = "";

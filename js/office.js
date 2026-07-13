@@ -639,6 +639,65 @@
   }
   AppRegistry.forms = function () { openForms(null); };
 
+  // ===================== ONENOTE =====================
+  const NB_COLORS = ["#7719aa", "#0f6cbd", "#107c10", "#d83b01", "#c239b3", "#008272"];
+  function seedNotebook() {
+    return { name: "My Notebook", sections: [
+      { name: "Quick Notes", color: "#7719aa", pages: [{ title: "Welcome to OneNote", body: "<p>This is your first note. Type anything here — it saves automatically.</p><ul><li>Add sections and pages</li><li>Everything persists</li></ul>" }] },
+      { name: "Ideas", color: "#0f6cbd", pages: [{ title: "Untitled page", body: "" }] },
+    ] };
+  }
+  function openOneNote() {
+    const ref = cw({ title: "OneNote", icon: Icon.mini("onenote", "OneNote"), width: 960, height: 660, appId: "onenote" });
+    const body = ref.body;
+    if (!S().appData) S().appData = {};
+    let nb = S().appData.onenote || seedNotebook();
+    let si = 0, pi = 0;
+    function persist() { S().appData.onenote = nb; State.save(); }
+    function build() {
+      const sec = nb.sections[si] || nb.sections[0]; si = nb.sections.indexOf(sec);
+      const page = sec.pages[pi] || sec.pages[0] || { title: "", body: "" }; pi = Math.max(0, sec.pages.indexOf(page));
+      body.innerHTML = `<div class="on">
+        <div class="on-secs">
+          <div class="on-nbname" title="Rename notebook">${escapeHtml(nb.name)}</div>
+          <div class="on-sec-list"></div>
+          <button class="on-add-sec">+ Section</button>
+        </div>
+        <div class="on-pages">
+          <div class="on-pages-head">Pages</div>
+          <div class="on-page-list"></div>
+          <button class="on-add-page">+ Page</button>
+        </div>
+        <div class="on-editor">
+          <input class="on-title" value="${escapeHtml(page.title || "")}" placeholder="Page title">
+          <div class="on-date">${new Date().toLocaleDateString()}</div>
+          <div class="on-body" contenteditable="true">${page.body || ""}</div>
+        </div>
+      </div>`;
+      const secList = body.querySelector(".on-sec-list");
+      nb.sections.forEach((s, i) => {
+        const b = el(`<button class="on-sec ${i === si ? "on" : ""}" style="--sc:${s.color}"><span class="on-sec-dot"></span><span class="on-sec-nm">${escapeHtml(s.name)}</span></button>`);
+        b.onclick = () => { si = i; pi = 0; build(); };
+        b.ondblclick = () => { const nm = prompt("Rename section", s.name); if (nm) { s.name = nm; persist(); build(); } };
+        secList.appendChild(b);
+      });
+      const pageList = body.querySelector(".on-page-list");
+      sec.pages.forEach((p, i) => {
+        const b = el(`<button class="on-page ${i === pi ? "on" : ""}"><span class="on-page-t">${escapeHtml(p.title || "Untitled page")}</span></button>`);
+        b.onclick = () => { pi = i; build(); };
+        pageList.appendChild(b);
+      });
+      body.querySelector(".on-nbname").onclick = () => { const nm = prompt("Rename notebook", nb.name); if (nm) { nb.name = nm; persist(); build(); } };
+      body.querySelector(".on-add-sec").onclick = () => { nb.sections.push({ name: "New Section", color: NB_COLORS[nb.sections.length % NB_COLORS.length], pages: [{ title: "Untitled page", body: "" }] }); si = nb.sections.length - 1; pi = 0; persist(); build(); };
+      body.querySelector(".on-add-page").onclick = () => { sec.pages.push({ title: "Untitled page", body: "" }); pi = sec.pages.length - 1; persist(); build(); };
+      const titleEl = body.querySelector(".on-title"), bodyEl = body.querySelector(".on-body");
+      titleEl.oninput = () => { page.title = titleEl.value; persist(); const pl = body.querySelectorAll(".on-page")[pi]; if (pl) pl.querySelector(".on-page-t").textContent = page.title || "Untitled page"; };
+      bodyEl.oninput = () => { page.body = bodyEl.innerHTML; persist(); };
+    }
+    build();
+  }
+  AppRegistry.onenote = function () { openOneNote(); };
+
   // ===================== POWERPOINT =====================
   const screen = () => document.getElementById("screen");
   function newSlide(title, sub) { return { bg: "#ffffff", title: title || "", body: sub || "", titleColor: "#17181c", bodyColor: "#5a5f6b" }; }
@@ -824,5 +883,5 @@
 
   AppRegistry.powerpoint = function () { openPowerPoint(null); };
 
-  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint, openExcel: openExcel, openForms: openForms };
+  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint, openExcel: openExcel, openForms: openForms, openOneNote: openOneNote };
 })();

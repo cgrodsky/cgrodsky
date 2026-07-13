@@ -40,6 +40,8 @@
     { id: "excel", name: "Excel", cat: "Productivity", price: 0, builtin: "excel", desc: "Microsoft Excel — spreadsheets with formulas like =SUM(A1:A3)." },
     { id: "forms", name: "Forms", cat: "Productivity", price: 0, builtin: "forms", desc: "Microsoft Forms — build surveys and quizzes, then collect responses." },
     { id: "clock", name: "Clock", cat: "Utilities", price: 0, builtin: "clock", desc: "Clock — timers with a circular countdown, plus a stopwatch." },
+    { id: "outlook", name: "Outlook", cat: "Productivity", price: 0, builtin: "outlook", desc: "Microsoft Outlook — email with folders, a reading pane, and compose." },
+    { id: "onenote", name: "OneNote", cat: "Productivity", price: 0, builtin: "onenote", desc: "Microsoft OneNote — notebooks, sections, and pages for your notes." },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
     { id: "blockfinder", name: "Assets", cat: "System", price: 0, builtin: "blockfinder", desc: "Manage every uploaded asset — textures and sounds — each with a number." },

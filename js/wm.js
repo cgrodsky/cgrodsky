@@ -173,7 +173,7 @@
       // Seed the Home Screen with the previous Start-menu groups so App Groups
       // now live on the desktop instead of the search bar.
       const src = (S().appData && S().appData.appGroups) || [
-        { name: "Office", apps: ["word", "powerpoint", "excel", "forms", "notepad"] },
+        { name: "Office", apps: ["word", "powerpoint", "excel", "outlook", "onenote", "forms", "notepad"] },
         { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
       ];
       S().desktop.groups = src.map((g, i) => ({ id: "grp" + i + "_" + Math.abs(hashStr(g.name)), name: g.name, apps: g.apps.slice() }));
@@ -203,6 +203,43 @@
     menu.style.left = Math.min(r.left, window.innerWidth - menu.offsetWidth - 10) + "px";
     menu.style.top = Math.min(r.bottom + 4, window.innerHeight - menu.offsetHeight - 10) + "px";
     setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener("mousedown", h); } }), 0);
+  }
+
+  function dagGripSvg() { return `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg>`; }
+  // Make an App Group box selectable, draggable (by its header), and menu-able.
+  function wireGroupBox(box, g, key) {
+    const head = box.querySelector(".dag-head");
+    let sx = 0, sy = 0, moved = false, dragging = false, ox = 0, oy = 0;
+    const onMove = (e) => {
+      const pt = e.touches ? e.touches[0] : e;
+      const dx = pt.clientX - sx, dy = pt.clientY - sy;
+      if (!dragging && Math.hypot(dx, dy) > 5) { dragging = true; moved = true; box.classList.add("dragging"); }
+      if (dragging) {
+        if (e.cancelable) e.preventDefault();
+        let nx = ox + dx, ny = oy + dy;
+        const maxX = (desktop.clientWidth) - box.offsetWidth - 4, maxY = (desktop.clientHeight) - box.offsetHeight - 4;
+        nx = Math.max(4, Math.min(maxX, nx)); ny = Math.max(4, Math.min(maxY, ny));
+        box.style.left = nx + "px"; box.style.top = ny + "px"; box.style.right = "auto";
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onUp);
+      box.classList.remove("dragging");
+      if (dragging) { g.pos = { x: parseInt(box.style.left, 10) || 0, y: parseInt(box.style.top, 10) || 0 }; State.save(); }
+      dragging = false;
+    };
+    const onDown = (e) => {
+      const pt = e.touches ? e.touches[0] : e;
+      const r = box.getBoundingClientRect(), dr = desktop.getBoundingClientRect();
+      ox = r.left - dr.left; oy = r.top - dr.top; sx = pt.clientX; sy = pt.clientY; moved = false; dragging = false;
+      window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
+      window.addEventListener("touchmove", onMove, { passive: false }); window.addEventListener("touchend", onUp);
+    };
+    head.addEventListener("mousedown", onDown);
+    head.addEventListener("touchstart", onDown, { passive: true });
+    head.onclick = (e) => { e.stopPropagation(); if (moved) { moved = false; return; } if (deskSel.has(key)) { groupBoxMenu(g, head); } else { clearDeskSel(); deskSel.add(key); box.classList.add("sel"); } };
+    head.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); groupBoxMenu(g, head); };
   }
 
   // Right-click on empty desktop — Windows 12 style context menu.
@@ -286,11 +323,14 @@
     bin.onclick = (e) => { e.stopPropagation(); if (bin.classList.contains("selected")) { open("recyclebin"); return; } clearDeskSel(); bin.classList.add("selected"); };
     iconWrap.appendChild(bin);
 
-    // App Groups render as translucent containers holding their app tiles.
-    deskGroups().forEach((g) => {
+    // App Groups render as free-floating translucent containers, docked to the
+    // right of the screen by default and draggable anywhere.
+    let dockTop = 24;
+    desktop.querySelectorAll(".desk-appgroup").forEach((x) => x.remove());
+    deskGroups().forEach((g, gi) => {
       const key = "grp:" + g.id;
       const box = el(`<div class="desk-appgroup ${deskSel.has(key) ? "sel" : ""}" data-key="${key}">
-        <div class="dag-head"><span class="dag-name">${escAttr(g.name)}</span></div>
+        <div class="dag-head"><span class="dag-grip">${dagGripSvg()}</span><span class="dag-name">${escAttr(g.name)}</span></div>
         <div class="dag-tiles"></div>
       </div>`);
       const tw = box.querySelector(".dag-tiles");
@@ -302,10 +342,12 @@
         t.onclick = (e) => { e.stopPropagation(); open(id); };
         tw.appendChild(t);
       });
-      const head = box.querySelector(".dag-head");
-      head.onclick = (e) => { e.stopPropagation(); if (deskSel.has(key)) { groupBoxMenu(g, head); } else { clearDeskSel(); deskSel.add(key); box.classList.add("sel"); } };
-      head.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); groupBoxMenu(g, head); };
-      iconWrap.appendChild(box);
+      // Position: saved pos, else dock to the right, stacked.
+      if (g.pos) { box.style.left = g.pos.x + "px"; box.style.top = g.pos.y + "px"; }
+      else { box.style.right = "24px"; box.style.top = dockTop + "px"; }
+      desktop.appendChild(box);
+      if (!g.pos) dockTop += box.offsetHeight + 16;
+      wireGroupBox(box, g, key);
     });
 
     // App shortcuts (skip hidden and grouped).
@@ -985,7 +1027,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

@@ -262,6 +262,20 @@
     <line x1="28" y1="27" x2="39" y2="38" stroke="#1e9fe0" stroke-width="7" stroke-linecap="round"/>
   </svg>`);
 
+  register("outlook", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect x="46" y="20" width="66" height="88" rx="6" fill="#fff"/>
+    <path d="M62 40 H104 M62 56 H104 M62 72 H104 M62 88 H92" stroke="#0f6cbd" stroke-width="5" stroke-linecap="round"/>
+    <rect x="8" y="34" width="60" height="60" rx="12" fill="#0f6cbd"/>
+    <ellipse cx="38" cy="64" rx="17" ry="20" fill="none" stroke="#fff" stroke-width="8"/>
+  </svg>`);
+
+  register("onenote", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="14" width="80" height="100" rx="8" fill="#fff"/>
+    <path d="M40 40 V88 M40 40 L64 88 M64 40 V88" stroke="#7719aa" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="86" y="14" width="26" height="100" rx="8" fill="#7719aa"/>
+    <path d="M99 34 V54 M99 66 V86" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  </svg>`);
+
   register("clock", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect width="128" height="128" rx="26" fill="#1f2430"/>
     <circle cx="64" cy="64" r="42" fill="none" stroke="#3a4152" stroke-width="7"/>
