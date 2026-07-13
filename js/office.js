@@ -456,6 +456,158 @@
   }
   AppRegistry.excel = function () { openExcel(null); };
 
+  // ===================== MICROSOFT FORMS =====================
+  function newForm() { return { title: "Untitled form", desc: "", questions: [], responses: [] }; }
+  function newQuestion(type) {
+    if (type === "choice") return { type: "choice", q: "Question", options: ["Option 1", "Option 2"], required: false };
+    if (type === "rating") return { type: "rating", q: "How would you rate this?", required: false };
+    return { type: "text", q: "Question", required: false };
+  }
+  function openForms(fileRef) {
+    const ref = cw({ title: "Forms", icon: Icon.mini("forms", "Forms"), width: 860, height: 660, appId: "forms" });
+    const body = ref.body, win = ref.win;
+    if (!S().appData) S().appData = {};
+    let form, current = null;
+    if (fileRef && fileRef.node) { try { form = JSON.parse(fileRef.node.content || ""); } catch (_) { form = newForm(); } current = { name: fileRef.name, node: fileRef.node }; }
+    else form = (S().appData.forms && S().appData.forms.form) || newForm();
+    if (!form.questions) form.questions = [];
+    if (!form.responses) form.responses = [];
+    let mode = "edit";
+
+    body.innerHTML = `<div class="wd-splash fm-splash">
+      <img class="wd-splash-ic" src="assets/forms.png" onerror="this.style.display='none'" alt="">
+      <div class="wd-splash-name" style="color:#1a8a8f">Forms</div>
+      <div class="wd-splash-bar"><span style="background:#1a8a8f"></span></div>
+      <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>
+    </div>`;
+    setTimeout(build, 2200);
+
+    function persist() { if (current) { current.node.content = JSON.stringify(form); current.node.ts = Date.now(); } else S().appData.forms = { form }; State.save(); }
+
+    function build() {
+      body.innerHTML = `<div class="fm">
+        <div class="fm-top">
+          <span class="fm-ic">${Icon.mini("forms", "Forms")}</span>
+          <b class="fm-brand">Forms</b>
+          <span class="grow"></span>
+          <button class="fm-tab ${mode === "edit" ? "on" : ""}" data-m="edit">Questions</button>
+          <button class="fm-tab ${mode === "preview" ? "on" : ""}" data-m="preview">Preview</button>
+          <button class="fm-tab" data-m="responses">Responses ${form.responses.length ? "(" + form.responses.length + ")" : ""}</button>
+        </div>
+        <div class="fm-scroll"></div>
+      </div>`;
+      body.querySelectorAll(".fm-tab").forEach((b) => b.onclick = () => {
+        if (b.dataset.m === "responses") { renderResponses(); return; }
+        mode = b.dataset.m; build();
+      });
+      const scroll = body.querySelector(".fm-scroll");
+      if (mode === "edit") renderEdit(scroll); else renderPreview(scroll);
+    }
+
+    function renderEdit(scroll) {
+      const head = el(`<div class="fm-card fm-headcard">
+        <input class="fm-title" value="${escapeHtml(form.title)}" placeholder="Form title">
+        <input class="fm-desc" value="${escapeHtml(form.desc)}" placeholder="Form description">
+      </div>`);
+      head.querySelector(".fm-title").oninput = (e) => { form.title = e.target.value; persist(); };
+      head.querySelector(".fm-desc").oninput = (e) => { form.desc = e.target.value; persist(); };
+      scroll.appendChild(head);
+
+      form.questions.forEach((q, qi) => {
+        const card = el(`<div class="fm-card fm-q">
+          <div class="fm-q-top">
+            <input class="fm-q-title" value="${escapeHtml(q.q)}" placeholder="Question">
+            <select class="fm-q-type">
+              <option value="text" ${q.type === "text" ? "selected" : ""}>Text</option>
+              <option value="choice" ${q.type === "choice" ? "selected" : ""}>Multiple choice</option>
+              <option value="rating" ${q.type === "rating" ? "selected" : ""}>Rating</option>
+            </select>
+          </div>
+          <div class="fm-q-opts"></div>
+          <div class="fm-q-foot">
+            <label class="fm-req"><input type="checkbox" ${q.required ? "checked" : ""}> Required</label>
+            <span class="grow"></span>
+            <button class="fm-del">Delete</button>
+          </div>
+        </div>`);
+        card.querySelector(".fm-q-title").oninput = (e) => { q.q = e.target.value; persist(); };
+        card.querySelector(".fm-q-type").onchange = (e) => { const nq = newQuestion(e.target.value); nq.q = q.q; nq.required = q.required; form.questions[qi] = nq; persist(); build(); };
+        card.querySelector(".fm-req input").onchange = (e) => { q.required = e.target.checked; persist(); };
+        card.querySelector(".fm-del").onclick = () => { form.questions.splice(qi, 1); persist(); build(); };
+        const opts = card.querySelector(".fm-q-opts");
+        if (q.type === "choice") {
+          q.options.forEach((opt, oi) => {
+            const row = el(`<div class="fm-opt"><span class="fm-opt-dot"></span><input value="${escapeHtml(opt)}"><button class="fm-opt-x" title="Remove">&times;</button></div>`);
+            row.querySelector("input").oninput = (e) => { q.options[oi] = e.target.value; persist(); };
+            row.querySelector(".fm-opt-x").onclick = () => { q.options.splice(oi, 1); persist(); build(); };
+            opts.appendChild(row);
+          });
+          const addOpt = el(`<button class="fm-addopt">+ Add option</button>`);
+          addOpt.onclick = () => { q.options.push("Option " + (q.options.length + 1)); persist(); build(); };
+          opts.appendChild(addOpt);
+        } else if (q.type === "rating") {
+          opts.innerHTML = `<div class="fm-stars">${"<span>&#9733;</span>".repeat(5)}</div>`;
+        } else {
+          opts.innerHTML = `<input class="fm-text-ph" disabled placeholder="Short answer text">`;
+        }
+        scroll.appendChild(card);
+      });
+
+      const addWrap = el(`<div class="fm-add">
+        <button data-t="text">+ Text</button>
+        <button data-t="choice">+ Multiple choice</button>
+        <button data-t="rating">+ Rating</button>
+      </div>`);
+      addWrap.querySelectorAll("button").forEach((b) => b.onclick = () => { form.questions.push(newQuestion(b.dataset.t)); persist(); build(); });
+      scroll.appendChild(addWrap);
+    }
+
+    function renderPreview(scroll) {
+      const wrap = el(`<div class="fm-preview">
+        <div class="fm-card fm-headcard fm-p-head"><h2>${escapeHtml(form.title)}</h2>${form.desc ? `<p>${escapeHtml(form.desc)}</p>` : ""}</div>
+      </div>`);
+      const answers = {};
+      form.questions.forEach((q, qi) => {
+        const card = el(`<div class="fm-card"><div class="fm-p-q">${escapeHtml(q.q)}${q.required ? ' <span class="fm-star">*</span>' : ""}</div><div class="fm-p-in"></div></div>`);
+        const inp = card.querySelector(".fm-p-in");
+        if (q.type === "text") { const i = el(`<input class="fm-p-text" placeholder="Your answer">`); i.oninput = () => answers[qi] = i.value; inp.appendChild(i); }
+        else if (q.type === "choice") {
+          q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="radio" name="q${qi}"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = () => answers[qi] = opt; inp.appendChild(r); });
+        } else if (q.type === "rating") {
+          const stars = el(`<div class="fm-p-stars">${[1, 2, 3, 4, 5].map((n) => `<span data-n="${n}">&#9733;</span>`).join("")}</div>`);
+          stars.querySelectorAll("span").forEach((sp) => sp.onclick = () => { answers[qi] = +sp.dataset.n; stars.querySelectorAll("span").forEach((s2) => s2.classList.toggle("on", +s2.dataset.n <= answers[qi])); });
+          inp.appendChild(stars);
+        }
+        wrap.appendChild(card);
+      });
+      const submit = el(`<button class="fm-submit">Submit</button>`);
+      submit.onclick = () => {
+        for (let i = 0; i < form.questions.length; i++) { if (form.questions[i].required && (answers[i] == null || answers[i] === "")) { toast("Please answer required questions"); return; } }
+        form.responses.push({ at: Date.now(), answers }); persist();
+        wrap.replaceWith(el(`<div class="fm-thanks"><div class="fm-thanks-ic">${Icon.mini("forms", "Forms")}</div><h2>Thanks!</h2><p>Your response was recorded.</p></div>`));
+      };
+      wrap.appendChild(submit);
+      scroll.appendChild(wrap);
+    }
+    function renderResponses() {
+      mode = "responses"; build();
+      const scroll = body.querySelector(".fm-scroll"); scroll.innerHTML = "";
+      const head = el(`<div class="fm-card fm-headcard"><h2>${form.responses.length} response${form.responses.length === 1 ? "" : "s"}</h2></div>`);
+      scroll.appendChild(head);
+      if (!form.responses.length) { scroll.appendChild(el(`<div class="muted" style="padding:20px;text-align:center">No responses yet. Switch to Preview to submit one.</div>`)); return; }
+      form.questions.forEach((q, qi) => {
+        const card = el(`<div class="fm-card"><div class="fm-p-q">${escapeHtml(q.q)}</div><div class="fm-resp-list"></div></div>`);
+        const list = card.querySelector(".fm-resp-list");
+        form.responses.forEach((r) => { const v = r.answers[qi]; if (v != null && v !== "") list.appendChild(el(`<div class="fm-resp">${q.type === "rating" ? "&#9733; " + v : escapeHtml(String(v))}</div>`)); });
+        if (!list.children.length) list.innerHTML = `<div class="muted">No answers</div>`;
+        scroll.appendChild(card);
+      });
+    }
+
+    build();
+  }
+  AppRegistry.forms = function () { openForms(null); };
+
   // ===================== POWERPOINT =====================
   const screen = () => document.getElementById("screen");
   function newSlide(title, sub) { return { bg: "#ffffff", title: title || "", body: sub || "", titleColor: "#17181c", bodyColor: "#5a5f6b" }; }
@@ -490,6 +642,7 @@
         <button data-a="add">+ New slide</button>
         <button data-a="dup">Duplicate</button>
         <button data-a="del">Delete</button>
+        <button data-a="img">Insert image</button>
         <span class="grow"></span>
         <span class="pp-pos muted"></span>
       </div>
@@ -510,7 +663,8 @@
     function renderRail() {
       rail.innerHTML = "";
       deck.slides.forEach((s, i) => {
-        const th = el(`<button class="pp-thumb ${i === idx ? "active" : ""}"><span class="pp-thumb-n">${i + 1}</span><div class="pp-thumb-slide" style="background:${s.bg}"><div class="pp-thumb-title" style="color:${s.titleColor}">${escapeHtml((s.title || "").replace(/<[^>]+>/g, "")).slice(0, 40)}</div></div></button>`);
+        const thumbImgs = (s.images || []).map((im) => `<div class="pp-thumb-img" style="left:${im.x}%;top:${im.y}%;width:${im.w}%;height:${im.h}%"><img src="${im.src}" alt=""></div>`).join("");
+        const th = el(`<button class="pp-thumb ${i === idx ? "active" : ""}"><span class="pp-thumb-n">${i + 1}</span><div class="pp-thumb-slide" style="background:${s.bg}"><div class="pp-thumb-title" style="color:${s.titleColor}">${escapeHtml((s.title || "").replace(/<[^>]+>/g, "")).slice(0, 40)}</div>${thumbImgs}</div></button>`);
         th.onclick = () => { idx = i; renderAll(); };
         rail.appendChild(th);
       });
@@ -525,7 +679,70 @@
       const t = stage.querySelector(".pp-title"), bd = stage.querySelector(".pp-body");
       t.addEventListener("input", () => { s.title = t.innerHTML; persist(); renderRailTitle(); });
       bd.addEventListener("input", () => { s.body = bd.innerHTML; persist(); });
+      (s.images || []).forEach((im) => mountImage(s, im));
+      // Click empty slide area to deselect images.
+      stage.addEventListener("mousedown", (e) => { if (e.target === stage) stage.querySelectorAll(".pp-img.sel").forEach((x) => x.classList.remove("sel")); });
       pos.textContent = "Slide " + (idx + 1) + " of " + deck.slides.length;
+    }
+
+    // Add a movable / resizable image box to the current slide's stage.
+    function mountImage(s, im) {
+      const box = el(`<div class="pp-img" style="left:${im.x}%;top:${im.y}%;width:${im.w}%;height:${im.h}%">
+        <img src="${im.src}" alt="" draggable="false">
+        <span class="pp-img-del" title="Delete">&times;</span>
+        <span class="pp-img-rz" title="Resize"></span>
+      </div>`);
+      stage.appendChild(box);
+      const select = () => { stage.querySelectorAll(".pp-img.sel").forEach((x) => x.classList.remove("sel")); box.classList.add("sel"); };
+      box.addEventListener("mousedown", (e) => { if (e.target.classList.contains("pp-img-rz") || e.target.classList.contains("pp-img-del")) return; startDrag(e, "move"); });
+      box.addEventListener("touchstart", (e) => { if (e.target.classList.contains("pp-img-rz") || e.target.classList.contains("pp-img-del")) return; startDrag(e, "move"); }, { passive: false });
+      box.querySelector(".pp-img-rz").addEventListener("mousedown", (e) => startDrag(e, "resize"));
+      box.querySelector(".pp-img-rz").addEventListener("touchstart", (e) => startDrag(e, "resize"), { passive: false });
+      box.querySelector(".pp-img-del").onclick = () => { const i = s.images.indexOf(im); if (i >= 0) s.images.splice(i, 1); persist(); box.remove(); };
+
+      function startDrag(e, mode) {
+        e.preventDefault(); e.stopPropagation(); select();
+        const pt0 = e.touches ? e.touches[0] : e;
+        const rect = stage.getBoundingClientRect();
+        const sx = pt0.clientX, sy = pt0.clientY;
+        const ox = im.x, oy = im.y, ow = im.w, oh = im.h;
+        const move = (ev) => {
+          const p = ev.touches ? ev.touches[0] : ev; if (ev.cancelable) ev.preventDefault();
+          const dxp = ((p.clientX - sx) / rect.width) * 100, dyp = ((p.clientY - sy) / rect.height) * 100;
+          if (mode === "move") {
+            im.x = Math.max(0, Math.min(100 - im.w, ox + dxp));
+            im.y = Math.max(0, Math.min(100 - im.h, oy + dyp));
+            box.style.left = im.x + "%"; box.style.top = im.y + "%";
+          } else {
+            im.w = Math.max(6, Math.min(100 - im.x, ow + dxp));
+            im.h = Math.max(6, Math.min(100 - im.y, oh + dyp));
+            box.style.width = im.w + "%"; box.style.height = im.h + "%";
+          }
+        };
+        const up = () => {
+          window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up);
+          window.removeEventListener("touchmove", move); window.removeEventListener("touchend", up);
+          persist();
+        };
+        window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+        window.addEventListener("touchmove", move, { passive: false }); window.addEventListener("touchend", up);
+      }
+    }
+    function insertImage() {
+      const inp = document.getElementById("globalFileInput");
+      inp.accept = "image/*"; inp.value = "";
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = () => {
+          const s = deck.slides[idx];
+          if (!s.images) s.images = [];
+          s.images.push({ src: rd.result, x: 22, y: 24, w: 44, h: 40 });
+          persist(); renderSlide();
+        };
+        rd.readAsDataURL(f);
+      };
+      inp.click();
     }
     function renderRailTitle() { const th = rail.children[idx]; if (th) { const el2 = th.querySelector(".pp-thumb-title"); if (el2) el2.textContent = (deck.slides[idx].title || "").replace(/<[^>]+>/g, "").slice(0, 40); } }
     function renderAll() { renderRail(); renderSlide(); }
@@ -533,13 +750,14 @@
     body.querySelector('[data-a="add"]').onclick = () => { deck.slides.splice(idx + 1, 0, newSlide("", "")); idx++; persist(); renderAll(); };
     body.querySelector('[data-a="dup"]').onclick = () => { deck.slides.splice(idx + 1, 0, JSON.parse(JSON.stringify(deck.slides[idx]))); idx++; persist(); renderAll(); };
     body.querySelector('[data-a="del"]').onclick = () => { if (deck.slides.length <= 1) return; deck.slides.splice(idx, 1); idx = Math.max(0, idx - 1); persist(); renderAll(); };
+    body.querySelector('[data-a="img"]').onclick = insertImage;
     bgc.oninput = () => { deck.slides[idx].bg = bgc.value; persist(); renderSlide(); renderRail(); };
 
     // File menu
     body.querySelectorAll(".pp-filemenu [data-f]").forEach((b) => b.onclick = () => {
       const f = b.dataset.f;
       if (f === "new") { deck = defaultDeck(); idx = 0; current = null; setTitleBar(); persist(); renderAll(); }
-      else if (f === "open") window.VFS.pickFile({ title: "Open presentation", accept: ["pptx"] }, (res) => openPowerPoint(res) && ref.close());
+      else if (f === "open") window.VFS.pickFile({ title: "Open presentation", accept: ["pptx"] }, (res) => { if (res) { ref.close(); openPowerPoint(res); } });
       else if (f === "save") { if (!current) return saveAs(); persist(); toast("Saved " + current.name); }
       else if (f === "saveas") saveAs();
     });
@@ -558,7 +776,7 @@
         <div class="pp-present-slide" id="ps"></div>
         <div class="pp-present-bar"><button id="prev">‹</button><span id="pc" class="muted"></span><button id="next">›</button><button id="exit">Exit</button></div>
       </div>`);
-      function show() { const s = deck.slides[i]; const el2 = ov.querySelector("#ps"); el2.style.background = s.bg; el2.innerHTML = `<div class="pp-p-title" style="color:${s.titleColor}">${s.title || ""}</div><div class="pp-p-body" style="color:${s.bodyColor}">${s.body || ""}</div>`; ov.querySelector("#pc").textContent = (i + 1) + " / " + deck.slides.length; }
+      function show() { const s = deck.slides[i]; const el2 = ov.querySelector("#ps"); el2.style.background = s.bg; const imgs = (s.images || []).map((im) => `<div class="pp-p-img" style="left:${im.x}%;top:${im.y}%;width:${im.w}%;height:${im.h}%"><img src="${im.src}" alt=""></div>`).join(""); el2.innerHTML = `<div class="pp-p-title" style="color:${s.titleColor}">${s.title || ""}</div><div class="pp-p-body" style="color:${s.bodyColor}">${s.body || ""}</div>${imgs}`; ov.querySelector("#pc").textContent = (i + 1) + " / " + deck.slides.length; }
       const next = () => { if (i < deck.slides.length - 1) { i++; show(); } };
       const prev = () => { if (i > 0) { i--; show(); } };
       function close() { ov.remove(); document.removeEventListener("keydown", key); }
@@ -575,5 +793,5 @@
 
   AppRegistry.powerpoint = function () { openPowerPoint(null); };
 
-  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint, openExcel: openExcel };
+  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint, openExcel: openExcel, openForms: openForms };
 })();

@@ -1630,6 +1630,53 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .fdlg-fn { font-size: .85rem; display: flex; align-items: center; gap: 8px; }
 .fdlg-name { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; background: var(--bg-elev); color: var(--text); min-width: 200px; }
 
+/* Microsoft Forms */
+.fm { display: flex; flex-direction: column; height: 100%; background: #f0f3f5; font-family: "Segoe UI", system-ui, sans-serif; }
+.fm-top { display: flex; align-items: center; gap: 8px; background: #1a8a8f; padding: 8px 12px; color: #fff; }
+.fm-ic { width: 22px; height: 22px; display: inline-flex; }
+.fm-brand { font-size: 1rem; }
+.fm-tab { background: rgba(255,255,255,.14); border: 0; color: #fff; padding: 6px 13px; border-radius: 6px; cursor: pointer; font-size: .82rem; }
+.fm-tab:hover { background: rgba(255,255,255,.26); }
+.fm-tab.on { background: #fff; color: #1a8a8f; font-weight: 600; }
+.fm-scroll { flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.fm-card { width: min(680px, 100%); background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 18px 20px; box-sizing: border-box; }
+.fm-headcard { border-top: 8px solid #1a8a8f; }
+.fm-title { width: 100%; border: 0; border-bottom: 1px solid #e0e0e0; font-size: 1.5rem; font-weight: 600; padding: 6px 2px; outline: none; }
+.fm-desc { width: 100%; border: 0; border-bottom: 1px solid #eee; font-size: .9rem; padding: 6px 2px; margin-top: 8px; outline: none; color: #555; }
+.fm-q-top { display: flex; gap: 10px; align-items: center; }
+.fm-q-title { flex: 1; border: 0; border-bottom: 1px solid #e0e0e0; font-size: 1rem; padding: 5px 2px; outline: none; }
+.fm-q-type { border: 1px solid #ddd; border-radius: 6px; padding: 5px; background: #fafafa; }
+.fm-q-opts { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
+.fm-opt { display: flex; align-items: center; gap: 8px; }
+.fm-opt-dot { width: 15px; height: 15px; border: 2px solid #bbb; border-radius: 50%; flex: 0 0 auto; }
+.fm-opt input { flex: 1; border: 0; border-bottom: 1px dashed #ddd; padding: 4px 2px; outline: none; }
+.fm-opt-x { border: 0; background: none; color: #999; font-size: 1.1rem; cursor: pointer; }
+.fm-addopt { align-self: flex-start; border: 0; background: none; color: #1a8a8f; cursor: pointer; font-size: .86rem; padding: 4px 0; }
+.fm-text-ph { width: 60%; border: 0; border-bottom: 1px dotted #ccc; padding: 4px 2px; color: #aaa; }
+.fm-stars { color: #f5b301; font-size: 1.3rem; letter-spacing: 3px; }
+.fm-q-foot { display: flex; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+.fm-req { font-size: .82rem; color: #555; display: flex; align-items: center; gap: 5px; }
+.fm-del { border: 0; background: none; color: #d0483d; cursor: pointer; font-size: .84rem; }
+.fm-add { width: min(680px, 100%); display: flex; gap: 8px; }
+.fm-add button { flex: 1; border: 1px dashed #1a8a8f; background: #eaf6f6; color: #1a8a8f; padding: 10px; border-radius: 8px; cursor: pointer; font-size: .86rem; }
+.fm-add button:hover { background: #d9eeee; }
+.fm-preview { width: min(680px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.fm-p-head h2 { margin: 0 0 6px; }
+.fm-p-head p { margin: 0; color: #555; }
+.fm-p-q { font-weight: 600; margin-bottom: 10px; }
+.fm-star { color: #d0483d; }
+.fm-p-text { width: 100%; border: 0; border-bottom: 1px solid #ccc; padding: 6px 2px; outline: none; font-size: .95rem; }
+.fm-p-opt { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+.fm-p-stars span { font-size: 1.8rem; color: #ddd; cursor: pointer; }
+.fm-p-stars span.on { color: #f5b301; }
+.fm-submit { align-self: flex-start; background: #1a8a8f; color: #fff; border: 0; border-radius: 6px; padding: 10px 24px; cursor: pointer; font-size: .95rem; }
+.fm-submit:hover { background: #157175; }
+.fm-thanks { width: min(680px,100%); background: #fff; border-radius: 10px; border-top: 8px solid #1a8a8f; padding: 40px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.fm-thanks-ic { width: 46px; height: 46px; margin: 0 auto 10px; }
+.fm-resp-list { display: flex; flex-direction: column; gap: 6px; }
+.fm-resp { background: #f4f7f8; border-radius: 6px; padding: 8px 12px; font-size: .9rem; }
+.fm-splash .wd-splash-bar span { background: #1a8a8f; }
+
 /* Microsoft PowerPoint */
 .pp { display: flex; flex-direction: column; height: 100%; background: #f0f0f0; }
 .pp-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #c43e1c; color: #fff; }
@@ -1644,12 +1691,25 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .pp-rail { width: 160px; flex: 0 0 auto; background: #e6e6e6; border-right: 1px solid #ccc; overflow: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 .pp-thumb { display: flex; gap: 6px; align-items: stretch; background: none; border: 0; padding: 0; cursor: pointer; }
 .pp-thumb-n { color: #666; font-size: .75rem; width: 14px; flex: 0 0 auto; padding-top: 4px; }
-.pp-thumb-slide { flex: 1; aspect-ratio: 16/9; border: 2px solid #ccc; border-radius: 4px; overflow: hidden; padding: 8px; }
+.pp-thumb-slide { position: relative; flex: 1; aspect-ratio: 16/9; border: 2px solid #ccc; border-radius: 4px; overflow: hidden; padding: 8px; }
 .pp-thumb.active .pp-thumb-slide { border-color: #c43e1c; }
 .pp-thumb-title { font-size: .6rem; font-weight: 700; line-height: 1.1; overflow: hidden; }
+.pp-thumb-img { position: absolute; }
+.pp-thumb-img img { width: 100%; height: 100%; object-fit: contain; }
 .pp-stage { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; }
-.pp-slide { width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #fff; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+.pp-slide { position: relative; width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #fff; border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
   display: flex; flex-direction: column; justify-content: center; padding: 8% 9%; gap: 14px; }
+
+/* PowerPoint images (movable + resizable) */
+.pp-img { position: absolute; cursor: move; border: 1.5px solid transparent; box-sizing: border-box; }
+.pp-img img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; -webkit-user-drag: none; user-select: none; }
+.pp-img.sel { border-color: #c43e1c; }
+.pp-img .pp-img-del, .pp-img .pp-img-rz { display: none; position: absolute; }
+.pp-img.sel .pp-img-del, .pp-img.sel .pp-img-rz { display: block; }
+.pp-img-del { top: -11px; right: -11px; width: 22px; height: 22px; border-radius: 50%; background: #c43e1c; color: #fff; text-align: center; line-height: 20px; font-size: 15px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.pp-img-rz { bottom: -8px; right: -8px; width: 16px; height: 16px; border-radius: 3px; background: #fff; border: 2px solid #c43e1c; cursor: nwse-resize; }
+.pp-p-img { position: absolute; }
+.pp-p-img img { width: 100%; height: 100%; object-fit: contain; }
 .pp-title { font-size: 2rem; font-weight: 700; outline: none; }
 .pp-body { font-size: 1.1rem; outline: none; min-height: 1.4em; }
 .pp-title:empty::before, .pp-body:empty::before { content: attr(data-ph); color: #bbb; }
@@ -1657,7 +1717,7 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .pp-tools button { background: #f3f3f3; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; cursor: pointer; color: #333; font-size: .82rem; }
 .pp-tools button:hover { background: #eef; border-color: #c43e1c; }
 .pp-present-ov { position: absolute; inset: 0; z-index: 9500; background: #000; display: flex; flex-direction: column; }
-.pp-present-slide { flex: 1; margin: auto; width: 100%; max-width: 100vw; aspect-ratio: 16/9; display: flex; flex-direction: column; justify-content: center; padding: 6% 8%; gap: 20px; }
+.pp-present-slide { position: relative; flex: 1; margin: auto; width: 100%; max-width: 100vw; aspect-ratio: 16/9; display: flex; flex-direction: column; justify-content: center; padding: 6% 8%; gap: 20px; }
 .pp-p-title { font-size: 4vw; font-weight: 800; }
 .pp-p-body { font-size: 2.4vw; }
 .pp-present-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px; background: rgba(0,0,0,.6); }

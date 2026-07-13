@@ -697,8 +697,14 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       if (!entries.length) grid.appendChild(el(`<div class="muted" style="padding:20px">This folder is empty.</div>`));
       entries.forEach(([name, node]) => {
         const isFolder = node.type === "folder";
-        const fileGlyph = node.kind === "image" ? "&#128444;&#65039;" : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>` : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>` : "&#128196;";
-        const glyph = isFolder ? `<img class="files-folder-img" src="assets/folder.png" alt="">` : fileGlyph;
+        const docSvg = (c) => `<svg viewBox="0 0 24 24" width="34" height="34"><path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" fill="${c}"/><path d="M14 3v4h4" fill="#fff" opacity=".55"/></svg>`;
+        const fileGlyph = node.kind === "image" ? (node.src ? `<img class="files-folder-img" src="${node.src}" alt="">` : `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#5a8def"/><circle cx="9" cy="9" r="2" fill="#fff"/><path d="M4 18l5-5 3 3 4-5 5 7Z" fill="#fff"/></svg>`)
+          : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>`
+          : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>`
+          : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
+          : docSvg("#8a94a6");
+        const folderSrc = name === "Music" ? "assets/musicfolder.png" : "assets/folder.png";
+        const glyph = isFolder ? `<img class="files-folder-img" src="${folderSrc}" alt="">` : fileGlyph;
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
           <div class="files-name">${escapeHtml(name)}</div>

@@ -256,6 +256,20 @@
     <rect x="24" y="24" width="19" height="19" rx="5" fill="url(#wfg)"/>
   </svg>`);
 
+  register("searchglass", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="sgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f0ff"/><stop offset="1" stop-color="#7fd9ff"/></linearGradient></defs>
+    <circle cx="18" cy="17" r="14" fill="url(#sgl)"/>
+    <line x1="28" y1="27" x2="39" y2="38" stroke="#1e9fe0" stroke-width="7" stroke-linecap="round"/>
+  </svg>`);
+
+  register("forms", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect x="22" y="14" width="66" height="100" rx="9" fill="#f6f4f8"/>
+    <rect x="22" y="14" width="66" height="100" rx="9" fill="none" stroke="#e0dbe6" stroke-width="2"/>
+    <path d="M35 42 H76 M35 58 H76 M35 74 H62" stroke="#7719aa" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="90" cy="90" r="26" fill="#c31a6c"/>
+    <path d="M79 90 l7 8 l15 -16" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`);
+
   register("excel", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect x="8" y="20" width="112" height="88" rx="10" fill="#fff"/>
     <path d="M8 30 A10 10 0 0 1 18 20 H70 V108 H18 A10 10 0 0 1 8 98 Z" fill="#217346"/>

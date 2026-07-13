@@ -119,6 +119,7 @@
     { id: "word", name: "Word" },
     { id: "powerpoint", name: "PowerPoint" },
     { id: "excel", name: "Excel" },
+    { id: "forms", name: "Forms" },
   ];
 
   function xpOn() { return !!(S().desktop && S().desktop.xpTheme); }
@@ -173,7 +174,7 @@
       // Seed the Home Screen with the previous Start-menu groups so App Groups
       // now live on the desktop instead of the search bar.
       const src = (S().appData && S().appData.appGroups) || [
-        { name: "Office", apps: ["word", "powerpoint", "excel", "notepad"] },
+        { name: "Office", apps: ["word", "powerpoint", "excel", "forms", "notepad"] },
         { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
       ];
       S().desktop.groups = src.map((g, i) => ({ id: "grp" + i + "_" + Math.abs(hashStr(g.name)), name: g.name, apps: g.apps.slice() }));
@@ -450,9 +451,9 @@
   function buildTaskbar() {
     taskbar = el(`<div class="taskbar tb-float">
       <div class="tb-dock">
-        <button class="tb-search"><span class="tb-search-ic">${Icon.mini("winflag", "Search")}</span><span class="tb-search-lbl">Search Anything</span></button>
+        <button class="tb-search"><span class="tb-search-ic">${Icon.mini("searchglass", "Search")}</span><span class="tb-search-lbl">Search Anything</span></button>
         <div class="tb-apps">
-          <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "start", "Windows")}</div>
+          <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "winflag", "Windows")}</div>
           <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
           <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
           <div class="tb-btn" data-open="files" title="Files">${Icon.mini("files", "Files")}</div>
@@ -710,7 +711,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

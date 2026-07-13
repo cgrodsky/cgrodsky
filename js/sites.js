@@ -204,9 +204,9 @@
     </div>`);
     const grid = wrap.querySelector(".amz-grid");
     const bundles = [
-      { name: "Microsoft 365 Personal", price: 69.99, apps: ["Word", "Excel", "PowerPoint", "Outlook", "OneNote"] },
-      { name: "Microsoft 365 Family", price: 99.99, apps: ["Word", "Excel", "PowerPoint", "Outlook", "OneNote", "Access", "Publisher"] },
-      { name: "Office Home & Student", price: 149.99, apps: ["Word", "Excel", "PowerPoint"] },
+      { name: "Microsoft 365 Personal", price: 69.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote"] },
+      { name: "Microsoft 365 Family", price: 99.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote", "Access", "Publisher"] },
+      { name: "Office Home & Student", price: 149.99, apps: ["Word", "Excel", "PowerPoint", "Forms"] },
     ];
     bundles.forEach((bd) => {
       const c = el(`<div class="amz-card"><div class="ic" style="display:flex;justify-content:center">${Icon.big("microsoft", "Microsoft 365")}</div><div><b>${bd.name}</b></div>
