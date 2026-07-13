@@ -118,6 +118,7 @@
     { id: "messenger", name: "Messenger" },
     { id: "word", name: "Word" },
     { id: "powerpoint", name: "PowerPoint" },
+    { id: "excel", name: "Excel" },
   ];
 
   function hiddenIcons() { return (S().desktop && S().desktop.hiddenIcons) || []; }
@@ -437,7 +438,7 @@
   function appGroups() {
     if (!S().appData) S().appData = {};
     if (!S().appData.appGroups) S().appData.appGroups = [
-      { name: "Office", apps: ["word", "powerpoint", "notepad"] },
+      { name: "Office", apps: ["word", "powerpoint", "excel", "notepad"] },
       { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
     ];
     return S().appData.appGroups;
@@ -524,7 +525,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "minecraft", "codeeditor", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

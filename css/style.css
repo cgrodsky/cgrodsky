@@ -1664,3 +1664,25 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .wd-recent-ic { width: 28px; height: 28px; }
 .wd-recent-nm { font-size: .92rem; flex: 1; }
 .wd-recent-loc { font-size: .78rem; }
+
+/* Microsoft Excel */
+.xl-splash .wd-splash-bar span { background: #217346; }
+.xl { display: flex; flex-direction: column; height: 100%; background: #f3f3f3; font-family: "Segoe UI", system-ui, sans-serif; }
+.xl-top { display: flex; align-items: center; gap: 8px; background: #217346; padding: 7px 10px; }
+.xl-ic { width: 22px; height: 22px; display: inline-flex; }
+.xl-name { flex: 0 0 auto; width: 150px; background: rgba(255,255,255,.14); border: 0; color: #fff; padding: 5px 9px; border-radius: 5px; font-size: .85rem; }
+.xl-filemenu { display: flex; gap: 2px; margin-left: 8px; }
+.xl-filemenu button { background: rgba(255,255,255,.14); border: 0; color: #fff; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: .82rem; }
+.xl-filemenu button:hover { background: rgba(255,255,255,.28); }
+.xl-formula { display: flex; align-items: center; gap: 0; background: #fff; border-bottom: 1px solid #d0d0d0; }
+.xl-namebox { flex: 0 0 auto; width: 64px; text-align: center; font-size: .82rem; color: #333; border-right: 1px solid #d0d0d0; padding: 5px 0; }
+.xl-fx { flex: 0 0 auto; font-style: italic; color: #888; padding: 0 10px; border-right: 1px solid #d0d0d0; font-size: .82rem; }
+.xl-fbar { flex: 1; border: 0; outline: none; padding: 6px 10px; font-size: .85rem; }
+.xl-grid { flex: 1; overflow: auto; background: #fff; }
+.xl-table { border-collapse: collapse; table-layout: fixed; }
+.xl-table th { background: #f0f0f0; border: 1px solid #d4d4d4; font-weight: 500; font-size: .76rem; color: #555; padding: 3px 0; position: sticky; text-align: center; }
+.xl-table thead th { top: 0; z-index: 2; }
+.xl-table th.xl-rownum { left: 0; z-index: 1; width: 42px; }
+.xl-table th.xl-corner { left: 0; top: 0; z-index: 3; width: 42px; }
+.xl-table td.xl-cell { border: 1px solid #e0e0e0; min-width: 88px; width: 88px; height: 22px; padding: 2px 5px; font-size: .82rem; color: #222; outline: none; overflow: hidden; white-space: nowrap; }
+.xl-table td.xl-cell.active { box-shadow: inset 0 0 0 2px #217346; }

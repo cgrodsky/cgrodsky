@@ -214,6 +214,129 @@
 
   AppRegistry.word = function () { openWord(null); };
 
+  // ===================== EXCEL =====================
+  const XCOLS = 12, XROWS = 26;
+  function colName(i) { let s = ""; i++; while (i) { i--; s = String.fromCharCode(65 + i % 26) + s; i = Math.floor(i / 26); } return s; }
+  function colToIdx(c) { let n = 0; for (const ch of c) n = n * 26 + (ch.charCodeAt(0) - 64); return n - 1; }
+  function parseRef(ref) { const m = /^([A-Z]+)(\d+)$/.exec((ref || "").toUpperCase()); return m ? { c: colToIdx(m[1]), r: +m[2] } : null; }
+
+  function openExcel(fileRef) {
+    const ref = cw({ title: "Excel", icon: Icon.mini("excel", "Excel"), width: 980, height: 640, appId: "excel" });
+    const body = ref.body, win = ref.win;
+    if (!S().appData) S().appData = {};
+    let cells = {}, current = null;
+    if (fileRef && fileRef.node) { try { cells = (JSON.parse(fileRef.node.content || "{}").cells) || {}; } catch (_) {} current = { name: fileRef.name, node: fileRef.node }; }
+    else if (S().appData.excel && S().appData.excel.cells) cells = S().appData.excel.cells;
+
+    body.innerHTML = `<div class="wd-splash xl-splash">
+      <img class="wd-splash-ic" src="assets/excel.png" onerror="this.style.display='none'" alt="">
+      <div class="wd-splash-name" style="color:#217346">Excel</div>
+      <div class="wd-splash-bar"><span style="background:#217346"></span></div>
+      <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>
+    </div>`;
+    setTimeout(build, 3000);
+
+    const titleText = () => win.querySelector(".win-titlebar .t-text");
+    function persist() { if (current) { current.node.content = JSON.stringify({ cells }); current.node.ts = Date.now(); } else S().appData.excel = { cells }; State.save(); }
+
+    // ---- formula engine ----
+    function rawOf(r) { return cells[r] != null ? String(cells[r]) : ""; }
+    function expandRange(a, b) { const A = parseRef(a), B = parseRef(b), out = []; if (!A || !B) return out; for (let r = Math.min(A.r, B.r); r <= Math.max(A.r, B.r); r++) for (let c = Math.min(A.c, B.c); c <= Math.max(A.c, B.c); c++) out.push(colName(c) + r); return out; }
+    function valOf(r, seen) { r = r.toUpperCase(); if (seen.has(r)) return 0; const raw = rawOf(r); if (raw === "") return 0; if (raw[0] === "=") { seen.add(r); const v = evalF(raw.slice(1), seen); seen.delete(r); return v; } const n = parseFloat(raw); return isNaN(n) ? raw : n; }
+    function evalF(expr, seen) {
+      expr = expr.replace(/([A-Za-z]+)\s*\(([^()]*)\)/g, (m, fn, args) => {
+        fn = fn.toUpperCase();
+        const vals = args.split(",").flatMap((tok) => {
+          tok = tok.trim(); if (!tok) return [];
+          const rng = /^([A-Z]+\d+):([A-Z]+\d+)$/i.exec(tok);
+          if (rng) return expandRange(rng[1], rng[2]).map((r) => Number(valOf(r, seen)) || 0);
+          if (/^[A-Z]+\d+$/i.test(tok)) return [Number(valOf(tok, seen)) || 0];
+          const n = parseFloat(tok); return isNaN(n) ? [] : [n];
+        });
+        if (fn === "SUM") return vals.reduce((a, b) => a + b, 0);
+        if (fn === "AVERAGE" || fn === "AVG") return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        if (fn === "MIN") return vals.length ? Math.min.apply(null, vals) : 0;
+        if (fn === "MAX") return vals.length ? Math.max.apply(null, vals) : 0;
+        if (fn === "COUNT") return vals.length;
+        if (fn === "PRODUCT") return vals.reduce((a, b) => a * b, 1);
+        return 0;
+      });
+      expr = expr.replace(/[A-Z]+\d+/gi, (r) => { const v = valOf(r, seen); return typeof v === "number" ? v : JSON.stringify(v); });
+      try { const r = Function('"use strict";return (' + expr + ")")(); return (r == null) ? "" : r; } catch (e) { return "#ERR"; }
+    }
+    function display(r) { const raw = rawOf(r); if (raw === "") return ""; if (raw[0] === "=") return String(evalF(raw.slice(1), new Set([r]))); return raw; }
+
+    let active = "A1";
+    function build() {
+      body.innerHTML = `<div class="xl">
+        <div class="xl-top">
+          <span class="xl-ic">${Icon.mini("excel", "Excel")}</span>
+          <input class="xl-name" value="${escapeHtml(current ? current.name : "Book1")}">
+          <div class="xl-filemenu">
+            <button data-f="new">New</button><button data-f="open">Open</button><button data-f="import">Open from device</button><button data-f="save">Save</button><button data-f="saveas">Save As</button>
+          </div>
+        </div>
+        <div class="xl-formula"><span class="xl-namebox">A1</span><span class="xl-fx">fx</span><input class="xl-fbar" spellcheck="false"></div>
+        <div class="xl-grid"></div>
+      </div>`;
+      const gridWrap = body.querySelector(".xl-grid");
+      const nameBox = body.querySelector(".xl-namebox");
+      const fbar = body.querySelector(".xl-fbar");
+
+      let html = `<table class="xl-table"><thead><tr><th class="xl-corner"></th>`;
+      for (let c = 0; c < XCOLS; c++) html += `<th>${colName(c)}</th>`;
+      html += `</tr></thead><tbody>`;
+      for (let r = 1; r <= XROWS; r++) {
+        html += `<tr><th class="xl-rownum">${r}</th>`;
+        for (let c = 0; c < XCOLS; c++) { const cr = colName(c) + r; html += `<td class="xl-cell" data-ref="${cr}" contenteditable="true">${escapeHtml(display(cr))}</td>`; }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
+      gridWrap.innerHTML = html;
+
+      function setActive(cr) { active = cr; body.querySelectorAll(".xl-cell.active").forEach((c) => c.classList.remove("active")); const td = gridWrap.querySelector(`[data-ref="${cr}"]`); if (td) td.classList.add("active"); nameBox.textContent = cr; fbar.value = rawOf(cr); }
+      function renderValues() { gridWrap.querySelectorAll(".xl-cell").forEach((td) => { if (document.activeElement !== td) td.textContent = display(td.dataset.ref); }); }
+      function commit(cr, v) { v = (v || "").trim(); if (v === "") delete cells[cr]; else cells[cr] = v; persist(); renderValues(); }
+
+      gridWrap.querySelectorAll(".xl-cell").forEach((td) => {
+        const cr = td.dataset.ref;
+        td.addEventListener("focus", () => { td.textContent = rawOf(cr); setActive(cr); });
+        td.addEventListener("input", () => { fbar.value = td.textContent; });
+        td.addEventListener("blur", () => commit(cr, td.textContent));
+        td.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); const p = parseRef(cr); td.blur(); const nx = gridWrap.querySelector(`[data-ref="${colName(p.c) + (p.r + 1)}"]`); if (nx) nx.focus(); }
+          else if (e.key === "Escape") { td.textContent = display(cr); td.blur(); }
+        });
+        td.addEventListener("click", () => { if (document.activeElement !== td) setActive(cr); });
+      });
+      fbar.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(active, fbar.value); const td = gridWrap.querySelector(`[data-ref="${active}"]`); if (td) td.textContent = display(active); } });
+
+      body.querySelectorAll(".xl-filemenu [data-f]").forEach((b) => b.onclick = () => {
+        const f = b.dataset.f;
+        if (f === "new") { cells = {}; current = null; if (titleText()) titleText().textContent = "Book1 — Excel"; persist(); build(); }
+        else if (f === "open") window.VFS.pickFile({ title: "Open workbook", accept: ["xlsx"] }, (res) => { if (res) { ref.close(); openExcel(res); } });
+        else if (f === "import") importCsv();
+        else if (f === "save") { if (!current) return saveAs(); persist(); toast("Saved " + current.name); }
+        else if (f === "saveas") saveAs();
+      });
+      setActive("A1");
+    }
+    function saveAs() {
+      window.VFS.pickSave({ title: "Save workbook", defaultName: current ? current.name.replace(/\.[a-z0-9]+$/i, "") : "Book1", kind: "xlsx" }, (res) => {
+        const node = { type: "file", kind: "xlsx", content: JSON.stringify({ cells }), ts: Date.now() };
+        res.children[res.name] = node; State.save();
+        current = { name: res.name, node }; if (titleText()) titleText().textContent = res.name + " — Excel"; toast("Saved " + res.name);
+      });
+    }
+    function importCsv() {
+      const inp = document.getElementById("globalFileInput");
+      inp.accept = ".csv,text/csv,text/plain"; inp.value = "";
+      inp.onchange = () => { const f = inp.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { const rows = String(rd.result || "").split(/\r?\n/); rows.forEach((line, ri) => { line.split(",").forEach((v, ci) => { if (v !== "") cells[colName(ci) + (ri + 1)] = v; }); }); persist(); build(); }; rd.readAsText(f); };
+      inp.click();
+    }
+  }
+  AppRegistry.excel = function () { openExcel(null); };
+
   // ===================== POWERPOINT =====================
   const screen = () => document.getElementById("screen");
   function newSlide(title, sub) { return { bg: "#ffffff", title: title || "", body: sub || "", titleColor: "#17181c", bodyColor: "#5a5f6b" }; }
@@ -333,5 +456,5 @@
 
   AppRegistry.powerpoint = function () { openPowerPoint(null); };
 
-  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint };
+  window.Office = { openWord: openWord, openPowerPoint: openPowerPoint, openExcel: openExcel };
 })();

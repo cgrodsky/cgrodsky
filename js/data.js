@@ -37,6 +37,7 @@
     { id: "vlc", name: "VLC media player", cat: "Multimedia", price: 0, builtin: "vlc", desc: "VLC — play almost any video or audio file from your device." },
     { id: "word", name: "Word", cat: "Productivity", price: 0, builtin: "word", desc: "Microsoft Word — write documents with a full formatting ribbon." },
     { id: "powerpoint", name: "PowerPoint", cat: "Productivity", price: 0, builtin: "powerpoint", desc: "Microsoft PowerPoint — build slide decks and present them." },
+    { id: "excel", name: "Excel", cat: "Productivity", price: 0, builtin: "excel", desc: "Microsoft Excel — spreadsheets with formulas like =SUM(A1:A3)." },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
     { id: "blockfinder", name: "Assets", cat: "System", price: 0, builtin: "blockfinder", desc: "Manage every uploaded asset — textures and sounds — each with a number." },

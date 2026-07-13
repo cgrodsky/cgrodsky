@@ -34,8 +34,8 @@
     return name;
   }
 
-  const KIND_ICON = { folder: "📁", text: "📄", word: "📘", pptx: "📙", image: "🖼️", other: "📄" };
-  const KIND_EXT = { text: ".txt", word: ".docx", pptx: ".pptx", image: ".png" };
+  const KIND_ICON = { folder: "📁", text: "📄", word: "📘", pptx: "📙", xlsx: "📗", image: "🖼️", other: "📄" };
+  const KIND_EXT = { text: ".txt", word: ".docx", pptx: ".pptx", xlsx: ".xlsx", image: ".png" };
 
   // Windows-style Open / Save dialog.
   // mode: "open"|"save"; opts: { title, accept:[kinds], defaultName, kind }
@@ -141,6 +141,7 @@
       if (!node || node.type !== "file") return;
       if (node.kind === "word" || node.kind === "text") { if (window.Office) window.Office.openWord({ name, node }); }
       else if (node.kind === "pptx") { if (window.Office) window.Office.openPowerPoint({ name, node }); }
+      else if (node.kind === "xlsx") { if (window.Office) window.Office.openExcel({ name, node }); }
       else if (node.kind === "image" && node.src) {
         const ov = el(`<div class="bf-mask"><div class="bf-big"><div class="bf-big-img"><img src="${node.src}" alt=""></div><div class="bf-big-name">${esc(name)}</div><div class="row" style="justify-content:center"><button class="btn-text" id="cl">Close</button></div></div></div>`);
         ov.querySelector("#cl").onclick = () => ov.remove(); ov.onclick = (e) => { if (e.target === ov) ov.remove(); };

@@ -246,6 +246,13 @@
     <path d="M80 44 H108 M80 60 H108 M80 76 H108 M80 92 H100" stroke="#2b579a" stroke-width="4" stroke-linecap="round"/>
   </svg>`);
 
+  register("excel", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="20" width="112" height="88" rx="10" fill="#fff"/>
+    <path d="M8 30 A10 10 0 0 1 18 20 H70 V108 H18 A10 10 0 0 1 8 98 Z" fill="#217346"/>
+    <path d="M24 44 L40 84 M40 44 L24 84" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+    <path d="M80 44 H108 M80 60 H108 M80 76 H108 M80 92 H108 M94 40 V96 M80 40 V96" stroke="#217346" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  </svg>`);
+
   register("auth0", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect width="128" height="128" rx="24" fill="#000"/>
     <path d="M64 22 L82 22 L88 40 Q92 62 64 82 Q36 62 40 40 L46 22 L64 22 Z" fill="#eb5424"/>
