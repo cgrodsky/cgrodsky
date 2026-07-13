@@ -378,10 +378,11 @@ input[type=range] { width: 100%; }
   left: 0; right: 0; gap: 12px; padding: 0 14px 12px;
 }
 .tb-dock {
-  display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 16px;
+  display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 28px;
   background: var(--taskbar); backdrop-filter: blur(22px); border: 1px solid var(--border);
   box-shadow: 0 8px 30px rgba(0,0,0,.28);
 }
+.tb-search { border-radius: 22px; }
 .tb-apps { display: flex; align-items: center; gap: 4px; }
 .tb-search {
   display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 12px; margin-right: 4px;
@@ -1637,3 +1638,29 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .wd-splash-bar span { display: block; width: 40%; height: 100%; background: #2b579a; border-radius: 2px; animation: wdLoad 1.1s ease-in-out infinite; }
 @keyframes wdLoad { 0% { margin-left: -42%; } 100% { margin-left: 100%; } }
 @keyframes wdPop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Word splash Microsoft logo */
+.wd-splash-ms { display: flex; align-items: center; gap: 7px; margin-top: 26px; color: #666; font: 400 .9rem "Segoe UI", system-ui, sans-serif; }
+.wd-splash-ms .w12-flag { width: 15px; height: 15px; gap: 2px; }
+
+/* Word opening menu (start screen) */
+.wd-start { display: flex; height: 100%; background: #fff; color: #222; }
+.wd-start-side { width: 250px; flex: 0 0 auto; background: #2b579a; color: #fff; padding: 26px 20px; display: flex; flex-direction: column; gap: 10px; }
+.wd-start-brand { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+.wd-start-logo { width: 30px; height: 30px; }
+.wd-start-btn { text-align: left; background: rgba(255,255,255,.12); border: 0; color: #fff; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-size: .9rem; }
+.wd-start-btn:hover { background: rgba(255,255,255,.24); }
+.wd-start-btn.primary { background: #fff; color: #2b579a; font-weight: 600; }
+.wd-start-main { flex: 1; padding: 30px 34px; overflow: auto; }
+.wd-start-hi { font: 300 1.8rem "Segoe UI", system-ui, sans-serif; margin: 0 0 18px; color: #2b579a; }
+.wd-start-cards { display: flex; gap: 16px; margin-bottom: 8px; }
+.wd-newcard { background: none; border: 1px solid #ddd; border-radius: 8px; padding: 0 0 10px; cursor: pointer; width: 150px; overflow: hidden; }
+.wd-newcard:hover { border-color: #2b579a; }
+.wd-newcard-thumb { height: 130px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #2b579a; }
+.wd-newcard span { display: block; padding-top: 8px; font-size: .85rem; }
+.wd-start-recent { display: flex; flex-direction: column; }
+.wd-recent-row { display: flex; align-items: center; gap: 12px; background: none; border: 0; text-align: left; padding: 10px 8px; border-radius: 8px; cursor: pointer; color: #222; }
+.wd-recent-row:hover { background: #f0f4fb; }
+.wd-recent-ic { width: 28px; height: 28px; }
+.wd-recent-nm { font-size: .92rem; flex: 1; }
+.wd-recent-loc { font-size: .78rem; }

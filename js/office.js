@@ -18,18 +18,77 @@
     const body = ref.body, win = ref.win;
     if (!S().appData) S().appData = {};
 
-    // 3-second Office-style splash, then the editor.
-    body.innerHTML = `<div class="wd-splash"><img class="wd-splash-ic" src="assets/word.png" alt=""><div class="wd-splash-name">Word</div><div class="wd-splash-bar"><span></span></div></div>`;
-    setTimeout(buildWord, 3000);
+    // 3-second Office-style splash (with Microsoft logo), then the start menu.
+    body.innerHTML = `<div class="wd-splash">
+      <img class="wd-splash-ic" src="assets/word.png" alt="">
+      <div class="wd-splash-name">Word</div>
+      <div class="wd-splash-bar"><span></span></div>
+      <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>
+    </div>`;
+    setTimeout(() => { if (fileRef && fileRef.node) buildWord(fileRef); else buildStart(); }, 3000);
 
-    function buildWord() {
+    // Scan the virtual filesystem for recent Word/text documents.
+    function listDocs() {
+      const out = [];
+      (function walk(children, path) {
+        Object.entries(children || {}).forEach(([nm, node]) => {
+          if (node.type === "folder") walk(node.children, path.concat(nm));
+          else if (node.kind === "word" || node.kind === "text") out.push({ name: nm, node, path, ts: node.ts || 0 });
+        });
+      })(window.VFS.ensure(), []);
+      return out.sort((a, b) => b.ts - a.ts).slice(0, 12);
+    }
+    function openFromDevice() {
+      const inp = document.getElementById("globalFileInput");
+      inp.accept = ".txt,.md,.csv,.html,.log,.json,text/*"; inp.value = "";
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => buildWord({ name: f.name, node: { type: "file", kind: "text", content: String(r.result || ""), ts: Date.now() } });
+        r.readAsText(f);
+      };
+      inp.click();
+    }
+
+    // Opening menu (Office-style start screen)
+    function buildStart() {
+      const uname = (S().profile && S().profile.username) || "there";
+      const docs = listDocs();
+      body.innerHTML = `<div class="wd-start">
+        <div class="wd-start-side">
+          <div class="wd-start-brand"><img src="assets/word.png" class="wd-start-logo" alt="">Word</div>
+          <button class="wd-start-btn primary" id="sNew">New blank document</button>
+          <button class="wd-start-btn" id="sOpen">Open from Files…</button>
+          <button class="wd-start-btn" id="sDevice">Open from this device…</button>
+        </div>
+        <div class="wd-start-main">
+          <h2 class="wd-start-hi">Welcome back, ${escapeHtml(uname)}</h2>
+          <div class="wd-start-cards">
+            <button class="wd-newcard" id="cNew"><div class="wd-newcard-thumb">+</div><span>Blank document</span></button>
+          </div>
+          <h3 style="margin-top:10px">Recent</h3>
+          <div class="wd-start-recent"></div>
+        </div>
+      </div>`;
+      const rec = body.querySelector(".wd-start-recent");
+      if (!docs.length) rec.innerHTML = `<div class="muted" style="padding:14px">No recent documents yet. Create a new one to get started.</div>`;
+      docs.forEach((d) => { const row = el(`<button class="wd-recent-row"><img src="assets/word.png" class="wd-recent-ic" alt=""><span class="wd-recent-nm">${escapeHtml(d.name)}</span><span class="wd-recent-loc muted">${d.path.join(" › ") || "This PC"}</span></button>`); row.onclick = () => buildWord(d); rec.appendChild(row); });
+      body.querySelector("#sNew").onclick = () => buildWord(null);
+      body.querySelector("#cNew").onclick = () => buildWord(null);
+      body.querySelector("#sOpen").onclick = () => window.VFS.pickFile({ title: "Open document", accept: ["word", "text"] }, (res) => buildWord(res));
+      body.querySelector("#sDevice").onclick = openFromDevice;
+    }
+
+    function buildWord(fr) {
     body.innerHTML = `<div class="wd">
       <div class="wd-top">
         <span class="wd-ic">${Icon.mini("word", "Word")}</span>
         <input class="wd-name" title="Document name">
         <div class="wd-filemenu">
+          <button data-f="home" title="Start screen">&#9776;</button>
           <button data-f="new">New</button>
           <button data-f="open">Open</button>
+          <button data-f="import">Open from device</button>
           <button data-f="save">Save</button>
           <button data-f="saveas">Save As</button>
         </div>
@@ -124,6 +183,8 @@
       const f = b.dataset.f;
       if (f === "new") loadDoc(null);
       else if (f === "open") doOpen();
+      else if (f === "import") openFromDevice();
+      else if (f === "home") buildStart();
       else if (f === "save") doSave();
       else if (f === "saveas") doSaveAs();
     });
@@ -146,7 +207,7 @@
     // Ctrl+S to save
     body.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); doSave(); } });
 
-    loadDoc(fileRef || null);
+    loadDoc(fr || null);
     setTimeout(() => page.focus(), 60);
     } // end buildWord
   }
