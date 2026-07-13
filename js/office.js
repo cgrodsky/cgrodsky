@@ -458,9 +458,12 @@
 
   // ===================== MICROSOFT FORMS =====================
   function newForm() { return { title: "Untitled form", desc: "", questions: [], responses: [] }; }
+  const FM_OPT_TYPES = ["choice", "checkbox", "dropdown"];
   function newQuestion(type) {
-    if (type === "choice") return { type: "choice", q: "Question", options: ["Option 1", "Option 2"], required: false };
+    if (FM_OPT_TYPES.indexOf(type) >= 0) return { type: type, q: "Question", options: ["Option 1", "Option 2"], required: false };
     if (type === "rating") return { type: "rating", q: "How would you rate this?", required: false };
+    if (type === "date") return { type: "date", q: "Pick a date", required: false };
+    if (type === "paragraph") return { type: "paragraph", q: "Question", required: false };
     return { type: "text", q: "Question", required: false };
   }
   function openForms(fileRef) {
@@ -518,9 +521,13 @@
           <div class="fm-q-top">
             <input class="fm-q-title" value="${escapeHtml(q.q)}" placeholder="Question">
             <select class="fm-q-type">
-              <option value="text" ${q.type === "text" ? "selected" : ""}>Text</option>
+              <option value="text" ${q.type === "text" ? "selected" : ""}>Short answer</option>
+              <option value="paragraph" ${q.type === "paragraph" ? "selected" : ""}>Long answer</option>
               <option value="choice" ${q.type === "choice" ? "selected" : ""}>Multiple choice</option>
+              <option value="checkbox" ${q.type === "checkbox" ? "selected" : ""}>Checkboxes</option>
+              <option value="dropdown" ${q.type === "dropdown" ? "selected" : ""}>Dropdown</option>
               <option value="rating" ${q.type === "rating" ? "selected" : ""}>Rating</option>
+              <option value="date" ${q.type === "date" ? "selected" : ""}>Date</option>
             </select>
           </div>
           <div class="fm-q-opts"></div>
@@ -535,9 +542,11 @@
         card.querySelector(".fm-req input").onchange = (e) => { q.required = e.target.checked; persist(); };
         card.querySelector(".fm-del").onclick = () => { form.questions.splice(qi, 1); persist(); build(); };
         const opts = card.querySelector(".fm-q-opts");
-        if (q.type === "choice") {
+        if (FM_OPT_TYPES.indexOf(q.type) >= 0) {
+          const marker = q.type === "checkbox" ? "sq" : q.type === "dropdown" ? "num" : "dot";
           q.options.forEach((opt, oi) => {
-            const row = el(`<div class="fm-opt"><span class="fm-opt-dot"></span><input value="${escapeHtml(opt)}"><button class="fm-opt-x" title="Remove">&times;</button></div>`);
+            const mk = marker === "num" ? `<span class="fm-opt-num">${oi + 1}.</span>` : `<span class="fm-opt-dot ${marker === "sq" ? "sq" : ""}"></span>`;
+            const row = el(`<div class="fm-opt">${mk}<input value="${escapeHtml(opt)}"><button class="fm-opt-x" title="Remove">&times;</button></div>`);
             row.querySelector("input").oninput = (e) => { q.options[oi] = e.target.value; persist(); };
             row.querySelector(".fm-opt-x").onclick = () => { q.options.splice(oi, 1); persist(); build(); };
             opts.appendChild(row);
@@ -547,6 +556,10 @@
           opts.appendChild(addOpt);
         } else if (q.type === "rating") {
           opts.innerHTML = `<div class="fm-stars">${"<span>&#9733;</span>".repeat(5)}</div>`;
+        } else if (q.type === "paragraph") {
+          opts.innerHTML = `<textarea class="fm-text-ph" disabled placeholder="Long answer text" rows="2"></textarea>`;
+        } else if (q.type === "date") {
+          opts.innerHTML = `<input class="fm-text-ph" disabled type="date">`;
         } else {
           opts.innerHTML = `<input class="fm-text-ph" disabled placeholder="Short answer text">`;
         }
@@ -554,9 +567,13 @@
       });
 
       const addWrap = el(`<div class="fm-add">
-        <button data-t="text">+ Text</button>
+        <button data-t="text">+ Short answer</button>
+        <button data-t="paragraph">+ Long answer</button>
         <button data-t="choice">+ Multiple choice</button>
+        <button data-t="checkbox">+ Checkboxes</button>
+        <button data-t="dropdown">+ Dropdown</button>
         <button data-t="rating">+ Rating</button>
+        <button data-t="date">+ Date</button>
       </div>`);
       addWrap.querySelectorAll("button").forEach((b) => b.onclick = () => { form.questions.push(newQuestion(b.dataset.t)); persist(); build(); });
       scroll.appendChild(addWrap);
@@ -571,8 +588,17 @@
         const card = el(`<div class="fm-card"><div class="fm-p-q">${escapeHtml(q.q)}${q.required ? ' <span class="fm-star">*</span>' : ""}</div><div class="fm-p-in"></div></div>`);
         const inp = card.querySelector(".fm-p-in");
         if (q.type === "text") { const i = el(`<input class="fm-p-text" placeholder="Your answer">`); i.oninput = () => answers[qi] = i.value; inp.appendChild(i); }
+        else if (q.type === "paragraph") { const i = el(`<textarea class="fm-p-text" rows="3" placeholder="Your answer"></textarea>`); i.oninput = () => answers[qi] = i.value; inp.appendChild(i); }
         else if (q.type === "choice") {
           q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="radio" name="q${qi}"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = () => answers[qi] = opt; inp.appendChild(r); });
+        } else if (q.type === "checkbox") {
+          answers[qi] = [];
+          q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="checkbox"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = (e) => { const a = answers[qi]; if (e.target.checked) a.push(opt); else a.splice(a.indexOf(opt), 1); }; inp.appendChild(r); });
+        } else if (q.type === "dropdown") {
+          const sel = el(`<select class="fm-p-select"><option value="">Choose</option>${q.options.map((o) => `<option>${escapeHtml(o)}</option>`).join("")}</select>`);
+          sel.onchange = () => answers[qi] = sel.value; inp.appendChild(sel);
+        } else if (q.type === "date") {
+          const i = el(`<input class="fm-p-text fm-p-date" type="date">`); i.onchange = () => answers[qi] = i.value; inp.appendChild(i);
         } else if (q.type === "rating") {
           const stars = el(`<div class="fm-p-stars">${[1, 2, 3, 4, 5].map((n) => `<span data-n="${n}">&#9733;</span>`).join("")}</div>`);
           stars.querySelectorAll("span").forEach((sp) => sp.onclick = () => { answers[qi] = +sp.dataset.n; stars.querySelectorAll("span").forEach((s2) => s2.classList.toggle("on", +s2.dataset.n <= answers[qi])); });
@@ -582,7 +608,7 @@
       });
       const submit = el(`<button class="fm-submit">Submit</button>`);
       submit.onclick = () => {
-        for (let i = 0; i < form.questions.length; i++) { if (form.questions[i].required && (answers[i] == null || answers[i] === "")) { toast("Please answer required questions"); return; } }
+        for (let i = 0; i < form.questions.length; i++) { const a = answers[i]; const empty = a == null || a === "" || (Array.isArray(a) && !a.length); if (form.questions[i].required && empty) { toast("Please answer required questions"); return; } }
         form.responses.push({ at: Date.now(), answers }); persist();
         wrap.replaceWith(el(`<div class="fm-thanks"><div class="fm-thanks-ic">${Icon.mini("forms", "Forms")}</div><h2>Thanks!</h2><p>Your response was recorded.</p></div>`));
       };
@@ -598,7 +624,12 @@
       form.questions.forEach((q, qi) => {
         const card = el(`<div class="fm-card"><div class="fm-p-q">${escapeHtml(q.q)}</div><div class="fm-resp-list"></div></div>`);
         const list = card.querySelector(".fm-resp-list");
-        form.responses.forEach((r) => { const v = r.answers[qi]; if (v != null && v !== "") list.appendChild(el(`<div class="fm-resp">${q.type === "rating" ? "&#9733; " + v : escapeHtml(String(v))}</div>`)); });
+        form.responses.forEach((r) => {
+          let v = r.answers[qi];
+          if (Array.isArray(v)) v = v.join(", ");
+          if (v == null || v === "") return;
+          list.appendChild(el(`<div class="fm-resp">${q.type === "rating" ? "&#9733; " + escapeHtml(String(v)) : escapeHtml(String(v))}</div>`));
+        });
         if (!list.children.length) list.innerHTML = `<div class="muted">No answers</div>`;
         scroll.appendChild(card);
       });

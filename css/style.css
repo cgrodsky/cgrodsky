@@ -1649,6 +1649,8 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .fm-q-opts { margin: 12px 0; display: flex; flex-direction: column; gap: 8px; }
 .fm-opt { display: flex; align-items: center; gap: 8px; }
 .fm-opt-dot { width: 15px; height: 15px; border: 2px solid #bbb; border-radius: 50%; flex: 0 0 auto; }
+.fm-opt-dot.sq { border-radius: 3px; }
+.fm-opt-num { width: 18px; color: #888; font-size: .85rem; flex: 0 0 auto; }
 .fm-opt input { flex: 1; border: 0; border-bottom: 1px dashed #ddd; padding: 4px 2px; outline: none; }
 .fm-opt-x { border: 0; background: none; color: #999; font-size: 1.1rem; cursor: pointer; }
 .fm-addopt { align-self: flex-start; border: 0; background: none; color: #1a8a8f; cursor: pointer; font-size: .86rem; padding: 4px 0; }
@@ -1657,15 +1659,18 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .fm-q-foot { display: flex; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 10px; }
 .fm-req { font-size: .82rem; color: #555; display: flex; align-items: center; gap: 5px; }
 .fm-del { border: 0; background: none; color: #d0483d; cursor: pointer; font-size: .84rem; }
-.fm-add { width: min(680px, 100%); display: flex; gap: 8px; }
-.fm-add button { flex: 1; border: 1px dashed #1a8a8f; background: #eaf6f6; color: #1a8a8f; padding: 10px; border-radius: 8px; cursor: pointer; font-size: .86rem; }
+.fm-add { width: min(680px, 100%); display: flex; flex-wrap: wrap; gap: 8px; }
+.fm-add button { flex: 1 1 140px; border: 1px dashed #1a8a8f; background: #eaf6f6; color: #1a8a8f; padding: 10px; border-radius: 8px; cursor: pointer; font-size: .86rem; }
 .fm-add button:hover { background: #d9eeee; }
 .fm-preview { width: min(680px, 100%); display: flex; flex-direction: column; gap: 14px; }
 .fm-p-head h2 { margin: 0 0 6px; }
 .fm-p-head p { margin: 0; color: #555; }
 .fm-p-q { font-weight: 600; margin-bottom: 10px; }
 .fm-star { color: #d0483d; }
-.fm-p-text { width: 100%; border: 0; border-bottom: 1px solid #ccc; padding: 6px 2px; outline: none; font-size: .95rem; }
+.fm-p-text { width: 100%; border: 0; border-bottom: 1px solid #ccc; padding: 6px 2px; outline: none; font-size: .95rem; font-family: inherit; box-sizing: border-box; }
+textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
+.fm-p-date { width: auto; }
+.fm-p-select { border: 1px solid #ccc; border-radius: 6px; padding: 8px 10px; font-size: .95rem; min-width: 200px; }
 .fm-p-opt { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
 .fm-p-stars span { font-size: 1.8rem; color: #ddd; cursor: pointer; }
 .fm-p-stars span.on { color: #f5b301; }
