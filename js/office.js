@@ -657,7 +657,7 @@
     function build() {
       const sec = nb.sections[si] || nb.sections[0]; si = nb.sections.indexOf(sec);
       const page = sec.pages[pi] || sec.pages[0] || { title: "", body: "" }; pi = Math.max(0, sec.pages.indexOf(page));
-      body.innerHTML = `<div class="on">
+      body.innerHTML = `<div class="onenote">
         <div class="on-secs">
           <div class="on-nbname" title="Rename notebook">${escapeHtml(nb.name)}</div>
           <div class="on-sec-list"></div>

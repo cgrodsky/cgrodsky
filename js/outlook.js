@@ -8,6 +8,40 @@
   const cw = (opts) => window.WM.createWindow(opts);
   const nowMs = () => (State.now ? State.now().getTime() : Date.now());
 
+  // ---- AI replies (AIML chat API) with an offline template fallback ----
+  async function aiChat(messages) {
+    const res = await fetch((window.AIML_BASE || "https://api.aimlapi.com/v1") + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.AIML_KEY || "") },
+      body: JSON.stringify({ model: "openai/gpt-4o-mini", messages, max_tokens: 260 }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || "").trim();
+    if (!txt) throw new Error("empty");
+    return txt;
+  }
+  async function aiReply(toName, subject, bodyText) {
+    return aiChat([
+      { role: "system", content: "You are " + (toName || "a busy professional") + ", writing a brief, warm, natural email reply. 2-4 sentences, friendly and human. Do NOT include a subject line or the word 'Subject:'. Sign off with your first name only. Plain text, no markdown." },
+      { role: "user", content: "Reply to this email.\nSubject: " + subject + "\n\n" + bodyText },
+    ]);
+  }
+  function fallbackReply(name) { return "Thanks for your message — I'll take a look and get back to you soon.\n\n" + (name || ""); }
+  function textToHtml(t) { return "<p>" + esc(t).replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br>") + "</p>"; }
+  function stripHtml(h) { return String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); }
+
+  // A reusable marketing hero banner (inline SVG so it renders offline too).
+  function banner(title, sub, c1, c2) {
+    return `<svg viewBox="0 0 600 180" width="100%" style="max-width:520px;border-radius:10px;display:block;margin:0 0 16px" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg${c1.replace('#','')}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="600" height="180" rx="12" fill="url(#bg${c1.replace('#','')})"/><circle cx="510" cy="40" r="70" fill="rgba(255,255,255,.12)"/><circle cx="80" cy="150" r="50" fill="rgba(255,255,255,.1)"/><text x="36" y="86" fill="#fff" font-family="Segoe UI, sans-serif" font-size="34" font-weight="700">${esc(title)}</text><text x="36" y="120" fill="rgba(255,255,255,.9)" font-family="Segoe UI, sans-serif" font-size="18">${esc(sub)}</text></svg>`;
+  }
+  function cta(label, color) { return `<a href="#" class="ol-cta" style="background:${color || "#0f6cbd"}" onclick="return false">${esc(label)}</a>`; }
+  // A game-store style hero promo: a photo with a badge pill + big title +
+  // subtitle + arrow CTA overlaid on a bottom gradient. Modeled on the Store hero cards.
+  function heroPromo(img, badge, title, sub, ctaLabel) {
+    return `<div class="ol-hero"><img class="ol-hero-bg" src="${img}" alt=""><div class="ol-hero-shade"></div><div class="ol-hero-in"><span class="ol-hero-badge">${esc(badge)}</span><h1 class="ol-hero-title">${esc(title)}</h1><p class="ol-hero-sub">${esc(sub)}</p><a href="#" class="ol-hero-cta" onclick="return false">${esc(ctaLabel)} &rsaquo;</a></div></div>`;
+  }
+
   // ---- shared icons ----
   const IC = {
     plus: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -23,6 +57,7 @@
     people: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 5.6M17 14.4a5.5 5.5 0 0 1 3.5 5.1"/></svg>`,
     gear: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>`,
     attach: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></svg>`,
+    image: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>`,
     trash: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>`,
     archive: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/></svg>`,
   };
@@ -44,11 +79,22 @@
   ];
   const catColor = (id) => (CATS.find((c) => c.id === id) || {}).color || "";
   const AV_COLORS = ["#0f6cbd", "#c239b3", "#d83b01", "#107c10", "#5c2e91", "#008272", "#ca5010", "#8764b8"];
+  // Known brand senders — logo avatar and/or a verified badge next to the name.
+  const BRANDS = {
+    "xbox": { img: "assets/xbox.png", verified: true },
+    "xbox game pass": { img: "assets/xbox.png", verified: true },
+    "microsoft account team": { verified: true },
+    "microsoft store": { verified: true },
+  };
+  function brandOf(name) { return BRANDS[String(name || "").toLowerCase()] || {}; }
   function avatar(name, cls) {
+    const b = brandOf(name);
+    if (b.img) return `<span class="ol-av ol-av-img ${cls || ""}"><img src="${b.img}" alt=""></span>`;
     const initials = (name || "?").split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("").toUpperCase();
     const color = AV_COLORS[Math.abs((name || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % AV_COLORS.length];
     return `<span class="ol-av ${cls || ""}" style="background:${color}">${esc(initials)}</span>`;
   }
+  function nameWithBadge(name) { const b = brandOf(name); return esc(name) + (b.verified ? ` <img class="ol-verified" src="assets/verified.png" alt="Verified" title="Verified sender">` : ""); }
 
   function seedOutlook() {
     const hr = 3600000, day = 86400000, base = nowMs();
@@ -61,6 +107,9 @@
         mk("GitHub", "noreply@github.com", "[cgrodsky/cgrodsky] Deploy succeeded", "<p>Your GitHub Pages site was deployed successfully.</p><p><b>Live at:</b> https://cgrodsky.github.io/cgrodsky/</p>", day + hr * 3, { read: true, cat: "green", atts: [{ name: "build-log.txt", size: "4 KB" }] }),
         mk("Xbox", "xbox@microsoft.com", "New games added to Game Pass", "<p>This month's lineup just dropped. Jump back in and play something new.</p>", day * 2, { focused: false }),
         mk("Forge Bank", "alerts@forgebank.com", "Your statement is ready", "<p>Your monthly statement is available. No action needed.</p>", day * 3, { read: true, cat: "purple", atts: [{ name: "statement.pdf", size: "128 KB" }] }),
+        mk("Microsoft Store", "store@microsoft.com", "Summer Sale — up to 60% off", banner("Summer Sale", "Up to 60% off top apps & games", "#0f6cbd", "#8764b8") + "<p>Hi there,</p><p>Our biggest sale of the season is here. Save on the apps and games you love — this week only.</p>" + cta("Shop the sale", "#0f6cbd") + "<p style='color:#888;font-size:.8rem;margin-top:16px'>Offer ends Sunday. Prices in the sim are fake.</p>", hr * 8, { from: "Microsoft Store", focused: false }),
+        mk("Xbox Game Pass", "gamepass@xbox.com", "Now available: Assassin's Creed Black Flag", heroPromo("assets/promo_ac.jpg", "Now available", "Assassin's Creed Black Flag", "Rediscover the thrill of piracy as captain Edward Kenway", "Get it now") + "<p>It's here — set sail on the open seas and hunt legendary ships. Now included with Game Pass.</p>" + cta("Play with Game Pass", "#107c10"), day + hr * 6, { from: "Xbox Game Pass", focused: false, cat: "green" }),
+        mk("Contoso Travel", "deals@contoso-travel.com", "Weekend getaways from $99", banner("Escape for less", "Weekend deals from $99", "#ca5010", "#d13438") + "<p>Pack your bags — handpicked weekend escapes are on sale now.</p>" + cta("Browse trips", "#ca5010") + "<p style='color:#888;font-size:.8rem;margin-top:14px'>You're receiving this because you're a valued (pretend) traveler.</p>", day * 2 + hr * 2, { from: "Contoso Travel", focused: false, cat: "orange" }),
       ],
       events: [
         { id: "e1", title: "Team sync", day: 0, start: "10:00", end: "10:30", color: "#0f6cbd" },
@@ -193,7 +242,7 @@
             ${m.read ? "" : `<span class="ol-unread-dot"></span>`}
             ${avatar(m.from)}
             <div class="ol-item-txt">
-              <div class="ol-item-top"><span class="ol-item-from">${esc(m.from)}</span><span class="ol-item-time">${timeAgo(m.ts)}</span></div>
+              <div class="ol-item-top"><span class="ol-item-from">${nameWithBadge(m.from)}</span><span class="ol-item-time">${timeAgo(m.ts)}</span></div>
               <div class="ol-item-subj">${esc(m.subject)}</div>
               <div class="ol-item-prev">${esc(m.body.replace(/<[^>]+>/g, " ").trim()).slice(0, 92)}</div>
               <div class="ol-item-tags">${cc ? `<span class="ol-cat-pill" style="background:${cc}"></span>` : ""}${(m.atts && m.atts.length) ? `<span class="ol-att-badge">${IC.attach}${m.atts.length}</span>` : ""}</div>
@@ -223,7 +272,7 @@
             </div>
           </div>
           <div class="ol-read-meta">${avatar(m.from, "lg")}
-            <div class="ol-read-meta-txt"><b>${esc(m.from)}</b> <span class="ol-read-email">&lt;${esc(m.email)}&gt;</span><div class="muted">To: you &middot; ${new Date(m.ts).toLocaleString()}</div></div>
+            <div class="ol-read-meta-txt"><b>${nameWithBadge(m.from)}</b> <span class="ol-read-email">&lt;${esc(m.email)}&gt;</span><div class="muted">To: you &middot; ${new Date(m.ts).toLocaleString()}</div></div>
             <button class="ol-read-star ${m.star ? "on" : ""}" title="Flag">${IC.flag}</button>
           </div>
           <div class="ol-read-body">${m.body}</div>
@@ -277,8 +326,10 @@
           <button data-f="insertUnorderedList" title="Bullets">&#8226;</button>
           <button data-f="insertOrderedList" title="Numbered">1.</button>
           <button data-f="createLink" title="Link">&#128279;</button>
+          <span class="ol-fsep"></span>
+          <button class="ol-insert-img" title="Insert image">${IC.image}</button>
           <span class="grow"></span>
-          <button class="ol-attach" title="Attach">${IC.attach}</button>
+          <button class="ol-attach" title="Attach file">${IC.attach}</button>
         </div>
         <div class="ol-compose-body" contenteditable="true">${pre.body || ""}</div>
         <div class="ol-att-row"></div>
@@ -303,6 +354,17 @@
         inp.onchange = () => { const f = inp.files[0]; if (!f) return; atts.push({ name: f.name, size: (f.size < 1024 ? f.size + " B" : Math.round(f.size / 1024) + " KB") }); renderAtts(); };
         inp.click();
       };
+      // Insert an image inline into the email body.
+      ov.querySelector(".ol-insert-img").onclick = () => {
+        const inp = document.getElementById("globalFileInput"); inp.accept = "image/*"; inp.value = "";
+        inp.onchange = () => {
+          const f = inp.files[0]; if (!f) return;
+          const rd = new FileReader();
+          rd.onload = () => { bodyEl.focus(); document.execCommand("insertHTML", false, `<img src="${rd.result}" alt="" style="max-width:100%;border-radius:6px;margin:6px 0">`); };
+          rd.readAsDataURL(f);
+        };
+        inp.click();
+      };
       ov.querySelector(".ol-send").onclick = () => {
         const to = ov.querySelector(".ol-to").value.trim();
         const subj = ov.querySelector(".ol-subj").value.trim() || "(no subject)";
@@ -310,13 +372,21 @@
         data.messages.push(sent); State.save();
         if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("outlook", "Outlook") : "", title: "Message sent", body: "to " + (to || "recipient") });
         close();
-        if (to) setTimeout(() => {
+        if (to) {
           const name = to.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-          data.messages.push({ id: "m" + (Date.now() + 1), from: name || "Auto Reply", email: to, subject: "RE: " + subj, body: "<p>Thanks for your message — I'll get back to you soon.</p><p>" + esc(name) + "</p>", ts: nowMs(), read: false, star: false, folder: "inbox", cat: "", focused: true, atts: [] });
-          State.save();
-          if (module === "mail" && folder === "inbox") build();
-          if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("outlook", "Outlook") : "", title: name || "New mail", body: "RE: " + subj });
-        }, 4000);
+          const bodyText = stripHtml(sent.body);
+          // Realistic reply delay: 20–90 seconds. Reply is AI-generated, with an offline template fallback.
+          const delay = 20000 + Math.floor(Math.random() * 70000);
+          setTimeout(async () => {
+            let replyText;
+            try { replyText = await aiReply(name, subj, bodyText); }
+            catch (_) { replyText = fallbackReply(name); }
+            data.messages.push({ id: "m" + (nowMs() + 1), from: name || "Auto Reply", email: to, subject: "RE: " + subj, body: textToHtml(replyText), ts: nowMs(), read: false, star: false, folder: "inbox", cat: "", focused: true, atts: [] });
+            State.save();
+            if (module === "mail" && folder === "inbox") build();
+            if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("outlook", "Outlook") : "", title: name || "New mail", body: "RE: " + subj, onClick: () => { module = "mail"; folder = "inbox"; build(); } });
+          }, delay);
+        }
         folder = "sent"; selectedId = sent.id; build();
       };
       body.appendChild(ov);
