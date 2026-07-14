@@ -9,14 +9,35 @@
   const cw = (opts) => window.WM.createWindow(opts);
 
   const GP_PRICE = 16.99; // Game Pass Ultimate, monthly (pretend)
+  // `play` maps a title to a built-in mini-game so it actually launches.
   const GAMES = [
     { id: "minecraft", name: "Minecraft", price: 29.99, gp: true, playable: true, tag: "Sandbox", c1: "#7cae42", c2: "#33500f" },
+    // --- Playable arcade titles (wired to the built-in mini-games) ---
+    { id: "neonsnake", name: "Neon Snake", price: 9.99, gp: true, play: "snake", tag: "Arcade", c1: "#22c55e", c2: "#064e3b" },
+    { id: "blockblast", name: "Block Blast", price: 9.99, gp: true, play: "breakout", tag: "Arcade", c1: "#1e88e5", c2: "#0a2540" },
+    { id: "pongclassic", name: "Pong Classic", price: 4.99, gp: true, play: "pong", tag: "Arcade", c1: "#64748b", c2: "#0f172a" },
+    { id: "ultra2048", name: "2048 Ultra", price: 4.99, gp: true, play: "g2048", tag: "Puzzle", c1: "#f59e0b", c2: "#7c2d12" },
+    { id: "minesweeperx", name: "Minesweeper X", price: 6.99, gp: true, play: "minesweeper", tag: "Puzzle", c1: "#6b7280", c2: "#1f2937" },
+    { id: "memorymatch", name: "Memory Match", price: 4.99, gp: true, play: "memory", tag: "Casual", c1: "#ec4899", c2: "#500724" },
+    { id: "simonsays", name: "Simon Says", price: 4.99, gp: true, play: "simon", tag: "Casual", c1: "#14b8a6", c2: "#042f2e" },
+    { id: "whackmole", name: "Whack-a-Mole", price: 4.99, gp: true, play: "whack", tag: "Arcade", c1: "#a16207", c2: "#422006" },
+    { id: "tictactoe2", name: "Tic-Tac-Toe+", price: 0, gp: true, play: "tictactoe", tag: "Casual", c1: "#8b5cf6", c2: "#2e1065" },
+    // --- Marquee demo tiles (art only) ---
     { id: "forza", name: "Forza Horizon 5", price: 59.99, gp: true, tag: "Racing", c1: "#8b5cf6", c2: "#2b0a5e" },
     { id: "halo", name: "Halo Infinite", price: 59.99, gp: true, tag: "Shooter", c1: "#3b82f6", c2: "#0a1f3d" },
     { id: "seaofthieves", name: "Sea of Thieves", price: 39.99, gp: true, tag: "Adventure", c1: "#0891b2", c2: "#04303d" },
     { id: "starfield", name: "Starfield", price: 69.99, gp: true, tag: "RPG", c1: "#c026d3", c2: "#3b0764" },
     { id: "flightsim", name: "Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#0ea5e9", c2: "#0c4a6e" },
+    { id: "gears5", name: "Gears 5", price: 39.99, gp: true, tag: "Shooter", c1: "#dc2626", c2: "#3f0d0d" },
+    { id: "fallout4", name: "Fallout 4", price: 29.99, gp: true, tag: "RPG", c1: "#65a30d", c2: "#1a2e05" },
+    { id: "doometernal", name: "Doom Eternal", price: 39.99, gp: true, tag: "Shooter", c1: "#ea580c", c2: "#431407" },
+    { id: "aoe4", name: "Age of Empires IV", price: 49.99, gp: true, tag: "Strategy", c1: "#b45309", c2: "#3b1d05" },
+    { id: "hades", name: "Hades", price: 24.99, gp: true, tag: "Roguelike", c1: "#e11d48", c2: "#4c0519" },
+    { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
+    { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d" },
+    { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
   ];
+  const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
   function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
   function meta(id) { return GAMES.find((g) => g.id === id); }
   function owns(id) { const g = games(); const m = meta(id); return g.owned.indexOf(id) >= 0 || (g.gamepass && m && m.gp); }
@@ -34,11 +55,13 @@
     const ref = cw({ title: "Xbox", icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", width: 940, height: 660, appId: "xbox" });
     const body = ref.body;
     body.classList.add("xb-host");
+    let cat = "All", query = "";
 
     function render() {
       const g = games();
       body.innerHTML = `<div class="xb">
         <div class="xb-top"><span class="xb-logo">${window.Icon ? Icon.mini("xbox", "Xbox") : ""}</span><b>Xbox</b><span class="grow"></span>
+          <div class="xb-search"><input placeholder="Search games" value="${esc(query)}"></div>
           <span class="xb-gp-pill ${g.gamepass ? "on" : ""}">${g.gamepass ? "Game Pass active" : "No Game Pass"}</span></div>
         <div class="xb-scroll">
           <div class="xb-hero">
@@ -51,12 +74,29 @@
               </div>
             </div>
           </div>
-          <h2 class="xb-h">${g.gamepass ? "Included with Game Pass" : "Games"}</h2>
+          <div class="xb-cats">${CATS.map((c) => `<button class="xb-cat ${c === cat ? "on" : ""}" data-c="${c}">${c}</button>`).join("")}</div>
+          <h2 class="xb-h">${query ? "Results" : (cat === "All" ? (g.gamepass ? "Included with Game Pass" : "Games") : cat)}</h2>
           <div class="xb-grid"></div>
         </div>
       </div>`;
       const grid = body.querySelector(".xb-grid");
-      GAMES.forEach((game) => {
+      const searchIn = body.querySelector(".xb-search input");
+      searchIn.oninput = () => { query = searchIn.value; renderGrid(); };
+      body.querySelectorAll(".xb-cat").forEach((b) => b.onclick = () => { cat = b.dataset.c; query = ""; render(); });
+
+      function renderGrid() {
+        grid.innerHTML = "";
+        const q = query.trim().toLowerCase();
+        // When searching, look across all categories.
+        const list = GAMES.filter((game) => (q ? (game.name.toLowerCase().includes(q) || game.tag.toLowerCase().includes(q)) : (cat === "All" || game.tag === cat)));
+        if (!list.length) { grid.innerHTML = `<div class="xb-empty">No games found.</div>`; return; }
+        list.forEach(makeCard);
+      }
+      renderGrid();
+      const joinBtn = body.querySelector('[data-a="joingp"]'); if (joinBtn) joinBtn.onclick = joinGamePass;
+      const cancelBtn = body.querySelector('[data-a="cancelgp"]'); if (cancelBtn) cancelBtn.onclick = () => { games().gamepass = false; State.save(); render(); };
+
+      function makeCard(game) {
         const owned = owns(game.id);
         const viaGp = games().gamepass && game.gp && games().owned.indexOf(game.id) < 0;
         const card = el(`<div class="xb-card">
@@ -69,7 +109,7 @@
         </div>`);
         const acts = card.querySelector(".xb-card-actions");
         if (owned) {
-          const play = el(`<button class="xb-btn sm">${game.playable ? "Play" : "Installed"}</button>`);
+          const play = el(`<button class="xb-btn sm">${(game.playable || game.play) ? "Play" : "Installed"}</button>`);
           play.onclick = () => playGame(game);
           acts.appendChild(play);
           if (viaGp) acts.appendChild(el(`<span class="xb-owned">with Game Pass</span>`));
@@ -81,9 +121,7 @@
           if (game.gp && !games().gamepass) { const gp = el(`<button class="xb-btn sm ghost">Play with Game Pass</button>`); gp.onclick = () => joinGamePass(); acts.appendChild(gp); }
         }
         grid.appendChild(card);
-      });
-      const joinBtn = body.querySelector('[data-a="joingp"]'); if (joinBtn) joinBtn.onclick = joinGamePass;
-      const cancelBtn = body.querySelector('[data-a="cancelgp"]'); if (cancelBtn) cancelBtn.onclick = () => { games().gamepass = false; State.save(); render(); };
+      }
     }
 
     function joinGamePass() {
@@ -104,6 +142,7 @@
     }
     function playGame(game) {
       if (game.id === "minecraft") { AppRegistry.mclauncher(); return; }
+      if (game.play && window.Games && window.Games.launch) { window.Games.launch({ id: game.id, name: game.name, game: game.play }, window.WM.createWindow); return; }
       if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: game.name, body: "Launching… this title is a demo tile in the sim." });
     }
     function notify(msg) { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: "Xbox", body: msg }); }

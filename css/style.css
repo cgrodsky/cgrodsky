@@ -2118,6 +2118,14 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-btn:hover { filter: brightness(.96); } .xb-btn:active { transform: scale(.97); }
 .xb-btn.ghost { background: rgba(255,255,255,.14); color: #fff; }
 .xb-btn.sm { padding: 8px 14px; font-size: .82rem; }
+.xb-search { display: flex; align-items: center; }
+.xb-search input { background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.2); color: #fff; border-radius: 20px; padding: 7px 14px; font-size: .82rem; outline: none; width: 180px; }
+.xb-search input::placeholder { color: rgba(255,255,255,.6); }
+.xb-cats { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 4px; }
+.xb-cat { background: #1b1c1e; border: 1px solid #2a2b2d; color: #cfcfcf; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: .8rem; transition: background .12s; }
+.xb-cat:hover { background: #26282a; }
+.xb-cat.on { background: #107c10; border-color: #107c10; color: #fff; font-weight: 600; }
+.xb-empty { grid-column: 1 / -1; text-align: center; padding: 40px; color: #9aa0a6; }
 .xb-h { margin: 8px 22px; font-size: 1.15rem; }
 .xb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 0 22px 24px; }
 .xb-card { background: #1b1c1e; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
