@@ -53,7 +53,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "codeeditor", "vscode", "achievements", "store__"];
+    const defaults = ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 
@@ -164,6 +164,8 @@
         const walls = [
           { v: "default", img: "assets/wall3.jpg" },
           { v: "assets/wall4.jpg", img: "assets/wall4.jpg" },
+          { v: "assets/wall5.jpg", img: "assets/wall5.jpg" },
+          { v: "assets/wall6.jpg", img: "assets/wall6.jpg" },
           { v: "assets/wall2.jpg", img: "assets/wall2.jpg" },
         ];
         const wgrid = el(`<div class="swatch-grid"></div>`);

@@ -2135,6 +2135,43 @@ body.dark .ol-cat-menu { background: #242322; border-color: #3b3a39; color: #f3f
 body.dark .ol-cat-menu button { color: #f3f2f1; }
 body.dark .ol-cat-menu button:hover { background: #323130; }
 
+/* ============================ CurseForge ============================ */
+.cf-host { padding: 0; }
+.cf { display: flex; height: 100%; background: #17181c; color: #dfe1e5; font-family: "Segoe UI", system-ui, sans-serif; }
+.cf-side { width: 220px; flex: 0 0 auto; background: #1f2024; border-right: 1px solid #2a2b30; display: flex; flex-direction: column; padding: 14px 10px; }
+.cf-brand { display: flex; align-items: center; gap: 9px; font-size: 1.05rem; margin-bottom: 14px; padding: 0 6px; }
+.cf-brand svg, .cf-brand img { width: 26px; height: 26px; }
+.cf-nav { background: none; border: 0; text-align: left; color: #c4c7cc; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: .88rem; }
+.cf-nav:hover { background: #2a2b30; }
+.cf-nav.on { background: #f16436; color: #fff; font-weight: 600; }
+.cf-cats-h { font-size: .7rem; text-transform: uppercase; letter-spacing: .6px; color: #7d8088; margin: 16px 8px 6px; }
+.cf-cats { display: flex; flex-direction: column; gap: 1px; overflow: auto; }
+.cf-cat { background: none; border: 0; text-align: left; color: #a8abb2; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: .84rem; }
+.cf-cat:hover { background: #2a2b30; color: #fff; }
+.cf-cat.on { color: #f16436; font-weight: 600; }
+.cf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cf-top { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #2a2b30; }
+.cf-search { flex: 0 1 380px; }
+.cf-search input { width: 100%; box-sizing: border-box; background: #101115; border: 1px solid #2f3036; color: #fff; border-radius: 8px; padding: 9px 13px; outline: none; font-size: .88rem; }
+.cf-search input:focus { border-color: #f16436; }
+.cf-mc { font-size: .78rem; color: #7d8088; }
+.cf-grid { flex: 1; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.cf-card { display: flex; align-items: center; gap: 14px; background: #1f2024; border: 1px solid #2a2b30; border-radius: 12px; padding: 14px 16px; transition: border-color .12s; }
+.cf-card:hover { border-color: #3a3b42; }
+.cf-card-ic { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 1.5rem; }
+.cf-card-info { flex: 1; min-width: 0; }
+.cf-card-top { display: flex; align-items: center; gap: 8px; }
+.cf-card-top b { font-size: .95rem; }
+.cf-card-cat { font-size: .66rem; background: #2f3036; color: #b8bbc2; padding: 2px 8px; border-radius: 10px; }
+.cf-card-author { font-size: .76rem; color: #8a8d94; margin-top: 1px; }
+.cf-card-desc { font-size: .82rem; color: #b8bbc2; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-card-meta { display: flex; gap: 14px; margin-top: 6px; }
+.cf-dl { display: inline-flex; align-items: center; gap: 5px; font-size: .76rem; color: #8a8d94; }
+.cf-install { flex: 0 0 auto; background: #f16436; color: #fff; border: 0; padding: 10px 22px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .85rem; transition: filter .15s; }
+.cf-install:hover { filter: brightness(1.08); }
+.cf-install.done { background: #2f3036; color: #6ddf6d; }
+.cf-empty { text-align: center; padding: 50px; color: #7d8088; }
+
 /* ============================ Xbox (Game Pass) ============================ */
 .xb-host { padding: 0; }
 .xb { display: flex; flex-direction: column; height: 100%; background: #0e0f10; color: #fff; font-family: "Segoe UI", system-ui, sans-serif; }

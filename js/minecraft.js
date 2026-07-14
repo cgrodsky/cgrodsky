@@ -118,7 +118,10 @@
   window.MojangIntro = mojangLoad;
 
   AppRegistry.minecraft = function (opts) {
-    const ref = cw({ title: "Mincraft", icon: Icon.mini("minecraft", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
+    // Opens showing the Java icon (like Minecraft Java launching), then swaps
+    // to the Minecraft icon after 2 seconds.
+    const ref = cw({ title: "Mincraft", icon: Icon.mini("java", "Java"), width: 900, height: 640, appId: "minecraft" });
+    setTimeout(() => { if (window.WM && window.WM.setWindowIcon) window.WM.setWindowIcon(ref.win, Icon.mini("minecraft", "Mincraft")); }, 2000);
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
     if (opts && opts.skipIntro) menu(ref.body, ref);
     else mojangLoad(ref.body, () => menu(ref.body, ref));

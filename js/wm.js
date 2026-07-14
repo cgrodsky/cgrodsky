@@ -1028,7 +1028,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "codeeditor", "vscode", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {
@@ -1127,8 +1127,17 @@
     const btn = taskbar.querySelector('.tb-btn[data-open="duolingo"]');
     if (btn) btn.innerHTML = Icon.mini(duoIconKey(false), "Duolingo");
   }
+  // Swap a window's icon in both its titlebar and its taskbar button.
+  function setWindowIcon(win, iconHtml) {
+    if (!win) return;
+    const tbIcon = win.querySelector(".win-titlebar .title span");
+    if (tbIcon) tbIcon.innerHTML = iconHtml;
+    const entry = openWindows.find((e) => e.win === win);
+    if (entry) { entry.icon = iconHtml; if (entry.taskBtn) entry.taskBtn.innerHTML = iconHtml; }
+  }
+
   window.WM = {
-    createWindow, open, buildDesktop,
+    createWindow, open, buildDesktop, setWindowIcon,
     refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
     refreshTaskbar: refreshTaskbarIcons,
   };
