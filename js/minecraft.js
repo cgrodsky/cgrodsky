@@ -100,10 +100,28 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
-  AppRegistry.minecraft = function () {
+  // Exact-replica Mojang Studios loading screen with the bottom progress bar.
+  function mojangLoad(body, done) {
+    body.innerHTML = `<div class="mojang-load">
+      <div class="mojang-logo"><div class="mojang-word">MOJANG</div><div class="mojang-studios">STUDIOS</div></div>
+      <div class="mojang-bar"><div class="mojang-bar-fill"></div></div>
+      <div class="mojang-tm">&#169; Mojang AB</div>
+    </div>`;
+    const fill = body.querySelector(".mojang-bar-fill");
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 16 + 7;
+      if (p >= 100) { fill.style.width = "100%"; clearInterval(iv); setTimeout(done, 420); }
+      else fill.style.width = p + "%";
+    }, 150);
+  }
+  window.MojangIntro = mojangLoad;
+
+  AppRegistry.minecraft = function (opts) {
     const ref = cw({ title: "Mincraft", icon: Icon.mini("minecraft", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
-    menu(ref.body, ref);
+    if (opts && opts.skipIntro) menu(ref.body, ref);
+    else mojangLoad(ref.body, () => menu(ref.body, ref));
   };
 
   function menu(body, ref) {

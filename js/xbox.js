@@ -165,7 +165,7 @@
         <button class="mcl-nav">Skins</button>
         <button class="mcl-nav">Patch Notes</button>
         <span class="grow"></span>
-        <div class="mcl-user">${window.Icon ? Icon.mini("user", user) : ""}<span>${esc(user)}</span></div>
+        <div class="mcl-user"><span class="mcl-skin-face" style="background-image:url(assets/skin_steve.png)"></span><span>${esc(user)}</span></div>
       </div>
       <div class="mcl-main">
         <div class="mcl-hero">
@@ -192,12 +192,29 @@
       </div>
     </div>`;
 
-    body.querySelectorAll(".mcl-nav").forEach((b) => b.onclick = () => { body.querySelectorAll(".mcl-nav").forEach((x) => x.classList.toggle("on", x === b)); });
+    body.querySelectorAll(".mcl-nav").forEach((b) => b.onclick = () => {
+      body.querySelectorAll(".mcl-nav").forEach((x) => x.classList.toggle("on", x === b));
+      if (b.textContent === "Skins") showSkins();
+    });
+    function showSkins() {
+      const ov = el(`<div class="mcl-skins-ov"><div class="mcl-skins">
+        <div class="mcl-skins-head"><b>Skins</b><button class="mcl-skins-x">&times;</button></div>
+        <div class="mcl-skins-grid">
+          <div class="mcl-skin-card sel"><div class="mcl-skin-body" style="background-image:url(assets/skin_steve.png)"></div><span>Steve</span><small>Default &middot; Equipped</small></div>
+        </div>
+        <p class="mcl-skins-note">Your default skin. More skins coming soon.</p>
+      </div></div>`);
+      const close = () => ov.remove();
+      ov.querySelector(".mcl-skins-x").onclick = close;
+      ov.onclick = (e) => { if (e.target === ov) close(); };
+      body.appendChild(ov);
+    }
     const playBtn = body.querySelector(".mcl-play");
     playBtn.onclick = () => {
       if (owns("minecraft")) {
-        playBtn.textContent = "LAUNCHING…"; playBtn.disabled = true;
-        setTimeout(() => { AppRegistry.minecraft(); ref.close && ref.close(); }, 700);
+        // Show the Mojang Studios loading screen in the launcher, then open the game.
+        if (window.MojangIntro) window.MojangIntro(body, () => { AppRegistry.minecraft({ skipIntro: true }); ref.close && ref.close(); });
+        else { AppRegistry.minecraft(); ref.close && ref.close(); }
       } else {
         getMinecraft();
       }
