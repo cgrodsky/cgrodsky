@@ -1976,6 +1976,26 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .ol-cta { display: inline-block; margin: 6px 0 4px; padding: 12px 26px; border-radius: 8px; color: #fff !important; font-weight: 600; text-decoration: none; font-size: .92rem; box-shadow: 0 3px 10px rgba(0,0,0,.18); transition: filter .15s, transform .1s; }
 .ol-cta:hover { filter: brightness(1.08); }
 .ol-cta:active { transform: translateY(1px); }
+/* LinkedIn email replica */
+.li-mail { max-width: 520px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 28px 26px; text-align: center; color: #000; font-family: -apple-system, "Segoe UI", sans-serif; }
+.li-head { text-align: left; margin-bottom: 18px; }
+.li-logo { font-size: 1.4rem; font-weight: 700; color: #0a66c2; }
+.li-logo .li-in { background: #0a66c2; color: #fff; padding: 0 4px; border-radius: 3px; margin-left: 1px; }
+.li-title { font-size: 1.5rem; margin: 0 0 8px; color: #000; }
+.li-sub { font-size: .98rem; color: #333; margin: 0 0 18px; }
+.li-num { font-size: 3.4rem; font-weight: 300; color: #8a6d3b; line-height: 1; }
+.li-num-label { color: #8a6d3b; font-size: 1.05rem; margin: 4px 0 20px; }
+.li-btn { display: block; background: #0a66c2; color: #fff !important; text-decoration: none; padding: 15px; border-radius: 28px; font-size: 1.05rem; font-weight: 600; }
+.li-btn:hover { background: #0958a8; }
+.li-divider { height: 1px; background: #e0e0e0; margin: 24px 0; }
+.li-prem-h { text-align: left; font-size: 1.25rem; margin: 0 0 8px; }
+.li-prem-p { text-align: left; color: #333; margin: 0 0 14px; font-size: .95rem; }
+.li-prem-row { display: flex; align-items: center; gap: 10px; text-align: left; color: #666; font-size: .9rem; margin-bottom: 16px; }
+.li-prem-ava { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #b8c2cc 40%, #8a97a5 41%) , #cfd6dd; background: #c3ccd4; flex: 0 0 auto; box-shadow: inset 0 -8px 10px rgba(0,0,0,.08); }
+.li-cta { display: inline-block; background: #f5c869; color: #7a5a00 !important; text-decoration: none; font-weight: 700; padding: 12px 20px; border-radius: 24px; font-size: 1rem; }
+.li-cta:hover { background: #f0bd50; }
+.li-fine { text-align: left; color: #888; font-size: .82rem; margin: 12px 0 0; }
+body.dark .li-mail { background: #fff; color: #000; }
 /* Game-store hero promo inside an email */
 .ol-hero { position: relative; max-width: 560px; border-radius: 10px; overflow: hidden; margin: 0 0 16px; background: #0c1120; }
 .ol-hero-bg { display: block; width: 100%; height: auto; }

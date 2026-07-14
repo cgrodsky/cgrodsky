@@ -89,6 +89,24 @@
   function cta(label, color) { return `<a href="#" class="ol-cta" style="background:${color || "#0f6cbd"}" onclick="return false">${esc(label)}</a>`; }
   // A game-store style hero promo: a photo with a badge pill + big title +
   // subtitle + arrow CTA overlaid on a bottom gradient. Modeled on the Store hero cards.
+  // A replica of a LinkedIn "profile views" marketing email.
+  function linkedinEmail(views) {
+    views = views || 12;
+    return `<div class="li-mail">
+      <div class="li-head"><span class="li-logo">Linked<span class="li-in">in</span></span></div>
+      <h2 class="li-title">Your profile is looking great</h2>
+      <p class="li-sub">Your work and accomplishments are being recognized</p>
+      <div class="li-num">${views}</div>
+      <div class="li-num-label">profile view${views === 1 ? "" : "s"}</div>
+      <a href="#" class="li-btn" onclick="return false">See viewers</a>
+      <div class="li-divider"></div>
+      <h3 class="li-prem-h">Unlock the full list with Premium</h3>
+      <p class="li-prem-p">Premium subscribers get 11x more profile views on average.</p>
+      <div class="li-prem-row"><span class="li-prem-ava"></span><span>Millions of members use Premium</span></div>
+      <a href="#" class="li-cta" onclick="return false">Try Premium for $0</a>
+      <p class="li-fine">1-month free trial. Cancel anytime.</p>
+    </div>`;
+  }
   function heroPromo(img, badge, title, sub, ctaLabel) {
     return `<div class="ol-hero"><img class="ol-hero-bg" src="${img}" alt=""><div class="ol-hero-shade"></div><div class="ol-hero-in"><span class="ol-hero-badge">${esc(badge)}</span><h1 class="ol-hero-title">${esc(title)}</h1><p class="ol-hero-sub">${esc(sub)}</p><a href="#" class="ol-hero-cta" onclick="return false">${esc(ctaLabel)} &rsaquo;</a></div></div>`;
   }
@@ -157,7 +175,7 @@
       messages: [
         mk("Microsoft account team", "account@microsoft.com", "Welcome to Windows 12", "<p>Hi there,</p><p>Welcome to Windows 12! Your account is all set up. Explore the new Start menu, App Groups on your Home Screen, and the redesigned Widgets board.</p><p>— The Windows Team</p>", hr * 2, { cat: "blue" }),
         mk("Outlook", "no-reply@outlook.com", "Your inbox is ready", "<p>You're all set. Add accounts, organize folders, and try the new reading pane.</p><p>Tip: swipe or right-click a message for quick actions.</p>", hr * 5),
-        mk("LinkedIn", "notifications@linkedin.com", "You appeared in 9 searches this week", "<p>Your profile is getting noticed. See who's been searching for you and grow your network.</p>", day, { star: true, focused: false }),
+        mk("LinkedIn", "notifications@linkedin.com", "Someone noticed you", linkedinEmail(12), day, { star: true, focused: false }),
         mk("GitHub", "noreply@github.com", "[cgrodsky/cgrodsky] Deploy succeeded", "<p>Your GitHub Pages site was deployed successfully.</p><p><b>Live at:</b> https://cgrodsky.github.io/cgrodsky/</p>", day + hr * 3, { read: true, cat: "green", atts: [{ name: "build-log.txt", size: "4 KB" }] }),
         mk("Xbox", "xbox@microsoft.com", "New games added to Game Pass", "<p>This month's lineup just dropped. Jump back in and play something new.</p>", day * 2, { focused: false }),
         mk("Forge Bank", "alerts@forgebank.com", "Your statement is ready", "<p>Your monthly statement is available. No action needed.</p>", day * 3, { read: true, cat: "purple", atts: [{ name: "statement.pdf", size: "128 KB" }] }),
@@ -187,6 +205,8 @@
     if (!o.events) o.events = seedOutlook().events;
     if (!o.contacts) o.contacts = seedOutlook().contacts;
     o.messages.forEach((m) => { if (m.atts == null) m.atts = []; if (m.focused == null) m.focused = true; if (m.cat == null) m.cat = ""; });
+    // Upgrade an older plain LinkedIn email to the rich replica.
+    o.messages.forEach((m) => { if (m.from === "LinkedIn" && m.body.indexOf("li-mail") < 0) { m.subject = "Someone noticed you"; m.body = linkedinEmail(12); } });
     return o;
   }
   function timeAgo(ts) {
