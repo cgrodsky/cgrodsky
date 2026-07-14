@@ -56,8 +56,49 @@
     const esrb = RATING_IMG[r]
       ? `<img class="xb-rating-img" src="${RATING_IMG[r]}" alt="ESRB ${r}" title="ESRB: ${r}">`
       : `<span class="xb-rating" style="background:${RATING_COLOR[r] || "#555"}" title="ESRB rating">${esc(r)}</span>`;
-    const csm = `<span class="xb-csm" title="Common Sense Media"><img src="assets/commonsense.png" alt="Common Sense">${CSM_AGE[r] || ""}</span>`;
+    const csm = `<button class="xb-csm" title="Common Sense Media — parents' guide"><img src="assets/commonsense.png" alt="Common Sense">${CSM_AGE[r] || ""}</button>`;
     return esrb + csm;
+  }
+  const CSM_CATS = [
+    { k: "edu", name: "Educational Value", icon: `<b class="csm-sym">A+</b>` },
+    { k: "msg", name: "Positive Messages", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z"/></svg>` },
+    { k: "role", name: "Positive Role Models", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="9" cy="7" r="3.4"/><path d="M3 20a6 6 0 0 1 12 0zM17 6h1.6v2.4H21v1.6h-2.4V13H17v-3H14.6V8.4H17z"/></svg>` },
+    { k: "violence", name: "Violence & Scariness", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="11" cy="15" r="6.5"/><path d="M16 8l3-3M18 4l1 1 1-1-1-1zM15 5l1.5 1.5"/></svg>` },
+    { k: "sexy", name: "Sexy Stuff", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 11c2-3 5-3 8 0 3-3 6-3 8 0-2 3-5 3-8 0-3 3-6 3-8 0z"/></svg>` },
+    { k: "lang", name: "Language", icon: `<b class="csm-sym">#!</b>` },
+    { k: "consum", name: "Consumerism", icon: `<b class="csm-sym">$</b>` },
+    { k: "drugs", name: "Drinking, Drugs & Smoking", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 3h10l-1 7a4 4 0 0 1-8 0zM11 14h2v5h3v2H8v-2h3z"/></svg>` },
+  ];
+  function csmHash(s) { return Math.abs(s.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7)); }
+  function csmProfile(game) {
+    const tier = { "EC": 0, "E": 1, "E10+": 2, "T": 3, "M": 4, "AO": 5 }[game.rating] || 1;
+    const jit = (seed) => csmHash(game.id + seed) % 2;
+    const fam = tier <= 2;
+    return {
+      edu: Math.max(0, Math.min(5, (fam ? 3 : 1) + jit("e"))),
+      msg: Math.max(0, Math.min(5, (fam ? 3 : 2) + jit("m"))),
+      role: Math.max(0, Math.min(5, (fam ? 3 : 2) + jit("r"))),
+      violence: Math.min(5, tier),
+      sexy: Math.max(0, tier - 2),
+      lang: Math.max(0, tier - 1),
+      consum: Math.max(0, Math.min(5, 1 + jit("c"))),
+      drugs: Math.max(0, tier - 3),
+    };
+  }
+  function showCsm(game, host) {
+    const prof = csmProfile(game);
+    const dots = (n) => `<span class="csm-dots">${[0, 1, 2, 3, 4].map((i) => `<span class="csm-dot ${i < n ? "on" : ""}"></span>`).join("")}</span>`;
+    const ov = el(`<div class="csm-ov"><div class="csm-panel">
+      <div class="csm-head"><img src="assets/commonsense.png" alt="Common Sense"><b>Parents' guide</b><span class="grow"></span><button class="csm-x">&times;</button></div>
+      <div class="csm-title">${esc(game.name)} &middot; ${CSM_AGE[game.rating] || ""}</div>
+      <h3 class="csm-h">A lot or a little?</h3>
+      <p class="csm-sub">What's in this game for parents to know.</p>
+      <div class="csm-grid">${CSM_CATS.map((c) => { const n = prof[c.k]; return `<div class="csm-cat"><span class="csm-cat-ic">${c.icon}</span><div class="csm-cat-txt"><span class="csm-cat-name">${c.name}</span>${n === 0 ? `<span class="csm-none">not present</span>` : dots(n)}</div></div>`; }).join("")}</div>
+    </div></div>`);
+    const close = () => ov.remove();
+    ov.querySelector(".csm-x").onclick = close;
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+    (host || document.getElementById("screen")).appendChild(ov);
   }
   GAMES.forEach((g) => { g.rating = RATINGS[g.id] || "E"; });
   function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
@@ -130,6 +171,7 @@
             <div class="xb-card-actions"></div>
           </div>
         </div>`);
+        const csmBtn = card.querySelector(".xb-csm"); if (csmBtn) csmBtn.onclick = (e) => { e.stopPropagation(); showCsm(game, body); };
         const acts = card.querySelector(".xb-card-actions");
         if (owned) {
           const play = el(`<button class="xb-btn sm">${(game.playable || game.play) ? "Play" : "Installed"}</button>`);

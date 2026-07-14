@@ -2254,8 +2254,29 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-card-tag { font-size: .78rem; color: #9aa0a6; display: flex; align-items: center; gap: 8px; }
 .xb-rating { color: #fff; font-size: .62rem; font-weight: 700; padding: 1px 6px; border-radius: 3px; letter-spacing: .3px; }
 .xb-rating-img { height: 28px; width: auto; border-radius: 2px; background: #fff; }
-.xb-csm { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; color: #9aa0a6; background: rgba(255,255,255,.06); padding: 2px 7px 2px 4px; border-radius: 12px; }
+.xb-csm { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; color: #9aa0a6; background: rgba(255,255,255,.06); padding: 2px 7px 2px 4px; border-radius: 12px; border: 0; cursor: pointer; }
+.xb-csm:hover { background: rgba(255,255,255,.14); color: #fff; }
 .xb-csm img { width: 16px; height: 16px; background: #fff; border-radius: 50%; padding: 1px; }
+/* Common Sense parents' guide */
+.csm-ov { position: absolute; inset: 0; z-index: 300; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.csm-panel { width: min(560px, 100%); max-height: 88%; overflow: auto; background: #ececec; color: #222; border-radius: 12px; padding: 20px; }
+.csm-head { display: flex; align-items: center; gap: 10px; }
+.csm-head img { width: 26px; height: 26px; }
+.csm-head b { font-size: 1.05rem; }
+.csm-x { background: none; border: 0; font-size: 1.5rem; cursor: pointer; color: #666; }
+.csm-title { font-weight: 700; margin: 10px 0 4px; }
+.csm-h { margin: 14px 0 2px; font-size: 1.2rem; }
+.csm-sub { margin: 0 0 14px; color: #555; font-size: .88rem; }
+.csm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.csm-cat { display: flex; align-items: flex-start; gap: 10px; background: #fff; border-radius: 8px; padding: 12px 14px; }
+.csm-cat-ic { color: #222; display: inline-flex; flex: 0 0 auto; margin-top: 1px; }
+.csm-sym { font-size: 1rem; }
+.csm-cat-name { display: block; font-size: .82rem; margin-top: 3px; }
+.csm-dots { display: inline-flex; gap: 4px; margin-bottom: 4px; }
+.csm-dot { width: 10px; height: 10px; border-radius: 50%; background: #d5d5d5; }
+.csm-dot.on { background: #4caf2f; }
+.csm-none { font-size: .74rem; color: #999; }
+@media (max-width: 560px) { .csm-grid { grid-template-columns: 1fr; } }
 .xb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .xb-owned { font-size: .76rem; color: #6ddf6d; }
 
