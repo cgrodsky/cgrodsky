@@ -76,7 +76,7 @@
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
   const ITEMS = {
-    200: { name: "Ender Pearl", color: "#14c7a8", item: true },
+    200: { name: "Ender Pearl", color: "#14c7a8", item: true, tex: "ender_pearl" },
   };
   // Every teleport in the game shares this sound (ender pearl, portal, …).
   const TELEPORT_SFX = "SFX_008";
@@ -395,7 +395,7 @@
         const b = id ? meta(id) : null;
         const cnt = id ? inv[id] : 0;
         const slot = el(`<div class="mc-slot ${i === selected ? "sel" : ""}" title="${b ? b.name : ""}">` +
-          (b ? `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>` : "") +
+          (b ? (b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "") +
           (b && cnt !== Infinity ? `<span class="mc-slot-c">${cnt}</span>` : "") +
           `<span class="mc-slot-n">${i + 1}</span></div>`);
         slot.onclick = () => { selected = i; drawHotbar(); };

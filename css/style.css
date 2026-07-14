@@ -768,6 +768,7 @@ input[type=range] { width: 100%; }
 .mc-slot { width: 42px; height: 42px; background: rgba(120,120,120,0.6); border: 2px solid #2b2b2b; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mc-slot.sel { border-color: #fff; }
 .mc-slot-sw { width: 26px; height: 26px; display: block; border: 1px solid rgba(0,0,0,0.3); }
+.mc-slot-tex { object-fit: contain; image-rendering: pixelated; border: 0; }
 .mc-slot-item { border-radius: 50%; box-shadow: inset -3px -3px 5px rgba(0,0,0,.45), inset 2px 2px 4px rgba(255,255,255,.5); border-color: rgba(0,0,0,.2); }
 .mc-slot-n { position: absolute; top: 0; left: 2px; font-size: .6rem; color: #fff; text-shadow: 1px 1px 0 #000; }
 .mc-slot-c { position: absolute; bottom: 0; right: 3px; font-size: .72rem; color: #fff; text-shadow: 1px 1px 0 #000; }
@@ -2229,64 +2230,110 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-card-top { display: flex; align-items: center; gap: 8px; }
 .xb-card-top b { flex: 1; }
 .xb-gp-tag { font-size: .64rem; background: #107c10; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
-.xb-card-tag { font-size: .78rem; color: #9aa0a6; }
+.xb-card-tag { font-size: .78rem; color: #9aa0a6; display: flex; align-items: center; gap: 8px; }
+.xb-rating { color: #fff; font-size: .62rem; font-weight: 700; padding: 1px 6px; border-radius: 3px; letter-spacing: .3px; }
 .xb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .xb-owned { font-size: .76rem; color: #6ddf6d; }
 
 /* ============================ Minecraft Launcher ============================ */
 .mcl-host { padding: 0; }
 .mcl { display: flex; height: 100%; background: #1b1b1b; color: #e6e6e6; font-family: "Segoe UI", system-ui, sans-serif; }
-.mcl-side { width: 210px; flex: 0 0 auto; background: #131313; display: flex; flex-direction: column; padding: 16px 12px; gap: 4px; }
-.mcl-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-bottom: 16px; line-height: 1.05; }
-.mcl-brand small { font-weight: 500; color: #9aa0a6; font-size: .68rem; }
-.mcl-editions { display: flex; gap: 8px; margin-bottom: 14px; }
-.mcl-ed { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #1c1c1c; border: 2px solid #2a2a2a; border-radius: 8px; padding: 10px 6px; cursor: pointer; color: #b8b8b8; }
-.mcl-ed img { width: 30px; height: 30px; image-rendering: auto; }
-.mcl-ed span { font-size: .74rem; font-weight: 600; }
-.mcl-ed:hover { border-color: #3a3a3a; }
-.mcl-ed.on { border-color: #4c8a2f; color: #fff; background: #22301a; }
-.mcl-bedrock .mcl-ed.on { border-color: #6b7280; background: #26282b; }
-.mcl-bedrock .mcl-play { background: #6b7280; }
-.mcl-nav { background: none; border: 0; text-align: left; color: #b8b8b8; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: .88rem; }
-.mcl-nav:hover { background: #232323; color: #fff; }
-.mcl-nav.on { background: #2a2a2a; color: #fff; font-weight: 600; }
-.mcl-user { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-top: 1px solid #2a2a2a; font-size: .86rem; }
-.mcl-user svg, .mcl-user img { width: 26px; height: 26px; border-radius: 6px; }
-/* Steve face cropped from the 64x64 skin (head front at 8,8) */
-.mcl-skin-face { width: 28px; height: 28px; display: inline-block; border-radius: 4px; image-rendering: pixelated; background-repeat: no-repeat; background-size: 224px 224px; background-position: -28px -28px; box-shadow: 0 0 0 1px rgba(255,255,255,.15); }
+.mcl-side { width: 240px; flex: 0 0 auto; background: #101010; display: flex; flex-direction: column; padding: 10px; gap: 3px; }
+.mcl-acct { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: #fff; padding: 8px 8px 14px; cursor: pointer; text-align: left; }
+.mcl-acct-txt { flex: 1; min-width: 0; }
+.mcl-acct-txt b { display: block; font-size: .92rem; }
+.mcl-acct-txt span { font-size: .72rem; color: #8a8a8a; }
+.mcl-acct-chev { color: #8a8a8a; }
+.mcl-games { display: flex; flex-direction: column; gap: 2px; }
+.mcl-game { display: flex; align-items: center; gap: 12px; background: none; border: 0; text-align: left; padding: 9px 10px; border-radius: 6px; cursor: pointer; color: #b8b8b8; border-left: 3px solid transparent; }
+.mcl-game:hover { background: #1c1c1c; color: #fff; }
+.mcl-game.on { background: #1c1c1c; color: #fff; border-left-color: #6aa84f; }
+.mcl-game-ic { width: 32px; height: 32px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+.mcl-game-ic img, .mcl-game-ic svg { width: 32px; height: 32px; image-rendering: auto; }
+.mcl-game-txt small { display: block; font-size: .62rem; letter-spacing: .4px; color: #8a8a8a; text-transform: uppercase; }
+.mcl-game.on .mcl-game-txt small { color: #a8a8a8; }
+.mcl-game-txt b { font-size: .92rem; font-weight: 700; }
+.mcl-game-news .mcl-game-txt b { font-weight: 600; }
+/* skin face cropped from the 64x64 skin (head front at 8,8) */
+.mcl-skin-face { width: 34px; height: 34px; display: inline-block; border-radius: 4px; image-rendering: pixelated; background-repeat: no-repeat; background-size: 272px 272px; background-position: -34px -34px; box-shadow: 0 0 0 1px rgba(255,255,255,.15); flex: 0 0 auto; }
+
+.mcl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.mcl-gt { padding: 16px 26px 0; }
+.mcl-gt-name { font-size: .74rem; font-weight: 700; letter-spacing: .6px; color: #cfcfcf; }
+.mcl-tabs2 { display: flex; gap: 22px; margin-top: 6px; border-bottom: none; }
+.mcl-tab2 { background: none; border: 0; color: #9a9a9a; padding: 8px 0; cursor: pointer; font-size: 1rem; position: relative; }
+.mcl-tab2:hover { color: #fff; }
+.mcl-tab2.on { color: #fff; font-weight: 700; }
+.mcl-tab2.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: #fff; }
+.mcl-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px 26px 22px; }
+.mcl-hero { position: relative; flex: 1; min-height: 0; border-radius: 6px; overflow: hidden; background: #4c8a2f; }
+.mcl-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mcl-hero-logo { position: absolute; top: 22px; left: 0; right: 0; text-align: center; color: #fff; font-family: "MojangBold", "Minecraftia", sans-serif; font-size: 2.6rem; letter-spacing: 3px; text-shadow: 3px 3px 0 rgba(0,0,0,.5); line-height: 1; }
+.mcl-hero-logo span { display: block; font-size: 1rem; letter-spacing: 6px; margin-top: 4px; }
+.mcl-promo { position: absolute; right: 20px; top: 42%; width: 300px; background: rgba(0,0,0,.72); color: #fff; padding: 18px; border-radius: 6px; }
+.mcl-promo b { display: block; font-size: 1.05rem; margin-bottom: 8px; }
+.mcl-promo p { font-size: .85rem; color: #d6d6d6; margin: 0 0 14px; }
+.mcl-demo { background: #4c8a2f; color: #fff; border: 0; padding: 9px 18px; border-radius: 3px; font-weight: 700; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+.mcl-hero-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 18px; padding: 16px 20px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); }
+.mcl-ver-chip { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,.55); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+.mcl-ver-ic { display: inline-flex; }
+.mcl-ver-txt small { display: block; font-size: .66rem; color: #b8b8b8; }
+.mcl-ver-txt b { font-size: .88rem; }
+.mcl-play { background: #4c8a2f; color: #fff; border: 0; padding: 16px 60px; border-radius: 4px; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,.28); transition: filter .15s; margin: 0 auto; font-family: "MojangBold", "Segoe UI", sans-serif; }
+.mcl-play:hover { filter: brightness(1.08); }
+.mcl-play:active { transform: translateY(1px); }
+.mcl-play.buy { background: #4c8a2f; }
+.mcl-play:disabled { filter: grayscale(.3); }
+.mcl-player { color: #fff; font-size: .82rem; opacity: .9; }
+
+/* News page */
+.mcl-news2 { flex: 1; overflow: auto; padding: 18px 26px; }
+.mcl-news2-top { display: flex; align-items: center; gap: 20px; margin-bottom: 18px; }
+.mcl-news2-top h1 { margin: 0; }
+.mcl-news2-search { flex: 1; max-width: 420px; background: #101010; border: 1px solid #4c8a2f; color: #fff; border-radius: 4px; padding: 10px 14px; outline: none; }
+.mcl-news2-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.mcl-news2-card { background: #151515; border-radius: 6px; overflow: hidden; }
+.mcl-news2-img { height: 150px; }
+.mcl-news2-body { padding: 14px 16px; }
+.mcl-news2-body h3 { margin: 0 0 10px; font-size: 1.1rem; font-family: "MojangBold", sans-serif; }
+.mcl-news2-meta { display: flex; align-items: center; gap: 10px; font-size: .78rem; color: #9a9a9a; }
+.mcl-news2-tag { background: #2a2a2a; padding: 3px 8px; border-radius: 3px; }
+
+/* Spin-off (Dungeons / Legends) */
+.mcl-spin { flex: 1; display: flex; flex-direction: column; }
+.mcl-spin-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, var(--s1), var(--s2)); text-align: center; padding: 30px; }
+.mcl-spin-ic { transform: scale(2.2); margin-bottom: 20px; }
+.mcl-spin-hero h1 { margin: 0; font-family: "MojangBold", sans-serif; letter-spacing: 2px; }
+.mcl-spin-hero p { color: rgba(255,255,255,.9); margin: 0; }
+.mcl-spin-bar { display: flex; justify-content: center; padding: 18px; background: #131313; }
+
+/* Installations / Patch */
+.mcl-inst, .mcl-patch { flex: 1; overflow: auto; }
+.mcl-inst-row { display: flex; align-items: center; gap: 14px; background: #151515; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; }
+.mcl-inst-row b { display: block; }
+.mcl-inst-row small { color: #9a9a9a; font-size: .78rem; }
+.mcl-inst-row div:nth-child(2) { flex: 1; }
+.mcl-inst-play { background: #4c8a2f; color: #fff; border: 0; padding: 9px 22px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+.mcl-patch h2 { margin: 0 0 14px; }
+.mcl-patch-item { background: #151515; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+.mcl-patch-item b { display: block; margin-bottom: 4px; }
+.mcl-patch-item p { color: #b8b8b8; font-size: .86rem; margin: 0; }
+
+/* Skins overlay */
 .mcl-skins-ov { position: absolute; inset: 0; z-index: 200; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
 .mcl-skins { background: #232323; border-radius: 14px; padding: 22px; width: min(420px, 92%); }
 .mcl-skins-head { display: flex; align-items: center; margin-bottom: 16px; font-size: 1.1rem; }
 .mcl-skins-head b { flex: 1; }
 .mcl-skins-x { background: none; border: 0; color: #9aa0a6; font-size: 1.4rem; cursor: pointer; }
 .mcl-skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
-.mcl-skin-card { background: #1a1a1a; border: 2px solid transparent; border-radius: 10px; padding: 14px; text-align: center; }
+.mcl-skin-card { background: #1a1a1a; border: 2px solid transparent; border-radius: 10px; padding: 14px; text-align: center; cursor: pointer; }
 .mcl-skin-card.sel { border-color: #4c8a2f; }
 .mcl-skin-body { width: 96px; height: 96px; margin: 0 auto 10px; border-radius: 6px; image-rendering: pixelated; background-repeat: no-repeat; background-size: 768px 768px; background-position: -96px -96px; }
 .mcl-skin-card span { display: block; font-weight: 600; }
 .mcl-skin-card small { color: #9aa0a6; font-size: .74rem; }
 .mcl-skins-note { color: #9aa0a6; font-size: .8rem; text-align: center; margin: 16px 0 0; }
-.mcl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mcl-hero { position: relative; height: 260px; background: #4c8a2f; overflow: hidden; }
-.mcl-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mcl-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.1) 55%, transparent 75%); }
-.mcl-hero-in { position: absolute; left: 32px; bottom: 24px; }
-.mcl-tag { display: inline-block; background: rgba(0,0,0,.4); padding: 4px 12px; border-radius: 4px; font-size: .72rem; letter-spacing: 1px; text-transform: uppercase; }
-.mcl-hero-in h1 { margin: 10px 0 4px; font-size: 3.1rem; letter-spacing: 3px; font-weight: 800; text-shadow: 3px 3px 0 rgba(0,0,0,.4); font-family: "MojangBold", "Minecraftia", "Segoe UI", sans-serif; }
-.mcl-brand span { font-family: "MojangBold", "Segoe UI", sans-serif; }
-.mcl-hero-in p { margin: 0; opacity: .92; }
-.mcl-news { flex: 1; overflow: auto; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px; }
-.mcl-news-item { background: #232323; border-radius: 10px; padding: 14px 16px; }
-.mcl-news-item b { display: block; margin-bottom: 3px; }
-.mcl-news-item span { font-size: .84rem; color: #b8b8b8; }
-.mcl-footer { display: flex; align-items: center; gap: 16px; padding: 16px 24px; background: #131313; border-top: 1px solid #2a2a2a; }
-.mcl-ver label { display: block; font-size: .68rem; color: #9aa0a6; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.mcl-version { background: #2a2a2a; color: #fff; border: 1px solid #3a3a3a; border-radius: 6px; padding: 8px 10px; }
-.mcl-play { background: #4c8a2f; color: #fff; border: 0; padding: 16px 46px; border-radius: 4px; font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,.28); transition: filter .15s; }
-.mcl-play:hover { filter: brightness(1.08); }
-.mcl-play:active { transform: translateY(1px); }
-.mcl-play.locked { background: #3a7bd5; }
-.mcl-play:disabled { filter: grayscale(.3); }
+
+/* Get Minecraft overlay */
 .mcl-buy-ov { position: absolute; inset: 0; z-index: 200; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
 .mcl-buy { background: #232323; border-radius: 14px; padding: 30px; text-align: center; width: min(400px, 92%); }
 .mcl-buy-art { display: flex; justify-content: center; margin-bottom: 12px; }

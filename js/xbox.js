@@ -23,11 +23,11 @@
     { id: "whackmole", name: "Whack-a-Mole", price: 4.99, gp: true, play: "whack", tag: "Arcade", c1: "#a16207", c2: "#422006" },
     { id: "tictactoe2", name: "Tic-Tac-Toe+", price: 0, gp: true, play: "tictactoe", tag: "Casual", c1: "#8b5cf6", c2: "#2e1065" },
     // --- Marquee demo tiles (art only) ---
-    { id: "forza", name: "Forza Horizon 5", price: 59.99, gp: true, tag: "Racing", c1: "#8b5cf6", c2: "#2b0a5e" },
+    { id: "forza", name: "Forza Horizon 6", price: 59.99, gp: true, tag: "Racing", c1: "#8b5cf6", c2: "#2b0a5e", art: "assets/game_forza.jpg" },
     { id: "halo", name: "Halo Infinite", price: 59.99, gp: true, tag: "Shooter", c1: "#3b82f6", c2: "#0a1f3d" },
     { id: "seaofthieves", name: "Sea of Thieves", price: 39.99, gp: true, tag: "Adventure", c1: "#0891b2", c2: "#04303d" },
     { id: "starfield", name: "Starfield", price: 69.99, gp: true, tag: "RPG", c1: "#c026d3", c2: "#3b0764" },
-    { id: "flightsim", name: "Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#0ea5e9", c2: "#0c4a6e" },
+    { id: "flightsim", name: "Microsoft Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#0ea5e9", c2: "#0c4a6e", art: "assets/game_flightsim.jpg" },
     { id: "gears5", name: "Gears 5", price: 39.99, gp: true, tag: "Shooter", c1: "#dc2626", c2: "#3f0d0d" },
     { id: "fallout4", name: "Fallout 4", price: 29.99, gp: true, tag: "RPG", c1: "#65a30d", c2: "#1a2e05" },
     { id: "doometernal", name: "Doom Eternal", price: 39.99, gp: true, tag: "Shooter", c1: "#ea580c", c2: "#431407" },
@@ -38,6 +38,14 @@
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
   ];
   const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
+  // ESRB content ratings.
+  const RATINGS = {
+    minecraft: "E10+", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
+    gears5: "M", fallout4: "M", doometernal: "M", aoe4: "T", hades: "T", hollowknight: "E10+",
+    stardew: "E10+", cuphead: "E10+",
+  };
+  const RATING_COLOR = { "E": "#4b7f2f", "E10+": "#3a7bd5", "T": "#c98a1a", "M": "#c0392b" };
+  GAMES.forEach((g) => { g.rating = RATINGS[g.id] || "E"; });
   function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
   function meta(id) { return GAMES.find((g) => g.id === id); }
   function owns(id) { const g = games(); const m = meta(id); return g.owned.indexOf(id) >= 0 || (g.gamepass && m && m.gp); }
@@ -104,7 +112,7 @@
           ${gameArt(game)}
           <div class="xb-card-body">
             <div class="xb-card-top"><b>${esc(game.name)}</b>${game.gp ? `<span class="xb-gp-tag">Game Pass</span>` : ""}</div>
-            <div class="xb-card-tag">${esc(game.tag)}</div>
+            <div class="xb-card-tag">${esc(game.tag)} <span class="xb-rating" style="background:${RATING_COLOR[game.rating] || "#555"}" title="ESRB rating">${esc(game.rating)}</span></div>
             <div class="xb-card-actions"></div>
           </div>
         </div>`);
@@ -152,60 +160,102 @@
 
   // ---------- Minecraft Launcher ----------
   function openLauncher() {
-    const ref = cw({ title: "Minecraft Launcher", icon: window.Icon ? Icon.mini("mclauncher", "Minecraft") : "", width: 900, height: 620, appId: "mclauncher" });
+    const ref = cw({ title: "Minecraft Launcher", icon: window.Icon ? Icon.mini("mclauncher", "Minecraft") : "", width: 980, height: 660, appId: "mclauncher" });
     const body = ref.body;
     body.classList.add("mcl-host");
-    const owned = owns("minecraft");
     const user = (S().profile && S().profile.username) || "Player";
     if (!S().appData) S().appData = {};
-    const ed = S().appData.mcEdition || "java";
-    const edName = ed === "bedrock" ? "Bedrock Edition" : "Java Edition";
     const skinImg = S().appData.mcSkin === "alex" ? "assets/skin_alex.png" : "assets/skin_steve.png";
+    let nav = S().appData.mclNav || "java";
+    let tab = "play";
 
-    body.innerHTML = `<div class="mcl mcl-${ed}">
-      <div class="mcl-side">
-        <div class="mcl-brand">${grassIcon()}<span>Minecraft<br><small>Launcher</small></span></div>
-        <div class="mcl-editions">
-          <button class="mcl-ed ${ed === "java" ? "on" : ""}" data-ed="java"><img src="assets/mc_java.png" alt=""><span>Java</span></button>
-          <button class="mcl-ed ${ed === "bedrock" ? "on" : ""}" data-ed="bedrock"><img src="assets/mc_bedrock.png" alt=""><span>Bedrock</span></button>
+    const GAMES_NAV = [
+      { id: "news", top: "", name: "News", ic: newsIcon() },
+      { id: "java", top: "MINECRAFT:", name: "Java Edition", ic: `<img src="assets/mc_java.png" alt="">` },
+      { id: "windows", top: "MINECRAFT", name: "for Windows", ic: `<img src="assets/mc_bedrock.png" alt="">` },
+      { id: "dungeons", top: "MINECRAFT", name: "Dungeons", ic: dungeonsIcon() },
+      { id: "legends", top: "MINECRAFT", name: "Legends", ic: legendsIcon() },
+    ];
+
+    function build() {
+      body.innerHTML = `<div class="mcl">
+        <div class="mcl-side">
+          <button class="mcl-acct"><span class="mcl-skin-face" style="background-image:url(${skinImg})"></span><div class="mcl-acct-txt"><b>${esc(user)}</b><span>Microsoft account</span></div><span class="mcl-acct-chev">&#9662;</span></button>
+          <div class="mcl-games">
+            ${GAMES_NAV.map((g) => `<button class="mcl-game ${g.id === nav ? "on" : ""} ${g.id === "news" ? "mcl-game-news" : ""}" data-nav="${g.id}"><span class="mcl-game-ic">${g.ic}</span><div class="mcl-game-txt">${g.top ? `<small>${g.top}</small>` : ""}<b>${g.name}</b></div></button>`).join("")}
+          </div>
         </div>
-        <button class="mcl-nav on">Play</button>
-        <button class="mcl-nav">Installations</button>
-        <button class="mcl-nav">Skins</button>
-        <button class="mcl-nav">Patch Notes</button>
-        <span class="grow"></span>
-        <div class="mcl-user"><span class="mcl-skin-face" style="background-image:url(${skinImg})"></span><span>${esc(user)}</span></div>
-      </div>
-      <div class="mcl-main">
-        <div class="mcl-hero">
+        <div class="mcl-main"></div>
+      </div>`;
+      body.querySelectorAll(".mcl-game").forEach((b) => b.onclick = () => { nav = b.dataset.nav; S().appData.mclNav = nav; State.save(); tab = "play"; build(); });
+      renderMain();
+    }
+
+    function renderMain() {
+      const main = body.querySelector(".mcl-main");
+      if (nav === "news") return renderNews(main);
+      if (nav === "dungeons" || nav === "legends") return renderSpinoff(main, nav);
+      const owned = owns("minecraft");
+      const gname = nav === "java" ? "MINECRAFT: JAVA EDITION" : "MINECRAFT FOR WINDOWS";
+      main.innerHTML = `
+        <div class="mcl-gt">
+          <div class="mcl-gt-name">${gname}</div>
+          <div class="mcl-tabs2">
+            <button class="mcl-tab2 ${tab === "play" ? "on" : ""}" data-t="play">Play</button>
+            <button class="mcl-tab2 ${tab === "inst" ? "on" : ""}" data-t="inst">Installations</button>
+            <button class="mcl-tab2" data-t="skins">Skins</button>
+            <button class="mcl-tab2 ${tab === "patch" ? "on" : ""}" data-t="patch">Patch Notes</button>
+          </div>
+        </div>
+        <div class="mcl-stage"></div>`;
+      main.querySelectorAll(".mcl-tab2").forEach((b) => b.onclick = () => { if (b.dataset.t === "skins") { showSkins(); return; } tab = b.dataset.t; renderMain(); });
+      const stage = main.querySelector(".mcl-stage");
+      if (tab === "inst") { stage.innerHTML = `<div class="mcl-inst"><div class="mcl-inst-row"><div class="mcl-inst-ic">${grassSmall()}</div><div><b>Latest release</b><small>1.21.4 · Release</small></div><button class="mcl-inst-play">Play</button></div><div class="mcl-inst-row"><div class="mcl-inst-ic">${grassSmall()}</div><div><b>Latest snapshot</b><small>24w45a · Snapshot</small></div><button class="mcl-inst-play">Play</button></div></div>`; stage.querySelectorAll(".mcl-inst-play").forEach((b) => b.onclick = () => launch()); return; }
+      if (tab === "patch") { stage.innerHTML = `<div class="mcl-patch"><h2>Latest Patch Notes</h2><div class="mcl-patch-item"><b>1.21.4 — Winter Drop</b><p>New cold biomes, the pale garden, creaking mobs, and bundle recipes.</p></div><div class="mcl-patch-item"><b>1.21 — Tricky Trials</b><p>Trial chambers, the mace, wind charges, and the breeze mob.</p></div><div class="mcl-patch-item"><b>1.20 — Trails & Tales</b><p>Cherry groves, archaeology, camels, and the sniffer.</p></div></div>`; return; }
+      // Play tab
+      stage.innerHTML = `
+        <div class="mcl-hero big">
           <img class="mcl-hero-bg" src="assets/mc_banner.jpg" alt="">
-          <div class="mcl-hero-shade"></div>
-          <div class="mcl-hero-in">
-            <span class="mcl-tag">Latest Release</span>
-            <h1>MINECRAFT</h1>
-            <p>${edName} &middot; 1.21</p>
+          <div class="mcl-hero-logo">MINECRAFT<span>${nav === "java" ? "JAVA EDITION" : "FOR WINDOWS"}</span></div>
+          ${owned ? "" : `<div class="mcl-promo"><b>Now Java &amp; Bedrock are sold together!</b><p>Start your Minecraft adventure today. Buy Java Edition, also get Bedrock — or play the Demo for free.</p><button class="mcl-demo">Play Demo</button></div>`}
+          <div class="mcl-hero-bar">
+            <div class="mcl-ver-chip"><div class="mcl-ver-ic">${grassSmall()}</div><div class="mcl-ver-txt"><small>Latest release</small><b>1.21.4</b></div></div>
+            <button class="mcl-play ${owned ? "" : "buy"}">${owned ? "PLAY" : "BUY NOW"}</button>
+            <span class="mcl-player">${esc(user)}</span>
           </div>
-        </div>
-        <div class="mcl-news">
-          <div class="mcl-news-item"><b>Welcome, ${esc(user)}</b><span>Build, explore, and survive. Press Play to jump in.</span></div>
-          <div class="mcl-news-item"><b>Tip</b><span>Mine ores to hear the XP sound. Watch out for creepers!</span></div>
-        </div>
-        <div class="mcl-footer">
-          <div class="mcl-ver">
-            <label>Version</label>
-            <select class="mcl-version"><option>Latest Release 1.21.4</option><option>Latest Snapshot 24w45a</option><option>1.21.1</option><option>1.20.6</option><option>1.19.4</option><option>1.18.2</option><option>1.16.5</option><option>1.12.2</option><option>1.8.9</option></select>
-          </div>
-          <span class="grow"></span>
-          <button class="mcl-play ${owned ? "" : "locked"}">${owned ? "PLAY" : "GET MINECRAFT"}</button>
-        </div>
-      </div>
-    </div>`;
+        </div>`;
+      const pb = stage.querySelector(".mcl-play");
+      pb.onclick = () => { if (owns("minecraft")) launch(); else getMinecraft(); };
+      const demo = stage.querySelector(".mcl-demo"); if (demo) demo.onclick = () => launch();
+    }
 
-    body.querySelectorAll(".mcl-nav").forEach((b) => b.onclick = () => {
-      body.querySelectorAll(".mcl-nav").forEach((x) => x.classList.toggle("on", x === b));
-      if (b.textContent === "Skins") showSkins();
-    });
-    body.querySelectorAll(".mcl-ed").forEach((b) => b.onclick = () => { S().appData.mcEdition = b.dataset.ed; State.save(); openLauncher(); ref.close && ref.close(); });
+    function renderNews(main) {
+      const NEWS = [
+        { t: "1.21.4 — The Winter Drop is here", tag: "Java Edition", c1: "#3a7bd5", c2: "#0a2540" },
+        { t: "Celebrate a decade of Minecraft", tag: "for Windows", c1: "#7c3aed", c2: "#2e1065" },
+        { t: "New realms plus subscription perks", tag: "Java Edition", c1: "#16a34a", c2: "#14532d" },
+        { t: "Marketplace: fresh maps & skins", tag: "for Windows", c1: "#ca5010", c2: "#431407" },
+      ];
+      main.innerHTML = `<div class="mcl-news2">
+        <div class="mcl-news2-top"><h1>News</h1><input class="mcl-news2-search" placeholder="News title"></div>
+        <div class="mcl-news2-grid">${NEWS.map((n) => `<div class="mcl-news2-card"><div class="mcl-news2-img" style="background:linear-gradient(135deg,${n.c1},${n.c2})"></div><div class="mcl-news2-body"><h3>${esc(n.t)}</h3><div class="mcl-news2-meta"><span class="mcl-news2-tag">${n.tag}</span><span>Jul 2026</span></div></div></div>`).join("")}</div>
+      </div>`;
+    }
+    function renderSpinoff(main, which) {
+      const info = which === "dungeons"
+        ? { name: "Minecraft Dungeons", tag: "An action-adventure dungeon crawler", c1: "#b45309", c2: "#3b1d05", ic: dungeonsIcon() }
+        : { name: "Minecraft Legends", tag: "A strategy-action game to defend the Overworld", c1: "#2563eb", c2: "#0a1f3d", ic: legendsIcon() };
+      main.innerHTML = `<div class="mcl-spin" style="--s1:${info.c1};--s2:${info.c2}">
+        <div class="mcl-spin-hero"><div class="mcl-spin-ic">${info.ic}</div><h1>${info.name.toUpperCase()}</h1><p>${info.tag}</p></div>
+        <div class="mcl-spin-bar"><button class="mcl-play buy">BUY NOW — $${(which === "dungeons" ? 19.99 : 29.99).toFixed(2)}</button></div>
+      </div>`;
+      main.querySelector(".mcl-play").onclick = () => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("mclauncher", "Minecraft") : "", title: info.name, body: "Opening the Store…" }); };
+    }
+    function launch() {
+      if (window.MojangIntro) window.MojangIntro(body, () => { AppRegistry.minecraft({ skipIntro: true }); ref.close && ref.close(); });
+      else { AppRegistry.minecraft(); ref.close && ref.close(); }
+    }
+
     function showSkins() {
       const cur = S().appData.mcSkin || "steve";
       const SKINS = [{ id: "steve", name: "Steve", img: "assets/skin_steve.png" }, { id: "alex", name: "Alex", img: "assets/skin_alex.png" }];
@@ -219,19 +269,9 @@
       const close = () => ov.remove();
       ov.querySelector(".mcl-skins-x").onclick = close;
       ov.onclick = (e) => { if (e.target === ov) close(); };
-      ov.querySelectorAll(".mcl-skin-card").forEach((c) => c.onclick = () => { S().appData.mcSkin = c.dataset.skin; State.save(); openLauncher(); ref.close && ref.close(); });
+      ov.querySelectorAll(".mcl-skin-card").forEach((c) => c.onclick = () => { const face = S().appData.mcSkin = c.dataset.skin; State.save(); const f = body.querySelector(".mcl-skin-face"); if (f) f.style.backgroundImage = `url(assets/skin_${face}.png)`; ov.remove(); });
       body.appendChild(ov);
     }
-    const playBtn = body.querySelector(".mcl-play");
-    playBtn.onclick = () => {
-      if (owns("minecraft")) {
-        // Show the Mojang Studios loading screen in the launcher, then open the game.
-        if (window.MojangIntro) window.MojangIntro(body, () => { AppRegistry.minecraft({ skipIntro: true }); ref.close && ref.close(); });
-        else { AppRegistry.minecraft(); ref.close && ref.close(); }
-      } else {
-        getMinecraft();
-      }
-    };
     function getMinecraft() {
       const ov = el(`<div class="mcl-buy-ov"><div class="mcl-buy">
         <div class="mcl-buy-art">${grassIcon()}</div>
@@ -249,12 +289,14 @@
       ov.querySelector('[data-b="buy"]').onclick = () => {
         if (!canAfford(29.99)) { close(); return openXbox(); }
         charge("Minecraft", 29.99); if (games().owned.indexOf("minecraft") < 0) games().owned.push("minecraft"); State.save();
-        close(); openLauncher(); ref.close && ref.close();
+        close(); build();
         if (window.Notify) Notify.show({ icon: "", title: "Minecraft", body: "Purchased — press Play!" });
       };
       ov.querySelector('[data-b="gp"]').onclick = () => { close(); ref.close && ref.close(); openXbox(); };
       body.appendChild(ov);
     }
+
+    build();
   }
 
   function grassIcon() {
@@ -263,6 +305,18 @@
       <rect x="4" y="12" width="24" height="16" fill="#8a6d4b"/>
       <rect x="7" y="15" width="4" height="4" fill="#7a5d3f"/><rect x="14" y="19" width="4" height="4" fill="#7a5d3f"/><rect x="21" y="14" width="4" height="4" fill="#7a5d3f"/><rect x="18" y="23" width="4" height="3" fill="#7a5d3f"/>
     </svg>`;
+  }
+  function grassSmall() {
+    return `<svg viewBox="0 0 32 32" width="30" height="30" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="28" height="10" fill="#6aa84f"/><rect x="2" y="2" width="28" height="4" fill="#7cbd5c"/><rect x="2" y="12" width="28" height="18" fill="#8a6d4b"/><rect x="6" y="16" width="5" height="5" fill="#7a5d3f"/><rect x="20" y="15" width="5" height="5" fill="#7a5d3f"/></svg>`;
+  }
+  function newsIcon() {
+    return `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#c9c9c9" stroke-width="1.6" stroke-linejoin="round"><path d="M5 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2V5"/><path d="M17 8h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/></svg>`;
+  }
+  function dungeonsIcon() {
+    return `<svg viewBox="0 0 32 32" width="30" height="30" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" rx="5" fill="#7a3b12"/><path d="M16 6l8 5v10l-8 5-8-5V11z" fill="#c2661a"/><path d="M16 11l4 2.5v5L16 21l-4-2.5v-5z" fill="#3a1e08"/></svg>`;
+  }
+  function legendsIcon() {
+    return `<svg viewBox="0 0 32 32" width="30" height="30" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" rx="5" fill="#0e2a5e"/><circle cx="16" cy="16" r="9" fill="none" stroke="#4aa3ff" stroke-width="2.4"/><path d="M16 8v16M8 16h16" stroke="#4aa3ff" stroke-width="2.4"/><circle cx="16" cy="16" r="3" fill="#cfe6ff"/></svg>`;
   }
 
   window.AppRegistry = window.AppRegistry || {};
