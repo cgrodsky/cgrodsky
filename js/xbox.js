@@ -11,7 +11,7 @@
   const GP_PRICE = 16.99; // Game Pass Ultimate, monthly (pretend)
   // `play` maps a title to a built-in mini-game so it actually launches.
   const GAMES = [
-    { id: "minecraft", name: "Minecraft", price: 29.99, gp: true, playable: true, tag: "Sandbox", c1: "#7cae42", c2: "#33500f" },
+    { id: "minecraft", name: "Minecraft", price: 29.99, gp: true, playable: true, tag: "Sandbox", c1: "#7cae42", c2: "#33500f", art: "assets/game_minecraft.jpg" },
     // --- Playable arcade titles (wired to the built-in mini-games) ---
     { id: "neonsnake", name: "Neon Snake", price: 9.99, gp: true, play: "snake", tag: "Arcade", c1: "#22c55e", c2: "#064e3b" },
     { id: "blockblast", name: "Block Blast", price: 9.99, gp: true, play: "breakout", tag: "Arcade", c1: "#1e88e5", c2: "#0a2540" },
@@ -34,7 +34,7 @@
     { id: "aoe4", name: "Age of Empires IV", price: 49.99, gp: true, tag: "Strategy", c1: "#b45309", c2: "#3b1d05" },
     { id: "hades", name: "Hades", price: 24.99, gp: true, tag: "Roguelike", c1: "#e11d48", c2: "#4c0519" },
     { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
-    { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d" },
+    { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d", art: "assets/game_stardew.jpg" },
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
   ];
   const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
@@ -45,6 +45,7 @@
   function charge(item, amount) { try { if (State.addTransaction) State.addTransaction({ vendor: "Xbox", item, amount, refundable: false }); } catch (_) {} }
 
   function gameArt(g, cls) {
+    if (g.art) return `<div class="xb-art xb-art-photo ${cls || ""}" style="background:${g.c1}"><img class="xb-art-img" src="${g.art}" alt=""><div class="xb-art-shade"></div><span class="xb-art-name">${esc(g.name)}</span></div>`;
     return `<div class="xb-art ${cls || ""}" style="background:linear-gradient(135deg,${g.c1},${g.c2})">
       <svg viewBox="0 0 100 60" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;opacity:.35"><circle cx="80" cy="12" r="22" fill="rgba(255,255,255,.15)"/><circle cx="15" cy="50" r="16" fill="rgba(0,0,0,.15)"/></svg>
       <span class="xb-art-name">${esc(g.name)}</span></div>`;
