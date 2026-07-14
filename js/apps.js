@@ -163,6 +163,7 @@
         // Windows 12 default wallpapers (wall3 = default) then a color palette.
         const walls = [
           { v: "default", img: "assets/wall3.jpg" },
+          { v: "assets/wall4.jpg", img: "assets/wall4.jpg" },
           { v: "assets/wall1.jpg", img: "assets/wall1.jpg" },
           { v: "assets/wall2.jpg", img: "assets/wall2.jpg" },
         ];
