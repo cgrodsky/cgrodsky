@@ -99,7 +99,35 @@
 
   function finishInstaller() {
     S().installerDone = true; State.save();
-    oobeRegion();
+    installerDownload();
+  }
+
+  // "Downloading Windows" — a progress screen before the OOBE.
+  function installerDownload() {
+    const body = installerFrame(`
+      <div class="installer-download">
+        <div class="dl-flag"><span class="w12-flag"><i></i><i></i><i></i><i></i></span></div>
+        <h1 class="dl-title">Downloading Windows 12</h1>
+        <div class="dl-status">Preparing…</div>
+        <div class="dl-bar"><div class="dl-fill"></div></div>
+        <div class="dl-meta"><span class="dl-pct">0%</span><span class="dl-speed"></span></div>
+        <p class="dl-note">Keep your PC on and plugged in until this is done.</p>
+      </div>`, 3);
+    const fill = body.querySelector(".dl-fill"), pct = body.querySelector(".dl-pct"), status = body.querySelector(".dl-status"), speed = body.querySelector(".dl-speed");
+    const stages = ["Downloading files…", "Verifying download…", "Installing features…", "Getting ready…"];
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 6 + 2.5;
+      if (p >= 100) {
+        p = 100; fill.style.width = "100%"; pct.textContent = "100%"; status.textContent = "Download complete"; speed.textContent = "";
+        clearInterval(iv); setTimeout(oobeRegion, 1000);
+      } else {
+        fill.style.width = p + "%"; pct.textContent = Math.floor(p) + "%";
+        status.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 25))];
+        speed.textContent = (18 + Math.floor(Math.random() * 30)) + " MB/s";
+      }
+    }, 230);
+    wireSkip();
   }
 
   // Jump straight to the desktop with sensible defaults (available on every screen).

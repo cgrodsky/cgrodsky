@@ -156,16 +156,24 @@
     body.classList.add("mcl-host");
     const owned = owns("minecraft");
     const user = (S().profile && S().profile.username) || "Player";
+    if (!S().appData) S().appData = {};
+    const ed = S().appData.mcEdition || "java";
+    const edName = ed === "bedrock" ? "Bedrock Edition" : "Java Edition";
+    const skinImg = S().appData.mcSkin === "alex" ? "assets/skin_alex.png" : "assets/skin_steve.png";
 
-    body.innerHTML = `<div class="mcl">
+    body.innerHTML = `<div class="mcl mcl-${ed}">
       <div class="mcl-side">
         <div class="mcl-brand">${grassIcon()}<span>Minecraft<br><small>Launcher</small></span></div>
+        <div class="mcl-editions">
+          <button class="mcl-ed ${ed === "java" ? "on" : ""}" data-ed="java"><img src="assets/mc_java.png" alt=""><span>Java</span></button>
+          <button class="mcl-ed ${ed === "bedrock" ? "on" : ""}" data-ed="bedrock"><img src="assets/mc_bedrock.png" alt=""><span>Bedrock</span></button>
+        </div>
         <button class="mcl-nav on">Play</button>
         <button class="mcl-nav">Installations</button>
         <button class="mcl-nav">Skins</button>
         <button class="mcl-nav">Patch Notes</button>
         <span class="grow"></span>
-        <div class="mcl-user"><span class="mcl-skin-face" style="background-image:url(assets/skin_steve.png)"></span><span>${esc(user)}</span></div>
+        <div class="mcl-user"><span class="mcl-skin-face" style="background-image:url(${skinImg})"></span><span>${esc(user)}</span></div>
       </div>
       <div class="mcl-main">
         <div class="mcl-hero">
@@ -174,7 +182,7 @@
           <div class="mcl-hero-in">
             <span class="mcl-tag">Latest Release</span>
             <h1>MINECRAFT</h1>
-            <p>Tricky Trials — 1.21</p>
+            <p>${edName} &middot; 1.21</p>
           </div>
         </div>
         <div class="mcl-news">
@@ -196,17 +204,21 @@
       body.querySelectorAll(".mcl-nav").forEach((x) => x.classList.toggle("on", x === b));
       if (b.textContent === "Skins") showSkins();
     });
+    body.querySelectorAll(".mcl-ed").forEach((b) => b.onclick = () => { S().appData.mcEdition = b.dataset.ed; State.save(); openLauncher(); ref.close && ref.close(); });
     function showSkins() {
+      const cur = S().appData.mcSkin || "steve";
+      const SKINS = [{ id: "steve", name: "Steve", img: "assets/skin_steve.png" }, { id: "alex", name: "Alex", img: "assets/skin_alex.png" }];
       const ov = el(`<div class="mcl-skins-ov"><div class="mcl-skins">
         <div class="mcl-skins-head"><b>Skins</b><button class="mcl-skins-x">&times;</button></div>
         <div class="mcl-skins-grid">
-          <div class="mcl-skin-card sel"><div class="mcl-skin-body" style="background-image:url(assets/skin_steve.png)"></div><span>Steve</span><small>Default &middot; Equipped</small></div>
+          ${SKINS.map((s) => `<button class="mcl-skin-card ${s.id === cur ? "sel" : ""}" data-skin="${s.id}"><div class="mcl-skin-body" style="background-image:url(${s.img})"></div><span>${s.name}</span><small>${s.id === "steve" ? "Default" : "Classic"}${s.id === cur ? " · Equipped" : ""}</small></button>`).join("")}
         </div>
-        <p class="mcl-skins-note">Your default skin. More skins coming soon.</p>
+        <p class="mcl-skins-note">Pick your default skin.</p>
       </div></div>`);
       const close = () => ov.remove();
       ov.querySelector(".mcl-skins-x").onclick = close;
       ov.onclick = (e) => { if (e.target === ov) close(); };
+      ov.querySelectorAll(".mcl-skin-card").forEach((c) => c.onclick = () => { S().appData.mcSkin = c.dataset.skin; State.save(); openLauncher(); ref.close && ref.close(); });
       body.appendChild(ov);
     }
     const playBtn = body.querySelector(".mcl-play");

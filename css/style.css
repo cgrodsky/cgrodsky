@@ -1500,6 +1500,16 @@ body.dark .searchbar { border-color: #5f6368; }
 .installer-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; }
 .installer-body .btn-text { color: #b9c2d6; }
 .installer-body .link-blue { color: #8ea6ff; cursor: pointer; }
+/* Downloading Windows step */
+.installer-download { text-align: center; padding: 18px 10px 8px; }
+.installer-download .dl-flag { display: flex; justify-content: center; margin-bottom: 18px; }
+.installer-download .dl-flag .w12-flag { width: 62px; height: 62px; }
+.dl-title { font-size: 1.7rem; margin: 0 0 6px; font-weight: 400; }
+.dl-status { color: #b9c2d6; font-size: .92rem; margin-bottom: 20px; min-height: 1.2em; }
+.dl-bar { width: min(460px, 100%); height: 8px; margin: 0 auto; background: rgba(255,255,255,.12); border-radius: 6px; overflow: hidden; }
+.dl-fill { height: 100%; width: 0; background: linear-gradient(90deg, #2f6bff, #7b5cff); border-radius: 6px; transition: width .22s linear; }
+.dl-meta { display: flex; justify-content: space-between; width: min(460px, 100%); margin: 10px auto 0; color: #8ea6ff; font-size: .82rem; }
+.dl-note { color: #7f8aa3 !important; font-size: .82rem !important; margin-top: 22px !important; }
 .installer-foot { padding: 12px 34px 18px; border-top: 1px solid rgba(255,255,255,.06); }
 .installer-dashes { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 .installer-dashes span { width: 90px; max-width: 26vw; height: 4px; border-radius: 2px; background: rgba(255,255,255,.16); }
@@ -2170,6 +2180,14 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .mcl-side { width: 210px; flex: 0 0 auto; background: #131313; display: flex; flex-direction: column; padding: 16px 12px; gap: 4px; }
 .mcl-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-bottom: 16px; line-height: 1.05; }
 .mcl-brand small { font-weight: 500; color: #9aa0a6; font-size: .68rem; }
+.mcl-editions { display: flex; gap: 8px; margin-bottom: 14px; }
+.mcl-ed { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; background: #1c1c1c; border: 2px solid #2a2a2a; border-radius: 8px; padding: 10px 6px; cursor: pointer; color: #b8b8b8; }
+.mcl-ed img { width: 30px; height: 30px; image-rendering: auto; }
+.mcl-ed span { font-size: .74rem; font-weight: 600; }
+.mcl-ed:hover { border-color: #3a3a3a; }
+.mcl-ed.on { border-color: #4c8a2f; color: #fff; background: #22301a; }
+.mcl-bedrock .mcl-ed.on { border-color: #6b7280; background: #26282b; }
+.mcl-bedrock .mcl-play { background: #6b7280; }
 .mcl-nav { background: none; border: 0; text-align: left; color: #b8b8b8; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: .88rem; }
 .mcl-nav:hover { background: #232323; color: #fff; }
 .mcl-nav.on { background: #2a2a2a; color: #fff; font-weight: 600; }
