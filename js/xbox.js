@@ -43,7 +43,7 @@
   const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
   // ESRB content ratings.
   const RATINGS = {
-    minecraft: "E10+", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
+    minecraft: "E", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
     gears5: "M", fallout4: "M", doometernal: "M", aoe4: "T", hades: "T", hollowknight: "E10+",
     stardew: "E10+", cuphead: "E10+", gta5: "AO", fortnite: "T", bluey: "EC",
   };
