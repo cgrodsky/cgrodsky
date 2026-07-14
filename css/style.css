@@ -2151,9 +2151,9 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .mcl-user { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-top: 1px solid #2a2a2a; font-size: .86rem; }
 .mcl-user svg, .mcl-user img { width: 26px; height: 26px; border-radius: 6px; }
 .mcl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mcl-hero { position: relative; height: 260px; background: linear-gradient(160deg, #74b34a 0%, #4c8a2f 40%, #6b4f34 40%, #3f2e1e 100%); overflow: hidden; }
-.mcl-hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 34px 34px; }
-.mcl-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7), transparent 60%); }
+.mcl-hero { position: relative; height: 260px; background: #4c8a2f; overflow: hidden; }
+.mcl-hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mcl-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.1) 55%, transparent 75%); }
 .mcl-hero-in { position: absolute; left: 32px; bottom: 24px; }
 .mcl-tag { display: inline-block; background: rgba(0,0,0,.4); padding: 4px 12px; border-radius: 4px; font-size: .72rem; letter-spacing: 1px; text-transform: uppercase; }
 .mcl-hero-in h1 { margin: 10px 0 4px; font-size: 3rem; letter-spacing: 3px; font-weight: 800; text-shadow: 3px 3px 0 rgba(0,0,0,.4); font-family: "Minecraftia", "Segoe UI", sans-serif; }

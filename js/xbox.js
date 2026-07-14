@@ -169,11 +169,12 @@
       </div>
       <div class="mcl-main">
         <div class="mcl-hero">
+          <img class="mcl-hero-bg" src="assets/mc_banner.jpg" alt="">
           <div class="mcl-hero-shade"></div>
           <div class="mcl-hero-in">
             <span class="mcl-tag">Latest Release</span>
             <h1>MINECRAFT</h1>
-            <p>The Wild Update — 1.21</p>
+            <p>Tricky Trials — 1.21</p>
           </div>
         </div>
         <div class="mcl-news">
@@ -183,7 +184,7 @@
         <div class="mcl-footer">
           <div class="mcl-ver">
             <label>Version</label>
-            <select class="mcl-version"><option>Latest Release 1.21</option><option>1.20.6</option><option>1.19.4</option><option>Snapshot 24w14a</option></select>
+            <select class="mcl-version"><option>Latest Release 1.21.4</option><option>Latest Snapshot 24w45a</option><option>1.21.1</option><option>1.20.6</option><option>1.19.4</option><option>1.18.2</option><option>1.16.5</option><option>1.12.2</option><option>1.8.9</option></select>
           </div>
           <span class="grow"></span>
           <button class="mcl-play ${owned ? "" : "locked"}">${owned ? "PLAY" : "GET MINECRAFT"}</button>
