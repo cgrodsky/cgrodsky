@@ -44,6 +44,8 @@
     { id: "onenote", name: "OneNote", cat: "Productivity", price: 0, builtin: "onenote", desc: "Microsoft OneNote — notebooks, sections, and pages for your notes." },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
+    { id: "mclauncher", name: "Minecraft Launcher", cat: "Games", price: 0, builtin: "mclauncher", desc: "Launch Minecraft — pick a version and press Play." },
+    { id: "xbox", name: "Xbox", cat: "Games", price: 0, builtin: "xbox", desc: "Xbox app with Game Pass — play, subscribe, or buy games." },
     { id: "blockfinder", name: "Assets", cat: "System", price: 0, builtin: "blockfinder", desc: "Manage every uploaded asset — textures and sounds — each with a number." },
     { id: "codeeditor", name: "Code Editor", cat: "Developer", price: 0, builtin: "codeeditor", desc: "Edit HTML / CSS / JS with live preview and console." },
     { id: "vscode", name: "Visual Studio Code", cat: "Developer", price: 0, builtin: "vscode", desc: "A full code editor: explorer, tabs, syntax highlighting, command palette, and live preview." },

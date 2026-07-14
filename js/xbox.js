@@ -1,0 +1,201 @@
+/* Xbox app (Game Pass store) + Minecraft Launcher.
+   Ownership + Game Pass persist in appData.games. Minecraft is owned by
+   default so it always plays; other titles come with Game Pass or a purchase. */
+(function () {
+  "use strict";
+  function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  const S = () => State.data;
+  const cw = (opts) => window.WM.createWindow(opts);
+
+  const GP_PRICE = 16.99; // Game Pass Ultimate, monthly (pretend)
+  const GAMES = [
+    { id: "minecraft", name: "Minecraft", price: 29.99, gp: true, playable: true, tag: "Sandbox", c1: "#7cae42", c2: "#33500f" },
+    { id: "forza", name: "Forza Horizon 5", price: 59.99, gp: true, tag: "Racing", c1: "#8b5cf6", c2: "#2b0a5e" },
+    { id: "halo", name: "Halo Infinite", price: 59.99, gp: true, tag: "Shooter", c1: "#3b82f6", c2: "#0a1f3d" },
+    { id: "seaofthieves", name: "Sea of Thieves", price: 39.99, gp: true, tag: "Adventure", c1: "#0891b2", c2: "#04303d" },
+    { id: "starfield", name: "Starfield", price: 69.99, gp: true, tag: "RPG", c1: "#c026d3", c2: "#3b0764" },
+    { id: "flightsim", name: "Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#0ea5e9", c2: "#0c4a6e" },
+  ];
+  function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
+  function meta(id) { return GAMES.find((g) => g.id === id); }
+  function owns(id) { const g = games(); const m = meta(id); return g.owned.indexOf(id) >= 0 || (g.gamepass && m && m.gp); }
+  function canAfford(p) { const b = S().bank && S().bank.balance; return b == null || b >= p; }
+  function charge(item, amount) { try { if (State.addTransaction) State.addTransaction({ vendor: "Xbox", item, amount, refundable: false }); } catch (_) {} }
+
+  function gameArt(g, cls) {
+    return `<div class="xb-art ${cls || ""}" style="background:linear-gradient(135deg,${g.c1},${g.c2})">
+      <svg viewBox="0 0 100 60" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;opacity:.35"><circle cx="80" cy="12" r="22" fill="rgba(255,255,255,.15)"/><circle cx="15" cy="50" r="16" fill="rgba(0,0,0,.15)"/></svg>
+      <span class="xb-art-name">${esc(g.name)}</span></div>`;
+  }
+
+  // ---------- Xbox app ----------
+  function openXbox() {
+    const ref = cw({ title: "Xbox", icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", width: 940, height: 660, appId: "xbox" });
+    const body = ref.body;
+    body.classList.add("xb-host");
+
+    function render() {
+      const g = games();
+      body.innerHTML = `<div class="xb">
+        <div class="xb-top"><span class="xb-logo">${window.Icon ? Icon.mini("xbox", "Xbox") : ""}</span><b>Xbox</b><span class="grow"></span>
+          <span class="xb-gp-pill ${g.gamepass ? "on" : ""}">${g.gamepass ? "Game Pass active" : "No Game Pass"}</span></div>
+        <div class="xb-scroll">
+          <div class="xb-hero">
+            <div class="xb-hero-in">
+              <span class="xb-hero-badge">Xbox Game Pass Ultimate</span>
+              <h1>Hundreds of games. One low price.</h1>
+              <p>Play Minecraft, Forza, Halo and more — all included.</p>
+              <div class="xb-hero-actions">
+                ${g.gamepass ? `<button class="xb-btn ghost" data-a="cancelgp">Cancel Game Pass</button>` : `<button class="xb-btn" data-a="joingp">Join for $${GP_PRICE.toFixed(2)}/mo</button>`}
+              </div>
+            </div>
+          </div>
+          <h2 class="xb-h">${g.gamepass ? "Included with Game Pass" : "Games"}</h2>
+          <div class="xb-grid"></div>
+        </div>
+      </div>`;
+      const grid = body.querySelector(".xb-grid");
+      GAMES.forEach((game) => {
+        const owned = owns(game.id);
+        const viaGp = games().gamepass && game.gp && games().owned.indexOf(game.id) < 0;
+        const card = el(`<div class="xb-card">
+          ${gameArt(game)}
+          <div class="xb-card-body">
+            <div class="xb-card-top"><b>${esc(game.name)}</b>${game.gp ? `<span class="xb-gp-tag">Game Pass</span>` : ""}</div>
+            <div class="xb-card-tag">${esc(game.tag)}</div>
+            <div class="xb-card-actions"></div>
+          </div>
+        </div>`);
+        const acts = card.querySelector(".xb-card-actions");
+        if (owned) {
+          const play = el(`<button class="xb-btn sm">${game.playable ? "Play" : "Installed"}</button>`);
+          play.onclick = () => playGame(game);
+          acts.appendChild(play);
+          if (viaGp) acts.appendChild(el(`<span class="xb-owned">with Game Pass</span>`));
+          else acts.appendChild(el(`<span class="xb-owned">Owned</span>`));
+        } else {
+          const buy = el(`<button class="xb-btn sm">Buy $${game.price.toFixed(2)}</button>`);
+          buy.onclick = () => buyGame(game);
+          acts.appendChild(buy);
+          if (game.gp && !games().gamepass) { const gp = el(`<button class="xb-btn sm ghost">Play with Game Pass</button>`); gp.onclick = () => joinGamePass(); acts.appendChild(gp); }
+        }
+        grid.appendChild(card);
+      });
+      const joinBtn = body.querySelector('[data-a="joingp"]'); if (joinBtn) joinBtn.onclick = joinGamePass;
+      const cancelBtn = body.querySelector('[data-a="cancelgp"]'); if (cancelBtn) cancelBtn.onclick = () => { games().gamepass = false; State.save(); render(); };
+    }
+
+    function joinGamePass() {
+      if (games().gamepass) return;
+      if (!canAfford(GP_PRICE)) return notify("Not enough balance in Forge Bank. Earn some first.");
+      charge("Game Pass Ultimate", GP_PRICE);
+      games().gamepass = true; State.save();
+      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: "Game Pass Ultimate", body: "You're in — hundreds of games unlocked." });
+      render();
+    }
+    function buyGame(game) {
+      if (!canAfford(game.price)) return notify("Not enough balance in Forge Bank. Earn some first.");
+      charge(game.name, game.price);
+      if (games().owned.indexOf(game.id) < 0) games().owned.push(game.id);
+      State.save();
+      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: game.name, body: "Purchased — ready to play." });
+      render();
+    }
+    function playGame(game) {
+      if (game.id === "minecraft") { AppRegistry.mclauncher(); return; }
+      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: game.name, body: "Launching… this title is a demo tile in the sim." });
+    }
+    function notify(msg) { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: "Xbox", body: msg }); }
+    render();
+  }
+
+  // ---------- Minecraft Launcher ----------
+  function openLauncher() {
+    const ref = cw({ title: "Minecraft Launcher", icon: window.Icon ? Icon.mini("mclauncher", "Minecraft") : "", width: 900, height: 620, appId: "mclauncher" });
+    const body = ref.body;
+    body.classList.add("mcl-host");
+    const owned = owns("minecraft");
+    const user = (S().profile && S().profile.username) || "Player";
+
+    body.innerHTML = `<div class="mcl">
+      <div class="mcl-side">
+        <div class="mcl-brand">${grassIcon()}<span>Minecraft<br><small>Launcher</small></span></div>
+        <button class="mcl-nav on">Play</button>
+        <button class="mcl-nav">Installations</button>
+        <button class="mcl-nav">Skins</button>
+        <button class="mcl-nav">Patch Notes</button>
+        <span class="grow"></span>
+        <div class="mcl-user">${window.Icon ? Icon.mini("user", user) : ""}<span>${esc(user)}</span></div>
+      </div>
+      <div class="mcl-main">
+        <div class="mcl-hero">
+          <div class="mcl-hero-shade"></div>
+          <div class="mcl-hero-in">
+            <span class="mcl-tag">Latest Release</span>
+            <h1>MINECRAFT</h1>
+            <p>The Wild Update — 1.21</p>
+          </div>
+        </div>
+        <div class="mcl-news">
+          <div class="mcl-news-item"><b>Welcome, ${esc(user)}</b><span>Build, explore, and survive. Press Play to jump in.</span></div>
+          <div class="mcl-news-item"><b>Tip</b><span>Mine ores to hear the XP sound. Watch out for creepers!</span></div>
+        </div>
+        <div class="mcl-footer">
+          <div class="mcl-ver">
+            <label>Version</label>
+            <select class="mcl-version"><option>Latest Release 1.21</option><option>1.20.6</option><option>1.19.4</option><option>Snapshot 24w14a</option></select>
+          </div>
+          <span class="grow"></span>
+          <button class="mcl-play ${owned ? "" : "locked"}">${owned ? "PLAY" : "GET MINECRAFT"}</button>
+        </div>
+      </div>
+    </div>`;
+
+    body.querySelectorAll(".mcl-nav").forEach((b) => b.onclick = () => { body.querySelectorAll(".mcl-nav").forEach((x) => x.classList.toggle("on", x === b)); });
+    const playBtn = body.querySelector(".mcl-play");
+    playBtn.onclick = () => {
+      if (owns("minecraft")) {
+        playBtn.textContent = "LAUNCHING…"; playBtn.disabled = true;
+        setTimeout(() => { AppRegistry.minecraft(); ref.close && ref.close(); }, 700);
+      } else {
+        getMinecraft();
+      }
+    };
+    function getMinecraft() {
+      const ov = el(`<div class="mcl-buy-ov"><div class="mcl-buy">
+        <div class="mcl-buy-art">${grassIcon()}</div>
+        <h2>Get Minecraft</h2>
+        <p>Own it forever, or play it with Xbox Game Pass.</p>
+        <div class="mcl-buy-btns">
+          <button class="mcl-buy-b" data-b="buy">Buy — $29.99</button>
+          <button class="mcl-buy-b ghost" data-b="gp">Get Game Pass — $${GP_PRICE.toFixed(2)}/mo</button>
+        </div>
+        <button class="mcl-buy-x">Not now</button>
+      </div></div>`);
+      const close = () => ov.remove();
+      ov.querySelector(".mcl-buy-x").onclick = close;
+      ov.onclick = (e) => { if (e.target === ov) close(); };
+      ov.querySelector('[data-b="buy"]').onclick = () => {
+        if (!canAfford(29.99)) { close(); return openXbox(); }
+        charge("Minecraft", 29.99); if (games().owned.indexOf("minecraft") < 0) games().owned.push("minecraft"); State.save();
+        close(); openLauncher(); ref.close && ref.close();
+        if (window.Notify) Notify.show({ icon: "", title: "Minecraft", body: "Purchased — press Play!" });
+      };
+      ov.querySelector('[data-b="gp"]').onclick = () => { close(); ref.close && ref.close(); openXbox(); };
+      body.appendChild(ov);
+    }
+  }
+
+  function grassIcon() {
+    return `<svg viewBox="0 0 32 32" width="34" height="34" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="4" width="24" height="8" fill="#6aa84f"/><rect x="4" y="4" width="24" height="3" fill="#7cbd5c"/>
+      <rect x="4" y="12" width="24" height="16" fill="#8a6d4b"/>
+      <rect x="7" y="15" width="4" height="4" fill="#7a5d3f"/><rect x="14" y="19" width="4" height="4" fill="#7a5d3f"/><rect x="21" y="14" width="4" height="4" fill="#7a5d3f"/><rect x="18" y="23" width="4" height="3" fill="#7a5d3f"/>
+    </svg>`;
+  }
+
+  window.AppRegistry = window.AppRegistry || {};
+  window.AppRegistry.xbox = openXbox;
+  window.AppRegistry.mclauncher = openLauncher;
+})();

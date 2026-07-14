@@ -262,6 +262,12 @@
     <line x1="28" y1="27" x2="39" y2="38" stroke="#1e9fe0" stroke-width="7" stroke-linecap="round"/>
   </svg>`);
 
+  register("mclauncher", `<svg viewBox="0 0 32 32" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="28" height="10" fill="#6aa84f"/><rect x="2" y="2" width="28" height="4" fill="#7cbd5c"/>
+    <rect x="2" y="12" width="28" height="18" fill="#8a6d4b"/>
+    <rect x="6" y="16" width="5" height="5" fill="#7a5d3f"/><rect x="15" y="21" width="5" height="5" fill="#7a5d3f"/><rect x="22" y="15" width="5" height="5" fill="#7a5d3f"/><rect x="9" y="24" width="4" height="4" fill="#7a5d3f"/>
+  </svg>`);
+
   register("outlook", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <rect x="46" y="20" width="66" height="88" rx="6" fill="#fff"/>
     <path d="M62 40 H104 M62 56 H104 M62 72 H104 M62 88 H92" stroke="#0f6cbd" stroke-width="5" stroke-linecap="round"/>

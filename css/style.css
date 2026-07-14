@@ -2100,6 +2100,80 @@ body.dark .ol-cat-menu { background: #242322; border-color: #3b3a39; color: #f3f
 body.dark .ol-cat-menu button { color: #f3f2f1; }
 body.dark .ol-cat-menu button:hover { background: #323130; }
 
+/* ============================ Xbox (Game Pass) ============================ */
+.xb-host { padding: 0; }
+.xb { display: flex; flex-direction: column; height: 100%; background: #0e0f10; color: #fff; font-family: "Segoe UI", system-ui, sans-serif; }
+.xb-top { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: #107c10; }
+.xb-logo { width: 26px; height: 26px; display: inline-flex; background: #fff; border-radius: 50%; padding: 2px; box-sizing: border-box; }
+.xb-gp-pill { font-size: .74rem; padding: 4px 12px; border-radius: 20px; background: rgba(0,0,0,.25); }
+.xb-gp-pill.on { background: #fff; color: #107c10; font-weight: 700; }
+.xb-scroll { flex: 1; overflow: auto; }
+.xb-hero { margin: 18px; border-radius: 16px; overflow: hidden; background: linear-gradient(120deg, #107c10, #0a3d0a); position: relative; }
+.xb-hero::after { content: ""; position: absolute; right: -40px; top: -40px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,.08); }
+.xb-hero-in { position: relative; padding: 34px 32px; max-width: 560px; }
+.xb-hero-badge { display: inline-block; background: rgba(255,255,255,.2); padding: 4px 12px; border-radius: 20px; font-size: .74rem; font-weight: 700; letter-spacing: .5px; }
+.xb-hero-in h1 { margin: 14px 0 8px; font-size: 1.9rem; }
+.xb-hero-in p { margin: 0 0 18px; opacity: .9; }
+.xb-btn { background: #fff; color: #107c10; border: 0; padding: 11px 22px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: .9rem; transition: transform .1s, filter .15s; }
+.xb-btn:hover { filter: brightness(.96); } .xb-btn:active { transform: scale(.97); }
+.xb-btn.ghost { background: rgba(255,255,255,.14); color: #fff; }
+.xb-btn.sm { padding: 8px 14px; font-size: .82rem; }
+.xb-h { margin: 8px 22px; font-size: 1.15rem; }
+.xb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 0 22px 24px; }
+.xb-card { background: #1b1c1e; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.xb-art { position: relative; aspect-ratio: 16/10; display: flex; align-items: flex-end; padding: 12px; overflow: hidden; }
+.xb-art-name { position: relative; font-weight: 800; font-size: 1.15rem; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.xb-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.xb-card-top { display: flex; align-items: center; gap: 8px; }
+.xb-card-top b { flex: 1; }
+.xb-gp-tag { font-size: .64rem; background: #107c10; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+.xb-card-tag { font-size: .78rem; color: #9aa0a6; }
+.xb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.xb-owned { font-size: .76rem; color: #6ddf6d; }
+
+/* ============================ Minecraft Launcher ============================ */
+.mcl-host { padding: 0; }
+.mcl { display: flex; height: 100%; background: #1b1b1b; color: #e6e6e6; font-family: "Segoe UI", system-ui, sans-serif; }
+.mcl-side { width: 210px; flex: 0 0 auto; background: #131313; display: flex; flex-direction: column; padding: 16px 12px; gap: 4px; }
+.mcl-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; margin-bottom: 16px; line-height: 1.05; }
+.mcl-brand small { font-weight: 500; color: #9aa0a6; font-size: .68rem; }
+.mcl-nav { background: none; border: 0; text-align: left; color: #b8b8b8; padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: .88rem; }
+.mcl-nav:hover { background: #232323; color: #fff; }
+.mcl-nav.on { background: #2a2a2a; color: #fff; font-weight: 600; }
+.mcl-user { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-top: 1px solid #2a2a2a; font-size: .86rem; }
+.mcl-user svg, .mcl-user img { width: 26px; height: 26px; border-radius: 6px; }
+.mcl-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mcl-hero { position: relative; height: 260px; background: linear-gradient(160deg, #74b34a 0%, #4c8a2f 40%, #6b4f34 40%, #3f2e1e 100%); overflow: hidden; }
+.mcl-hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 34px 34px; }
+.mcl-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.7), transparent 60%); }
+.mcl-hero-in { position: absolute; left: 32px; bottom: 24px; }
+.mcl-tag { display: inline-block; background: rgba(0,0,0,.4); padding: 4px 12px; border-radius: 4px; font-size: .72rem; letter-spacing: 1px; text-transform: uppercase; }
+.mcl-hero-in h1 { margin: 10px 0 4px; font-size: 3rem; letter-spacing: 3px; font-weight: 800; text-shadow: 3px 3px 0 rgba(0,0,0,.4); font-family: "Minecraftia", "Segoe UI", sans-serif; }
+.mcl-hero-in p { margin: 0; opacity: .92; }
+.mcl-news { flex: 1; overflow: auto; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px; }
+.mcl-news-item { background: #232323; border-radius: 10px; padding: 14px 16px; }
+.mcl-news-item b { display: block; margin-bottom: 3px; }
+.mcl-news-item span { font-size: .84rem; color: #b8b8b8; }
+.mcl-footer { display: flex; align-items: center; gap: 16px; padding: 16px 24px; background: #131313; border-top: 1px solid #2a2a2a; }
+.mcl-ver label { display: block; font-size: .68rem; color: #9aa0a6; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.mcl-version { background: #2a2a2a; color: #fff; border: 1px solid #3a3a3a; border-radius: 6px; padding: 8px 10px; }
+.mcl-play { background: #4c8a2f; color: #fff; border: 0; padding: 16px 46px; border-radius: 4px; font-size: 1.15rem; font-weight: 800; letter-spacing: 1px; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,.28); transition: filter .15s; }
+.mcl-play:hover { filter: brightness(1.08); }
+.mcl-play:active { transform: translateY(1px); }
+.mcl-play.locked { background: #3a7bd5; }
+.mcl-play:disabled { filter: grayscale(.3); }
+.mcl-buy-ov { position: absolute; inset: 0; z-index: 200; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; }
+.mcl-buy { background: #232323; border-radius: 14px; padding: 30px; text-align: center; width: min(400px, 92%); }
+.mcl-buy-art { display: flex; justify-content: center; margin-bottom: 12px; }
+.mcl-buy-art svg { width: 60px; height: 60px; }
+.mcl-buy h2 { margin: 0 0 6px; }
+.mcl-buy p { color: #b8b8b8; margin: 0 0 20px; }
+.mcl-buy-btns { display: flex; flex-direction: column; gap: 10px; }
+.mcl-buy-b { background: #4c8a2f; color: #fff; border: 0; padding: 13px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+.mcl-buy-b.ghost { background: #107c10; }
+.mcl-buy-b:hover { filter: brightness(1.08); }
+.mcl-buy-x { background: none; border: 0; color: #9aa0a6; margin-top: 14px; cursor: pointer; }
+
 /* ============================ Visual Studio Code ============================ */
 .vs-host { padding: 0; }
 .vs { --vs-bg: #1e1e1e; --vs-side: #252526; --vs-act: #333333; --vs-blue: #007acc; --vs-fg: #cccccc; display: flex; height: 100%; background: var(--vs-bg); color: var(--vs-fg); font-family: "Segoe UI", system-ui, sans-serif; font-size: .86rem; }

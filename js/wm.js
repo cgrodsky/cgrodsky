@@ -113,7 +113,8 @@
     { id: "copilot", name: "Copilot" },
     { id: "settings", name: "Settings" },
     { id: "calculator", name: "Calculator" },
-    { id: "minecraft", name: "Mincraft" },
+    { id: "mclauncher", name: "Minecraft" },
+    { id: "xbox", name: "Xbox" },
     { id: "messenger", name: "Messenger" },
     { id: "word", name: "Word" },
     { id: "powerpoint", name: "PowerPoint" },
@@ -1027,7 +1028,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "codeeditor", "vscode", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "codeeditor", "vscode", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {
