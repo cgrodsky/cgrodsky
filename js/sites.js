@@ -19,20 +19,42 @@
         <div style="text-align:right"><div style="opacity:.8">Available balance</div><div class="bank-balance">$${b.balance.toFixed(2)}</div></div>
       </div>
       <div class="bank-content">
+        <div class="bank-earn">
+          <h3 style="margin-top:0">Get money</h3>
+          <div class="bank-earn-row">
+            <button class="bank-earn-btn" id="claimDaily">Claim daily bonus<span>+$500</span></button>
+            <button class="bank-earn-btn alt" id="topUp">Instant top-up<span>+$100</span></button>
+          </div>
+          <p class="bank-earn-note" id="claimNote"></p>
+        </div>
         <h3>Transactions</h3>
         <div class="tx-list"></div>
       </div>
     </div>`);
+    const dk = () => { const d = State.now ? State.now() : new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+    function credit(amount, item) {
+      S().bank.balance = Math.round((S().bank.balance + amount) * 100) / 100;
+      S().bank.transactions.unshift({ id: "cr_" + Date.now() + "_" + Math.floor(Math.random() * 1000), vendor: "Forge Bank", item, amount: -amount, refundable: false, refunded: false, ts: Date.now(), credit: true });
+      State.save();
+    }
+    const claimBtn = view.querySelector("#claimDaily");
+    const claimNote = view.querySelector("#claimNote");
+    const claimedToday = S().bank.lastClaim === dk();
+    if (claimedToday) { claimBtn.disabled = true; claimNote.textContent = "Daily bonus claimed — come back tomorrow."; }
+    claimBtn.onclick = () => { if (S().bank.lastClaim === dk()) return; S().bank.lastClaim = dk(); credit(500, "Daily bonus"); if (window.Notify) Notify.show({ icon: "", title: "Forge Bank", body: "+$500 daily bonus added" }); bank(ctx); };
+    view.querySelector("#topUp").onclick = () => { credit(100, "Instant top-up"); if (window.Notify) Notify.show({ icon: "", title: "Forge Bank", body: "+$100 added" }); bank(ctx); };
     const list = view.querySelector(".tx-list");
     if (!b.transactions.length) list.innerHTML = `<p style="opacity:.7">No transactions yet. Go buy something!</p>`;
     b.transactions.forEach((tx) => {
       const row = el(`<div class="tx ${tx.refunded ? "refunded" : ""}">
         <div class="vlogo">${Icon.mini(vendorKey[tx.vendor] || "card", tx.vendor)}</div>
         <div><div><b>${tx.item}</b></div><div style="opacity:.75;font-size:.85rem">${tx.vendor}</div></div>
-        <div style="text-align:right"><div>-$${tx.amount.toFixed(2)}</div></div>
-        <div class="q" title="Details">?</div>
+        <div style="text-align:right"><div class="${tx.credit ? "tx-credit" : ""}">${tx.credit ? "+$" + (-tx.amount).toFixed(2) : "-$" + tx.amount.toFixed(2)}</div></div>
+        <div class="q" title="Details">${tx.credit ? "" : "?"}</div>
       </div>`);
+      if (tx.credit) row.querySelector(".q").style.visibility = "hidden";
       row.querySelector(".q").onclick = () => {
+        if (tx.credit) return;
         if (tx.refunded) { alert(`Already refunded: $${tx.amount.toFixed(2)} for ${tx.item}.`); return; }
         if (!tx.refundable) {
           alert(`Non-refundable item.\n\n${tx.item}\nCost: $${tx.amount.toFixed(2)}\nFrom: ${tx.vendor}`);
@@ -204,8 +226,8 @@
     </div>`);
     const grid = wrap.querySelector(".amz-grid");
     const bundles = [
-      { name: "Microsoft 365 Personal", price: 69.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote"] },
-      { name: "Microsoft 365 Family", price: 99.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote", "Access", "Publisher"] },
+      { name: "Microsoft 365 Personal", price: 69.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote", "Copilot"] },
+      { name: "Microsoft 365 Family", price: 99.99, apps: ["Word", "Excel", "PowerPoint", "Forms", "Outlook", "OneNote", "Copilot", "Access", "Publisher"] },
       { name: "Office Home & Student", price: 149.99, apps: ["Word", "Excel", "PowerPoint", "Forms"] },
     ];
     bundles.forEach((bd) => {

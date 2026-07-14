@@ -21,44 +21,111 @@
   const CLIP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
   const FILE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
   const X_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  const PLUS_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+
+  // ---- Plans & usage limits (fake money) ----
+  const PLANS = {
+    basic: { id: "basic", name: "Basic", price: 0, msgs: 15, attach: 1, images: 0, blurb: "Everyday help" },
+    plus: { id: "plus", name: "Copilot+", price: 4.99, msgs: 150, attach: 3, images: 3, blurb: "More of everything" },
+    advanced: { id: "advanced", name: "Advanced", price: 9.99, msgs: Infinity, attach: Infinity, images: 5, blurb: "Unlimited chats" },
+  };
+  function cop() { if (!S().copilot) S().copilot = {}; return S().copilot; }
+  function planCfg() { return PLANS[cop().plan] || PLANS.basic; }
+  function dateKey() { const d = State.now ? State.now() : new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function usage() { const c = cop(); const today = dateKey(); if (!c.usage || c.usage.date !== today) c.usage = { date: today, messages: 0, images: 0 }; return c.usage; }
+  function limitLabel(n) { return n === Infinity ? "∞" : n; }
+
+  // ---- Conversations ----
+  function convos() {
+    const c = cop();
+    if (!c.convos) {
+      // Migrate the old single history into the first conversation.
+      const hist = c.history && c.history.length ? c.history : [];
+      c.convos = [{ id: "c" + (State.now ? State.now().getTime() : 1), title: convTitle(hist), history: hist, ts: 1 }];
+      c.activeId = c.convos[0].id;
+      delete c.history;
+    }
+    return c.convos;
+  }
+  function convTitle(hist) { const first = (hist || []).find((m) => m.role === "user" && m.content); return first ? first.content.replace(/\[[^\]]*\]/g, "").trim().slice(0, 34) || "New chat" : "New chat"; }
+  function activeConv() { const list = convos(); let a = list.find((x) => x.id === cop().activeId); if (!a) { a = list[0]; cop().activeId = a.id; } return a; }
+  function newConv() { const c = cop(); convos(); const id = "c" + ((State.now ? State.now().getTime() : Date.now()) + Math.floor(c.convos.length)); c.convos.unshift({ id, title: "New chat", history: [], ts: c.convos.length + 1 }); c.activeId = id; State.save(); return id; }
 
   AppRegistry.copilot = function () {
-    const { body } = window.WM.createWindow({ title: "Copilot", icon: LOGO("cop-logo"), width: 460, height: 620, appId: "copilot" });
+    const { body } = window.WM.createWindow({ title: "Copilot", icon: LOGO("cop-logo"), width: 760, height: 640, appId: "copilot" });
     render(body);
   };
 
   function render(body) {
     if (!activeKey()) return renderKeyForm(body);
+    const plan = planCfg();
     body.innerHTML = `
-      <div class="cop">
-        <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
-          <label class="container spk" title="Speak replies aloud">
-            <input type="checkbox">
-            <svg class="mute" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" style="opacity:.35"></path><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
-            <svg class="voice" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>
-          </label>
-          <button class="clear">Clear</button><button class="setkey">API key</button></div>
-        <div class="cop-msgs"></div>
-        <div class="cop-prompt" data-empty="true">
-          <div class="cop-files"></div>
-          <textarea class="cop-ta" rows="1" placeholder="Message Copilot..."></textarea>
-          <div class="cop-prompt-bar">
-            <button class="cop-mic mic" title="Voice mode">${MIC_SVG}</button>
-            <button class="cop-attach" title="Attach file">${CLIP_SVG}</button>
-            <span class="grow"></span>
-            <button class="cop-send" title="Send">${SEND_SVG}</button>
+      <div class="cop-shell">
+        <div class="cop-side">
+          <button class="cop-newchat">${PLUS_SVG}<span>New chat</span></button>
+          <div class="cop-convos"></div>
+          <div class="cop-plan" title="Manage plan">
+            <span class="cop-plan-badge cop-plan-${plan.id}">${plan.name}</span>
+            <span class="cop-plan-up">Manage</span>
           </div>
-          <input type="file" class="cop-file-input" multiple style="display:none">
+        </div>
+        <div class="cop">
+          <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
+            <label class="container spk" title="Speak replies aloud">
+              <input type="checkbox">
+              <svg class="mute" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" style="opacity:.35"></path><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
+              <svg class="voice" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>
+            </label>
+            <button class="clear">Clear</button><button class="setkey">API key</button></div>
+          <div class="cop-msgs"></div>
+          <div class="cop-prompt" data-empty="true">
+            <div class="cop-files"></div>
+            <textarea class="cop-ta" rows="1" placeholder="Message Copilot..."></textarea>
+            <div class="cop-prompt-bar">
+              <button class="cop-mic mic" title="Voice mode">${MIC_SVG}</button>
+              <button class="cop-attach" title="Attach file">${CLIP_SVG}</button>
+              <span class="cop-usage muted"></span>
+              <span class="grow"></span>
+              <button class="cop-send" title="Send">${SEND_SVG}</button>
+            </div>
+            <input type="file" class="cop-file-input" multiple style="display:none">
+          </div>
         </div>
       </div>`;
     const msgs = body.querySelector(".cop-msgs");
+    const usageEl = body.querySelector(".cop-usage");
+
+    // ---- conversations sidebar ----
+    function renderConvos() {
+      const wrap = body.querySelector(".cop-convos");
+      wrap.innerHTML = "";
+      convos().forEach((cv) => {
+        const row = el(`<button class="cop-convo ${cv.id === cop().activeId ? "on" : ""}"><span class="cop-convo-t">${escapeHtml(cv.title || "New chat")}</span><span class="cop-convo-x" title="Delete">${X_SVG}</span></button>`);
+        row.querySelector(".cop-convo-t").onclick = () => { cop().activeId = cv.id; State.save(); renderConvos(); paint(); };
+        row.querySelector(".cop-convo-x").onclick = (e) => {
+          e.stopPropagation();
+          const list = convos(); const i = list.findIndex((x) => x.id === cv.id);
+          list.splice(i, 1); if (!list.length) newConv(); if (cop().activeId === cv.id) cop().activeId = convos()[0].id;
+          State.save(); renderConvos(); paint();
+        };
+        wrap.appendChild(row);
+      });
+    }
+    body.querySelector(".cop-newchat").onclick = () => { newConv(); renderConvos(); paint(); };
+    body.querySelector(".cop-plan").onclick = () => showPlans(body);
+    function updateUsage() {
+      const p = planCfg(), u = usage();
+      const left = p.msgs === Infinity ? "Unlimited" : Math.max(0, p.msgs - u.messages) + " left";
+      usageEl.textContent = p.name + " · " + left;
+    }
+    renderConvos();
     const ta = body.querySelector("textarea");
     const sendBtn = body.querySelector(".cop-send");
     const micBtn = body.querySelector(".cop-mic");
     const speakToggle = body.querySelector(".spk input");
 
     body.querySelector(".setkey").onclick = () => renderKeyForm(body);
-    body.querySelector(".clear").onclick = () => { S().copilot.history = []; State.save(); paint(); };
+    body.querySelector(".clear").onclick = () => { activeConv().history = []; activeConv().title = "New chat"; State.save(); renderConvos(); paint(); };
 
     // ---- Voice mode (browser STT + AIML TTS) ----
     let voiceOn = false, rec = null, audioEl = null;
@@ -136,9 +203,14 @@
     }
 
     function addFiles(list) {
+      const maxAtt = planCfg().attach;
       for (const f of list) {
         if (f.size > 10 * 1024 * 1024) { alert(`"${f.name}" is over 10MB and was skipped.`); continue; }
-        if (pendingFiles.length >= 5) { alert("Up to 5 files at a time."); break; }
+        if (pendingFiles.length >= maxAtt) {
+          if (maxAtt === Infinity) break;
+          showLimit(body, planCfg().id === "basic" ? "The Basic plan allows 1 attachment. Upgrade for more." : "You've reached " + maxAtt + " attachments on " + planCfg().name + ". Upgrade for more.");
+          break;
+        }
         const entry = { name: f.name, type: f.type, size: f.size };
         pendingFiles.push(entry);
         if (f.type.startsWith("image/")) {
@@ -168,12 +240,13 @@
     });
 
     function paint() {
+      updateUsage();
       msgs.innerHTML = "";
-      if (!S().copilot.history.length) {
+      if (!activeConv().history.length) {
         msgs.appendChild(el(`<div class="cop-hero">${LOGO("cop-logo big-logo")}<h2>Hi, I'm Copilot</h2><p class="muted">Ask me anything, send a photo, or ask me to create an image.</p></div>`));
         return;
       }
-      S().copilot.history.forEach((m) => addBubble(m));
+      activeConv().history.forEach((m) => addBubble(m));
     }
     function viewImage(src) {
       const ov = el(`<div class="bf-mask"><div class="bf-big"><div class="bf-big-img"><img src="${src}" alt=""></div><div class="row" style="justify-content:center"><button class="btn-text" id="cl">Close</button></div></div></div>`);
@@ -198,6 +271,9 @@
     async function send() {
       const text = ta.value.trim();
       if (!text && pendingFiles.length === 0) return;
+      // Daily message limit per plan.
+      const p = planCfg(), u = usage();
+      if (u.messages >= p.msgs) { showLimit(body, "You've used all " + p.msgs + " messages today on " + p.name + ". Upgrade for more."); return; }
       const images = pendingFiles.filter((f) => f.dataUrl).map((f) => f.dataUrl);
       const otherNames = pendingFiles.filter((f) => !f.dataUrl).map((f) => f.name);
       const note = otherNames.length ? "[Attached: " + otherNames.join(", ") + "]" : "";
@@ -207,7 +283,10 @@
       if (msgs.querySelector(".cop-hero")) msgs.innerHTML = "";
       const userMsg = { role: "user", content };
       if (images.length) userMsg.images = images;
-      S().copilot.history.push(userMsg); State.save();
+      const conv = activeConv();
+      conv.history.push(userMsg);
+      if (conv.history.filter((m) => m.role === "user").length === 1) { conv.title = convTitle(conv.history); renderConvos(); }
+      u.messages++; State.save(); updateUsage();
       addBubble(userMsg);
 
       const typing = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
@@ -215,27 +294,38 @@
       sendBtn.disabled = true;
 
       try {
-        const reply = await callApi(S().copilot.history);
+        const reply = await callApi(conv.history);
         typing.remove();
         const m = reply.match(/\[\[IMAGE:\s*([\s\S]+?)\]\]/i);
         if (m) {
           const imgPrompt = m[1].trim();
           const caption = reply.replace(/\[\[IMAGE:[\s\S]+?\]\]/i, "").trim();
-          const gen = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><span class="cop-text">Creating your image…</span><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
-          msgs.appendChild(gen); msgs.scrollTop = msgs.scrollHeight;
-          try {
-            const url = await generateImage(imgPrompt);
-            gen.remove();
-            const am = { role: "assistant", content: caption || `Here's "${imgPrompt}".`, image: url };
-            S().copilot.history.push(am); State.save(); addBubble(am);
-          } catch (e) {
-            gen.remove();
-            const am = { role: "assistant", content: "I couldn't create that image.\n\n" + (e.message || e) };
-            S().copilot.history.push(am); State.save(); addBubble(am);
+          // Image-generation limit per plan.
+          const pp = planCfg(), uu = usage();
+          if (uu.images >= pp.images) {
+            const am = { role: "assistant", content: pp.images === 0
+              ? "Image generation isn't available on the Basic plan. Upgrade to Copilot+ or Advanced to create images."
+              : "You've reached your " + pp.images + " images for today on " + pp.name + ". Upgrade to Advanced for more." };
+            conv.history.push(am); State.save(); addBubble(am);
+            showPlans(body);
+          } else {
+            const gen = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><span class="cop-text">Creating your image…</span><div class="cop-img-skeleton"><div class="cop-skel-shine"></div><svg viewBox="0 0 24 24" class="cop-skel-ic" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg></div></div></div>`);
+            msgs.appendChild(gen); msgs.scrollTop = msgs.scrollHeight;
+            try {
+              const url = await generateImage(imgPrompt);
+              gen.remove();
+              uu.images++; State.save(); updateUsage();
+              const am = { role: "assistant", content: caption || `Here's "${imgPrompt}".`, image: url };
+              conv.history.push(am); State.save(); addBubble(am);
+            } catch (e) {
+              gen.remove();
+              const am = { role: "assistant", content: "I couldn't create that image.\n\n" + (e.message || e) };
+              conv.history.push(am); State.save(); addBubble(am);
+            }
           }
         } else {
           const am = { role: "assistant", content: reply };
-          S().copilot.history.push(am); State.save(); addBubble(am);
+          conv.history.push(am); State.save(); addBubble(am);
           if (voiceOn || (speakToggle && speakToggle.checked)) speak(reply);
         }
       } catch (err) {
@@ -253,6 +343,41 @@
     refreshPromptState();
     paint();
   }
+
+  function upgradeTo(planId, body) {
+    const p = PLANS[planId];
+    if (p.price > 0) {
+      const bal = S().bank && S().bank.balance;
+      if (bal != null && bal < p.price) { alert("Not enough balance in Forge Bank to subscribe. Earn some in Forge Bank first."); return; }
+      try { if (State.addTransaction) State.addTransaction({ vendor: "Microsoft Copilot", item: p.name + " subscription", amount: p.price, refundable: false }); } catch (_) {}
+    }
+    cop().plan = planId; State.save();
+    if (window.Notify) Notify.show({ icon: "", title: "Copilot " + p.name, body: p.price ? "Subscribed — $" + p.price.toFixed(2) + "/mo (pretend)" : "Switched to Basic" });
+    document.querySelectorAll(".cop-plans-ov").forEach((m) => m.remove());
+    render(body);
+  }
+  function showPlans(body) {
+    document.querySelectorAll(".cop-plans-ov").forEach((m) => m.remove());
+    const cur = cop().plan || "basic";
+    const cards = Object.keys(PLANS).map((k) => PLANS[k]).map((p) => `
+      <div class="cop-plan-card cop-plan-${p.id} ${p.id === cur ? "current" : ""}">
+        <div class="cop-pc-name">${p.name}</div>
+        <div class="cop-pc-blurb">${p.blurb}</div>
+        <div class="cop-pc-price">${p.price ? "$" + p.price.toFixed(2) + "<small> /mo</small>" : "Free"}</div>
+        <ul class="cop-pc-feats">
+          <li>${p.msgs === Infinity ? "Unlimited" : p.msgs} messages a day</li>
+          <li>${p.attach === Infinity ? "Unlimited" : p.attach} attachment${p.attach === 1 ? "" : "s"} per message</li>
+          <li>${p.images ? p.images + " image generations a day" : "No image generation"}</li>
+        </ul>
+        <button class="cop-pc-btn" data-p="${p.id}" ${p.id === cur ? "disabled" : ""}>${p.id === cur ? "Current plan" : (p.price ? "Get " + p.name : "Switch to Basic")}</button>
+      </div>`).join("");
+    const ov = el(`<div class="cop-plans-ov"><div class="cop-plans"><div class="cop-plans-head">${LOGO("cop-logo")}<b>Choose your Copilot plan</b><span class="grow"></span><button class="cop-plans-x">${X_SVG}</button></div><div class="cop-plans-grid">${cards}</div><p class="cop-plans-note">This is pretend money — subscriptions are billed to Forge Bank, not a real card.</p></div></div>`);
+    ov.querySelector(".cop-plans-x").onclick = () => ov.remove();
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    ov.querySelectorAll(".cop-pc-btn[data-p]").forEach((b) => b.onclick = () => upgradeTo(b.dataset.p, body));
+    body.appendChild(ov);
+  }
+  function showLimit(body, msg) { if (window.Notify) Notify.show({ icon: "", title: "Copilot", body: msg }); showPlans(body); }
 
   function systemPrompt() {
     const langName = ((window.I18n && I18n.languages.find((l) => l.code === I18n.lang)) || { name: "English" }).name;

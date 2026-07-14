@@ -704,7 +704,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
           : docSvg("#8a94a6");
         const folderSrc = name === "Music" ? "assets/musicfolder.png" : "assets/folder.png";
-        const glyph = isFolder ? `<img class="files-folder-img" src="${folderSrc}" alt="">` : fileGlyph;
+        const glyph = isFolder ? `<img class="files-folder-img files-is-folder" src="${folderSrc}" alt="">` : fileGlyph;
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
           <div class="files-name">${escapeHtml(name)}</div>
