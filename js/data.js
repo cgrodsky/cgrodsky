@@ -63,7 +63,7 @@
     ["Pinball", "Games"], ["Sudoku", "Games"], ["Skypey", "Social"], ["Teamz", "Social"],
     ["OneNote", "Productivity"], ["Translator", "Lifestyle"], ["Money", "Finance"],
     ["Health", "Lifestyle"], ["Fitness", "Lifestyle"], ["Drawboard", "Multimedia"], ["Code Writer", "Developer"],
-    ["Audible", "Multimedia"], ["Comic Reader", "Lifestyle"], ["Sketch It", "Multimedia"], ["Quick PDF", "Productivity"],
+    ["Audible", "Multimedia"], ["Comic Reader", "Lifestyle"], ["Paint", "Multimedia"], ["Quick PDF", "Productivity"],
   ];
   // Map decorative listings to real working built-in apps where it makes sense.
   // (File Explorer is now a top-level app above; the filler entry below is hidden.)
@@ -72,7 +72,7 @@
     "News": "news", "Terminal": "terminal", "Mail": "mail", "Sudoku": "sudoku",
     "File Explorer": "__skip__", "Maps": "maps", "Photos": "photos", "Camera": "camera",
     "Movies & TV": "mediaplayer", "Audible": "mediaplayer", "Spotfor": "mediaplayer",
-    "Drawboard": "paint", "Sketch It": "paint", "OneNote": "notepad", "Code Writer": "notepad",
+    "Drawboard": "paint", "Paint": "paint", "OneNote": "notepad", "Code Writer": "notepad",
     "VS Codey": "notepad", "Quick PDF": "notepad", "Comic Reader": "photos", "Voice Recorder": "recorder",
     "Money": "bank", "Translator": "translator",
   };
@@ -80,7 +80,8 @@
     const builtin = builtinMap[f[0]];
     if (builtin === "__skip__") return;
     const app = { id: "app_" + i, name: f[0], cat: f[1], price: 0, desc: `${f[0]} — a ${f[1].toLowerCase()} app for Windows 12.` };
-    if (builtin) app.builtin = builtin; else app.decorative = true;
+    if (builtin) { app.builtin = builtin; if (window.Icon && window.Icon.alias) Icon.alias(app.id, builtin); }
+    else app.decorative = true;
     storeApps.push(app);
   });
 

@@ -26,6 +26,14 @@
   const custom = {};
   function register(key, svg) { custom[String(key).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = svg; }
 
+  // Alias one icon key to another (e.g. the store's "app_3" -> its builtin "maps").
+  const aliases = {};
+  function alias(from, to) { aliases[String(from).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = String(to).toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
+  // Icons that have a classic variant when the Windows XP theme is enabled.
+  const XP_ICONS = { paint: "paint_xp", outlook: "outlook_xp" };
+  function xpOn() { try { return !!(window.State && State.data.desktop && State.data.desktop.xpTheme); } catch (e) { return false; } }
+  function resolveKey(k) { let key = k; if (aliases[key]) key = aliases[key]; if (xpOn() && XP_ICONS[key]) key = XP_ICONS[key]; return key; }
+
   function getCustomSrc(key) {
     try { return (window.State && State.data.appData && State.data.appData.customIcons && State.data.appData.customIcons[key]) || null; }
     catch (e) { return null; }
@@ -33,7 +41,7 @@
 
   function box(key, label, size) {
     size = size || 28;
-    const safeKey = String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const safeKey = resolveKey(String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, ""));
     const customSrc = getCustomSrc(safeKey);
     let fallbackInner, fallbackStyle, cls = "ico-fallback";
     if (custom[safeKey]) {
@@ -335,6 +343,7 @@
     big: (key, label) => box(key, label, 64),
     box,
     register,
+    alias,
     colorFor,
     gradientFor,
   };
