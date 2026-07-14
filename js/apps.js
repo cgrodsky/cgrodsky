@@ -149,6 +149,7 @@
         <div class="nav" data-p="account">Account</div>
         <div class="nav" data-p="time">Time & language</div>
         <div class="nav" data-p="icons">Personalize icons</div>
+        <div class="nav" data-p="update">Windows Update</div>
         <div class="nav" data-p="system">System</div>
       </div>
       <div class="settings-body"></div></div>`;
@@ -275,10 +276,75 @@
         sb.appendChild(reset);
       } else if (p === "icons") {
         renderIconCustomizer(sb);
+      } else if (p === "update") {
+        renderWindowsUpdate(sb);
       }
     }
     render("personal");
   };
+
+  // ---------- Windows Update ----------
+  const UPDATES = [
+    { name: "2026-07 Cumulative Update for Windows 12 (KB5039211)", size: "612 MB" },
+    { name: "Windows 12 Feature Experience Pack 1000.26100.42", size: "148 MB" },
+    { name: "Security Intelligence Update for Defender (KB2267602)", size: "84 MB" },
+    { name: "Intel — System — Firmware Update", size: "12 MB" },
+  ];
+  function renderWindowsUpdate(sb) {
+    if (!S().update) S().update = { installed: false, lastCheck: null };
+    const u = S().update;
+    sb.innerHTML = `<div class="wu">
+      <div class="wu-hero">
+        <div class="wu-ic ${u.installed ? "ok" : ""}">${u.installed ? wuCheck() : wuSpin()}</div>
+        <div class="wu-hero-txt">
+          <h2>${u.installed ? "You're up to date" : "Updates available"}</h2>
+          <p class="muted">${u.installed ? "Last checked: just now" : UPDATES.length + " updates ready to install"}</p>
+        </div>
+        <span class="grow"></span>
+        <button class="pill-btn wu-btn">${u.installed ? "Check for updates" : "Download & install all"}</button>
+      </div>
+      <div class="wu-list"></div>
+      <div class="wu-progress" style="display:none"><div class="wu-progress-label">Preparing…</div><div class="wu-bar"><div class="wu-bar-fill"></div></div></div>
+    </div>`;
+    const list = sb.querySelector(".wu-list");
+    if (!u.installed) UPDATES.forEach((up) => list.appendChild(el(`<div class="wu-item"><span class="wu-item-ic">${wuDown()}</span><div class="wu-item-txt"><b>${up.name}</b><span>${up.size}</span></div><span class="wu-item-status">Pending</span></div>`)));
+    sb.querySelector(".wu-btn").onclick = () => {
+      if (u.installed) { // re-check: brief spin then "up to date"
+        const btn = sb.querySelector(".wu-btn"); btn.disabled = true; btn.textContent = "Checking…";
+        setTimeout(() => { u.installed = false; State.save(); renderWindowsUpdate(sb); }, 1400);
+        return;
+      }
+      const prog = sb.querySelector(".wu-progress");
+      const fill = sb.querySelector(".wu-bar-fill");
+      const label = sb.querySelector(".wu-progress-label");
+      const rows = [...sb.querySelectorAll(".wu-item")];
+      const statuses = [...sb.querySelectorAll(".wu-item-status")];
+      sb.querySelector(".wu-btn").disabled = true;
+      prog.style.display = "";
+      let p = 0, stage = 0;
+      const stages = ["Downloading…", "Verifying…", "Installing…", "Finalizing…"];
+      const iv = setInterval(() => {
+        p += Math.random() * 5 + 2;
+        const done = Math.floor((p / 100) * UPDATES.length);
+        rows.forEach((r, i) => { r.classList.toggle("done", i < done); if (statuses[i]) statuses[i].textContent = i < done ? "Installed" : (i === done ? "Installing…" : "Pending"); });
+        label.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 25))];
+        fill.style.width = Math.min(100, p) + "%";
+        if (p >= 100) {
+          clearInterval(iv);
+          statuses.forEach((s) => s.textContent = "Installed"); rows.forEach((r) => r.classList.add("done"));
+          label.textContent = "Updates installed. A restart may be required.";
+          u.installed = true; u.lastCheck = Date.now(); State.save();
+          if (window.Notify) Notify.show({ icon: Icon.mini("settings", "Update"), title: "Windows Update", body: "Your device is up to date." });
+          const restart = el(`<button class="pill-btn wu-restart">Restart now</button>`);
+          restart.onclick = () => location.reload();
+          prog.appendChild(restart);
+        }
+      }, 220);
+    };
+  }
+  function wuSpin() { return `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v5h-5"/></svg>`; }
+  function wuCheck() { return `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`; }
+  function wuDown() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>`; }
 
   // ---------- Notepad ----------
   AppRegistry.notepad = function () {

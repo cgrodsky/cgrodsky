@@ -1037,6 +1037,27 @@ body.dark .searchbar { border-color: #5f6368; }
 .settings-nav .nav { padding: 10px 12px; border-radius: 6px; cursor: pointer; }
 .settings-nav .nav:hover, .settings-nav .nav.active { background: rgba(0,103,192,0.14); }
 .settings-body { flex: 1; padding: 24px; overflow: auto; }
+/* Windows Update */
+.wu-hero { display: flex; align-items: center; gap: 16px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; }
+.wu-ic { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--accent, #4c8dff); color: #fff; flex: 0 0 auto; }
+.wu-ic.ok { background: #2ea043; }
+.wu-hero-txt h2 { margin: 0; font-size: 1.15rem; }
+.wu-hero-txt p { margin: 3px 0 0; font-size: .82rem; }
+.wu-list { display: flex; flex-direction: column; gap: 8px; }
+.wu-item { display: flex; align-items: center; gap: 12px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+.wu-item.done { opacity: .8; }
+.wu-item-ic { color: var(--accent, #4c8dff); display: inline-flex; flex: 0 0 auto; }
+.wu-item.done .wu-item-ic { color: #2ea043; }
+.wu-item-txt { flex: 1; min-width: 0; }
+.wu-item-txt b { display: block; font-size: .86rem; }
+.wu-item-txt span { font-size: .74rem; color: var(--text-dim); }
+.wu-item-status { font-size: .76rem; color: var(--text-dim); flex: 0 0 auto; }
+.wu-item.done .wu-item-status { color: #2ea043; }
+.wu-progress { margin-top: 18px; }
+.wu-progress-label { font-size: .84rem; margin-bottom: 8px; }
+.wu-bar { height: 8px; background: rgba(127,140,180,.2); border-radius: 6px; overflow: hidden; }
+.wu-bar-fill { height: 100%; width: 0; background: var(--accent, #4c8dff); border-radius: 6px; transition: width .2s linear; }
+.wu-restart { margin-top: 14px; }
 .swatch-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; max-width: 420px; }
 .swatch { aspect-ratio: 1; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .swatch.sel { border-color: var(--text); }
@@ -2232,6 +2253,9 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-gp-tag { font-size: .64rem; background: #107c10; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
 .xb-card-tag { font-size: .78rem; color: #9aa0a6; display: flex; align-items: center; gap: 8px; }
 .xb-rating { color: #fff; font-size: .62rem; font-weight: 700; padding: 1px 6px; border-radius: 3px; letter-spacing: .3px; }
+.xb-rating-img { height: 28px; width: auto; border-radius: 2px; background: #fff; }
+.xb-csm { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; color: #9aa0a6; background: rgba(255,255,255,.06); padding: 2px 7px 2px 4px; border-radius: 12px; }
+.xb-csm img { width: 16px; height: 16px; background: #fff; border-radius: 50%; padding: 1px; }
 .xb-card-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .xb-owned { font-size: .76rem; color: #6ddf6d; }
 

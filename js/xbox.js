@@ -36,15 +36,29 @@
     { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
     { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d", art: "assets/game_stardew.jpg" },
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
+    { id: "gta5", name: "Grand Theft Auto V", price: 29.99, gp: true, tag: "Adventure", c1: "#1b5e20", c2: "#0a2410" },
+    { id: "fortnite", name: "Fortnite", price: 0, gp: false, tag: "Shooter", c1: "#7c3aed", c2: "#2563eb" },
+    { id: "bluey", name: "Bluey: The Videogame", price: 39.99, gp: true, tag: "Casual", c1: "#3a7bd5", c2: "#0a2540", art: "assets/game_bluey.jpg" },
   ];
   const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
   // ESRB content ratings.
   const RATINGS = {
     minecraft: "E10+", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
     gears5: "M", fallout4: "M", doometernal: "M", aoe4: "T", hades: "T", hollowknight: "E10+",
-    stardew: "E10+", cuphead: "E10+",
+    stardew: "E10+", cuphead: "E10+", gta5: "AO", fortnite: "T", bluey: "EC",
   };
   const RATING_COLOR = { "E": "#4b7f2f", "E10+": "#3a7bd5", "T": "#c98a1a", "M": "#c0392b" };
+  // Official ESRB badge images (others fall back to a colored text badge).
+  const RATING_IMG = { "T": "assets/esrb_t.png", "M": "assets/esrb_m.png", "EC": "assets/esrb_ec.png", "AO": "assets/esrb_ao.png" };
+  // Common Sense Media age recommendation, derived from the ESRB rating.
+  const CSM_AGE = { "EC": "age 3+", "E": "age 6+", "E10+": "age 9+", "T": "age 13+", "M": "age 17+", "AO": "age 18+" };
+  function ratingBadge(r) {
+    const esrb = RATING_IMG[r]
+      ? `<img class="xb-rating-img" src="${RATING_IMG[r]}" alt="ESRB ${r}" title="ESRB: ${r}">`
+      : `<span class="xb-rating" style="background:${RATING_COLOR[r] || "#555"}" title="ESRB rating">${esc(r)}</span>`;
+    const csm = `<span class="xb-csm" title="Common Sense Media"><img src="assets/commonsense.png" alt="Common Sense">${CSM_AGE[r] || ""}</span>`;
+    return esrb + csm;
+  }
   GAMES.forEach((g) => { g.rating = RATINGS[g.id] || "E"; });
   function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
   function meta(id) { return GAMES.find((g) => g.id === id); }
@@ -112,7 +126,7 @@
           ${gameArt(game)}
           <div class="xb-card-body">
             <div class="xb-card-top"><b>${esc(game.name)}</b>${game.gp ? `<span class="xb-gp-tag">Game Pass</span>` : ""}</div>
-            <div class="xb-card-tag">${esc(game.tag)} <span class="xb-rating" style="background:${RATING_COLOR[game.rating] || "#555"}" title="ESRB rating">${esc(game.rating)}</span></div>
+            <div class="xb-card-tag">${esc(game.tag)} ${ratingBadge(game.rating)}</div>
             <div class="xb-card-actions"></div>
           </div>
         </div>`);
@@ -124,7 +138,7 @@
           if (viaGp) acts.appendChild(el(`<span class="xb-owned">with Game Pass</span>`));
           else acts.appendChild(el(`<span class="xb-owned">Owned</span>`));
         } else {
-          const buy = el(`<button class="xb-btn sm">Buy $${game.price.toFixed(2)}</button>`);
+          const buy = el(`<button class="xb-btn sm">${game.price ? "Buy $" + game.price.toFixed(2) : "Get — Free"}</button>`);
           buy.onclick = () => buyGame(game);
           acts.appendChild(buy);
           if (game.gp && !games().gamepass) { const gp = el(`<button class="xb-btn sm ghost">Play with Game Pass</button>`); gp.onclick = () => joinGamePass(); acts.appendChild(gp); }
