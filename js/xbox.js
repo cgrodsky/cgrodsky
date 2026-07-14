@@ -85,6 +85,24 @@
       drugs: Math.max(0, tier - 3),
     };
   }
+  const REVIEW_NAMES = ["Sarah M.", "David K.", "GamerDad_92", "Jenn R.", "MomOf3", "Chris T.", "Alex P.", "Taylor B.", "Pat L.", "Jordan W."];
+  const REVIEW_POS = ["Great fun for the whole family — my kids love it.", "Wholesome and creative. Highly recommend it.", "Perfect for a family game night, totally age-appropriate.", "Educational and genuinely entertaining.", "My kids learned a lot and had a blast."];
+  const REVIEW_MID = ["Fun, but keep an eye on screen time.", "Good game — some mild content, nothing too bad.", "Just right for teens; younger kids should wait.", "Solid game with a few intense moments."];
+  const REVIEW_NEG = ["Too violent for younger kids — preview it first.", "Strong language and mature themes; not for little ones.", "Fun for adults, but definitely 17+ for a reason.", "Intense content — check it before your teen plays."];
+  function seededReviews(game) {
+    const tier = { "EC": 0, "E": 1, "E10+": 2, "T": 3, "M": 4, "AO": 5 }[game.rating] || 1;
+    const pool = tier <= 2 ? REVIEW_POS : tier <= 3 ? REVIEW_MID : REVIEW_NEG;
+    const h = csmHash(game.id), out = [];
+    for (let i = 0; i < 3; i++) {
+      const stars = tier <= 2 ? 5 - ((h + i) % 2) : tier <= 3 ? 4 - ((h + i) % 2) : 3 + ((h + i) % 3) - 1;
+      const ageIdx = Math.max(0, Math.min(6, tier + ((h + i) % 2)));
+      out.push({ name: REVIEW_NAMES[(h + i * 7) % REVIEW_NAMES.length], text: pool[(h + i * 3) % pool.length], stars: Math.max(1, Math.min(5, stars)), age: ["3+", "6+", "8+", "10+", "13+", "17+", "18+"][ageIdx] });
+    }
+    return out;
+  }
+  function userReviews(id) { if (!S().appData) S().appData = {}; if (!S().appData.csmReviews) S().appData.csmReviews = {}; if (!S().appData.csmReviews[id]) S().appData.csmReviews[id] = []; return S().appData.csmReviews[id]; }
+  function stars(n) { return `<span class="csm-stars">${[1, 2, 3, 4, 5].map((i) => `<span class="${i <= n ? "on" : ""}">&#9733;</span>`).join("")}</span>`; }
+
   function showCsm(game, host) {
     const prof = csmProfile(game);
     const dots = (n) => `<span class="csm-dots">${[0, 1, 2, 3, 4].map((i) => `<span class="csm-dot ${i < n ? "on" : ""}"></span>`).join("")}</span>`;
@@ -94,10 +112,35 @@
       <h3 class="csm-h">A lot or a little?</h3>
       <p class="csm-sub">What's in this game for parents to know.</p>
       <div class="csm-grid">${CSM_CATS.map((c) => { const n = prof[c.k]; return `<div class="csm-cat"><span class="csm-cat-ic">${c.icon}</span><div class="csm-cat-txt"><span class="csm-cat-name">${c.name}</span>${n === 0 ? `<span class="csm-none">not present</span>` : dots(n)}</div></div>`; }).join("")}</div>
+      <div class="csm-reviews-head"><h3 class="csm-h">Parent reviews</h3><button class="csm-write">Write a review</button></div>
+      <div class="csm-reviews"></div>
     </div></div>`);
     const close = () => ov.remove();
     ov.querySelector(".csm-x").onclick = close;
     ov.onclick = (e) => { if (e.target === ov) close(); };
+    const revEl = ov.querySelector(".csm-reviews");
+    function renderReviews() {
+      const all = userReviews(game.id).concat(seededReviews(game));
+      revEl.innerHTML = all.map((r) => `<div class="csm-review"><div class="csm-review-top"><b>Parent written by ${esc(r.name)}</b>${stars(r.stars)}</div><div class="csm-review-age">Recommended age ${esc(r.age || "13+")}</div><p>${esc(r.text)}</p></div>`).join("");
+    }
+    renderReviews();
+    ov.querySelector(".csm-write").onclick = () => {
+      const form = el(`<div class="csm-form">
+        <div class="csm-form-stars">${[1, 2, 3, 4, 5].map((i) => `<button data-s="${i}" class="csm-star-btn">&#9733;</button>`).join("")}</div>
+        <textarea class="csm-form-text" rows="3" placeholder="Share your thoughts for other parents…"></textarea>
+        <div class="csm-form-btns"><button class="csm-form-cancel">Cancel</button><button class="csm-form-post">Post review</button></div>
+      </div>`);
+      let sel = 5;
+      form.querySelectorAll(".csm-star-btn").forEach((b) => b.onclick = () => { sel = +b.dataset.s; form.querySelectorAll(".csm-star-btn").forEach((x) => x.classList.toggle("on", +x.dataset.s <= sel)); });
+      form.querySelectorAll(".csm-star-btn").forEach((x) => x.classList.toggle("on", +x.dataset.s <= sel));
+      form.querySelector(".csm-form-cancel").onclick = () => { form.remove(); };
+      form.querySelector(".csm-form-post").onclick = () => {
+        const text = form.querySelector(".csm-form-text").value.trim(); if (!text) return;
+        userReviews(game.id).unshift({ name: (S().profile && S().profile.username) || "You", stars: sel, text, age: CSM_AGE[game.rating] ? CSM_AGE[game.rating].replace("age ", "") : "13+" });
+        State.save(); form.remove(); renderReviews();
+      };
+      ov.querySelector(".csm-reviews-head").after(form);
+    };
     (host || document.getElementById("screen")).appendChild(ov);
   }
   GAMES.forEach((g) => { g.rating = RATINGS[g.id] || "E"; });
