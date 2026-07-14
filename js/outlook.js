@@ -28,6 +28,57 @@
     ]);
   }
   function fallbackReply(name) { return "Thanks for your message — I'll take a look and get back to you soon.\n\n" + (name || ""); }
+
+  // ---- Custom dialogs (no native alert/prompt/confirm) ----
+  function dlgHost() { return document.getElementById("screen"); }
+  function dlgPrompt(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const ov = el(`<div class="wdlg-ov"><div class="wdlg">
+        <div class="wdlg-title">${esc(opts.title || "")}</div>
+        ${opts.message ? `<div class="wdlg-msg">${esc(opts.message)}</div>` : ""}
+        ${opts.multiline ? `<textarea class="wdlg-in" rows="4" placeholder="${esc(opts.placeholder || "")}">${esc(opts.initial || "")}</textarea>` : `<input class="wdlg-in" placeholder="${esc(opts.placeholder || "")}" value="${esc(opts.initial || "")}">`}
+        <div class="wdlg-btns"><button class="wdlg-cancel">Cancel</button><button class="wdlg-ok">${esc(opts.ok || "OK")}</button></div>
+      </div></div>`);
+      const input = ov.querySelector(".wdlg-in");
+      const done = (v) => { ov.classList.add("closing"); setTimeout(() => ov.remove(), 150); resolve(v); };
+      ov.querySelector(".wdlg-cancel").onclick = () => done(null);
+      ov.querySelector(".wdlg-ok").onclick = () => done(input.value);
+      ov.onclick = (e) => { if (e.target === ov) done(null); };
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !opts.multiline) { e.preventDefault(); done(input.value); } if (e.key === "Escape") done(null); });
+      dlgHost().appendChild(ov);
+      setTimeout(() => { input.focus(); if (input.select) input.select(); }, 30);
+    });
+  }
+  function dlgConfirm(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const ov = el(`<div class="wdlg-ov"><div class="wdlg">
+        <div class="wdlg-title">${esc(opts.title || "")}</div>
+        <div class="wdlg-msg">${esc(opts.message || "")}</div>
+        <div class="wdlg-btns"><button class="wdlg-cancel">Cancel</button><button class="wdlg-ok ${opts.danger ? "danger" : ""}">${esc(opts.ok || "OK")}</button></div>
+      </div></div>`);
+      const done = (v) => { ov.classList.add("closing"); setTimeout(() => ov.remove(), 150); resolve(v); };
+      ov.querySelector(".wdlg-cancel").onclick = () => done(false);
+      ov.querySelector(".wdlg-ok").onclick = () => done(true);
+      ov.onclick = (e) => { if (e.target === ov) done(false); };
+      dlgHost().appendChild(ov);
+    });
+  }
+  function dlgAlert(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const ov = el(`<div class="wdlg-ov"><div class="wdlg">
+        <div class="wdlg-title">${esc(opts.title || "")}</div>
+        <div class="wdlg-msg">${esc(opts.message || "")}</div>
+        <div class="wdlg-btns"><button class="wdlg-ok">${esc(opts.ok || "OK")}</button></div>
+      </div></div>`);
+      const done = () => { ov.classList.add("closing"); setTimeout(() => ov.remove(), 150); resolve(); };
+      ov.querySelector(".wdlg-ok").onclick = done;
+      ov.onclick = (e) => { if (e.target === ov) done(); };
+      dlgHost().appendChild(ov);
+    });
+  }
   function textToHtml(t) { return "<p>" + esc(t).replace(/\n\n+/g, "</p><p>").replace(/\n/g, "<br>") + "</p>"; }
   function stripHtml(h) { return String(h || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); }
 
@@ -162,6 +213,7 @@
           <button class="ol-rail-btn ${module === "mail" ? "on" : ""}" data-m="mail" title="Mail">${IC.mail}</button>
           <button class="ol-rail-btn ${module === "calendar" ? "on" : ""}" data-m="calendar" title="Calendar">${IC.cal}</button>
           <button class="ol-rail-btn ${module === "people" ? "on" : ""}" data-m="people" title="People">${IC.people}</button>
+          <button class="ol-rail-btn ol-rail-cop ${module === "copilot" ? "on" : ""}" data-m="copilot" title="Copilot">${IC.sparkle}</button>
           <span class="grow"></span>
           <button class="ol-rail-btn" data-m="settings" title="Settings">${IC.gear}</button>
         </div>
@@ -174,7 +226,82 @@
       const mount = body.querySelector(".ol-module");
       if (module === "mail") renderMail(mount);
       else if (module === "calendar") renderCalendar(mount);
+      else if (module === "copilot") renderCopilot(mount);
       else renderPeople(mount);
+    }
+
+    // ============================ COPILOT ============================
+    function renderCopilot(mount) {
+      if (!S().appData.outlookCop) S().appData.outlookCop = { chat: [] };
+      const chat = S().appData.outlookCop.chat;
+      const sel = data.messages.find((x) => x.id === selectedId);
+      mount.innerHTML = `<div class="ol ol-cop">
+        <div class="ol-cop-head">${IC.sparkle}<b>Copilot</b><span class="grow"></span><button class="ol-cop-clear">Clear</button></div>
+        <div class="ol-cop-quick">
+          <button data-q="summary">Summarize inbox</button>
+          ${sel ? `<button data-q="summarize-one">Summarize this email</button>` : ""}
+          <button data-q="write">Write an email</button>
+          <button data-q="find">Find emails</button>
+        </div>
+        <div class="ol-cop-msgs"></div>
+        <div class="ol-cop-input"><textarea placeholder="Ask Copilot about your mail…" rows="1"></textarea><button class="ol-cop-send" title="Send">${IC.send}</button></div>
+      </div>`;
+      const msgsEl = mount.querySelector(".ol-cop-msgs");
+      const ta = mount.querySelector(".ol-cop-input textarea");
+      function paint() {
+        msgsEl.innerHTML = "";
+        if (!chat.length) { msgsEl.innerHTML = `<div class="ol-cop-hero">${IC.sparkle}<h3>Copilot in Outlook</h3><p>I can summarize your inbox, draft emails, and find messages. Try a suggestion above.</p></div>`; return; }
+        chat.forEach((m) => {
+          const b = el(`<div class="ol-cop-msg ${m.role}"><div class="ol-cop-bubble">${m.role === "assistant" ? m.html || esc(m.content) : esc(m.content)}</div></div>`);
+          if (m.results) { const rc = el(`<div class="ol-cop-results"></div>`); m.results.forEach((r) => { const card = el(`<button class="ol-cop-result">${avatar(r.from)}<div><b>${esc(r.from)}</b><span>${esc(r.subject)}</span></div></button>`); card.onclick = () => { module = "mail"; folder = r.folder; selectedId = r.id; build(); }; rc.appendChild(card); }); b.querySelector(".ol-cop-bubble").appendChild(rc); }
+          msgsEl.appendChild(b);
+        });
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+      function push(role, content, extra) { chat.push(Object.assign({ role, content }, extra || {})); State.save(); paint(); }
+      function inboxContext(n) { return data.messages.filter((m) => m.folder === "inbox").sort((a, b) => b.ts - a.ts).slice(0, n || 12).map((m) => "- From " + m.from + ": " + m.subject + " — " + stripHtml(m.body).slice(0, 120)).join("\n"); }
+      async function ask(userText, systemHint, opts) {
+        opts = opts || {};
+        push("user", userText);
+        const typing = el(`<div class="ol-cop-msg assistant"><div class="ol-cop-bubble"><span class="ol-cop-typing"><i></i><i></i><i></i></span></div></div>`);
+        msgsEl.appendChild(typing); msgsEl.scrollTop = msgsEl.scrollHeight;
+        try {
+          const txt = await aiChat([{ role: "system", content: systemHint }, { role: "user", content: userText }]);
+          typing.remove();
+          push("assistant", txt, { html: textToHtml(txt), results: opts.results });
+          if (opts.after) opts.after(txt);
+        } catch (_) {
+          typing.remove();
+          push("assistant", opts.fallback || "I couldn't reach the AI service right now. Please try again.");
+        }
+      }
+      function localFind(q) { const t = q.toLowerCase(); return data.messages.filter((m) => (m.from + " " + m.subject + " " + stripHtml(m.body)).toLowerCase().includes(t)).sort((a, b) => b.ts - a.ts).slice(0, 6); }
+
+      mount.querySelectorAll(".ol-cop-quick button").forEach((b) => b.onclick = async () => {
+        const q = b.dataset.q;
+        if (q === "summary") ask("Summarize my inbox.", "You are Copilot in Outlook. Summarize the user's inbox in 3-5 short bullet points, highlighting what needs attention. Here is the inbox:\n" + inboxContext(12));
+        else if (q === "summarize-one" && sel) ask("Summarize this email from " + sel.from + ".", "You are Copilot in Outlook. Summarize this email in 2-3 sentences and note any action needed.\n\nFrom: " + sel.from + "\nSubject: " + sel.subject + "\n\n" + stripHtml(sel.body));
+        else if (q === "write") {
+          const topic = await dlgPrompt({ title: "Write an email", message: "What should the email say?", placeholder: "e.g. Ask Sam to review the deck by Friday", ok: "Draft it" });
+          if (!topic) return;
+          ask("Write an email: " + topic, "You are Copilot. Draft a clear, friendly email body (no subject line, sign off with the user's first name). Plain text.", { after: (txt) => { module = "mail"; build(); compose({ to: "", subject: "", body: textToHtml(txt) }); } });
+        } else if (q === "find") {
+          const term = await dlgPrompt({ title: "Find emails", placeholder: "Search by sender, subject, or words", ok: "Find" });
+          if (!term) return;
+          const results = localFind(term);
+          push("user", "Find emails about: " + term);
+          push("assistant", results.length ? "I found " + results.length + " message" + (results.length === 1 ? "" : "s") + " matching \"" + term + "\":" : "I couldn't find any emails matching \"" + term + "\".", { results: results.map((r) => ({ id: r.id, from: r.from, subject: r.subject, folder: r.folder })) });
+        }
+      });
+      function send() {
+        const v = ta.value.trim(); if (!v) return; ta.value = ""; ta.style.height = "auto";
+        ask(v, "You are Copilot in Outlook, a helpful email assistant. Answer briefly and helpfully. The user's recent inbox for context:\n" + inboxContext(10));
+      }
+      mount.querySelector(".ol-cop-send").onclick = send;
+      ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+      ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(120, ta.scrollHeight) + "px"; });
+      mount.querySelector(".ol-cop-clear").onclick = () => { S().appData.outlookCop.chat = []; State.save(); renderCopilot(mount); };
+      paint();
     }
 
     // ============================ MAIL ============================
@@ -348,7 +475,7 @@
       ov.querySelectorAll(".ol-format [data-f]").forEach((b) => b.onmousedown = (e) => {
         e.preventDefault();
         const f = b.dataset.f;
-        if (f === "createLink") { const url = prompt("Link URL", "https://"); if (url) document.execCommand("createLink", false, url); }
+        if (f === "createLink") { dlgPrompt({ title: "Insert link", placeholder: "https://", initial: "https://", ok: "Insert" }).then((url) => { if (url) { bodyEl.focus(); document.execCommand("createLink", false, url); } }); }
         else document.execCommand(f, false, null);
         bodyEl.focus();
       });
@@ -361,7 +488,7 @@
       };
       // Draft the email with Copilot (AI), with a graceful offline note.
       ov.querySelector(".ol-copilot-draft").onclick = async () => {
-        const topic = prompt("What should this email say? (Copilot will draft it)");
+        const topic = await dlgPrompt({ title: "Draft with Copilot", message: "What should this email say?", placeholder: "e.g. Reschedule Friday's meeting to Monday", ok: "Draft it" });
         if (!topic) return;
         const btn = ov.querySelector(".ol-copilot-draft");
         const orig = btn.innerHTML; btn.innerHTML = IC.sparkle + " Drafting…"; btn.disabled = true;
@@ -466,16 +593,20 @@
     }
     function addEvent(dnum) {
       const y = calRef.getFullYear(), m = calRef.getMonth();
-      const title = prompt("Event title"); if (!title) return;
-      const start = prompt("Start time (e.g. 14:00)", "09:00") || "09:00";
-      data.events.push({ id: "e" + Date.now(), title, date: y + "-" + m + "-" + dnum, start, end: start, color: AV_COLORS[data.events.length % AV_COLORS.length] });
-      State.save(); build();
+      dlgPrompt({ title: "New event", placeholder: "Event title", ok: "Next" }).then((title) => {
+        if (!title) return;
+        dlgPrompt({ title: "New event", message: "Start time", placeholder: "e.g. 14:00", initial: "09:00", ok: "Add" }).then((start) => {
+          data.events.push({ id: "e" + Date.now(), title, date: y + "-" + m + "-" + dnum, start: start || "09:00", end: start || "09:00", color: AV_COLORS[data.events.length % AV_COLORS.length] });
+          State.save(); build();
+        });
+      });
     }
     function editEvent(e) {
-      const t = prompt("Event title (empty to delete)", e.title);
-      if (t === null) return;
-      if (t === "") { data.events = data.events.filter((x) => x.id !== e.id); } else { e.title = t; }
-      State.save(); build();
+      dlgPrompt({ title: "Edit event", message: "Clear the title to delete this event.", initial: e.title, ok: "Save" }).then((t) => {
+        if (t === null) return;
+        if (t.trim() === "") { data.events = data.events.filter((x) => x.id !== e.id); } else { e.title = t; }
+        State.save(); build();
+      });
     }
 
     // ============================ PEOPLE ============================
@@ -498,7 +629,14 @@
       }
       renderList("");
       mount.querySelector(".ol-people-search").oninput = (e) => renderList(e.target.value);
-      mount.querySelector("#newC").onclick = () => { const name = prompt("Contact name"); if (!name) return; const email = prompt("Email", "") || ""; data.contacts.push({ id: "c" + Date.now(), name, email, phone: "", company: "" }); State.save(); build(); };
+      mount.querySelector("#newC").onclick = () => {
+        dlgPrompt({ title: "New contact", placeholder: "Full name", ok: "Next" }).then((name) => {
+          if (!name) return;
+          dlgPrompt({ title: "New contact", message: "Email address", placeholder: "name@example.com", ok: "Add" }).then((email) => {
+            data.contacts.push({ id: "c" + Date.now(), name, email: email || "", phone: "", company: "" }); State.save(); build();
+          });
+        });
+      };
       const det = mount.querySelector(".ol-people-detail");
       const c = data.contacts.find((x) => x.id === selContact);
       if (!c) { det.innerHTML = `<div class="ol-read-empty">${IC.people}<p>Select a contact</p></div>`; return; }
@@ -547,7 +685,7 @@
       ov.querySelector(".ol-set-dark").onchange = (e) => { document.body.classList.toggle("dark", e.target.checked); if (S().theme !== undefined) { S().theme = e.target.checked ? "dark" : "light"; State.save(); } };
       ov.querySelector(".ol-set-focused").onchange = (e) => { data.focusedOn = e.target.checked; State.save(); };
       ov.querySelector(".ol-set-sig").oninput = (e) => { data.signature = e.target.value; State.save(); };
-      ov.querySelector(".ol-set-reset").onclick = () => { if (confirm("Reset all mailbox data to the defaults?")) { S().appData.outlook = seedOutlook(); State.save(); close(); location.reload(); } };
+      ov.querySelector(".ol-set-reset").onclick = () => { dlgConfirm({ title: "Reset mailbox", message: "Reset all mailbox data to the defaults? This can't be undone.", ok: "Reset", danger: true }).then((yes) => { if (yes) { S().appData.outlook = seedOutlook(); State.save(); close(); location.reload(); } }); };
       ov.querySelector(".ol-set-save").onclick = close;
       body.appendChild(ov);
     }
