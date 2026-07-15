@@ -14,8 +14,8 @@
   font-weight: normal;
   font-display: swap;
 }
-/* Mojang font throughout the Minecraft app (menus, HUD, inventory) — but not the launcher */
-.mc-root, .mc3-help, .mc-hotbar, .mc-inv, .mc-death, .fml-load .fml-sub, .fml-load .fml-cur, .fml-load .fml-row { font-family: "MojangRegular", "Segoe UI", sans-serif; }
+/* The in-game Minecraft UI uses the pixel font (Minecraftia, set on .mc-root).
+   The Mojang brand font is reserved for the loading screens only. */
 
 /* Mojang Studios loading screen (exact-replica) */
 .mojang-load {
