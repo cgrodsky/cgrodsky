@@ -2942,8 +2942,8 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .fs-city { font-size: .74rem; color: #94a3b8; }
 .fs-t { font-size: .82rem; color: #e2e8f0; margin-top: 3px; }
 .fs-line { flex: 1; height: 3px; background: #334155; position: relative; border-radius: 2px; }
-.fs-line-fill { height: 100%; background: #38bdf8; border-radius: 2px; }
-.fs-plane { position: absolute; top: 50%; transform: translate(-50%, -50%); color: #38bdf8; font-size: 1.1rem; }
+.fs-line-fill { height: 100%; background: #38bdf8; border-radius: 2px; transition: width 1s linear; }
+.fs-plane { position: absolute; top: 50%; transform: translate(-50%, -50%); color: #38bdf8; font-size: 1.1rem; transition: left 1s linear; }
 .fs-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; border-top: 1px solid #334155; padding-top: 18px; }
 .fs-meta > div { display: flex; flex-direction: column; gap: 3px; }
 .fs-meta span { font-size: .72rem; color: #94a3b8; }
@@ -3005,5 +3005,6 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 /* FlightStats route map */
 .fs-map { height: 260px; margin-top: 18px; border-radius: 12px; overflow: hidden; border: 1px solid #334155; background: #0b1220; }
 .fs-map .maplibregl-marker { will-change: transform; }
-.fs-map-plane { font-size: 20px; color: #fff; text-shadow: 0 0 4px #000; transform: rotate(45deg); }
+.fs-map-plane { font-size: 20px; color: #fff; text-shadow: 0 0 4px #000; }
+.fs-map-plane i { display: block; font-style: normal; transition: transform .6s ease; }
 .fs-card { max-width: 680px; }

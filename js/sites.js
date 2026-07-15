@@ -1572,6 +1572,11 @@
     }
     return pts;
   }
+  function bearing(a, b) {
+    const y = Math.sin(toRad(b[0] - a[0])) * Math.cos(toRad(b[1]));
+    const x = Math.cos(toRad(a[1])) * Math.sin(toRad(b[1])) - Math.sin(toRad(a[1])) * Math.cos(toRad(b[1])) * Math.cos(toRad(b[0] - a[0]));
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  }
   const STATUSES = [
     { k: "ontime", label: "On Time", c: "#16a34a" },
     { k: "boarding", label: "Boarding", c: "#2563eb" },
@@ -1582,7 +1587,22 @@
   ];
   function fsHash(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function fsPick(arr, seed) { return arr[Math.abs(seed) % arr.length]; }
-  function fsTime(mins) { const h = Math.floor(mins / 60) % 24, m = mins % 60; const ap = h < 12 ? "AM" : "PM"; const hh = ((h + 11) % 12) + 1; return hh + ":" + String(m).padStart(2, "0") + " " + ap; }
+  function hhmm(ts) { try { return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); } catch (_) { return ""; } }
+  // Real-time progress (0-100) from departure/arrival timestamps.
+  function progressFrom(depTs, arrTs) {
+    if (!depTs || !arrTs || arrTs <= depTs) return null;
+    const now = Date.now();
+    if (now <= depTs) return 0;
+    if (now >= arrTs) return 100;
+    return (now - depTs) / (arrTs - depTs) * 100;
+  }
+  function statusFromTimes(depTs, arrTs) {
+    const now = Date.now();
+    if (now < depTs - 20 * 60000) return STATUSES.find((s) => s.k === "ontime");
+    if (now < depTs) return STATUSES.find((s) => s.k === "boarding");
+    if (now < arrTs) return STATUSES.find((s) => s.k === "departed");
+    return STATUSES.find((s) => s.k === "landed");
+  }
 
   function mockFlight(no) {
     const iata = no.replace(/\s+/g, "").toUpperCase();
@@ -1590,17 +1610,21 @@
     const carrier = iata.slice(0, 2), num = iata.slice(2) || (seed % 900 + 100);
     let o = seed % AIRPORT_CODES.length, d = (seed >>> 4) % AIRPORT_CODES.length; if (d === o) d = (d + 1) % AIRPORT_CODES.length;
     const origin = AIRPORT_CODES[o], dest = AIRPORT_CODES[d];
-    const st = fsPick(STATUSES, seed >> 3);
-    const depMin = 6 * 60 + (seed % 16) * 60 / 16 * 4 | 0, dur = 90 + (seed % 6) * 45;
-    const delay = st.k === "delayed" ? 20 + (seed % 5) * 15 : 0;
+    // Anchor departure to a fixed time today so progress advances with the clock.
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const durMs = (90 + (seed % 6) * 45) * 60000;
+    const delay = (seed % 5 === 0) ? (20 + (seed % 4) * 15) : 0;
+    const depTs = midnight.getTime() + (5 + seed % 15) * 3600000 + (seed % 60) * 60000;
+    const arrTs = depTs + durMs + delay * 60000;
+    const st = statusFromTimes(depTs, arrTs);
     return {
       airline: AIRLINES[carrier] || (carrier + " Airlines"), carrier, flight: carrier + num,
       status: st, origin, dest,
       originName: (AIRPORTS[origin] || [origin])[0], destName: (AIRPORTS[dest] || [dest])[0],
-      dep: fsTime(depMin), arr: fsTime(depMin + dur + delay), depSched: fsTime(depMin),
+      dep: hhmm(depTs), arr: hhmm(arrTs), depTs, arrTs,
       gate: String.fromCharCode(65 + (seed % 6)) + (seed % 30 + 1), termina: (seed % 4) + 1,
       aircraft: fsPick(["Boeing 737-800", "Airbus A320", "Boeing 787-9", "Airbus A321neo", "Embraer E175"], seed >> 6),
-      progress: st.k === "departed" ? 30 + seed % 55 : st.k === "landed" ? 100 : st.k === "boarding" ? 4 : 0,
+      progress: progressFrom(depTs, arrTs) || 0,
       delay,
     };
   }
@@ -1633,17 +1657,22 @@
   function fetchTimeout(url, ms) { return Promise.race([fetch(url), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]); }
   const AV_STATUS = { scheduled: "ontime", active: "departed", landed: "landed", cancelled: "cancelled", incident: "delayed", diverted: "delayed" };
   function avTime(iso) { try { return iso ? new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""; } catch (_) { return ""; } }
+  function tsOf(seg) { if (!seg) return null; const s = seg.actual || seg.estimated || seg.scheduled; return s ? new Date(s).getTime() : null; }
   function parseFlight(f, fallbackNo) {
     const carrier = ((f.flight && f.flight.iata) || "").slice(0, 2);
     const st = STATUSES.find((s) => s.k === AV_STATUS[f.flight_status]) || STATUSES[0];
+    const depTs = tsOf(f.departure), arrTs = tsOf(f.arrival);
+    const timeProg = progressFrom(depTs, arrTs);
+    const live = f.live && f.live.latitude != null ? { lat: f.live.latitude, lon: f.live.longitude, dir: f.live.direction } : null;
     return {
       airline: (f.airline && f.airline.name) || AIRLINES[carrier] || carrier, carrier, flight: (f.flight && f.flight.iata) || fallbackNo,
       status: st, origin: (f.departure && f.departure.iata) || "", dest: (f.arrival && f.arrival.iata) || "",
       originName: (f.departure && f.departure.airport) || "", destName: (f.arrival && f.arrival.airport) || "",
-      dep: avTime(f.departure && f.departure.scheduled), arr: avTime(f.arrival && f.arrival.scheduled),
+      dep: avTime(f.departure && f.departure.scheduled), arr: avTime(f.arrival && f.arrival.scheduled), depTs, arrTs,
       gate: (f.departure && f.departure.gate) || "—", termina: (f.departure && f.departure.terminal) || "—",
       aircraft: (f.aircraft && (f.aircraft.iata || f.aircraft.icao)) || "—",
-      progress: f.flight_status === "landed" ? 100 : f.flight_status === "active" ? 55 : 0, delay: (f.departure && f.departure.delay) || 0,
+      progress: timeProg != null ? timeProg : (f.flight_status === "landed" ? 100 : f.flight_status === "active" ? 50 : 0),
+      delay: (f.departure && f.departure.delay) || 0, live,
     };
   }
   async function fetchFlight(no) {
@@ -1689,11 +1718,12 @@
     const live = !!(window.FLIGHT_API && window.FLIGHT_API.key);
     apiEl.textContent = live ? "● Live flight data" : "● Demo data";
     apiEl.className = "fs-api " + (live ? "live" : "");
-    let tab = "track";
+    let tab = "track", liveTimer = null, curMapApi = null;
     page.querySelectorAll(".fs-nav").forEach((b) => b.onclick = () => { tab = b.dataset.t; page.querySelectorAll(".fs-nav").forEach((x) => x.classList.toggle("on", x === b)); render(); });
 
     function badge(st) { return `<span class="fs-badge" style="background:${st.c}">${st.label}</span>`; }
-    function render() { tab === "track" ? renderTrack() : renderBoard(); }
+    function stopLive() { clearInterval(liveTimer); liveTimer = null; if (curMapApi && curMapApi.destroy) { curMapApi.destroy(); curMapApi = null; } }
+    function render() { stopLive(); tab === "track" ? renderTrack() : renderBoard(); }
 
     function renderTrack(no) {
       main.innerHTML = `<div class="fs-track">
@@ -1704,13 +1734,15 @@
       const input = main.querySelector(".fs-in"), go = main.querySelector(".fs-go"), out = main.querySelector(".fs-result");
       const run = async () => {
         const v = input.value.trim(); if (!v) return;
+        stopLive();
         out.innerHTML = `<div class="fs-loading">Looking up ${esc(v.toUpperCase())}…</div>`;
         const f = await fetchFlight(v);
+        const prog0 = f.progress || 0;
         out.innerHTML = `<div class="fs-card">
           <div class="fs-card-top"><div class="fs-card-id">${airlineLogo(f.carrier, "fs-card-logo")}<div><div class="fs-fl">${esc(f.flight)}</div><div class="fs-al">${esc(f.airline)}</div></div></div>${badge(f.status)}</div>
           <div class="fs-route">
             <div class="fs-ep"><div class="fs-code">${esc(f.origin)}</div><div class="fs-city">${esc(f.originName)}</div><div class="fs-t">${esc(f.dep)}</div></div>
-            <div class="fs-line"><div class="fs-line-fill" style="width:${f.progress}%"></div><span class="fs-plane" style="left:${f.progress}%">✈</span></div>
+            <div class="fs-line"><div class="fs-line-fill" style="width:${prog0}%"></div><span class="fs-plane" style="left:${prog0}%">✈</span></div>
             <div class="fs-ep"><div class="fs-code">${esc(f.dest)}</div><div class="fs-city">${esc(f.destName)}</div><div class="fs-t">${esc(f.arr)}</div></div>
           </div>
           <div class="fs-meta">
@@ -1721,7 +1753,18 @@
           </div>
           <div class="fs-map" id="fsMap"></div>
         </div>`;
-        drawMap(out.querySelector("#fsMap"), f);
+        curMapApi = drawMap(out.querySelector("#fsMap"), f);
+        const fillEl = out.querySelector(".fs-line-fill"), planeEl = out.querySelector(".fs-plane");
+        // Advance the plane in real time; CSS transitions make each step slide.
+        function tick() {
+          const p = progressFrom(f.depTs, f.arrTs);
+          const prog = p != null ? p : f.progress || 0;
+          if (fillEl) fillEl.style.width = prog + "%";
+          if (planeEl) planeEl.style.left = prog + "%";
+          if (curMapApi && curMapApi.setPlane) curMapApi.setPlane(prog / 100);
+        }
+        tick();
+        if (f.depTs && f.arrTs) liveTimer = setInterval(tick, 1000);
       };
       go.onclick = run; input.onkeydown = (e) => { if (e.key === "Enter") run(); };
       if (no) run();
@@ -1729,26 +1772,54 @@
 
     function drawMap(elMap, f) {
       const o = AIRPORT_COORDS[f.origin], d = AIRPORT_COORDS[f.dest];
-      if (!window.maplibregl || !o || !d) { elMap.style.display = "none"; return; }
+      const api = { setPlane: null };
+      if (!window.maplibregl || !o || !d) { elMap.style.display = "none"; return api; }
       try {
         const map = new maplibregl.Map({
           container: elMap, attributionControl: false, interactive: true,
           style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png", "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png", "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] },
           center: [(o[0] + d[0]) / 2, (o[1] + d[1]) / 2], zoom: 2,
         });
+        let planeMarker = null, linePts = null, pendingT = null;
+        let curT = null, tgtT = null, raf = null, alive = true;
+        function place(t) {
+          if (!alive || !linePts) return;
+          if (t <= 0 || t >= 1) { if (planeMarker) { planeMarker.remove(); planeMarker = null; } return; }
+          const idx = Math.max(0, Math.min(linePts.length - 1, Math.round(t * (linePts.length - 1))));
+          const pp = linePts[idx], nb = linePts[Math.min(linePts.length - 1, idx + 1)];
+          try {
+            if (!planeMarker) { const pe = document.createElement("div"); pe.className = "fs-map-plane"; pe.innerHTML = "<i>✈</i>"; planeMarker = new maplibregl.Marker({ element: pe }).setLngLat(pp).addTo(map); }
+            else planeMarker.setLngLat(pp);
+            planeMarker.getElement().querySelector("i").style.transform = "rotate(" + (bearing(pp, nb) - 45) + "deg)";
+          } catch (_) { alive = false; }
+        }
+        function animate() {
+          if (!alive) { raf = null; return; }
+          if (curT == null) curT = tgtT;
+          const diff = tgtT - curT;
+          if (Math.abs(diff) < 0.0004) { curT = tgtT; place(curT); raf = null; return; }
+          curT += diff * 0.12; place(curT);
+          raf = requestAnimationFrame(animate);
+        }
+        api.setPlane = (t) => {
+          if (!linePts) { pendingT = t; return; }
+          tgtT = t;
+          if (curT == null) { curT = t; place(t); return; }   // first placement: no slide from 0
+          if (!raf) raf = requestAnimationFrame(animate);
+        };
+        api.destroy = () => { alive = false; if (raf) cancelAnimationFrame(raf); try { map.remove(); } catch (_) {} };
         map.on("load", () => {
-          const line = greatCircle(o, d, 64);
-          map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: line } } });
+          linePts = greatCircle(o, d, 96);
+          map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: linePts } } });
           map.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#38bdf8", "line-width": 2.5, "line-dasharray": [2, 1.6] } });
           new maplibregl.Marker({ color: "#22c55e" }).setLngLat(o).addTo(map);
           new maplibregl.Marker({ color: "#ef4444" }).setLngLat(d).addTo(map);
-          const t = Math.max(0, Math.min(1, (f.progress || 0) / 100));
-          const pp = line[Math.round(t * (line.length - 1))];
-          if (pp && f.progress > 0 && f.progress < 100) { const pe = document.createElement("div"); pe.className = "fs-map-plane"; pe.textContent = "✈"; new maplibregl.Marker({ element: pe }).setLngLat(pp).addTo(map); }
           const bounds = new maplibregl.LngLatBounds(o, o); bounds.extend(d);
           map.fitBounds(bounds, { padding: 46, maxZoom: 6, duration: 0 });
+          if (pendingT != null) api.setPlane(pendingT);
         });
       } catch (_) { elMap.style.display = "none"; }
+      return api;
     }
 
     function renderBoard(code) {
