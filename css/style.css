@@ -8,6 +8,14 @@
   font-weight: bold;
   font-display: swap;
 }
+@font-face {
+  font-family: "MojangRegular";
+  src: url("../assets/MojangRegular.ttf") format("truetype");
+  font-weight: normal;
+  font-display: swap;
+}
+/* Mojang font throughout the Minecraft app (menus, HUD, inventory) — but not the launcher */
+.mc-root, .mc3-help, .mc-hotbar, .mc-inv, .mc-death, .fml-load .fml-sub, .fml-load .fml-cur, .fml-load .fml-row { font-family: "MojangRegular", "Segoe UI", sans-serif; }
 
 /* Mojang Studios loading screen (exact-replica) */
 .mojang-load {
@@ -804,6 +812,53 @@ input[type=range] { width: 100%; }
 .mc3-heart.h-half { background: linear-gradient(90deg, #ff3b3b 50%, #3a0000 50%); }
 .mc-help { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; font-size: .72rem; text-align: center; pointer-events: none; }
 .mc-fps { position: absolute; top: 8px; left: 8px; color: #fff; background: rgba(0,0,0,0.4); padding: 2px 8px; font-size: .72rem; border-radius: 4px; }
+.mc3-inv { right: 78px; bottom: 122px; }
+/* survival stats row (hearts + hunger) above the hotbar */
+.mc3-stats { display: flex; justify-content: space-between; width: 340px; max-width: 78vw; padding: 0 2px; }
+.mc3-stats .mc3-hearts { position: static; }
+.mc3-hunger { display: flex; gap: 2px; flex-direction: row-reverse; }
+.mc3-drum { width: 14px; height: 14px; display: inline-block; background: #2a1c0c; clip-path: polygon(20% 0, 55% 8%, 70% 30%, 62% 55%, 90% 78%, 80% 100%, 55% 92%, 20% 100%, 8% 72%, 30% 55%, 12% 28%); }
+.mc3-drum.d-full { background: #b5651d; }
+.mc3-drum.d-half { background: linear-gradient(90deg, #b5651d 50%, #2a1c0c 50%); }
+.mc3-hurt { position: absolute; inset: 0; pointer-events: none; z-index: 8; opacity: 0; transition: opacity .12s; background: radial-gradient(ellipse at center, rgba(120,0,0,0) 35%, rgba(150,0,0,.65) 100%); }
+
+/* Forge-style mod-loading screen */
+.fml-load { position: absolute; inset: 0; background: #1b1b1f; color: #dcdcdc; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: "MojangRegular", "Segoe UI", sans-serif; }
+.fml-title { font-family: "MojangBold", sans-serif; font-size: 2rem; letter-spacing: 1px; color: #e8e8e8; }
+.fml-sub { color: #9aa0a6; font-size: .95rem; }
+.fml-bar { width: min(420px, 70%); height: 12px; background: #0d0d10; border: 1px solid #333; border-radius: 3px; overflow: hidden; }
+.fml-bar-fill { height: 100%; width: 0; background: linear-gradient(#3fae3f, #2c7a2c); transition: width .18s linear; }
+.fml-cur { color: #c8c8c8; font-size: .85rem; min-height: 1.2em; }
+.fml-list { margin-top: 4px; height: 120px; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+.fml-row { color: #6fae6f; font-size: .8rem; }
+
+/* Minecraft inventory (vanilla layout + JEI item panel) */
+.mc-inv { position: absolute; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 20; padding: 14px; }
+.mci-panel { background: #c6c6c6; border: 4px solid #373737; border-radius: 3px; padding: 10px; box-shadow: inset 2px 2px 0 #fefefe, inset -2px -2px 0 #8b8b8b; }
+.mci-top { display: flex; gap: 14px; margin-bottom: 10px; }
+.mci-left { display: flex; align-items: flex-start; gap: 6px; }
+.mci-armor { display: flex; flex-direction: column; gap: 4px; }
+.mci-preview { width: 68px; height: 96px; background: #1c1c1c; border: 2px solid #8b8b8b; box-shadow: inset 2px 2px 0 #5a5a5a; }
+.mci-off { display: flex; align-items: flex-end; height: 96px; }
+.mci-craft { flex: 1; }
+.mci-craftlabel, .mci-jei-foot { font-size: .8rem; color: #3b3b3b; margin-bottom: 5px; }
+.mci-craftrow { display: flex; align-items: center; gap: 8px; }
+.mci-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+.mci-arrow { color: #6b6b6b; font-size: 1.3rem; }
+.mci-main { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; margin-bottom: 8px; }
+.mci-hotrow { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.mci-slot { width: 34px; height: 34px; background: #8b8b8b; border: 2px solid; border-color: #373737 #fff #fff #373737; display: flex; align-items: center; justify-content: center; position: relative; box-sizing: border-box; }
+.mci-slot.mci-result { width: 40px; height: 40px; }
+.mci-sw { width: 26px; height: 26px; image-rendering: pixelated; object-fit: cover; }
+.mci-c { position: absolute; right: 1px; bottom: 0; font-size: .7rem; color: #fff; text-shadow: 1px 1px 0 #000; }
+.mci-jei { width: 210px; align-self: stretch; background: #101012; border: 3px solid #373737; border-radius: 3px; display: flex; flex-direction: column; padding: 8px; }
+.mci-jei-head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.mci-search { flex: 1; background: #26262b; border: 1px solid #444; color: #eee; padding: 6px 8px; border-radius: 3px; outline: none; font-family: inherit; font-size: .82rem; }
+.mci-jei-x { color: #bbb; cursor: pointer; padding: 2px 6px; }
+.mci-jei-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; align-content: start; }
+.mci-jslot { aspect-ratio: 1; background: #1c1c22; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 2px; }
+.mci-jslot:hover { background: #2e2e38; }
+.mci-jei-foot { margin-top: 8px; margin-bottom: 0; color: #8a8d94; text-align: center; }
 
 /* Block Finder app */
 .bf { display: flex; flex-direction: column; height: 100%; background: var(--window-bg); }

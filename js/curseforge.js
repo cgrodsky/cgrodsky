@@ -17,8 +17,8 @@
     { id: "jei", name: "Just Enough Items (JEI)", author: "mezz", dl: 412000000, cat: "Utility", c: "#e9f5e9", iconImg: "assets/mod_jei.png", desc: "View recipes and items — the essential recipe helper.",
       long: "JEI is an item and recipe viewing mod for Minecraft, built from the ground up for stability and performance. Hover over any item and press R to see how it's made, or U to see what you can make with it. Search, bookmark, and cheat items in creative — it's the mod almost every modpack depends on.",
       shots: ["assets/mod_jei_1.png", "assets/mod_jei_2.png", "assets/mod_jei_3.png", "assets/mod_jei_4.png"] },
-    { id: "create", name: "Create", author: "simibubi", dl: 78000000, cat: "Tech", c: "#8a6d3b", desc: "Build contraptions and machines with rotational power.",
-      long: "Create is about building with rotational force. Assemble gears, belts, and shafts into elaborate contraptions — automated farms, moving structures, and factories that actually animate as they run.",
+    { id: "create", name: "Create", author: "simibubi", dl: 198221036, cat: "Tech", c: "#b98a4a", iconImg: "assets/mod_create.png", desc: "Aesthetic Technology that empowers the Player.",
+      long: "Create is about building with rotational force. Assemble gears, belts, and shafts into elaborate contraptions — automated farms, moving structures, and factories that actually animate as they run. Aesthetic technology that empowers the player.",
       gallery: ["Kinetic contraption", "Mechanical press", "Windmill build"] },
     { id: "sodium", name: "Sodium", author: "jellysquid3", dl: 96000000, cat: "Performance", c: "#2f7be0", icon: SODIUM_ICON, desc: "A modern rendering engine — massive FPS boost.",
       long: "Sodium is a free and open-source rendering optimization mod for Minecraft that dramatically improves frame rates and reduces micro-stutter, while fixing many graphical issues. It's the go-to performance mod for the Fabric ecosystem.",
@@ -215,4 +215,11 @@
 
   window.AppRegistry = window.AppRegistry || {};
   window.AppRegistry.curseforge = openCurseForge;
+  // Exposed so the Minecraft launcher/game can show a Forge-style mod-loading
+  // screen listing the mods the player actually installed.
+  window.CurseForgeAPI = {
+    installedIds: function () { try { return store().installed.slice(); } catch (_) { return []; } },
+    installedNames: function () { try { return store().installed.map((id) => { const m = MODS.find((x) => x.id === id); return m ? m.name : id; }); } catch (_) { return []; } },
+    count: function () { try { return store().installed.length; } catch (_) { return 0; } },
+  };
 })();
