@@ -39,6 +39,7 @@
     { id: "gta5", name: "Grand Theft Auto V", price: 29.99, gp: true, tag: "Adventure", c1: "#1b5e20", c2: "#0a2410" },
     { id: "fortnite", name: "Fortnite", price: 0, gp: false, tag: "Shooter", c1: "#7c3aed", c2: "#2563eb" },
     { id: "bluey", name: "Bluey: The Videogame", price: 39.99, gp: true, tag: "Casual", c1: "#3a7bd5", c2: "#0a2540", art: "assets/game_bluey.jpg" },
+    { id: "fallout4", name: "Fallout 4: Anniversary Edition", price: 19.99, gp: true, tag: "RPG", c1: "#caa23a", c2: "#3a2a12", art: "assets/game_fallout.jpg" },
   ];
   const CATS = ["All", "Arcade", "Puzzle", "Casual", "Racing", "Shooter", "RPG", "Adventure", "Strategy", "Roguelike", "Platformer", "Simulation", "Sandbox", "Metroidvania", "Farming"];
   // ESRB content ratings.
@@ -156,6 +157,7 @@
     whackmole: "Bop the moles as fast as you can before time runs out.",
     tictactoe2: "Classic Xs and Os against a clever computer opponent.",
     forza: "Race hundreds of cars across a stunning open world in the ultimate Horizon festival.",
+    fallout4: "Return to the post-apocalyptic Commonwealth in the Anniversary Edition. Build settlements, craft weapons and power armor, and shape the wasteland's fate with your dog Dogmeat at your side. Includes all six official add-ons.",
     halo: "Master Chief returns to save humanity in the most expansive Halo campaign yet.",
     seaofthieves: "Set sail with friends, hunt for treasure, and become a pirate legend.",
     starfield: "Explore the stars in Bethesda's epic space RPG — chart your own path among 1,000 planets.",

@@ -3,6 +3,8 @@
 (function () {
   "use strict";
   let n = 0;
+  // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
+  const ICONV = "2";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -54,7 +56,7 @@
       fallbackStyle = `display:none;background:${grad};font-size:${Math.round(size * 0.38)}px;width:${size}px;height:${size}px`;
     }
     return `<span class="ico-wrap" style="width:${size}px;height:${size}px${custom[safeKey] || customSrc ? ";box-shadow:none" : ""}">` +
-      `<img class="ico-img" src="${customSrc || "assets/" + safeKey + ".png"}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
+      `<img class="ico-img" src="${customSrc || "assets/" + safeKey + ".png?v=" + ICONV}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` +
       `<span class="${cls}" style="${fallbackStyle}">${fallbackInner}</span>` +
       `</span>`;
   }
