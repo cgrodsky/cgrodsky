@@ -2257,6 +2257,28 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-csm { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; color: #9aa0a6; background: rgba(255,255,255,.06); padding: 2px 7px 2px 4px; border-radius: 12px; border: 0; cursor: pointer; }
 .xb-csm:hover { background: rgba(255,255,255,.14); color: #fff; }
 .xb-csm img { width: 16px; height: 16px; background: #fff; border-radius: 50%; padding: 1px; }
+/* Game details modal */
+.xb-card-click { cursor: pointer; }
+.xb-card-click:hover { border-color: #3a7bd5; }
+.xg-ov { position: absolute; inset: 0; z-index: 250; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.xg-panel { width: min(620px, 100%); max-height: 90%; overflow: auto; background: #1b1c1e; color: #e6e6e6; border-radius: 14px; position: relative; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+.xg-x { position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; font-size: 1.3rem; cursor: pointer; }
+.xg-x:hover { background: rgba(0,0,0,.75); }
+.xg-hero { height: 230px; overflow: hidden; border-radius: 14px 14px 0 0; }
+.xg-hero .xb-art { height: 100%; border-radius: 0; }
+.xg-hero .xb-art-name { font-size: 1.9rem; }
+.xg-body { padding: 20px 24px 24px; }
+.xg-title-row { display: flex; align-items: center; gap: 12px; }
+.xg-title-row h2 { margin: 0; font-size: 1.5rem; }
+.xg-meta { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
+.xg-cat { font-size: .82rem; color: #9aa0a6; background: #2a2b2d; padding: 3px 12px; border-radius: 12px; }
+.xg-desc { font-size: .92rem; line-height: 1.6; color: #c8cbd0; }
+.xg-shots { margin: 16px 0; }
+.xg-shots img { width: 100%; border-radius: 8px; display: block; }
+.xg-actions { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+.xg-guide { background: #2a2b2d; color: #cfcfcf; border: 0; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: .85rem; }
+.xg-guide:hover { background: #34363a; color: #fff; }
+
 /* Common Sense parents' guide */
 .csm-ov { position: absolute; inset: 0; z-index: 300; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .csm-panel { width: min(560px, 100%); max-height: 88%; overflow: auto; background: #ececec; color: #222; border-radius: 12px; padding: 20px; }

@@ -144,6 +144,77 @@
     (host || document.getElementById("screen")).appendChild(ov);
   }
   GAMES.forEach((g) => { g.rating = RATINGS[g.id] || "E"; });
+  const DESCS = {
+    minecraft: "Break and place blocks to build anything you can imagine. Explore infinite worlds, survive the night, and craft your own adventure — solo or with friends.",
+    neonsnake: "Guide the glowing snake, eat to grow longer, and don't crash into yourself.",
+    blockblast: "Bounce the ball, smash every brick, and clear the board.",
+    pongclassic: "The original paddle showdown. First to miss loses.",
+    ultra2048: "Slide and merge matching tiles to reach the elusive 2048.",
+    minesweeperx: "Flag the mines and clear the board without a wrong click.",
+    memorymatch: "Flip cards and find every matching pair against the clock.",
+    simonsays: "Repeat the growing pattern of colors and sounds.",
+    whackmole: "Bop the moles as fast as you can before time runs out.",
+    tictactoe2: "Classic Xs and Os against a clever computer opponent.",
+    forza: "Race hundreds of cars across a stunning open world in the ultimate Horizon festival.",
+    halo: "Master Chief returns to save humanity in the most expansive Halo campaign yet.",
+    seaofthieves: "Set sail with friends, hunt for treasure, and become a pirate legend.",
+    starfield: "Explore the stars in Bethesda's epic space RPG — chart your own path among 1,000 planets.",
+    flightsim: "Take to the skies over a photoreal recreation of the entire planet.",
+    gears5: "Fight the Swarm across a brutal, cinematic campaign in the Gears saga.",
+    fallout4: "Survive the post-nuclear wasteland, build settlements, and shape your own story.",
+    doometernal: "Rip and tear through hordes of demons in the fastest, most brutal Doom yet.",
+    aoe4: "Command historic civilizations to victory in this landmark real-time strategy game.",
+    hades: "Battle out of the Underworld in a god-like roguelike from Supergiant Games.",
+    hollowknight: "Explore a vast, ruined kingdom of insects in this acclaimed hand-drawn adventure.",
+    stardew: "Build the farm of your dreams, raise animals, fish, and join a cozy community.",
+    cuphead: "Run and gun through a gorgeous 1930s cartoon world of tough bosses.",
+    gta5: "Live the high-stakes criminal life across the sprawling city of Los Santos.",
+    fortnite: "Drop in, build, and battle to be the last one standing. Free to play.",
+    bluey: "Play along with the Heeler family in games and adventures for the whole family.",
+  };
+  function gameActions(game, acts, refreshFn) {
+    acts.innerHTML = "";
+    const owned = owns(game.id);
+    if (owned) {
+      const play = el(`<button class="xb-btn sm">${(game.playable || game.play) ? "Play" : "Installed"}</button>`);
+      play.onclick = () => playGameG(game);
+      acts.appendChild(play);
+      acts.appendChild(el(`<span class="xb-owned">${games().gamepass && game.gp && games().owned.indexOf(game.id) < 0 ? "with Game Pass" : "Owned"}</span>`));
+    } else {
+      const buy = el(`<button class="xb-btn sm">${game.price ? "Buy $" + game.price.toFixed(2) : "Get — Free"}</button>`);
+      buy.onclick = () => { buyGameG(game); if (refreshFn) refreshFn(); };
+      acts.appendChild(buy);
+      if (game.gp && !games().gamepass) { const gp = el(`<button class="xb-btn sm ghost">Play with Game Pass</button>`); gp.onclick = () => { joinGamePassG(); if (refreshFn) refreshFn(); }; acts.appendChild(gp); }
+    }
+  }
+  // Standalone action handlers usable outside a window instance.
+  function playGameG(game) { if (game.id === "minecraft") return AppRegistry.mclauncher(); if (game.play && window.Games) return window.Games.launch({ id: game.id, name: game.name, game: game.play }, window.WM.createWindow); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: game.name, body: "Launching… demo tile in the sim." }); }
+  function buyGameG(game) { if (!canAfford(game.price)) { if (window.Notify) Notify.show({ icon: "", title: "Xbox", body: "Not enough balance in Forge Bank." }); return; } charge(game.name, game.price); if (games().owned.indexOf(game.id) < 0) games().owned.push(game.id); State.save(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: game.name, body: game.price ? "Purchased — ready to play." : "Added to your library." }); }
+  function joinGamePassG() { if (games().gamepass) return; if (!canAfford(GP_PRICE)) { if (window.Notify) Notify.show({ icon: "", title: "Xbox", body: "Not enough balance in Forge Bank." }); return; } charge("Game Pass Ultimate", GP_PRICE); games().gamepass = true; State.save(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("xbox", "Xbox") : "", title: "Game Pass Ultimate", body: "You're in — hundreds of games unlocked." }); }
+
+  function showGameDetails(game, host) {
+    const ov = el(`<div class="xg-ov"><div class="xg-panel">
+      <button class="xg-x" title="Close">&times;</button>
+      <div class="xg-hero">${gameArt(game, "xg-hero-art")}</div>
+      <div class="xg-body">
+        <div class="xg-title-row"><h2>${esc(game.name)}</h2>${game.gp ? `<span class="xb-gp-tag">Game Pass</span>` : ""}</div>
+        <div class="xg-meta"><span class="xg-cat">${esc(game.tag)}</span>${ratingBadge(game.rating)}</div>
+        <p class="xg-desc">${esc(DESCS[game.id] || (game.name + " — available now on Xbox."))}</p>
+        <div class="xg-shots">${game.art ? `<img src="${game.art}" alt="">` : ""}</div>
+        <div class="xg-actions xb-card-actions"></div>
+        <button class="xg-guide">Parents' guide &amp; reviews</button>
+      </div>
+    </div></div>`);
+    const close = () => ov.remove();
+    ov.querySelector(".xg-x").onclick = close;
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+    const csm = ov.querySelector(".xg-meta .xb-csm"); if (csm) csm.onclick = (e) => { e.stopPropagation(); showCsm(game, host); };
+    const acts = ov.querySelector(".xg-actions");
+    function refreshActs() { gameActions(game, acts, refreshActs); }
+    refreshActs();
+    ov.querySelector(".xg-guide").onclick = () => showCsm(game, host);
+    (host || document.getElementById("screen")).appendChild(ov);
+  }
   function games() { if (!S().appData) S().appData = {}; if (!S().appData.games) S().appData.games = { gamepass: false, owned: ["minecraft"] }; if (!S().appData.games.owned) S().appData.games.owned = []; return S().appData.games; }
   function meta(id) { return GAMES.find((g) => g.id === id); }
   function owns(id) { const g = games(); const m = meta(id); return g.owned.indexOf(id) >= 0 || (g.gamepass && m && m.gp); }
@@ -214,6 +285,8 @@
             <div class="xb-card-actions"></div>
           </div>
         </div>`);
+        card.classList.add("xb-card-click");
+        card.onclick = (e) => { if (e.target.closest("button")) return; showGameDetails(game, body); };
         const csmBtn = card.querySelector(".xb-csm"); if (csmBtn) csmBtn.onclick = (e) => { e.stopPropagation(); showCsm(game, body); };
         const acts = card.querySelector(".xb-card-actions");
         if (owned) {
