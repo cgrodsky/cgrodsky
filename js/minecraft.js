@@ -14,7 +14,7 @@
     2:  { name: "Dirt", color: "#8a5a2b", solid: true, hardness: 0.5, drop: 2, tex: "dirt" },
     3:  { name: "Stone", color: "#8c8c8c", solid: true, hardness: 1.5, drop: 17, tex: "stone" },
     4:  { name: "Log", color: "#6b4a25", solid: true, hardness: 2, drop: 4, tex: "log" },
-    5:  { name: "Leaves", color: "#3e9b3e", solid: true, hardness: 0.2, drop: 5, tex: "leaves", alpha: 0.95 },
+    5:  { name: "Leaves", color: "#3e9b3e", solid: true, hardness: 0.2, drop: 5, tex: "leaves", cutout: true },
     6:  { name: "Sand", color: "#e3d59b", solid: true, hardness: 0.5, drop: 6, tex: "sand" },
     7:  { name: "Planks", color: "#b08243", solid: true, hardness: 2, drop: 7, tex: "planks" },
     8:  { name: "Glass", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 8, tex: "glass", alpha: 0.5 },
@@ -386,9 +386,9 @@
     function makeFaceMat(b, texKey) {
       const m = new THREE.MeshLambertMaterial({
         color: new THREE.Color(b.color || "#ffffff"),
-        transparent: !!b.alpha || !!b.plant,
+        transparent: !!b.alpha || !!b.plant || !!b.cutout,
         opacity: b.alpha != null ? b.alpha : 1,
-        alphaTest: b.plant ? 0.5 : 0,
+        alphaTest: (b.plant || b.cutout) ? 0.5 : 0,
         side: b.plant ? THREE.DoubleSide : THREE.FrontSide,
       });
       if (texKey) {
@@ -1016,8 +1016,8 @@
       const x = document.createElement("span"); x.className = "mci-jei-x"; x.textContent = "✕"; x.onclick = closeInv;
       head.append(input, x);
       const grid = document.createElement("div"); grid.className = "mci-jei-grid";
-      list.forEach((id) => { const n = document.createElement("div"); n.className = "mci-jslot"; n.title = meta(id).name; n.appendChild(swatchEl(id)); n.onclick = () => { if (cursor && cursor.id === id) cursor.count++; else cursor = { id, count: 1 }; renderUI(); }; grid.appendChild(n); });
-      const foot = document.createElement("div"); foot.className = "mci-jei-foot"; foot.textContent = creative ? "Click to grab items" : "Click to grab (JEI)";
+      list.forEach((id) => { const n = document.createElement("div"); n.className = "mci-jslot" + (creative ? "" : " mci-jref"); n.title = meta(id).name; n.appendChild(swatchEl(id)); if (creative) n.onclick = () => { if (cursor && cursor.id === id) cursor.count++; else cursor = { id, count: 1 }; renderUI(); }; grid.appendChild(n); });
+      const foot = document.createElement("div"); foot.className = "mci-jei-foot"; foot.textContent = creative ? "Click to grab items" : "Recipe reference only";
       wrap.append(head, grid, foot); return wrap;
     }
     function positionCursor() {

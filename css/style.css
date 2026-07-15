@@ -869,6 +869,8 @@ input[type=range] { width: 100%; }
 .mci-jei-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; align-content: start; }
 .mci-jslot { aspect-ratio: 1; background: #1c1c22; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 2px; }
 .mci-jslot:hover { background: #2e2e38; }
+.mci-jref { cursor: default; }
+.mci-jref:hover { background: #1c1c22; }
 .mci-jei-foot { margin-top: 8px; margin-bottom: 0; color: #8a8d94; text-align: center; }
 
 /* Block Finder app */
