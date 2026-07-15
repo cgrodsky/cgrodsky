@@ -844,6 +844,17 @@ input[type=range] { width: 100%; }
 .mci-craftlabel, .mci-jei-foot { font-size: .8rem; color: #3b3b3b; margin-bottom: 5px; }
 .mci-craftrow { display: flex; align-items: center; gap: 8px; }
 .mci-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+.mci-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.mci-cursor { position: absolute; z-index: 60; pointer-events: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.mci-cursor .mci-sw { width: 28px; height: 28px; image-rendering: pixelated; }
+.mci-cursor .mci-c { position: absolute; right: -2px; bottom: -4px; font-size: .72rem; color: #fff; text-shadow: 1px 1px 0 #000; }
+/* furnace */
+.mci-furnace { align-items: center; justify-content: center; gap: 14px; padding: 8px 0 12px; }
+.mci-fcol { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mci-flame { width: 20px; height: 20px; background: #555; clip-path: polygon(50% 0, 70% 35%, 100% 55%, 75% 100%, 25% 100%, 0 55%, 30% 35%); }
+.mci-flame.lit { background: linear-gradient(#ffd23f, #ff7a1a); }
+.mci-farrow { width: 56px; height: 12px; background: #6b6b6b; position: relative; clip-path: polygon(0 30%, 70% 30%, 70% 0, 100% 50%, 70% 100%, 70% 70%, 0 70%); }
+.mci-farrow-fill { height: 100%; width: 0; background: #cdbb55; }
 .mci-arrow { color: #6b6b6b; font-size: 1.3rem; }
 .mci-main { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; margin-bottom: 8px; }
 .mci-hotrow { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }

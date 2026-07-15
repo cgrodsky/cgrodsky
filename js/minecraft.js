@@ -19,7 +19,7 @@
     7:  { name: "Planks", color: "#b08243", solid: true, hardness: 2, drop: 7, tex: "planks" },
     8:  { name: "Glass", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 8, tex: "glass", alpha: 0.5 },
     9:  { name: "Brick", color: "#9e4636", solid: true, hardness: 2, drop: 9, tex: "brick" },
-    12: { name: "Coal Ore", color: "#5a5a5a", solid: true, hardness: 2.5, drop: 12, tex: "coal_ore" },
+    12: { name: "Coal Ore", color: "#5a5a5a", solid: true, hardness: 2.5, drop: 206, tex: "coal_ore" },
     13: { name: "Iron Ore", color: "#caa472", solid: true, hardness: 3, drop: 13, tex: "iron_ore" },
     14: { name: "Gold Ore", color: "#e6c34a", solid: true, hardness: 3, drop: 14, tex: "gold_ore" },
     15: { name: "Diamond Ore", color: "#4fe0d6", solid: true, hardness: 4, drop: 15, tex: "diamond_ore" },
@@ -71,13 +71,77 @@
     65: { name: "Blue Stained Glass",   color: "#3c44aa", solid: true, hardness: 0.3, drop: 65, alpha: 0.5 },
     66: { name: "Purple Stained Glass", color: "#8932b8", solid: true, hardness: 0.3, drop: 66, alpha: 0.5 },
     67: { name: "Black Stained Glass",  color: "#1d1d21", solid: true, hardness: 0.3, drop: 67, alpha: 0.5 },
+    // Craftable blocks
+    57: { name: "Crafting Table", color: "#9a6b3f", solid: true, hardness: 2.5, drop: 57, tex: "crafting_table", interact: "craft" },
+    58: { name: "Furnace", color: "#6f6f6f", solid: true, hardness: 3.5, drop: 58, tex: "furnace", interact: "furnace" },
+    59: { name: "Torch", color: "#ffcf4a", solid: false, plant: true, hardness: 0.05, drop: 59, tex: "torch", light: true },
+    68: { name: "Chest", color: "#8a5a2b", solid: true, hardness: 2.5, drop: 68, tex: "chest" },
   };
 
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
   const ITEMS = {
     200: { name: "Ender Pearl", color: "#14c7a8", item: true, tex: "ender_pearl" },
+    201: { name: "Stick", color: "#b08a52", item: true, tex: "stick" },
+    202: { name: "Wooden Pickaxe", color: "#b08243", item: true, tex: "wood_pickaxe" },
+    203: { name: "Stone Pickaxe", color: "#9a9a9a", item: true, tex: "stone_pickaxe" },
+    204: { name: "Wooden Axe", color: "#b08243", item: true, tex: "wood_axe" },
+    205: { name: "Wooden Sword", color: "#b08243", item: true, tex: "wood_sword" },
+    206: { name: "Coal", color: "#26262a", item: true, tex: "coal" },
+    207: { name: "Iron Ingot", color: "#d8d8d8", item: true, tex: "iron_ingot" },
+    208: { name: "Gold Ingot", color: "#f2d24a", item: true, tex: "gold_ingot" },
+    209: { name: "Stone Sword", color: "#9a9a9a", item: true, tex: "stone_sword" },
   };
+  // Tools: mining-speed multiplier + attack damage.
+  const TOOLS = {
+    202: { kind: "pickaxe", mult: 3, atk: 3 }, 203: { kind: "pickaxe", mult: 5, atk: 4 },
+    204: { kind: "axe", mult: 3, atk: 4 }, 205: { kind: "sword", mult: 1.5, atk: 5 }, 209: { kind: "sword", mult: 1.5, atk: 7 },
+  };
+  // Crafting recipes. `shape` is a minimal (cropped) grid; `shapeless` is a bag of ids.
+  // out = [resultId, count]. Ingredient ids: 4=Log 7=Planks 17=Cobblestone 201=Stick 206=Coal
+  const RECIPES = [
+    { out: [7, 4], shapeless: [4] },
+    { out: [201, 4], shape: [[7], [7]] },
+    { out: [57, 1], shape: [[7, 7], [7, 7]] },
+    { out: [58, 1], shape: [[17, 17, 17], [17, 0, 17], [17, 17, 17]] },
+    { out: [68, 1], shape: [[7, 7, 7], [7, 0, 7], [7, 7, 7]] },
+    { out: [59, 4], shape: [[206], [201]] },
+    { out: [202, 1], shape: [[7, 7, 7], [0, 201, 0], [0, 201, 0]] },
+    { out: [203, 1], shape: [[17, 17, 17], [0, 201, 0], [0, 201, 0]] },
+    { out: [204, 1], shape: [[7, 7], [7, 201], [0, 201]] },
+    { out: [205, 1], shape: [[7], [7], [201]] },
+    { out: [209, 1], shape: [[17], [17], [201]] },
+    { out: [8, 1], shapeless: [6] },
+  ];
+  // Furnace smelting: input id -> output id. Fuel: id -> items it can smelt.
+  const SMELT = { 13: 207, 14: 208, 6: 8, 17: 3, 3: 46 };
+  const FUEL = { 206: 8, 4: 1.5, 7: 1.5, 201: 0.5, 57: 1.5, 68: 1.5 };
+
+  // Match the crafting grid (row-major ids, w×h) against RECIPES → [id,count] or null.
+  function matchRecipe(ids, w, h) {
+    const nonzero = ids.filter((v) => v);
+    if (!nonzero.length) return null;
+    // crop bounding box
+    let minR = h, maxR = -1, minC = w, maxC = -1;
+    for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) if (ids[r * w + c]) { if (r < minR) minR = r; if (r > maxR) maxR = r; if (c < minC) minC = c; if (c > maxC) maxC = c; }
+    const ch = maxR - minR + 1, cw = maxC - minC + 1;
+    const crop = [];
+    for (let r = 0; r < ch; r++) { const row = []; for (let c = 0; c < cw; c++) row.push(ids[(minR + r) * w + (minC + c)]); crop.push(row); }
+    for (const rec of RECIPES) {
+      if (rec.shapeless) {
+        const a = nonzero.slice().sort((x, y) => x - y), b = rec.shapeless.slice().sort((x, y) => x - y);
+        if (a.length === b.length && a.every((v, i) => v === b[i])) return rec.out;
+      } else {
+        const s = rec.shape;
+        if (s.length !== ch || s[0].length !== cw) continue;
+        let ok = true;
+        for (let r = 0; r < ch && ok; r++) for (let c = 0; c < cw; c++) if ((s[r][c] || 0) !== (crop[r][c] || 0)) { ok = false; break; }
+        if (ok) return rec.out;
+      }
+    }
+    return null;
+  }
+
   // Every teleport in the game shares this sound (ender pearl, portal, …).
   const TELEPORT_SFX = "SFX_008";
 
@@ -709,7 +773,7 @@
         if (to.dot(dir) < 0.82) continue;
         if (d < bestD) { bestD = d; best = m; }
       }
-      if (best) { const dir2 = lookDir(); mobHurt(best, 4, dir2.x, dir2.z); return true; }
+      if (best) { const dir2 = lookDir(); const t = TOOLS[hotbar[selected]]; mobHurt(best, t ? t.atk : 4, dir2.x, dir2.z); return true; }
       return false;
     }
     function updateMobs(dt) {
@@ -778,6 +842,9 @@
     let mining = null, mineHeld = false;
     function tryPlace() {
       if (player.dead || invOpen) return;
+      // right-clicking an interactable block opens it instead of placing
+      const aim = currentTarget();
+      if (aim) { const tb = BLOCKS[getBlock(aim.x, aim.y, aim.z)]; if (tb && tb.interact === "craft") { openContainer("table"); return; } if (tb && tb.interact === "furnace") { openContainer("furnace", { x: aim.x, y: aim.y, z: aim.z }); return; } }
       const heldId = hotbar[selected];
       if (heldId && ITEMS[heldId]) { if (heldId === ENDER_PEARL) throwPearl(); return; }
       const hit = currentTarget();
@@ -812,55 +879,175 @@
       if (!b || (!b.solid && !b.plant) || b.hardness === Infinity) { mining = null; return; }
       if (!mining || mining.x !== hit.x || mining.y !== hit.y || mining.z !== hit.z) mining = { x: hit.x, y: hit.y, z: hit.z, progress: 0 };
       const hard = creative ? 0.05 : (b.hardness || 0.5);
-      mining.progress += (dt / 1000) / hard;
+      const t = TOOLS[hotbar[selected]];
+      mining.progress += (dt / 1000) / hard * (t ? t.mult : 1);
       if (mining.progress >= 1) breakBlockAt(hit.x, hit.y, hit.z);
     }
 
-    // ---------- inventory (E) — vanilla layout + JEI item panel ----------
-    let invOpen = false, invQuery = "";
-    function toggleInv() { invOpen ? closeInv() : openInv(); }
-    function openInv() {
-      invOpen = true;
+    // ---------- containers: inventory / crafting table / furnace ----------
+    let invOpen = false, invQuery = "", uiMode = null, uiPos = null;
+    let cursor = null;                 // {id,count} held on the pointer
+    let craftGrid = [], craftW = 2;    // stacks or 0
+    const furnaceMap = new Map();      // "x,y,z" -> smelting state
+    let furnaceEls = null, lastFurnaceSig = null;
+    const gameRoot = body.querySelector(".mc-game3d");
+    const cursorEl = document.createElement("div"); cursorEl.className = "mci-cursor"; cursorEl.style.display = "none"; gameRoot.appendChild(cursorEl);
+
+    function furnaceAt(pos) { const k = pos.x + "," + pos.y + "," + pos.z; let f = furnaceMap.get(k); if (!f) { f = { input: null, fuel: null, out: null, progress: 0, burn: 0, burnMax: 0, _prog: 0 }; furnaceMap.set(k, f); } return f; }
+    function removeAll(id) { const n = inv[id] || 0; delete inv[id]; const hi = hotbar.indexOf(id); if (hi >= 0) hotbar.splice(hi, 1); return n; }
+    function give(id, n) { addItem(id, n); }
+
+    function swatchEl(id) {
+      const b = meta(id);
+      if (b && b.tex) { const img = document.createElement("img"); img.className = "mci-sw"; img.src = "assets/mc_" + b.tex + ".png"; img.onerror = () => { const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = b.color || "#888"; img.replaceWith(s); }; return img; }
+      const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = (b && b.color) || "#888"; return s;
+    }
+    function slotNode(stack, cls) {
+      const d = document.createElement("div"); d.className = "mci-slot " + (cls || "");
+      if (stack && stack.id) {
+        const b = meta(stack.id); if (b) d.title = b.name;
+        d.appendChild(swatchEl(stack.id));
+        if (stack.count && stack.count !== Infinity && stack.count > 1) { const c = document.createElement("span"); c.className = "mci-c"; c.textContent = stack.count; d.appendChild(c); }
+      } else d.classList.add("mci-empty");
+      return d;
+    }
+
+    function openContainer(mode, pos) {
+      invOpen = true; uiMode = mode; uiPos = pos || null; lastFurnaceSig = null;
+      craftW = mode === "table" ? 3 : 2;
+      if (mode === "inv" || mode === "table") craftGrid = new Array(craftW * craftW).fill(0);
       if (document.pointerLockElement === canvas) document.exitPointerLock();
-      renderInv();
-      invEl.style.display = "flex";
+      renderUI(); invEl.style.display = "flex";
     }
-    function closeInv() { invOpen = false; invEl.style.display = "none"; }
-    function invSlot(id, cnt) {
-      const b = id ? meta(id) : null;
-      const sw = b ? (b.tex ? `<img class="mci-sw" src="assets/mc_${b.tex}.png" alt="" onerror="this.outerHTML='<span class=\\'mci-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mci-sw" style="background:${b.color || "#888"}"></span>`) : "";
-      return `<div class="mci-slot" title="${b ? b.name : ""}">${sw}${b && cnt !== Infinity && cnt != null ? `<span class="mci-c">${cnt}</span>` : ""}</div>`;
+    function openInv() { openContainer("inv"); }
+    function toggleInv() { invOpen ? closeInv() : openInv(); }
+    function dumpGrid() { craftGrid.forEach((s) => { if (s) give(s.id, s.count); }); craftGrid = craftGrid.map(() => 0); }
+    function closeInv() {
+      if (uiMode === "inv" || uiMode === "table") dumpGrid();
+      if (cursor) { give(cursor.id, cursor.count); cursor = null; }
+      invOpen = false; uiMode = null; uiPos = null; invEl.style.display = "none"; cursorEl.style.display = "none"; drawHotbar();
     }
-    function renderInv() {
+
+    function craftResult() { return matchRecipe(craftGrid.map((s) => s ? s.id : 0), craftW, craftW); }
+    function doCraft() {
+      const res = craftResult(); if (!res) return;
+      if (cursor && cursor.id !== res[0]) return;
+      cursor = cursor ? { id: res[0], count: cursor.count + res[1] } : { id: res[0], count: res[1] };
+      craftGrid = craftGrid.map((s) => { if (!s) return 0; s.count--; return s.count > 0 ? s : 0; });
+      renderUI();
+    }
+    function clickInvItem(id) {
+      if (cursor) { give(cursor.id, cursor.count); cursor = null; }
+      else if (id && inv[id] > 0) { const n = inv[id] === Infinity ? 64 : removeAll(id); cursor = { id, count: n }; }
+      renderUI();
+    }
+    function clickCell(i) {
+      const cell = craftGrid[i];
+      if (cursor) {
+        if (!cell) { craftGrid[i] = { id: cursor.id, count: 1 }; cursor.count--; if (cursor.count <= 0) cursor = null; }
+        else if (cell.id === cursor.id) { cell.count++; cursor.count--; if (cursor.count <= 0) cursor = null; }
+        else { craftGrid[i] = { id: cursor.id, count: 1 }; cursor = { id: cell.id, count: cell.count }; }
+      } else if (cell) { cursor = { id: cell.id, count: cell.count }; craftGrid[i] = 0; }
+      renderUI();
+    }
+    function clickFurnace(slot) {
+      const f = furnaceAt(uiPos);
+      if (slot === 2) { if (f.out) { if (!cursor) { cursor = { id: f.out.id, count: f.out.count }; f.out = null; } else if (cursor.id === f.out.id) { cursor.count += f.out.count; f.out = null; } } lastFurnaceSig = null; renderUI(); return; }
+      const key = slot === 0 ? "input" : "fuel";
+      if (cursor) { if (!f[key]) { f[key] = { id: cursor.id, count: cursor.count }; cursor = null; } else if (f[key].id === cursor.id) { f[key].count += cursor.count; cursor = null; } else { const t = f[key]; f[key] = { id: cursor.id, count: cursor.count }; cursor = { id: t.id, count: t.count }; } }
+      else if (f[key]) { cursor = { id: f[key].id, count: f[key].count }; f[key] = null; }
+      lastFurnaceSig = null; renderUI();
+    }
+
+    function buildInvGrids() {
+      const wrap = document.createElement("div");
       const owned = Object.keys(inv).filter((id) => inv[id] > 0 && !hotbar.includes(+id));
+      const main = document.createElement("div"); main.className = "mci-main";
+      for (let i = 0; i < 27; i++) { const id = +owned[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); if (id) n.onclick = () => clickInvItem(id); main.appendChild(n); }
+      const hot = document.createElement("div"); hot.className = "mci-hotrow";
+      for (let i = 0; i < 9; i++) { const id = hotbar[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); if (id) n.onclick = () => clickInvItem(id); hot.appendChild(n); }
+      wrap.append(main, hot); return wrap;
+    }
+    function buildCraft(panel) {
+      const top = document.createElement("div"); top.className = "mci-top";
+      if (uiMode === "inv") {
+        const left = document.createElement("div"); left.className = "mci-left";
+        const armor = document.createElement("div"); armor.className = "mci-armor";
+        for (let i = 0; i < 4; i++) armor.appendChild(slotNode(0));
+        const prev = document.createElement("div"); prev.className = "mci-preview";
+        const off = document.createElement("div"); off.className = "mci-off"; off.appendChild(slotNode(0));
+        left.append(armor, prev, off); top.appendChild(left);
+      }
+      const craftBox = document.createElement("div"); craftBox.className = "mci-craft";
+      const label = document.createElement("div"); label.className = "mci-craftlabel"; label.textContent = "Crafting"; craftBox.appendChild(label);
+      const row = document.createElement("div"); row.className = "mci-craftrow";
+      const grid = document.createElement("div"); grid.className = uiMode === "table" ? "mci-grid3" : "mci-grid2";
+      craftGrid.forEach((s, i) => { const n = slotNode(s); n.onclick = () => clickCell(i); grid.appendChild(n); });
+      const arrow = document.createElement("span"); arrow.className = "mci-arrow"; arrow.textContent = "→";
+      const r = craftResult();
+      const resNode = slotNode(r ? { id: r[0], count: r[1] } : 0, "mci-result"); resNode.onclick = () => doCraft();
+      row.append(grid, arrow, resNode); craftBox.appendChild(row); top.appendChild(craftBox);
+      panel.appendChild(top); panel.appendChild(buildInvGrids());
+    }
+    function buildFurnace(panel) {
+      const f = furnaceAt(uiPos);
+      const label = document.createElement("div"); label.className = "mci-craftlabel"; label.textContent = "Furnace";
+      const top = document.createElement("div"); top.className = "mci-top mci-furnace";
+      const col = document.createElement("div"); col.className = "mci-fcol";
+      const inSlot = slotNode(f.input); inSlot.onclick = () => clickFurnace(0);
+      const flame = document.createElement("div"); flame.className = "mci-flame" + (f.burn > 0 ? " lit" : "");
+      const fuelSlot = slotNode(f.fuel); fuelSlot.onclick = () => clickFurnace(1);
+      col.append(inSlot, flame, fuelSlot);
+      const arrowWrap = document.createElement("div"); arrowWrap.className = "mci-farrow";
+      const arrowFill = document.createElement("div"); arrowFill.className = "mci-farrow-fill"; arrowFill.style.width = Math.round((f._prog || 0) * 100) + "%"; arrowWrap.appendChild(arrowFill);
+      const outSlot = slotNode(f.out, "mci-result"); outSlot.onclick = () => clickFurnace(2);
+      top.append(col, arrowWrap, outSlot);
+      furnaceEls = { arrow: arrowFill, flame };
+      panel.append(label, top, buildInvGrids());
+    }
+    function buildJEI() {
       const q = invQuery.trim().toLowerCase();
       const all = Object.keys(BLOCKS).map(Number).filter((id) => BLOCKS[id].name !== "Air").concat(Object.keys(ITEMS).map(Number));
-      const jei = all.filter((id) => { const m = meta(id); return m && (!q || m.name.toLowerCase().includes(q)); });
-      invEl.innerHTML = `
-        <div class="mci-panel">
-          <div class="mci-top">
-            <div class="mci-left">
-              <div class="mci-armor">${[0, 0, 0, 0].map(() => `<div class="mci-slot mci-empty"></div>`).join("")}</div>
-              <div class="mci-preview"></div>
-              <div class="mci-off"><div class="mci-slot mci-empty"></div></div>
-            </div>
-            <div class="mci-craft">
-              <div class="mci-craftlabel">Crafting</div>
-              <div class="mci-craftrow"><div class="mci-grid2">${[0, 0, 0, 0].map(() => `<div class="mci-slot mci-empty"></div>`).join("")}</div><span class="mci-arrow">→</span><div class="mci-slot mci-empty mci-result"></div></div>
-            </div>
-          </div>
-          <div class="mci-main">${Array.from({ length: 27 }).map((_, i) => { const id = +owned[i]; return id ? invSlot(id, inv[id]) : `<div class="mci-slot mci-empty"></div>`; }).join("")}</div>
-          <div class="mci-hotrow">${Array.from({ length: 9 }).map((_, i) => { const id = hotbar[i]; return id ? invSlot(id, inv[id]) : `<div class="mci-slot mci-empty"></div>`; }).join("")}</div>
-        </div>
-        <div class="mci-jei">
-          <div class="mci-jei-head"><input class="mci-search" placeholder="Search items" value="${invQuery.replace(/"/g, "&quot;")}"><span class="mci-jei-x" title="Close">✕</span></div>
-          <div class="mci-jei-grid">${jei.map((id) => `<div class="mci-jslot" data-id="${id}" title="${meta(id).name}">${(function () { const b = meta(id); return b.tex ? `<img class="mci-sw" src="assets/mc_${b.tex}.png" alt="" onerror="this.style.background='${b.color || "#888"}'">` : `<span class="mci-sw" style="background:${b.color || "#888"}"></span>`; })()}</div>`).join("")}</div>
-          <div class="mci-jei-foot">${creative ? "Click an item to grab it" : "Item reference (JEI)"}</div>
-        </div>`;
-      const search = invEl.querySelector(".mci-search");
-      search.oninput = () => { invQuery = search.value; renderInv(); const s2 = invEl.querySelector(".mci-search"); s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); };
-      invEl.querySelector(".mci-jei-x").onclick = closeInv;
-      invEl.querySelectorAll(".mci-jslot").forEach((s) => s.onclick = () => { const id = +s.dataset.id; if (creative || true) { addItem(id, 1); renderInv(); } });
+      const list = all.filter((id) => { const m = meta(id); return m && (!q || m.name.toLowerCase().includes(q)); });
+      const wrap = document.createElement("div"); wrap.className = "mci-jei";
+      const head = document.createElement("div"); head.className = "mci-jei-head";
+      const input = document.createElement("input"); input.className = "mci-search"; input.placeholder = "Search items"; input.value = invQuery;
+      input.oninput = () => { invQuery = input.value; renderUI(); const s = invEl.querySelector(".mci-search"); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } };
+      const x = document.createElement("span"); x.className = "mci-jei-x"; x.textContent = "✕"; x.onclick = closeInv;
+      head.append(input, x);
+      const grid = document.createElement("div"); grid.className = "mci-jei-grid";
+      list.forEach((id) => { const n = document.createElement("div"); n.className = "mci-jslot"; n.title = meta(id).name; n.appendChild(swatchEl(id)); n.onclick = () => { if (cursor && cursor.id === id) cursor.count++; else cursor = { id, count: 1 }; renderUI(); }; grid.appendChild(n); });
+      const foot = document.createElement("div"); foot.className = "mci-jei-foot"; foot.textContent = creative ? "Click to grab items" : "Click to grab (JEI)";
+      wrap.append(head, grid, foot); return wrap;
+    }
+    function positionCursor() {
+      if (!cursor) { cursorEl.style.display = "none"; return; }
+      cursorEl.style.display = "flex"; cursorEl.innerHTML = ""; cursorEl.appendChild(swatchEl(cursor.id));
+      if (cursor.count > 1 && cursor.count !== Infinity) { const c = document.createElement("span"); c.className = "mci-c"; c.textContent = cursor.count; cursorEl.appendChild(c); }
+    }
+    function renderUI() {
+      invEl.innerHTML = "";
+      const panel = document.createElement("div"); panel.className = "mci-panel";
+      if (uiMode === "furnace") buildFurnace(panel); else buildCraft(panel);
+      invEl.appendChild(panel); invEl.appendChild(buildJEI());
+      positionCursor();
+    }
+    document.addEventListener("mousemove", (e) => { if (!invOpen || !cursor) return; const r = gameRoot.getBoundingClientRect(); cursorEl.style.left = (e.clientX - r.left - 15) + "px"; cursorEl.style.top = (e.clientY - r.top - 15) + "px"; });
+    invEl && invEl.addEventListener("touchmove", (e) => { if (!cursor) return; const t = e.touches[0]; if (!t) return; const r = gameRoot.getBoundingClientRect(); cursorEl.style.left = (t.clientX - r.left - 15) + "px"; cursorEl.style.top = (t.clientY - r.top - 15) + "px"; }, { passive: true });
+
+    const SMELT_TIME = 2000;
+    function smeltTick(dt) {
+      if (uiMode !== "furnace" || !uiPos) return;
+      const f = furnaceAt(uiPos);
+      const outId = f.input ? SMELT[f.input.id] : null;
+      const canSmelt = outId != null && (!f.out || f.out.id === outId);
+      if (f.burn <= 0 && canSmelt && f.fuel && FUEL[f.fuel.id] != null) { f.burn = FUEL[f.fuel.id] * SMELT_TIME; f.burnMax = f.burn; f.fuel.count--; if (f.fuel.count <= 0) f.fuel = null; }
+      if (f.burn > 0) { f.burn = Math.max(0, f.burn - dt); if (canSmelt) { f.progress += dt; if (f.progress >= SMELT_TIME) { f.progress = 0; f.input.count--; if (f.input.count <= 0) f.input = null; if (!f.out) f.out = { id: outId, count: 1 }; else f.out.count++; } } else f.progress = Math.max(0, f.progress - dt); }
+      else f.progress = Math.max(0, f.progress - dt);
+      f._prog = f.progress / SMELT_TIME;
+      const sig = (f.input ? f.input.id + "x" + f.input.count : "-") + "|" + (f.fuel ? f.fuel.id + "x" + f.fuel.count : "-") + "|" + (f.out ? f.out.id + "x" + f.out.count : "-");
+      if (sig !== lastFurnaceSig) { lastFurnaceSig = sig; renderUI(); }
+      else if (furnaceEls) { furnaceEls.arrow.style.width = Math.round(f._prog * 100) + "%"; furnaceEls.flame.className = "mci-flame" + (f.burn > 0 ? " lit" : ""); }
     }
 
     // ---------- input ----------
@@ -994,7 +1181,7 @@
     let raf, last = 0, fpsT = 0, frames = 0;
     function loop(ts) {
       const dt = Math.min(50, ts - last); last = ts;
-      step(dt); updateSurvival(dt); updateMining(dt); updateMobs(dt); spawnTick(dt); updateChunks(2);
+      step(dt); updateSurvival(dt); updateMining(dt); updateMobs(dt); spawnTick(dt); updateChunks(2); smeltTick(dt);
 
       const eye = eyePos(), dir = lookDir();
       camera.position.copy(eye);
