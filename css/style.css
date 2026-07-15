@@ -2993,3 +2993,11 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cop-card-s { font-size: .8rem; color: #8a8a8a; }
 .cop-m365 .cop-prompt { border: 1px solid #e0e0e0; border-radius: 16px; margin: 0 20px 18px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .cop-m365 .cop-ta { color: #1f1f1f; }
+
+/* FlightStats airline logos */
+.fs-card-id { display: flex; align-items: center; gap: 12px; }
+.fs-card-logo { height: 34px; width: 42px; object-fit: contain; }
+.fs-flcell { }
+.fs-flcell > span { display: inline-flex; flex-direction: column; vertical-align: middle; }
+.fs-row-logo { height: 20px; width: 26px; object-fit: contain; margin-right: 8px; vertical-align: middle; }
+.fs-table td.fs-flcell { display: flex; align-items: center; }

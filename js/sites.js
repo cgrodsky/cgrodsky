@@ -1526,8 +1526,11 @@
   const AIRLINES = {
     UA: "United", AA: "American", DL: "Delta", WN: "Southwest", B6: "JetBlue",
     AS: "Alaska", NK: "Spirit", F9: "Frontier", BA: "British Airways", LH: "Lufthansa",
-    AF: "Air France", EK: "Emirates", QF: "Qantas", AC: "Air Canada",
+    AF: "Air France", EK: "Emirates", QF: "Qantas", AC: "Air Canada", EY: "Etihad",
   };
+  // Airline logos we have art for (IATA code -> file).
+  const AIRLINE_LOGO = { UA: "airline_ua.png", DL: "airline_dl.png", AC: "airline_ac.png", AA: "airline_aa.png", EY: "airline_ey.png", WN: "airline_wn.png" };
+  function airlineLogo(code, cls) { const f = AIRLINE_LOGO[code]; return f ? `<img class="${cls || "fs-logo-img"}" src="assets/${f}" alt="">` : ""; }
   const AIRPORTS = {
     JFK: ["New York", "John F. Kennedy Intl"], LAX: ["Los Angeles", "Los Angeles Intl"],
     ORD: ["Chicago", "O'Hare Intl"], ATL: ["Atlanta", "Hartsfield-Jackson"],
@@ -1579,7 +1582,7 @@
       const carrier = fsPick(Object.keys(AIRLINES), seed);
       let d = seed % AIRPORT_CODES.length; if (AIRPORT_CODES[d] === ac) d = (d + 1) % AIRPORT_CODES.length;
       rows.push({
-        flight: carrier + (seed % 900 + 100), airline: AIRLINES[carrier],
+        flight: carrier + (seed % 900 + 100), airline: AIRLINES[carrier], carrier,
         dest: AIRPORT_CODES[d], destName: (AIRPORTS[AIRPORT_CODES[d]] || [""])[0],
         time: fsTime(6 * 60 + i * 42 + (seed % 15)),
         gate: String.fromCharCode(65 + (seed % 6)) + (seed % 30 + 1),
@@ -1588,28 +1591,55 @@
     }
     return { airport: ac, name: (AIRPORTS[ac] || [ac, "Airport"])[1], rows };
   }
-  // API hooks — replace the body once window.FLIGHT_API is provided.
-  async function fetchFlight(no) {
+  // Build an AviationStack request, routed through the HTTPS proxy so an HTTPS
+  // page can reach the HTTP-only free tier.
+  function aviationURL(params) {
     const cfg = window.FLIGHT_API;
-    if (cfg && cfg.base && cfg.key) {
-      try {
-        const r = await fetch(cfg.base + "/flights?access_key=" + cfg.key + "&flight_iata=" + encodeURIComponent(no.replace(/\s+/g, "")));
-        const j = await r.json(); const f = j && j.data && j.data[0];
-        if (f) return {
-          airline: (f.airline && f.airline.name) || "", carrier: (f.flight && f.flight.iata || "").slice(0, 2), flight: (f.flight && f.flight.iata) || no,
-          status: STATUSES.find((s) => s.label.toLowerCase() === (f.flight_status || "").toLowerCase()) || STATUSES.find((s) => s.k === (f.flight_status === "active" ? "departed" : f.flight_status === "scheduled" ? "ontime" : f.flight_status)) || STATUSES[0],
-          origin: (f.departure && f.departure.iata) || "", dest: (f.arrival && f.arrival.iata) || "",
-          originName: (f.departure && f.departure.airport) || "", destName: (f.arrival && f.arrival.airport) || "",
-          dep: f.departure && f.departure.scheduled ? new Date(f.departure.scheduled).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "",
-          arr: f.arrival && f.arrival.scheduled ? new Date(f.arrival.scheduled).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "",
-          gate: (f.departure && f.departure.gate) || "—", termina: (f.departure && f.departure.terminal) || "—",
-          aircraft: (f.aircraft && f.aircraft.iata) || "—", progress: f.flight_status === "landed" ? 100 : f.flight_status === "active" ? 50 : 0, delay: (f.departure && f.departure.delay) || 0,
-        };
-      } catch (_) { /* fall through to placeholder */ }
-    }
-    return mockFlight(no);
+    const qs = Object.keys(params).map((k) => k + "=" + encodeURIComponent(params[k])).join("&");
+    const target = cfg.http + "/flights?access_key=" + cfg.key + "&" + qs;
+    return cfg.proxy ? cfg.proxy + encodeURIComponent(target) : target;
   }
-  async function fetchDepartures(code) { return mockDepartures(code); }  // wire real API here when available
+  function fetchTimeout(url, ms) { return Promise.race([fetch(url), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]); }
+  const AV_STATUS = { scheduled: "ontime", active: "departed", landed: "landed", cancelled: "cancelled", incident: "delayed", diverted: "delayed" };
+  function avTime(iso) { try { return iso ? new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""; } catch (_) { return ""; } }
+  function parseFlight(f, fallbackNo) {
+    const carrier = ((f.flight && f.flight.iata) || "").slice(0, 2);
+    const st = STATUSES.find((s) => s.k === AV_STATUS[f.flight_status]) || STATUSES[0];
+    return {
+      airline: (f.airline && f.airline.name) || AIRLINES[carrier] || carrier, carrier, flight: (f.flight && f.flight.iata) || fallbackNo,
+      status: st, origin: (f.departure && f.departure.iata) || "", dest: (f.arrival && f.arrival.iata) || "",
+      originName: (f.departure && f.departure.airport) || "", destName: (f.arrival && f.arrival.airport) || "",
+      dep: avTime(f.departure && f.departure.scheduled), arr: avTime(f.arrival && f.arrival.scheduled),
+      gate: (f.departure && f.departure.gate) || "—", termina: (f.departure && f.departure.terminal) || "—",
+      aircraft: (f.aircraft && (f.aircraft.iata || f.aircraft.icao)) || "—",
+      progress: f.flight_status === "landed" ? 100 : f.flight_status === "active" ? 55 : 0, delay: (f.departure && f.departure.delay) || 0,
+    };
+  }
+  async function fetchFlight(no) {
+    const cfg = window.FLIGHT_API, iata = no.replace(/\s+/g, "").toUpperCase();
+    if (cfg && cfg.key) {
+      try {
+        const r = await fetchTimeout(aviationURL({ flight_iata: iata }), 8000);
+        const j = await r.json(); const f = j && j.data && j.data[0];
+        if (f) return parseFlight(f, iata);
+      } catch (_) { /* fall through */ }
+    }
+    return mockFlight(iata);
+  }
+  async function fetchDepartures(code) {
+    const cfg = window.FLIGHT_API, ac = (code || "JFK").replace(/\s+/g, "").toUpperCase();
+    if (cfg && cfg.key) {
+      try {
+        const r = await fetchTimeout(aviationURL({ dep_iata: ac, limit: 20 }), 8000);
+        const j = await r.json(); const arr = j && j.data;
+        if (arr && arr.length) return {
+          airport: ac, name: (arr[0].departure && arr[0].departure.airport) || ac,
+          rows: arr.slice(0, 14).map((f) => { const p = parseFlight(f, ""); return { flight: p.flight, airline: p.airline, carrier: p.carrier, dest: p.dest, destName: p.destName, time: p.dep, gate: p.gate, status: p.status }; }),
+        };
+      } catch (_) { /* fall through */ }
+    }
+    return mockDepartures(ac);
+  }
 
   function flightStats(ctx) {
     const esc = escapeHtml;
@@ -1625,8 +1655,9 @@
     </div>`;
     const main = page.querySelector(".fs-main");
     const apiEl = page.querySelector("#fsApi");
-    apiEl.textContent = window.FLIGHT_API && window.FLIGHT_API.key ? "● Live data" : "● Demo data";
-    apiEl.className = "fs-api " + (window.FLIGHT_API && window.FLIGHT_API.key ? "live" : "");
+    const live = !!(window.FLIGHT_API && window.FLIGHT_API.key);
+    apiEl.textContent = live ? "● Live flight data" : "● Demo data";
+    apiEl.className = "fs-api " + (live ? "live" : "");
     let tab = "track";
     page.querySelectorAll(".fs-nav").forEach((b) => b.onclick = () => { tab = b.dataset.t; page.querySelectorAll(".fs-nav").forEach((x) => x.classList.toggle("on", x === b)); render(); });
 
@@ -1645,7 +1676,7 @@
         out.innerHTML = `<div class="fs-loading">Looking up ${esc(v.toUpperCase())}…</div>`;
         const f = await fetchFlight(v);
         out.innerHTML = `<div class="fs-card">
-          <div class="fs-card-top"><div><div class="fs-fl">${esc(f.flight)}</div><div class="fs-al">${esc(f.airline)}</div></div>${badge(f.status)}</div>
+          <div class="fs-card-top"><div class="fs-card-id">${airlineLogo(f.carrier, "fs-card-logo")}<div><div class="fs-fl">${esc(f.flight)}</div><div class="fs-al">${esc(f.airline)}</div></div></div>${badge(f.status)}</div>
           <div class="fs-route">
             <div class="fs-ep"><div class="fs-code">${esc(f.origin)}</div><div class="fs-city">${esc(f.originName)}</div><div class="fs-t">${esc(f.dep)}</div></div>
             <div class="fs-line"><div class="fs-line-fill" style="width:${f.progress}%"></div><span class="fs-plane" style="left:${f.progress}%">✈</span></div>
@@ -1676,7 +1707,7 @@
         const b = await fetchDepartures(v);
         out.innerHTML = `<div class="fs-board-h">${esc(b.airport)} — ${esc(b.name)}</div>
           <table class="fs-table"><thead><tr><th>Time</th><th>Flight</th><th>Destination</th><th>Gate</th><th>Status</th></tr></thead>
-          <tbody>${b.rows.map((r) => `<tr><td>${esc(r.time)}</td><td><b>${esc(r.flight)}</b><span class="fs-al2">${esc(r.airline)}</span></td><td>${esc(r.destName)} (${esc(r.dest)})</td><td>${esc(r.gate)}</td><td>${badge(r.status)}</td></tr>`).join("")}</tbody></table>`;
+          <tbody>${b.rows.map((r) => `<tr><td>${esc(r.time)}</td><td class="fs-flcell">${airlineLogo(r.carrier, "fs-row-logo")}<span><b>${esc(r.flight)}</b><span class="fs-al2">${esc(r.airline)}</span></span></td><td>${esc(r.destName)} (${esc(r.dest)})</td><td>${esc(r.gate)}</td><td>${badge(r.status)}</td></tr>`).join("")}</tbody></table>`;
       };
       go.onclick = run; input.onkeydown = (e) => { if (e.key === "Enter") run(); };
       run();
