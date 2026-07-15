@@ -2213,6 +2213,34 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .cf-install:hover { filter: brightness(1.08); }
 .cf-install.done { background: #2f3036; color: #6ddf6d; }
 .cf-empty { text-align: center; padding: 50px; color: #7d8088; }
+.cf-card-click { cursor: pointer; }
+.cf-ic-svg { padding: 0; overflow: hidden; }
+.cf-ic-svg svg { display: block; }
+
+/* CurseForge — mod detail modal */
+.cf-modal-ov { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 40; }
+.cf-modal { width: min(720px, 92%); max-height: 90%; background: #17181c; border: 1px solid #2a2b30; border-radius: 14px; overflow: hidden auto; position: relative; color: #e6e7ea; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+.cf-modal-x { position: absolute; top: 10px; right: 12px; z-index: 3; background: rgba(0,0,0,.35); border: 0; color: #fff; width: 30px; height: 30px; border-radius: 50%; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+.cf-modal-x:hover { background: rgba(0,0,0,.6); }
+.cf-md-hero { height: 110px; background: linear-gradient(120deg, var(--cfc), #101114 90%); }
+.cf-md-head { display: flex; align-items: flex-end; gap: 16px; padding: 0 22px 16px; margin-top: -34px; position: relative; }
+.cf-md-ic { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 2rem; background: #2a2b30; border: 3px solid #17181c; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.cf-md-ic.cf-ic-svg { padding: 0; overflow: hidden; }
+.cf-md-titles { flex: 1; min-width: 0; padding-bottom: 2px; }
+.cf-md-titles h2 { margin: 0; font-size: 1.4rem; }
+.cf-md-by { font-size: .84rem; color: #9a9da4; margin-top: 3px; }
+.cf-md-stats { display: flex; gap: 16px; margin-top: 7px; align-items: center; }
+.cf-md-mc { font-size: .74rem; color: #8a8d94; }
+.cf-md-install { flex: 0 0 auto; background: #f16436; color: #fff; border: 0; padding: 11px 26px; border-radius: 9px; cursor: pointer; font-weight: 700; font-size: .9rem; align-self: center; }
+.cf-md-install:hover { filter: brightness(1.08); }
+.cf-md-install.done { background: #23331f; color: #6ddf6d; }
+.cf-md-body { padding: 4px 22px 26px; }
+.cf-md-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.cf-shot { position: relative; aspect-ratio: 16/10; border-radius: 9px; overflow: hidden; background: linear-gradient(140deg, var(--cfc), #0c0d10); border: 1px solid #2a2b30; }
+.cf-shot-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px); background-size: 16px 16px; opacity: .5; }
+.cf-shot-cap { position: absolute; left: 8px; bottom: 7px; right: 8px; font-size: .68rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.7); font-weight: 600; }
+.cf-md-body h3 { margin: 0 0 8px; font-size: 1rem; }
+.cf-md-desc { margin: 0; font-size: .9rem; line-height: 1.6; color: #c2c4c9; }
 
 /* ============================ Xbox (Game Pass) ============================ */
 .xb-host { padding: 0; }
