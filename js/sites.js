@@ -1529,7 +1529,7 @@
     AF: "Air France", EK: "Emirates", QF: "Qantas", AC: "Air Canada", EY: "Etihad",
   };
   // Airline logos we have art for (IATA code -> file).
-  const AIRLINE_LOGO = { UA: "airline_ua.png", DL: "airline_dl.png", AC: "airline_ac.png", AA: "airline_aa.png", EY: "airline_ey.png", WN: "airline_wn.png" };
+  const AIRLINE_LOGO = { UA: "airline_ua.png", DL: "airline_dl.png", AC: "airline_ac.png", AA: "airline_aa.png", EY: "airline_ey.png", WN: "airline_wn.png", B6: "airline_b6.png" };
   function airlineLogo(code, cls) { const f = AIRLINE_LOGO[code]; return f ? `<img class="${cls || "fs-logo-img"}" src="assets/${f}" alt="">` : ""; }
   const AIRPORTS = {
     JFK: ["New York", "John F. Kennedy Intl"], LAX: ["Los Angeles", "Los Angeles Intl"],
@@ -1541,6 +1541,37 @@
     PHX: ["Phoenix", "Sky Harbor"], EWR: ["Newark", "Liberty Intl"],
   };
   const AIRPORT_CODES = Object.keys(AIRPORTS);
+  // Lat/lon for the map (major airports; unknown codes simply skip the map).
+  const AIRPORT_COORDS = {
+    JFK: [-73.7781, 40.6413], LAX: [-118.4085, 33.9416], ORD: [-87.9073, 41.9742], ATL: [-84.4277, 33.6407],
+    SFO: [-122.3790, 37.6213], DFW: [-97.0403, 32.8998], DEN: [-104.6737, 39.8561], SEA: [-122.3088, 47.4502],
+    MIA: [-80.2870, 25.7959], BOS: [-71.0096, 42.3656], LHR: [-0.4543, 51.4700], LAS: [-115.1537, 36.0840],
+    PHX: [-112.0116, 33.4342], EWR: [-74.1745, 40.6895], LGA: [-73.8740, 40.7769], CDG: [2.5479, 49.0097],
+    MCO: [-81.3081, 28.4312], IAH: [-95.3368, 29.9902], CLT: [-80.9431, 35.2140], PHL: [-75.2424, 39.8744],
+    MSP: [-93.2223, 44.8848], DTW: [-83.3554, 42.2162], FLL: [-80.1506, 26.0742], DCA: [-77.0402, 38.8512],
+    SLC: [-111.9791, 40.7899], BWI: [-76.6684, 39.1774], SAN: [-117.1933, 32.7338], TPA: [-82.5332, 27.9755],
+    PDX: [-122.5951, 45.5898], HNL: [-157.9251, 21.3245], AMS: [4.7683, 52.3105], FRA: [8.5622, 50.0379],
+    MAD: [-3.5676, 40.4983], BCN: [2.0833, 41.2974], FCO: [12.2389, 41.8003], DXB: [55.3657, 25.2532],
+    AUH: [54.6511, 24.4330], NRT: [140.3929, 35.7720], HND: [139.7798, 35.5494], SYD: [151.1753, -33.9399],
+    YYZ: [-79.6248, 43.6777], YVR: [-123.1815, 49.1967], MEX: [-99.0721, 19.4363], GRU: [-46.4731, -23.4356],
+    MDE: [-75.4231, 6.1645], LGG: [5.4432, 50.6374], MUC: [11.7861, 48.3538], SVO: [37.4146, 55.9726],
+  };
+  // Great-circle interpolation for a nicely arced route line.
+  function toRad(d) { return d * Math.PI / 180; } function toDeg(r) { return r * 180 / Math.PI; }
+  function greatCircle(a, b, n) {
+    const lon1 = toRad(a[0]), lat1 = toRad(a[1]), lon2 = toRad(b[0]), lat2 = toRad(b[1]);
+    const d = 2 * Math.asin(Math.sqrt(Math.sin((lat2 - lat1) / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2));
+    if (!d) return [a, b];
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const f = i / n, A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+      const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+      const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+      const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+      pts.push([toDeg(Math.atan2(y, x)), toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)))]);
+    }
+    return pts;
+  }
   const STATUSES = [
     { k: "ontime", label: "On Time", c: "#16a34a" },
     { k: "boarding", label: "Boarding", c: "#2563eb" },
@@ -1688,10 +1719,36 @@
             <div><span>Aircraft</span><b>${esc(f.aircraft)}</b></div>
             <div><span>${f.delay ? "Delay" : "Scheduled"}</span><b>${f.delay ? f.delay + " min" : "On schedule"}</b></div>
           </div>
+          <div class="fs-map" id="fsMap"></div>
         </div>`;
+        drawMap(out.querySelector("#fsMap"), f);
       };
       go.onclick = run; input.onkeydown = (e) => { if (e.key === "Enter") run(); };
       if (no) run();
+    }
+
+    function drawMap(elMap, f) {
+      const o = AIRPORT_COORDS[f.origin], d = AIRPORT_COORDS[f.dest];
+      if (!window.maplibregl || !o || !d) { elMap.style.display = "none"; return; }
+      try {
+        const map = new maplibregl.Map({
+          container: elMap, attributionControl: false, interactive: true,
+          style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png", "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png", "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] },
+          center: [(o[0] + d[0]) / 2, (o[1] + d[1]) / 2], zoom: 2,
+        });
+        map.on("load", () => {
+          const line = greatCircle(o, d, 64);
+          map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: { type: "LineString", coordinates: line } } });
+          map.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#38bdf8", "line-width": 2.5, "line-dasharray": [2, 1.6] } });
+          new maplibregl.Marker({ color: "#22c55e" }).setLngLat(o).addTo(map);
+          new maplibregl.Marker({ color: "#ef4444" }).setLngLat(d).addTo(map);
+          const t = Math.max(0, Math.min(1, (f.progress || 0) / 100));
+          const pp = line[Math.round(t * (line.length - 1))];
+          if (pp && f.progress > 0 && f.progress < 100) { const pe = document.createElement("div"); pe.className = "fs-map-plane"; pe.textContent = "✈"; new maplibregl.Marker({ element: pe }).setLngLat(pp).addTo(map); }
+          const bounds = new maplibregl.LngLatBounds(o, o); bounds.extend(d);
+          map.fitBounds(bounds, { padding: 46, maxZoom: 6, duration: 0 });
+        });
+      } catch (_) { elMap.style.display = "none"; }
     }
 
     function renderBoard(code) {

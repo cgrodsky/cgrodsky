@@ -3001,3 +3001,9 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .fs-flcell > span { display: inline-flex; flex-direction: column; vertical-align: middle; }
 .fs-row-logo { height: 20px; width: 26px; object-fit: contain; margin-right: 8px; vertical-align: middle; }
 .fs-table td.fs-flcell { display: flex; align-items: center; }
+
+/* FlightStats route map */
+.fs-map { height: 260px; margin-top: 18px; border-radius: 12px; overflow: hidden; border: 1px solid #334155; background: #0b1220; }
+.fs-map .maplibregl-marker { will-change: transform; }
+.fs-map-plane { font-size: 20px; color: #fff; text-shadow: 0 0 4px #000; transform: rotate(45deg); }
+.fs-card { max-width: 680px; }
