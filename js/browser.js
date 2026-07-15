@@ -12,6 +12,7 @@
     "discord": "discord", "discord.local": "discord", "discord.com": "discord",
     "duolingo": "duolingo", "duolingo.local": "duolingo", "duolingo.com": "duolingo",
     "netflix": "netflix", "netflix.local": "netflix", "netflix.com": "netflix",
+    "flightstats": "flightstats", "flightstats.local": "flightstats", "flightstats.com": "flightstats", "flights": "flightstats",
   };
 
   function resolveSpecial(input) {
