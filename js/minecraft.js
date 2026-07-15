@@ -80,6 +80,8 @@
 
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
+  // Bump when a mc_*.png texture changes — images aren't covered by index.html's ?v=
+  const TEXV = "2";
   const ITEMS = {
     200: { name: "Ender Pearl", color: "#14c7a8", item: true, tex: "ender_pearl" },
     201: { name: "Stick", color: "#b08a52", item: true, tex: "stick" },
@@ -392,7 +394,7 @@
         side: b.plant ? THREE.DoubleSide : THREE.FrontSide,
       });
       if (texKey) {
-        new THREE.TextureLoader().load("assets/mc_" + texKey + ".png", (tex) => {
+        new THREE.TextureLoader().load("assets/mc_" + texKey + ".png?v=" + TEXV, (tex) => {
           tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
           textures[texKey] = tex; m.map = tex; m.color.setHex(0xffffff); m.needsUpdate = true;
         }, undefined, () => {});
@@ -620,15 +622,14 @@
 
     const inv = {};
     let hotbar = [], selected = 0;
-    if (creative) { hotbar = [1, 3, 4, 7, 18, 19, 25, 20]; hotbar.forEach((id) => inv[id] = Infinity); }
-    hotbar.push(ENDER_PEARL);
-    inv[ENDER_PEARL] = creative ? Infinity : 16;
+    if (creative) { hotbar = [1, 3, 4, 7, 18, 19, 25, 20, ENDER_PEARL]; hotbar.forEach((id) => inv[id] = Infinity); }
+    // survival: start with an empty inventory (no items)
     const meta = (id) => BLOCKS[id] || ITEMS[id] || null;
     const hbEl = body.querySelector(".mc-hotbar");
     function addItem(id, n) { if (!id) return; inv[id] = (inv[id] === Infinity ? Infinity : (inv[id] || 0) + n); if (!hotbar.includes(id) && hotbar.length < 9) hotbar.push(id); drawHotbar(); }
     function slotHtml(id, cnt, i, sel) {
       const b = id ? meta(id) : null;
-      const sw = b ? (b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "";
+      const sw = b ? (b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png?v=${TEXV}" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "";
       return `<div class="mc-slot ${i === sel ? "sel" : ""}" data-i="${i}" title="${b ? b.name : ""}">${sw}${b && cnt !== Infinity ? `<span class="mc-slot-c">${cnt}</span>` : ""}<span class="mc-slot-n">${i + 1}</span></div>`;
     }
     function drawHotbar() {
@@ -899,7 +900,7 @@
 
     function swatchEl(id) {
       const b = meta(id);
-      if (b && b.tex) { const img = document.createElement("img"); img.className = "mci-sw"; img.src = "assets/mc_" + b.tex + ".png"; img.onerror = () => { const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = b.color || "#888"; img.replaceWith(s); }; return img; }
+      if (b && b.tex) { const img = document.createElement("img"); img.className = "mci-sw"; img.src = "assets/mc_" + b.tex + ".png?v=" + TEXV; img.onerror = () => { const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = b.color || "#888"; img.replaceWith(s); }; return img; }
       const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = (b && b.color) || "#888"; return s;
     }
     function slotNode(stack, cls) {

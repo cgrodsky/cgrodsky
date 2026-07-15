@@ -49,12 +49,12 @@
   };
   const RATING_COLOR = { "E": "#4b7f2f", "E10+": "#3a7bd5", "T": "#c98a1a", "M": "#c0392b" };
   // Official ESRB badge images (others fall back to a colored text badge).
-  const RATING_IMG = { "T": "assets/esrb_t.png", "M": "assets/esrb_m.png", "EC": "assets/esrb_ec.png", "AO": "assets/esrb_ao.png" };
+  const RATING_IMG = { "E10+": "assets/esrb_e10.png", "T": "assets/esrb_t.png", "M": "assets/esrb_m.png", "EC": "assets/esrb_ec.png", "AO": "assets/esrb_ao.png" };
   // Common Sense Media age recommendation, derived from the ESRB rating.
   const CSM_AGE = { "EC": "age 3+", "E": "age 6+", "E10+": "age 9+", "T": "age 13+", "M": "age 17+", "AO": "age 18+" };
   function ratingBadge(r) {
     const esrb = RATING_IMG[r]
-      ? `<img class="xb-rating-img" src="${RATING_IMG[r]}" alt="ESRB ${r}" title="ESRB: ${r}">`
+      ? `<img class="xb-rating-img" src="${RATING_IMG[r]}?v=2" alt="ESRB ${r}" title="ESRB: ${r}">`
       : `<span class="xb-rating" style="background:${RATING_COLOR[r] || "#555"}" title="ESRB rating">${esc(r)}</span>`;
     const csm = `<button class="xb-csm" title="Common Sense Media — parents' guide"><img src="assets/commonsense.png" alt="Common Sense">${CSM_AGE[r] || ""}</button>`;
     return esrb + csm;
