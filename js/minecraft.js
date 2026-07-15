@@ -581,7 +581,11 @@
     function drawHearts() {
       if (creative) { heartsEl.innerHTML = ""; return; }
       let html = "";
-      for (let i = 0; i < 10; i++) { const f = player.hp - i * 2; html += `<span class="mc3-heart ${f >= 2 ? "h-full" : f === 1 ? "h-half" : "h-empty"}"></span>`; }
+      for (let i = 0; i < 10; i++) {
+        const f = player.hp - i * 2;
+        const src = f >= 2 ? "assets/mc_heart_full.png" : f === 1 ? "assets/mc_heart_half.png" : "assets/mc_heart_full.png";
+        html += `<span class="mc3-heart ${f <= 0 ? "h-empty" : ""}"><img src="${src}" alt=""></span>`;
+      }
       heartsEl.innerHTML = html;
     }
     drawHearts();
