@@ -22,6 +22,19 @@
   const FILE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
   const X_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
   const PLUS_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+  // M365 sidebar nav icons
+  const SEARCH_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;
+  const LIB_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14M9 4v16M14 5l4 14M19 6l1 0"/></svg>`;
+  const CREATE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`;
+  const AGENT_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 14h.01M15 14h.01"/></svg>`;
+  const BOOK_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/></svg>`;
+  const DOC_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c14343" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h5M8 12h8M8 16h8"/></svg>`;
+  // Empty-state prompt suggestions (mirrors the M365 Copilot home)
+  const SUGGEST = [
+    { title: "Draft an email to my team asking for feedback", sub: "Ask for input", prompt: "Draft an email to my team asking for feedback on the latest project report." },
+    { title: "Help me prepare for a review of a project", sub: "Get unbiased feedback", prompt: "Help me prepare for a review of the Total Sports Group project — what questions should I expect?" },
+    { title: "Summarize the key points of a document", sub: "Get an overview", prompt: "Summarize the key points I should know from a long quarterly report." },
+  ];
 
   // ---- Plans & usage limits (fake money) ----
   const PLANS = {
@@ -59,18 +72,27 @@
   function render(body) {
     if (!activeKey()) return renderKeyForm(body);
     const plan = planCfg();
+    const uname = (S().profile && S().profile.username) || "You";
     body.innerHTML = `
-      <div class="cop-shell">
+      <div class="cop-shell cop-m365">
         <div class="cop-side">
-          <button class="cop-newchat">${PLUS_SVG}<span>New chat</span></button>
+          <div class="cop-brand">${LOGO("cop-logo")}<b>M365 Copilot</b></div>
+          <button class="cop-newchat cop-nav">${LOGO("cop-logo cop-nav-dot")}<span>New chat</span></button>
+          <button class="cop-nav" data-nav="search">${SEARCH_SVG}<span>Search</span></button>
+          <button class="cop-nav" data-nav="library">${LIB_SVG}<span>Library</span></button>
+          <button class="cop-nav" data-nav="create">${CREATE_SVG}<span>Create</span></button>
+          <div class="cop-sec">Recent</div>
           <div class="cop-convos"></div>
-          <div class="cop-plan" title="Manage plan">
-            <span class="cop-plan-badge cop-plan-${plan.id}">${plan.name}</span>
-            <span class="cop-plan-up">Manage</span>
+          <div class="cop-sec cop-sec-lbl">${AGENT_SVG}<span>Agents</span></div>
+          <div class="cop-sec cop-sec-lbl">${BOOK_SVG}<span>Notebooks</span></div>
+          <div class="cop-side-foot">
+            <div class="cop-user">${Icon.mini("user", uname)}<span class="cop-user-n">${escapeHtml(uname)}</span><button class="cop-user-x" title="Options">…</button></div>
+            <button class="cop-upgrade cop-plan">Upgrade Copilot</button>
+            <div class="cop-chat-label">Copilot Chat</div>
           </div>
         </div>
         <div class="cop">
-          <div class="cop-head">${LOGO("cop-logo")}<span class="ttl">Copilot</span><span class="grow"></span>
+          <div class="cop-topbar"><span class="grow"></span>
             <label class="container spk" title="Speak replies aloud">
               <input type="checkbox">
               <svg class="mute" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" style="opacity:.35"></path><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2"/></svg>
@@ -80,7 +102,7 @@
           <div class="cop-msgs"></div>
           <div class="cop-prompt" data-empty="true">
             <div class="cop-files"></div>
-            <textarea class="cop-ta" rows="1" placeholder="Message Copilot..."></textarea>
+            <textarea class="cop-ta" rows="1" placeholder="Message Copilot"></textarea>
             <div class="cop-prompt-bar">
               <button class="cop-mic mic" title="Voice mode">${MIC_SVG}</button>
               <button class="cop-attach" title="Attach file">${CLIP_SVG}</button>
@@ -92,6 +114,14 @@
           </div>
         </div>
       </div>`;
+    // Sidebar nav: Search focuses the box, Create seeds an image prompt, Library/Agents/Notebooks are informational
+    body.querySelectorAll(".cop-nav[data-nav]").forEach((b) => b.onclick = () => {
+      const n = b.dataset.nav;
+      const t = body.querySelector(".cop-ta");
+      if (n === "search") { t && t.focus(); }
+      else if (n === "create") { if (t) { t.value = "Create an image of "; t.focus(); } }
+      else if (window.Notify) Notify.show({ icon: LOGO("cop-logo"), title: "M365 Copilot", body: n.charAt(0).toUpperCase() + n.slice(1) + " is part of Microsoft 365." });
+    });
     const msgs = body.querySelector(".cop-msgs");
     const usageEl = body.querySelector(".cop-usage");
 
@@ -243,7 +273,19 @@
       updateUsage();
       msgs.innerHTML = "";
       if (!activeConv().history.length) {
-        msgs.appendChild(el(`<div class="cop-hero">${LOGO("cop-logo big-logo")}<h2>Hi, I'm Copilot</h2><p class="muted">Ask me anything, send a photo, or ask me to create an image.</p></div>`));
+        const hero = el(`<div class="cop-hero cop-hero-m365">
+          ${LOGO("cop-logo big-logo")}
+          <h2>Message Copilot</h2>
+          <p class="muted">Chat, draft, summarize, or create an image — with your Microsoft 365 apps.</p>
+          <div class="cop-cards"></div>
+        </div>`);
+        const cards = hero.querySelector(".cop-cards");
+        SUGGEST.forEach((s) => {
+          const card = el(`<button class="cop-card">${DOC_SVG}<span class="cop-card-t">${escapeHtml(s.title)}</span><span class="cop-card-s">${escapeHtml(s.sub)}</span></button>`);
+          card.onclick = () => { ta.value = s.prompt; ta.dispatchEvent(new Event("input")); send(); };
+          cards.appendChild(card);
+        });
+        msgs.appendChild(hero);
         return;
       }
       activeConv().history.forEach((m) => addBubble(m));

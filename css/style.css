@@ -2954,3 +2954,42 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .fs-table td { padding: 11px 10px; border-bottom: 1px solid #1e293b; }
 .fs-table b { color: #fff; }
 .fs-al2 { display: block; font-size: .72rem; color: #94a3b8; }
+
+/* ============================ M365 Copilot redesign ============================ */
+.cop-m365 { background: #fff; color: #1f1f1f; }
+.cop-m365 .cop-side { width: 226px; background: #fafafa; border-right: 1px solid #ececec; padding: 12px 10px; gap: 1px; }
+.cop-m365 .cop-brand { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 700; padding: 4px 8px 12px; color: #1f1f1f; }
+.cop-m365 .cop-brand .cop-logo { width: 26px; height: 26px; }
+.cop-nav-dot { width: 22px; height: 22px; }
+.cop-m365 .cop-nav { display: flex; align-items: center; gap: 11px; justify-content: flex-start; background: transparent; color: #333; border: 0; border-radius: 8px; padding: 9px 10px; cursor: pointer; font-size: .9rem; font-weight: 500; width: 100%; text-align: left; margin: 0; }
+.cop-m365 .cop-nav:hover { background: #efefef; filter: none; }
+.cop-m365 .cop-newchat { font-weight: 600; }
+.cop-m365 .cop-sec { font-size: .72rem; color: #8a8a8a; padding: 14px 10px 4px; font-weight: 600; }
+.cop-m365 .cop-sec-lbl { display: flex; align-items: center; gap: 11px; color: #333; font-size: .9rem; font-weight: 500; padding: 9px 10px; cursor: pointer; border-radius: 8px; }
+.cop-m365 .cop-sec-lbl:hover { background: #efefef; }
+.cop-m365 .cop-convos { flex: 0 1 auto; max-height: 190px; overflow: auto; }
+.cop-m365 .cop-convo { color: #444; border-radius: 8px; }
+.cop-m365 .cop-convo.on { background: #ededed; }
+.cop-m365 .cop-convo:hover { background: #f0f0f0; }
+.cop-side-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 8px; }
+.cop-user { display: flex; align-items: center; gap: 8px; font-size: .86rem; color: #1f1f1f; padding: 4px 6px; }
+.cop-user .avatar, .cop-user img { width: 28px !important; height: 28px !important; border-radius: 50%; }
+.cop-user-n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cop-user-x { background: none; border: 0; color: #888; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 0 4px; }
+.cop-upgrade { border: 1.5px solid transparent; border-radius: 8px; padding: 9px; font-weight: 600; color: #1f1f1f; cursor: pointer; font-size: .86rem; background-image: linear-gradient(#fff, #fff), linear-gradient(90deg, #2f7be0, #7a5cff, #e0518a); background-origin: border-box; background-clip: padding-box, border-box; }
+.cop-upgrade:hover { filter: brightness(0.99); box-shadow: 0 2px 8px rgba(122,92,255,.18); }
+.cop-chat-label { text-align: center; font-size: .74rem; color: #9a9a9a; }
+.cop-m365 .cop { background: #fff; }
+.cop-topbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px 0; }
+.cop-m365 .cop-topbar .clear, .cop-m365 .cop-topbar .setkey { background: transparent; border: 1px solid #e2e2e2; color: #555; border-radius: 6px; padding: 5px 11px; font-size: .8rem; cursor: pointer; }
+.cop-m365 .cop-topbar .clear:hover, .cop-m365 .cop-topbar .setkey:hover { background: #f2f2f2; }
+.cop-m365 .cop-msgs { background: #fff; }
+.cop-hero-m365 { max-width: 780px; margin: 7vh auto 0; text-align: center; padding: 0 20px; }
+.cop-hero-m365 h2 { font-size: 1.85rem; margin: 16px 0 6px; color: #1f1f1f; }
+.cop-cards { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; justify-content: center; }
+.cop-card { flex: 1 1 200px; max-width: 236px; min-height: 150px; background: #fff; border: 1px solid #e6e6e6; border-radius: 12px; padding: 16px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s, border-color .15s; }
+.cop-card:hover { border-color: #cdcdcd; box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+.cop-card-t { font-size: .92rem; color: #1f1f1f; font-weight: 500; flex: 1; line-height: 1.35; }
+.cop-card-s { font-size: .8rem; color: #8a8a8a; }
+.cop-m365 .cop-prompt { border: 1px solid #e0e0e0; border-radius: 16px; margin: 0 20px 18px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+.cop-m365 .cop-ta { color: #1f1f1f; }
