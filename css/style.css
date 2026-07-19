@@ -3140,7 +3140,8 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-hero h1 { margin: 0 0 4px; font-size: 1.8rem; }
 .dd-hero p { margin: 0 0 18px; color: #666; }
 .dd-cats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
-.dd-cat { background: #f4f4f4; border-radius: 20px; padding: 8px 16px; font-size: .85rem; font-weight: 600; }
+.dd-cat { background: #f4f4f4; border: 0; border-radius: 20px; padding: 8px 16px; font-size: .85rem; font-weight: 600; cursor: pointer; color: #191919; }
+.dd-cat:hover { background: #e6e6e6; }
 .dd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
 .dd-card { border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid #eee; transition: box-shadow .15s, transform .12s; background: #fff; }
 .dd-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.1); transform: translateY(-2px); }
@@ -3197,10 +3198,52 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 
 /* DoorDash loading screen */
 .dd-load { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; }
-.dd-load-logo { width: 92px; height: 92px; object-fit: contain; animation: ddPulse 1s ease-in-out infinite; }
-@keyframes ddPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .78; } }
-.dd-load-dots { display: flex; gap: 9px; }
-.dd-load-dots span { width: 11px; height: 11px; border-radius: 50%; background: #ff3008; animation: ddBounce 1s ease-in-out infinite; }
-.dd-load-dots span:nth-child(2) { animation-delay: .16s; }
-.dd-load-dots span:nth-child(3) { animation-delay: .32s; }
-@keyframes ddBounce { 0%,100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-10px); opacity: 1; } }
+.dd-load-logo { width: 84px; height: 84px; object-fit: contain; }
+.dd-spinner {
+  --dd-red: #e0311f;
+  --size: 88px;
+  --dash-len: 27%;
+  --dash-thick: 13%;
+  --speed: 0.9s;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+}
+.dd-spinner span {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--dash-len);
+  height: var(--dash-thick);
+  margin-left: calc(var(--dash-len) / -2);
+  border-radius: 999px;
+  background: var(--dd-red);
+  transform-origin: center calc(var(--size) / 2);
+  transform: rotate(var(--angle));
+  opacity: 0.15;
+  animation: dd-fade var(--speed) linear infinite;
+  animation-delay: var(--delay);
+}
+@keyframes dd-fade { 0% { opacity: 1; } 100% { opacity: 0.15; } }
+.dd-spinner span:nth-child(1) { --angle: 0deg;   --delay: calc(var(--speed) * -0.000); }
+.dd-spinner span:nth-child(2) { --angle: 45deg;  --delay: calc(var(--speed) * -0.125); }
+.dd-spinner span:nth-child(3) { --angle: 90deg;  --delay: calc(var(--speed) * -0.250); }
+.dd-spinner span:nth-child(4) { --angle: 135deg; --delay: calc(var(--speed) * -0.375); }
+.dd-spinner span:nth-child(5) { --angle: 180deg; --delay: calc(var(--speed) * -0.500); }
+.dd-spinner span:nth-child(6) { --angle: 225deg; --delay: calc(var(--speed) * -0.625); }
+.dd-spinner span:nth-child(7) { --angle: 270deg; --delay: calc(var(--speed) * -0.750); }
+.dd-spinner span:nth-child(8) { --angle: 315deg; --delay: calc(var(--speed) * -0.875); }
+
+/* DoorDash top bar (reference: logo · search · address · Delivery/Pickup · bell · cart) */
+.dd-top { gap: 14px; }
+.dd-search { flex: 1; display: flex; align-items: center; gap: 8px; background: #eeeeee; border-radius: 24px; padding: 9px 16px; max-width: 620px; }
+.dd-search-ic { font-size: .9rem; opacity: .6; }
+.dd-search-in { flex: 1; border: 0; background: transparent; outline: none; font-size: .9rem; color: #191919; }
+.dd-addr-pill { display: flex; align-items: center; gap: 4px; font-size: .84rem; color: #191919; white-space: nowrap; }
+.dd-toggle { display: flex; background: #f4f4f4; border-radius: 20px; padding: 3px; }
+.dd-toggle button { border: 0; background: transparent; border-radius: 18px; padding: 6px 14px; font-size: .82rem; font-weight: 600; color: #555; cursor: pointer; }
+.dd-toggle button.on { background: #fff; color: #191919; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.dd-bell { position: relative; background: #f4f4f4; border: 0; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+.dd-bell-dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; background: #ff3008; border-radius: 50%; border: 1.5px solid #f4f4f4; }
+.dd-cart-btn { display: inline-flex; align-items: center; gap: 6px; }
+.dd-cart-n { background: rgba(255,255,255,.25); border-radius: 12px; padding: 0 7px; font-size: .82rem; }

@@ -1864,30 +1864,39 @@
 
   function doordash(ctx) {
     const esc = escapeHtml, page = ctx.page;
-    let view = "list", resto = null;
+    let view = "list", resto = null, query = "", mode = "Delivery";
     function money(n) { return "$" + n.toFixed(2); }
 
     // Branded loading screen shown while the app "boots".
     function boot() {
       page.innerHTML = `<div class="dd-load">
         <img class="dd-load-logo" src="assets/doordash.png?v=1" alt="DoorDash">
-        <div class="dd-load-dots"><span></span><span></span><span></span></div>
+        <div class="dd-spinner" role="status" aria-label="Loading">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
       </div>`;
-      setTimeout(render, 950);
+      setTimeout(render, 1050);
     }
 
     function render() {
       page.innerHTML = `<div class="dd">
         <div class="dd-top">
           <img class="dd-logo" src="assets/doordash_wordmark.png?v=1" alt="DoorDash">
-          <div class="dd-addr">📍 Deliver to <b>123 Main St</b></div>
-          <span class="grow"></span>
-          <button class="dd-cart-btn">🛒 Cart${ddCartCount() ? " · " + ddCartCount() : ""}</button>
+          <div class="dd-search"><span class="dd-search-ic">🔍</span><input class="dd-search-in" placeholder="Search &quot;7-Eleven&quot;" value="${esc(query)}"></div>
+          <div class="dd-addr-pill">📍 <b>123 Main St</b></div>
+          <div class="dd-toggle"><button data-m="Delivery" class="${mode === "Delivery" ? "on" : ""}">Delivery</button><button data-m="Pickup" class="${mode === "Pickup" ? "on" : ""}">Pickup</button></div>
+          <button class="dd-bell" title="Notifications">🔔<span class="dd-bell-dot"></span></button>
+          <button class="dd-cart-btn">🛒 <span class="dd-cart-n">${ddCartCount()}</span></button>
         </div>
         <div class="dd-body"></div>
       </div>`;
       page.querySelector(".dd-cart-btn").onclick = () => { view = "cart"; paint(); };
-      page.querySelector(".dd-logo").onclick = () => { view = "list"; paint(); };
+      page.querySelector(".dd-logo").onclick = () => { query = ""; view = "list"; render(); };
+      const search = page.querySelector(".dd-search-in");
+      search.oninput = () => { query = search.value; view = "list"; paint(); };
+      page.querySelectorAll(".dd-toggle button").forEach((b) => b.onclick = () => { mode = b.dataset.m; page.querySelectorAll(".dd-toggle button").forEach((x) => x.classList.toggle("on", x === b)); });
+      page.querySelector(".dd-bell").onclick = () => { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DoorDash", body: "No new notifications." }); };
       paint();
     }
     function paint() {
@@ -1898,11 +1907,17 @@
       if (view === "track") return trackView(bodyEl);
     }
     function listView(el2) {
-      el2.innerHTML = `<div class="dd-hero"><h1>Order food to your door</h1><p>Restaurants near you</p></div>
-        <div class="dd-cats">${["🍔 Burgers", "🍕 Pizza", "🍣 Sushi", "🌮 Mexican", "☕ Coffee", "🍗 Wings"].map((c) => `<span class="dd-cat">${c}</span>`).join("")}</div>
+      const q = query.trim().toLowerCase();
+      const list = q ? DD_RESTOS.filter((r) => (r.name + " " + r.cuisine + " " + r.menu.map((m) => m.n).join(" ")).toLowerCase().includes(q)) : DD_RESTOS;
+      const uname = (S().profile && S().profile.username) || (S().account && S().account.name) || "there";
+      const CATS = [["🥗", "Healthy"], ["🥪", "Sandwiches"], ["🏷️", "Deals"], ["🍣", "Sushi"], ["🍟", "Fast Food"], ["🍕", "Pizza"], ["🌮", "Mexican"], ["🍔", "Burgers"], ["🍳", "Breakfast"], ["☕", "Coffee"]];
+      el2.innerHTML = `<div class="dd-hero"><h1>${q ? "Results for “" + esc(query) + "”" : "Welcome back, " + esc(uname)}</h1><p>${list.length} restaurant${list.length === 1 ? "" : "s"} near you</p></div>
+        <div class="dd-cats">${CATS.map((c) => `<button class="dd-cat" data-q="${esc(c[1])}">${c[0]} ${c[1]}</button>`).join("")}</div>
         <div class="dd-grid"></div>`;
+      el2.querySelectorAll(".dd-cat").forEach((b) => b.onclick = () => { query = b.dataset.q; const s = page.querySelector(".dd-search-in"); if (s) s.value = query; paint(); });
       const grid = el2.querySelector(".dd-grid");
-      DD_RESTOS.forEach((r) => {
+      if (!list.length) { grid.innerHTML = `<div class="dd-empty" style="grid-column:1/-1">No restaurants match your search.</div>`; return; }
+      list.forEach((r) => {
         const card = el(`<div class="dd-card">
           <div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span>${r.fee === 0 ? '<span class="dd-free">Free delivery</span>' : ""}</div>
           <div class="dd-card-b"><div class="dd-card-name">${esc(r.name)}</div><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)} · ${r.fee === 0 ? "Free" : money(r.fee) + " fee"}</div><div class="dd-card-cui">${esc(r.cuisine)}</div></div>
