@@ -34,9 +34,15 @@
 
   // Rating badges. Content-rating and IMDb/Rotten Tomatoes render as styled text now;
   // swap the inner HTML for <img> once the official logos are provided.
+  // CSS-drawn rating marks: TV Parental Guidelines (TV-*) vs MPAA (G/PG/PG-13/R/NC-17).
+  function ratingBadge(r) {
+    if (!r) return "";
+    if (/^TV-/.test(r)) return `<span class="mv-tv"><i>TV</i><b>${esc(r.replace(/^TV-/, ""))}</b></span>`;
+    return `<span class="mv-mpaa"><i>RATED</i><b>${esc(r)}</b></span>`;
+  }
   function ratingsRow(m, cls) {
     let h = `<div class="mv-ratings ${cls || ""}">`;
-    if (m.rated) h += `<span class="mv-rated">${esc(m.rated)}</span>`;
+    h += ratingBadge(m.rated);
     if (m.imdb != null) h += `<span class="mv-imdb"><b>IMDb</b> ${m.imdb.toFixed(1)}</span>`;
     if (m.rt != null) h += `<span class="mv-rt">${m.rt >= 60 ? "🍅" : "🤢"} ${m.rt}%</span>`;
     return h + `</div>`;

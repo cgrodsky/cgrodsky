@@ -3051,6 +3051,14 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 /* Movies ratings + where-to-watch */
 .mv-ratings { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 4px; }
 .mv-rated { border: 1px solid #9a9aa2; color: #e8e8ec; font-size: .74rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: .3px; }
+/* MPAA-style movie rating mark */
+.mv-mpaa { display: inline-flex; align-items: stretch; background: #fff; color: #000; border: 2px solid #111; border-radius: 5px; overflow: hidden; font-family: Arial, Helvetica, sans-serif; height: 22px; }
+.mv-mpaa i { font-style: normal; font-size: .46rem; font-weight: 700; letter-spacing: .5px; display: flex; align-items: center; padding: 0 4px; border-right: 1.5px solid #111; }
+.mv-mpaa b { font-size: .86rem; font-weight: 800; display: flex; align-items: center; padding: 0 7px; line-height: 1; }
+/* TV Parental Guidelines mark */
+.mv-tv { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; background: #111; color: #fff; border: 1.5px solid #fff; border-radius: 4px; padding: 1px 8px; line-height: 1.05; min-width: 30px; }
+.mv-tv i { font-style: normal; font-size: .46rem; font-weight: 700; letter-spacing: .5px; opacity: .95; }
+.mv-tv b { font-size: .8rem; font-weight: 800; }
 .mv-imdb { background: #f5c518; color: #111; font-size: .76rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .mv-imdb b { font-weight: 800; }
 .mv-rt { background: #1c1c22; color: #fff; font-size: .76rem; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
