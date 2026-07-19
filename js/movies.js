@@ -5,6 +5,94 @@
   "use strict";
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  const S = () => State.data;
+
+  // ---------- Common Sense Media (age rating + parents' guide) ----------
+  const CSM_CATS = [
+    { k: "msg", name: "Positive Messages", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1z"/></svg>` },
+    { k: "role", name: "Positive Role Models", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="9" cy="7" r="3.4"/><path d="M3 20a6 6 0 0 1 12 0zM17 6h1.6v2.4H21v1.6h-2.4V13H17v-3H14.6V8.4H17z"/></svg>` },
+    { k: "violence", name: "Violence & Scariness", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="11" cy="15" r="6.5"/><path d="M16 8l3-3M18 4l1 1 1-1-1-1zM15 5l1.5 1.5"/></svg>` },
+    { k: "sexy", name: "Sex, Romance & Nudity", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 11c2-3 5-3 8 0 3-3 6-3 8 0-2 3-5 3-8 0-3 3-6 3-8 0z"/></svg>` },
+    { k: "lang", name: "Language", icon: `<b class="csm-sym">#!</b>` },
+    { k: "consum", name: "Products & Purchases", icon: `<b class="csm-sym">$</b>` },
+    { k: "drugs", name: "Drinking, Drugs & Smoking", icon: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 3h10l-1 7a4 4 0 0 1-8 0zM11 14h2v5h3v2H8v-2h3z"/></svg>` },
+  ];
+  const MV_TIER = { "G": 0, "TV-Y": 0, "TV-G": 1, "TV-Y7": 1, "PG": 2, "TV-PG": 2, "PG-13": 3, "TV-14": 3, "R": 4, "TV-MA": 4, "NC-17": 5, "NR": 3 };
+  const CSM_AGE = { "G": "age 5+", "TV-Y": "age 2+", "TV-Y7": "age 7+", "TV-G": "age 6+", "PG": "age 8+", "TV-PG": "age 10+", "PG-13": "age 13+", "TV-14": "age 14+", "R": "age 17+", "TV-MA": "age 17+", "NC-17": "age 18+", "NR": "age 15+" };
+  function csmAge(m) { return CSM_AGE[m.rated] || "age 13+"; }
+  function csmHash(s) { return Math.abs(s.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7)); }
+  function csmProfile(m) {
+    const tier = MV_TIER[m.rated] == null ? 3 : MV_TIER[m.rated];
+    const jit = (seed) => csmHash(m.id + seed) % 2, fam = tier <= 2;
+    return {
+      msg: Math.max(0, Math.min(5, (fam ? 4 : 2) + jit("m"))),
+      role: Math.max(0, Math.min(5, (fam ? 3 : 2) + jit("r"))),
+      violence: Math.min(5, tier + jit("v")),
+      sexy: Math.max(0, tier - 2 + jit("s")),
+      lang: Math.max(0, tier - 1),
+      consum: Math.max(0, Math.min(5, 1 + jit("c"))),
+      drugs: Math.max(0, tier - 3),
+    };
+  }
+  const REVIEW_NAMES = ["Sarah M.", "David K.", "MovieMom", "Jenn R.", "MomOf3", "Chris T.", "Alex P.", "FilmDad_78", "Pat L.", "Jordan W."];
+  const REVIEW_POS = ["Great for a family movie night — everyone loved it.", "Wholesome and heartfelt. Highly recommend.", "Totally age-appropriate and genuinely fun.", "A feel-good watch the whole family enjoyed.", "Sweet story with positive messages throughout."];
+  const REVIEW_MID = ["Good, but preview it for younger kids first.", "Fun watch — some mild scares and language.", "Great for teens; a bit much for little ones.", "Solid film with a few intense moments."];
+  const REVIEW_NEG = ["Too intense for younger kids — definitely preview it.", "Strong language and mature themes; not for little ones.", "Great for adults, but it earns its rating.", "Violent and dark — check it before your teen watches."];
+  function seededReviews(m) {
+    const tier = MV_TIER[m.rated] == null ? 3 : MV_TIER[m.rated];
+    const pool = tier <= 2 ? REVIEW_POS : tier <= 3 ? REVIEW_MID : REVIEW_NEG;
+    const h = csmHash(m.id), out = [];
+    for (let i = 0; i < 3; i++) {
+      const st = tier <= 2 ? 5 - ((h + i) % 2) : tier <= 3 ? 4 - ((h + i) % 2) : 3 + ((h + i) % 2);
+      const ageIdx = Math.max(0, Math.min(5, tier + ((h + i) % 2)));
+      out.push({ name: REVIEW_NAMES[(h + i * 7) % REVIEW_NAMES.length], text: pool[(h + i * 3) % pool.length], stars: Math.max(1, Math.min(5, st)), age: ["5+", "7+", "10+", "13+", "16+", "18+"][ageIdx] });
+    }
+    return out;
+  }
+  function userReviews(id) { if (!S().appData) S().appData = {}; if (!S().appData.mvReviews) S().appData.mvReviews = {}; if (!S().appData.mvReviews[id]) S().appData.mvReviews[id] = []; return S().appData.mvReviews[id]; }
+  function stars(n) { return `<span class="csm-stars">${[1, 2, 3, 4, 5].map((i) => `<span class="${i <= n ? "on" : ""}">&#9733;</span>`).join("")}</span>`; }
+
+  function showCsm(m, host) {
+    const prof = csmProfile(m);
+    const dots = (n) => `<span class="csm-dots">${[0, 1, 2, 3, 4].map((i) => `<span class="csm-dot ${i < n ? "on" : ""}"></span>`).join("")}</span>`;
+    const ov = el(`<div class="csm-ov"><div class="csm-panel">
+      <div class="csm-head"><img src="assets/commonsense.png" alt="Common Sense"><b>Parents' guide</b><span class="grow"></span><button class="csm-x">&times;</button></div>
+      <div class="csm-title">${esc(m.title)} &middot; ${csmAge(m)}</div>
+      <h3 class="csm-h">A lot or a little?</h3>
+      <p class="csm-sub">What's in this title for parents to know.</p>
+      <div class="csm-grid">${CSM_CATS.map((c) => { const n = prof[c.k]; return `<div class="csm-cat"><span class="csm-cat-ic">${c.icon}</span><div class="csm-cat-txt"><span class="csm-cat-name">${c.name}</span>${n === 0 ? `<span class="csm-none">not present</span>` : dots(n)}</div></div>`; }).join("")}</div>
+      <div class="csm-reviews-head"><h3 class="csm-h">Parent reviews</h3><button class="csm-write">Write a review</button></div>
+      <div class="csm-reviews"></div>
+    </div></div>`);
+    const close = () => ov.remove();
+    ov.querySelector(".csm-x").onclick = close;
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+    const revEl = ov.querySelector(".csm-reviews");
+    function renderReviews() {
+      const all = userReviews(m.id).concat(seededReviews(m));
+      revEl.innerHTML = all.map((r) => `<div class="csm-review"><div class="csm-review-top"><b>Parent written by ${esc(r.name)}</b>${stars(r.stars)}</div><div class="csm-review-age">Recommended age ${esc(r.age || "13+")}</div><p>${esc(r.text)}</p></div>`).join("");
+    }
+    renderReviews();
+    ov.querySelector(".csm-write").onclick = () => {
+      const form = el(`<div class="csm-form">
+        <div class="csm-form-stars">${[1, 2, 3, 4, 5].map((i) => `<button data-s="${i}" class="csm-star-btn">&#9733;</button>`).join("")}</div>
+        <textarea class="csm-form-text" rows="3" placeholder="Share your thoughts for other parents…"></textarea>
+        <div class="csm-form-btns"><button class="csm-form-cancel">Cancel</button><button class="csm-form-post">Post review</button></div>
+      </div>`);
+      let sel = 5;
+      const paint = () => form.querySelectorAll(".csm-star-btn").forEach((x) => x.classList.toggle("on", +x.dataset.s <= sel));
+      form.querySelectorAll(".csm-star-btn").forEach((b) => b.onclick = () => { sel = +b.dataset.s; paint(); });
+      paint();
+      form.querySelector(".csm-form-cancel").onclick = () => form.remove();
+      form.querySelector(".csm-form-post").onclick = () => {
+        const text = form.querySelector(".csm-form-text").value.trim(); if (!text) return;
+        userReviews(m.id).unshift({ name: (S().profile && S().profile.username) || "You", stars: sel, text, age: csmAge(m).replace("age ", "") });
+        State.save(); form.remove(); renderReviews();
+      };
+      ov.querySelector(".csm-reviews-head").after(form);
+    };
+    (host || document.getElementById("screen")).appendChild(ov);
+  }
 
   // Title #1 (Scream 7) + Friends have real art; the rest are placeholders until posters arrive.
   // rated = content rating (G/PG/PG-13/R, or TV-Y…TV-MA); imdb = /10; rt = Rotten Tomatoes %.
@@ -34,10 +122,12 @@
 
   // Rating badges. Content-rating and IMDb/Rotten Tomatoes render as styled text now;
   // swap the inner HTML for <img> once the official logos are provided.
-  // CSS-drawn rating marks: TV Parental Guidelines (TV-*) vs MPAA (G/PG/PG-13/R/NC-17).
+  // Official MPAA badge images; TV Parental Guidelines drawn in CSS (no images provided).
+  const MPAA_IMG = { "G": "assets/rating_g.png", "PG": "assets/rating_pg.png", "PG-13": "assets/rating_pg13.png", "R": "assets/rating_r.png", "NC-17": "assets/rating_nc17.png", "NR": "assets/rating_unrated.png", "Unrated": "assets/rating_unrated.png" };
   function ratingBadge(r) {
     if (!r) return "";
     if (/^TV-/.test(r)) return `<span class="mv-tv"><i>TV</i><b>${esc(r.replace(/^TV-/, ""))}</b></span>`;
+    if (MPAA_IMG[r]) return `<img class="mv-mpaa-img" src="${MPAA_IMG[r]}" alt="Rated ${esc(r)}">`;
     return `<span class="mv-mpaa"><i>RATED</i><b>${esc(r)}</b></span>`;
   }
   // Rotten Tomatoes icon: a red tomato (Fresh ≥60%), a green splat (Rotten <60%),
@@ -47,12 +137,15 @@
   function rtBadge(pct) {
     if (pct == null) return "";
     const fresh = pct >= 60, certified = pct >= 75;
-    return `<span class="mv-rt ${fresh ? "fresh" : "rotten"} ${certified ? "certified" : ""}">${fresh ? RT_FRESH : RT_ROTTEN}<b>${pct}%</b>${certified ? '<i class="mv-cf">Certified</i>' : ""}</span>`;
+    const icon = certified ? `<img class="mv-rt-cert" src="assets/rt_certified.png?v=1" alt="Certified Fresh">`
+      : fresh ? `<img class="mv-rt-ic" src="assets/rt_fresh.png?v=1" alt="Fresh">`
+        : `<img class="mv-rt-ic" src="assets/rt_rotten.png?v=1" alt="Rotten">`;
+    return `<span class="mv-rt ${fresh ? "fresh" : "rotten"}">${icon}<b>${pct}%</b></span>`;
   }
   function ratingsRow(m, cls) {
     let h = `<div class="mv-ratings ${cls || ""}">`;
     h += ratingBadge(m.rated);
-    if (m.imdb != null) h += `<span class="mv-imdb"><b>IMDb</b> ${m.imdb.toFixed(1)}</span>`;
+    if (m.imdb != null) h += `<span class="mv-imdb"><img class="mv-imdb-logo" src="assets/imdb.png?v=1" alt="IMDb"> ${m.imdb.toFixed(1)}</span>`;
     h += rtBadge(m.rt);
     return h + `</div>`;
   }
@@ -108,7 +201,7 @@
       body.querySelector(".mv-search").focus();
     };
 
-    body.querySelector(".mv-play").onclick = () => gate(body, feat);
+    body.querySelector(".mv-play").onclick = () => player(body, feat);
   }
 
   // Streaming services shown in the "Where to watch" list (reference: Google's panel).
@@ -130,30 +223,91 @@
           <h2>${esc(m.title)}</h2>
           <div class="mv-gate-meta">${m.year} · ${esc(m.genre)}${m.kind === "show" ? " · TV Series" : ""}</div>
           ${ratingsRow(m)}
+          <button class="mv-csm" title="Common Sense Media — parents' guide"><img src="assets/commonsense.png" alt="Common Sense"><span><b>${csmAge(m)}</b> · Common Sense Media parents' guide</span></button>
+          <button class="mv-gate-play">▶ Play</button>
           <div class="mv-watch-h">Where to watch</div>
           <div class="mv-services"></div>
-          <div class="mv-copyright">Due to copyright, full films and shows can't actually be streamed in this simulation.</div>
           <button class="mv-gate-back">Back to browse</button>
         </div>
         <button class="mv-gate-x" aria-label="Close">&times;</button>
       </div>
     </div>`);
     const svc = ov.querySelector(".mv-services");
-    const notice = ov.querySelector(".mv-copyright");
+    const close = () => ov.remove();
     SERVICES.forEach((s) => {
       const row = el(`<div class="mv-svc">
         <span class="mv-svc-ic" style="background:${s.c}">${esc(s.t)}</span>
         <span class="mv-svc-name"><b>${esc(s.name)}</b><span>${esc(s.sub)}</span></span>
         <button class="mv-svc-watch">▶ Watch</button>
       </div>`);
-      row.querySelector(".mv-svc-watch").onclick = () => { notice.classList.add("show"); notice.scrollIntoView({ block: "nearest" }); };
+      row.querySelector(".mv-svc-watch").onclick = () => { close(); player(body, m); };
       svc.appendChild(row);
     });
-    const close = () => ov.remove();
+    const csmBtn = ov.querySelector(".mv-csm");
+    if (csmBtn) csmBtn.onclick = () => showCsm(m, body.querySelector(".mv"));
+    ov.querySelector(".mv-gate-play").onclick = () => { close(); player(body, m); };
     ov.querySelector(".mv-gate-back").onclick = close;
     ov.querySelector(".mv-gate-x").onclick = close;
     ov.onclick = (e) => { if (e.target === ov) close(); };
     body.querySelector(".mv").appendChild(ov);
+  }
+
+  // "Watchable" player — a blank (black) screen with working playback controls.
+  const SUBS = ["[dramatic music playing]", "(indistinct chatter)", "♪ theme music ♪", "(footsteps approaching)", "[wind howling]", "(phone ringing)", "[suspenseful silence]", "(door creaks open)", "♪ upbeat music ♪", "[audience laughing]"];
+  function fmt(s) { const m = Math.floor(s / 60), ss = Math.floor(s % 60); return m + ":" + String(ss).padStart(2, "0"); }
+  function player(body, m) {
+    const total = (m.kind === "show" ? 22 : 100) * 60;   // seconds
+    const pv = el(`<div class="mv-player">
+      <div class="mv-pl-screen">
+        <div class="mv-pl-blank"></div>
+        <div class="mv-pl-subs"></div>
+        <button class="mv-pl-bigplay" style="display:none">▶</button>
+      </div>
+      <div class="mv-pl-top"><button class="mv-pl-back">‹ Back</button><span class="mv-pl-title">${esc(m.title)}${m.kind === "show" ? " · S1:E1" : ""}</span></div>
+      <div class="mv-pl-ctrls">
+        <button class="mv-pl-play" title="Pause">⏸</button>
+        <span class="mv-pl-cur">0:00</span>
+        <div class="mv-pl-bar"><div class="mv-pl-fill"></div><div class="mv-pl-knob"></div></div>
+        <span class="mv-pl-dur">${fmt(total)}</span>
+        <button class="mv-pl-cc" title="Subtitles"><img src="assets/cc.png?v=1" alt="CC"></button>
+        <button class="mv-pl-full" title="Fullscreen">⛶</button>
+      </div>
+    </div>`);
+    let t = 0, playing = true, cc = false, last = 0, raf = null, subIdx = -1, subT = 0;
+    const fill = pv.querySelector(".mv-pl-fill"), knob = pv.querySelector(".mv-pl-knob");
+    const curEl = pv.querySelector(".mv-pl-cur"), subsEl = pv.querySelector(".mv-pl-subs");
+    const playBtn = pv.querySelector(".mv-pl-play"), ccBtn = pv.querySelector(".mv-pl-cc"), bigPlay = pv.querySelector(".mv-pl-bigplay");
+    function paint() {
+      const p = Math.max(0, Math.min(100, t / total * 100));
+      fill.style.width = p + "%"; knob.style.left = p + "%"; curEl.textContent = fmt(t);
+    }
+    function setPlaying(v) {
+      playing = v; playBtn.textContent = v ? "⏸" : "▶"; playBtn.title = v ? "Pause" : "Play";
+      bigPlay.style.display = v ? "none" : "flex";
+      pv.classList.toggle("mv-paused", !v);
+    }
+    function loop(ts) {
+      if (!last) last = ts;
+      const dt = (ts - last) / 1000; last = ts;
+      if (playing) {
+        t = Math.min(total, t + dt);
+        if (cc) { subT += dt; if (subIdx < 0 || subT > 4) { subT = 0; subIdx = (subIdx + 1) % SUBS.length; subsEl.textContent = SUBS[subIdx]; } }
+        paint();
+        if (t >= total) { setPlaying(false); }
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    paint();
+    playBtn.onclick = () => setPlaying(!playing);
+    bigPlay.onclick = () => setPlaying(true);
+    pv.querySelector(".mv-pl-blank").onclick = () => setPlaying(!playing);
+    ccBtn.onclick = () => { cc = !cc; ccBtn.classList.toggle("on", cc); if (!cc) subsEl.textContent = ""; };
+    pv.querySelector(".mv-pl-bar").onclick = (e) => { const r = e.currentTarget.getBoundingClientRect(); t = Math.max(0, Math.min(total, (e.clientX - r.left) / r.width * total)); paint(); };
+    pv.querySelector(".mv-pl-full").onclick = () => { if (!document.fullscreenElement) pv.requestFullscreen && pv.requestFullscreen().catch(() => {}); else document.exitFullscreen && document.exitFullscreen(); };
+    pv.querySelector(".mv-pl-back").onclick = () => { cancelAnimationFrame(raf); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); pv.remove(); };
+    setPlaying(true);
+    raf = requestAnimationFrame(loop);
+    body.querySelector(".mv").appendChild(pv);
   }
 
   if (window.Icon && Icon.register) {
