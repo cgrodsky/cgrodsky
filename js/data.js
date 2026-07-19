@@ -71,7 +71,7 @@
     "To Do": "todo", "Sticky Notes": "stickynotes", "Weather": "weather", "Calendar": "calendar",
     "News": "news", "Terminal": "terminal", "Mail": "mail", "Sudoku": "sudoku",
     "File Explorer": "__skip__", "Maps": "maps", "Photos": "photos", "Camera": "camera",
-    "Movies & TV": "mediaplayer", "Audible": "mediaplayer", "Spotfor": "mediaplayer",
+    "Movies & TV": "moviestv", "Audible": "mediaplayer", "Spotfor": "mediaplayer",
     "Drawboard": "paint", "Paint": "paint", "OneNote": "notepad", "Code Writer": "notepad",
     "VS Codey": "notepad", "Quick PDF": "notepad", "Comic Reader": "photos", "Voice Recorder": "recorder",
     "Money": "bank", "Translator": "translator",
