@@ -702,6 +702,8 @@
     drawXp();
 
     function playSfx(name) { if (!cfg.sound) return; try { const a = new Audio("assets/raw/" + name + ".mp3"); a.volume = 0.5; a.play().catch(() => {}); } catch (_) {} }
+    // Play a raw file with its own extension (mob sounds are .wav for Safari support).
+    function playSound(file, vol) { if (!cfg.sound) return; try { const a = new Audio("assets/raw/" + file); a.volume = vol == null ? 0.6 : vol; a.play().catch(() => {}); } catch (_) {} }
 
     // ---------- raycast / targeting ----------
     function raycastVoxel(origin, dir, maxDist) {
@@ -742,8 +744,9 @@
       pig:      { hp: 10, hostile: false, body: 0xe89a9a, head: 0xe89a9a, snout: 0xcf7f7f, hh: 0.55, ww: 0.9, spd: 1.3, xp: 1 },
       cow:      { hp: 10, hostile: false, body: 0x4a3626, head: 0x3a2a1c, snout: 0xd8c8b8, hh: 0.75, ww: 0.9, spd: 1.2, xp: 1 },
       sheep:    { hp: 8,  hostile: false, body: 0xecebe6, head: 0xd7c3ad, snout: 0xd7c3ad, hh: 0.72, ww: 0.85, spd: 1.1, xp: 1 },
+      chicken:  { hp: 4,  hostile: false, body: 0xf4f4f4, head: 0xf4f4f4, snout: 0xe08a1e, hh: 0.4, ww: 0.5, spd: 1.4, xp: 1, hit: "chicken_hit.wav", die: "chicken_death.wav" },
       zombie:   { hp: 20, hostile: true,  body: 0x27a0a0, head: 0x5aa15a, snout: 0x5aa15a, hh: 1.85, ww: 0.6, spd: 2.1, xp: 5, dmg: 3 },
-      creeper:  { hp: 20, hostile: true,  body: 0x4fa53a, head: 0x57b040, snout: 0x2f6d22, hh: 1.5, ww: 0.55, spd: 1.75, xp: 5, dmg: 7, creeper: true },
+      creeper:  { hp: 20, hostile: true,  body: 0x4fa53a, head: 0x57b040, snout: 0x2f6d22, hh: 1.5, ww: 0.55, spd: 1.75, xp: 5, dmg: 7, creeper: true, hit: "creeper_hit.wav", die: "creeper_death.wav" },
       villager: { hp: 20, hostile: false, body: 0x8b6d5c, head: 0xc7a088, snout: 0xb08060, hh: 1.9, ww: 0.6, spd: 1.0, xp: 0 },
     };
     const mobs = [];
@@ -781,7 +784,10 @@
     function mobHurt(m, dmg, kx, kz) {
       m.hp -= dmg; m.hurtT = 0.3;
       m.vel.x += kx * 4; m.vel.z += kz * 4; m.vel.y = 5;
-      if (m.hp <= 0) { scene.remove(m.mesh); m.mats.forEach((mt) => mt.dispose()); m.dead = true; if (m.def.xp) addXp(m.def.xp); playSfx("SFX_023"); }
+      if (m.hp <= 0) {
+        scene.remove(m.mesh); m.mats.forEach((mt) => mt.dispose()); m.dead = true; if (m.def.xp) addXp(m.def.xp);
+        if (m.def.die) playSound(m.def.die); else playSfx("SFX_023");
+      } else if (m.def.hit) playSound(m.def.hit);
     }
     function attackMobs() {
       const eye = eyePos(), dir = lookDir();
@@ -824,7 +830,7 @@
                 const bx = cxp + ex, by = cyp + ey, bz = czp + ez, bb = BLOCKS[getBlock(bx, by, bz)];
                 if (bb && bb.solid && bb.hardness !== Infinity && bb.hardness < 6) setBlock(bx, by, bz, 0);
               }
-              playSfx("SFX_008"); scene.remove(m.mesh); m.mats.forEach((mt) => mt.dispose()); mobs.splice(i, 1); continue;
+              playSound("creeper_death.wav", 0.7); scene.remove(m.mesh); m.mats.forEach((mt) => mt.dispose()); mobs.splice(i, 1); continue;
             }
           } else if (d < 1.6 && m.atkCd === 0) { m.atkCd = 1; hurt(m.def.dmg || 2, "You were slain by a zombie."); }
         } else {
@@ -872,7 +878,7 @@
       const ang = Math.random() * 6.28, dist = 14 + Math.random() * (CH * RENDER - 16);
       const x = player.pos.x + Math.sin(ang) * dist, z = player.pos.z + Math.cos(ang) * dist;
       const r = Math.random();
-      spawnMob(r < 0.18 ? "zombie" : r < 0.32 ? "creeper" : r < 0.55 ? "pig" : r < 0.78 ? "cow" : "sheep", x, z);
+      spawnMob(r < 0.16 ? "zombie" : r < 0.30 ? "creeper" : r < 0.48 ? "pig" : r < 0.64 ? "cow" : r < 0.82 ? "sheep" : "chicken", x, z);
     }
 
     // ---------- mining / placing ----------
@@ -1212,7 +1218,7 @@
     // initial chunks + starting mobs, then drop the player onto the surface
     updateChunks(64);
     player.pos.y = surfaceY(0, 0) + 0.2;
-    for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28, d = 8 + Math.random() * 14; const pool = ["pig", "cow", "sheep", "zombie", "creeper", "sheep"]; spawnMob(pool[Math.floor(Math.random() * pool.length)], player.pos.x + Math.sin(a) * d, player.pos.z + Math.cos(a) * d); }
+    for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28, d = 8 + Math.random() * 14; const pool = ["pig", "cow", "sheep", "zombie", "creeper", "chicken"]; spawnMob(pool[Math.floor(Math.random() * pool.length)], player.pos.x + Math.sin(a) * d, player.pos.z + Math.cos(a) * d); }
 
     // ---------- main loop ----------
     let raf, last = 0, fpsT = 0, frames = 0;
