@@ -228,7 +228,11 @@
     else mojangLoad(ref.body, () => modLoad(ref.body, toMenu));
   };
 
+  function installedMods() { try { if (window.CurseForgeAPI) return window.CurseForgeAPI.installedNames() || []; } catch (_) {} return []; }
+
   function menu(body, ref) {
+    const mods = installedMods();
+    const modsBtn = mods.length ? `<div class="mc-button full" data-act="mods"><div class="title">Mods (${mods.length})</div></div>` : "";
     body.innerHTML = `<div class="mc-root mc-home">
       <div class="mc-header">
         <img src="assets/minecraft_header.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -238,6 +242,7 @@
         <div class="mc-button full" data-act="play"><div class="title">Singleplayer</div></div>
         <div class="mc-button full" data-act="multi"><div class="title">Multiplayer</div></div>
         <div class="mc-button full" data-act="realms"><div class="title">Minecraft Realms</div></div>
+        ${modsBtn}
         <div class="double">
           <div class="mc-button full" data-act="opts"><div class="title">Options</div></div>
           <div class="mc-button full" data-act="quit"><div class="title">Quit Game</div></div>
@@ -245,17 +250,30 @@
         <div class="mc-button full lang" data-act="lang"><div class="title">EN</div></div>
       </div>
       <div class="mc-splash-text">100% 3D!</div>
-      <div class="mc-version">Windows 12 Edition</div>
+      <div class="mc-version">Windows 12 Edition${mods.length ? " · Forge" : ""}</div>
     </div>`;
     const act = {
       play: () => createWorld(body, ref),
       opts: () => options(body, ref),
+      mods: () => modsScreen(body, ref),
       quit: () => ref.close(),
       multi: () => Notify.show({ icon: "", title: "Multiplayer", body: "No servers reachable in the simulation." }),
       realms: () => Notify.show({ icon: "", title: "Realms", body: "Realms isn't available here." }),
       lang: () => {},
     };
     body.querySelectorAll(".mc-button").forEach((b) => b.onclick = () => (act[b.dataset.act] || (() => {}))());
+  }
+
+  // Forge-style mod list, populated from the mods "installed" in CurseForge.
+  function modsScreen(body, ref) {
+    const mods = installedMods();
+    body.innerHTML = `<div class="mc-root mc-optscreen mc-mods">
+      <div class="mc-title">Mods</div>
+      <div class="mc-mods-count">${mods.length} mod${mods.length === 1 ? "" : "s"} loaded</div>
+      <div class="mc-mods-list">${mods.map((n, i) => `<div class="mc-mod-row"><span class="mc-mod-ic" style="background:hsl(${(i * 47) % 360} 55% 45%)">${(n[0] || "M").toUpperCase()}</span><div class="mc-mod-txt"><b>${n.replace(/[<>&]/g, "")}</b><span>Loaded · Minecraft Forge</span></div></div>`).join("") || `<div class="mc-mods-empty">No mods installed. Install some in CurseForge.</div>`}</div>
+      <button class="mc-btn" id="modsdone" style="margin-top:16px">Done</button>
+    </div>`;
+    body.querySelector("#modsdone").onclick = () => menu(body, ref);
   }
 
   function createWorld(body, ref) {
