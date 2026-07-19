@@ -40,11 +40,20 @@
     if (/^TV-/.test(r)) return `<span class="mv-tv"><i>TV</i><b>${esc(r.replace(/^TV-/, ""))}</b></span>`;
     return `<span class="mv-mpaa"><i>RATED</i><b>${esc(r)}</b></span>`;
   }
+  // Rotten Tomatoes icon: a red tomato (Fresh ≥60%), a green splat (Rotten <60%),
+  // and a Certified-Fresh seal for ≥75%. Drawn as SVG — no image assets needed.
+  const RT_FRESH = `<svg viewBox="0 0 24 24" class="mv-rt-ic"><path d="M6.5 4.5c1.2-.6 2.6-.2 3.3.6.6-1 2-1.6 3.2-1.2 1.1.4 1.7 1.5 1.6 2.6 1.3-.2 2.6.7 2.8 2" fill="none" stroke="#2f8f1e" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6.2c4 0 7 3.1 7 6.9a7 7 0 1 1-14 0c0-3.8 3-6.9 7-6.9z" fill="#f5330c"/><path d="M9 11a2.4 2.4 0 0 1 3-1" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".8"/></svg>`;
+  const RT_ROTTEN = `<svg viewBox="0 0 24 24" class="mv-rt-ic"><path d="M12 3l1.8 3.4 3.8-.7-1.4 3.6 3 2.4-3.4 1.3.5 3.8-3.4-1.6L12 22l-2.4-3.1-3.4 1.6.5-3.8L3.3 15l3-2.4-1.4-3.6 3.8.7z" fill="#3bb54a"/><circle cx="10" cy="11" r="1" fill="#0a3d15"/><circle cx="14" cy="12" r="1" fill="#0a3d15"/></svg>`;
+  function rtBadge(pct) {
+    if (pct == null) return "";
+    const fresh = pct >= 60, certified = pct >= 75;
+    return `<span class="mv-rt ${fresh ? "fresh" : "rotten"} ${certified ? "certified" : ""}">${fresh ? RT_FRESH : RT_ROTTEN}<b>${pct}%</b>${certified ? '<i class="mv-cf">Certified</i>' : ""}</span>`;
+  }
   function ratingsRow(m, cls) {
     let h = `<div class="mv-ratings ${cls || ""}">`;
     h += ratingBadge(m.rated);
     if (m.imdb != null) h += `<span class="mv-imdb"><b>IMDb</b> ${m.imdb.toFixed(1)}</span>`;
-    if (m.rt != null) h += `<span class="mv-rt">${m.rt >= 60 ? "🍅" : "🤢"} ${m.rt}%</span>`;
+    h += rtBadge(m.rt);
     return h + `</div>`;
   }
 

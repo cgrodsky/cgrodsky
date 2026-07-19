@@ -3061,7 +3061,10 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .mv-tv b { font-size: .8rem; font-weight: 800; }
 .mv-imdb { background: #f5c518; color: #111; font-size: .76rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
 .mv-imdb b { font-weight: 800; }
-.mv-rt { background: #1c1c22; color: #fff; font-size: .76rem; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+.mv-rt { display: inline-flex; align-items: center; gap: 4px; background: #1c1c22; color: #fff; font-size: .76rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+.mv-rt-ic { width: 15px; height: 15px; flex: 0 0 auto; }
+.mv-rt.certified { background: #b71c1c; }
+.mv-cf { font-style: normal; font-size: .58rem; font-weight: 700; letter-spacing: .3px; opacity: .95; border-left: 1px solid rgba(255,255,255,.3); padding-left: 4px; }
 .mv-ratings-hero .mv-rated { border-color: #fff; }
 .mv-card { }
 .mv-card-rated { position: absolute; top: 6px; left: 6px; z-index: 2; background: rgba(0,0,0,.7); color: #fff; font-size: .64rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
