@@ -6,10 +6,11 @@
 <title>DoorDash Loading Wheel</title>
 <style>
   :root {
-    --dd-red: #eb1700;      /* DoorDash brand red */
-    --track: #f0efed;       /* light grey track */
-    --size: 96px;           /* wheel diameter */
-    --thickness: 9px;       /* ring thickness */
+    --dd-red: #e0311f;      /* DoorDash red */
+    --size: 88px;           /* wheel diameter */
+    --dash-len: 27%;        /* length of each dash (along the ring) */
+    --dash-thick: 13%;      /* thickness of each dash */
+    --speed: 0.9s;
   }
 
   * { box-sizing: border-box; }
@@ -21,44 +22,62 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 28px;
-    background: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 Helvetica, Arial, sans-serif;
-    color: #191919;
+    gap: 26px;
+    background: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
-  /* ---- The loading wheel ---- */
   .dd-spinner {
+    position: relative;
     width: var(--size);
     height: var(--size);
-    border-radius: 50%;
-    /* full grey track underneath */
-    border: var(--thickness) solid var(--track);
-    /* one coloured segment on top that sweeps around */
-    border-top-color: var(--dd-red);
-    animation: dd-spin 0.9s linear infinite;
   }
 
-  @keyframes dd-spin {
-    to { transform: rotate(360deg); }
+  /* Each dash sits at the top of the wheel, lying flat (tangent to the ring),
+     then is rotated around the wheel's center to its slot. */
+  .dd-spinner span {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: var(--dash-len);
+    height: var(--dash-thick);
+    margin-left: calc(var(--dash-len) / -2);
+    border-radius: 999px;
+    background: var(--dd-red);
+    transform-origin: center calc(var(--size) / 2);
+    transform: rotate(var(--angle));
+    opacity: 0.15;
+    animation: dd-fade var(--speed) linear infinite;
+    animation-delay: var(--delay);
   }
 
-  .label {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    color: #767676;
+  @keyframes dd-fade {
+    0%   { opacity: 1; }
+    100% { opacity: 0.15; }
   }
 
-  /* Respect users who prefer reduced motion */
+  /* 8 dashes, 45° apart, each starting 1/8 of the cycle later */
+  .dd-spinner span:nth-child(1) { --angle: 0deg;   --delay: calc(var(--speed) * -0.000); }
+  .dd-spinner span:nth-child(2) { --angle: 45deg;  --delay: calc(var(--speed) * -0.125); }
+  .dd-spinner span:nth-child(3) { --angle: 90deg;  --delay: calc(var(--speed) * -0.250); }
+  .dd-spinner span:nth-child(4) { --angle: 135deg; --delay: calc(var(--speed) * -0.375); }
+  .dd-spinner span:nth-child(5) { --angle: 180deg; --delay: calc(var(--speed) * -0.500); }
+  .dd-spinner span:nth-child(6) { --angle: 225deg; --delay: calc(var(--speed) * -0.625); }
+  .dd-spinner span:nth-child(7) { --angle: 270deg; --delay: calc(var(--speed) * -0.750); }
+  .dd-spinner span:nth-child(8) { --angle: 315deg; --delay: calc(var(--speed) * -0.875); }
+
+  .label { font-size: 15px; font-weight: 600; color: #767676; }
+
   @media (prefers-reduced-motion: reduce) {
-    .dd-spinner { animation-duration: 2.5s; }
+    .dd-spinner span { animation-duration: 3s; }
   }
 </style>
 </head>
 <body>
-  <div class="dd-spinner" role="status" aria-label="Loading"></div>
+  <div class="dd-spinner" role="status" aria-label="Loading">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
   <p class="label">Loading&hellip;</p>
 </body>
 </html>
