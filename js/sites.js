@@ -1843,5 +1843,134 @@
     render();
   }
 
-  window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo, netflix, flightstats: flightStats };
+  // ============================ DoorDash ============================
+  const DD_RESTOS = [
+    { id: "burger", name: "Burger Barn", cuisine: "American · Burgers", rating: 4.7, eta: "20–30 min", fee: 0, c1: "#f59e0b", c2: "#b45309", emoji: "🍔",
+      menu: [{ n: "Classic Cheeseburger", p: 9.49, d: "Beef patty, cheddar, lettuce, tomato" }, { n: "Bacon Double", p: 12.99, d: "Two patties, bacon, special sauce" }, { n: "Crispy Fries", p: 3.99, d: "Golden and salted" }, { n: "Chocolate Shake", p: 4.99, d: "Thick and creamy" }] },
+    { id: "pizza", name: "Tony's Pizzeria", cuisine: "Italian · Pizza", rating: 4.6, eta: "25–35 min", fee: 1.99, c1: "#ef4444", c2: "#7f1d1d", emoji: "🍕",
+      menu: [{ n: "Margherita Pizza", p: 13.99, d: "Fresh mozzarella, basil, tomato" }, { n: "Pepperoni Pizza", p: 15.49, d: "Loaded with pepperoni" }, { n: "Garlic Knots", p: 5.99, d: "Six knots with marinara" }, { n: "Caesar Salad", p: 7.49, d: "Romaine, parmesan, croutons" }] },
+    { id: "sushi", name: "Sakura Sushi", cuisine: "Japanese · Sushi", rating: 4.8, eta: "30–40 min", fee: 2.49, c1: "#10b981", c2: "#065f46", emoji: "🍣",
+      menu: [{ n: "California Roll", p: 8.99, d: "Crab, avocado, cucumber" }, { n: "Spicy Tuna Roll", p: 10.49, d: "Tuna, spicy mayo, scallion" }, { n: "Salmon Nigiri (2pc)", p: 6.99, d: "Fresh salmon over rice" }, { n: "Miso Soup", p: 3.49, d: "Tofu, seaweed, scallion" }] },
+    { id: "taco", name: "El Taco Loco", cuisine: "Mexican · Tacos", rating: 4.5, eta: "15–25 min", fee: 0, c1: "#84cc16", c2: "#3f6212", emoji: "🌮",
+      menu: [{ n: "Street Tacos (3)", p: 9.99, d: "Carne asada, onion, cilantro" }, { n: "Burrito Supreme", p: 11.49, d: "Rice, beans, cheese, guac" }, { n: "Chips & Guac", p: 5.49, d: "Fresh guacamole" }, { n: "Horchata", p: 3.29, d: "Sweet cinnamon rice drink" }] },
+    { id: "cafe", name: "Bloom Café", cuisine: "Coffee · Breakfast", rating: 4.9, eta: "10–20 min", fee: 1.49, c1: "#a855f7", c2: "#581c87", emoji: "☕",
+      menu: [{ n: "Iced Caramel Latte", p: 5.49, d: "Espresso, milk, caramel" }, { n: "Avocado Toast", p: 8.99, d: "Sourdough, avocado, chili flakes" }, { n: "Blueberry Muffin", p: 3.99, d: "Baked fresh daily" }, { n: "Breakfast Burrito", p: 9.49, d: "Egg, cheese, potato, salsa" }] },
+    { id: "wings", name: "Wing Kingdom", cuisine: "American · Wings", rating: 4.4, eta: "25–35 min", fee: 0.99, c1: "#f97316", c2: "#7c2d12", emoji: "🍗",
+      menu: [{ n: "10 Buffalo Wings", p: 12.99, d: "Classic buffalo, ranch dip" }, { n: "BBQ Wings (10)", p: 12.99, d: "Sweet & smoky" }, { n: "Loaded Fries", p: 7.49, d: "Cheese, bacon, jalapeño" }, { n: "Mozzarella Sticks", p: 6.49, d: "Six with marinara" }] },
+  ];
+  function ddStore() { if (!S().appData) S().appData = {}; if (!S().appData.doordash) S().appData.doordash = { cart: [], orders: [] }; const d = S().appData.doordash; if (!d.cart) d.cart = []; if (!d.orders) d.orders = []; return d; }
+  function ddCartTotal() { return ddStore().cart.reduce((s, it) => s + it.p * it.qty, 0); }
+  function ddCartCount() { return ddStore().cart.reduce((s, it) => s + it.qty, 0); }
+
+  function doordash(ctx) {
+    const esc = escapeHtml, page = ctx.page;
+    let view = "list", resto = null;
+    function money(n) { return "$" + n.toFixed(2); }
+
+    function render() {
+      page.innerHTML = `<div class="dd">
+        <div class="dd-top">
+          <img class="dd-logo" src="assets/doordash_wordmark.png?v=1" alt="DoorDash">
+          <div class="dd-addr">📍 Deliver to <b>123 Main St</b></div>
+          <span class="grow"></span>
+          <button class="dd-cart-btn">🛒 Cart${ddCartCount() ? " · " + ddCartCount() : ""}</button>
+        </div>
+        <div class="dd-body"></div>
+      </div>`;
+      page.querySelector(".dd-cart-btn").onclick = () => { view = "cart"; paint(); };
+      page.querySelector(".dd-logo").onclick = () => { view = "list"; paint(); };
+      paint();
+    }
+    function paint() {
+      const bodyEl = page.querySelector(".dd-body");
+      if (view === "list") return listView(bodyEl);
+      if (view === "resto") return restoView(bodyEl);
+      if (view === "cart") return cartView(bodyEl);
+      if (view === "track") return trackView(bodyEl);
+    }
+    function listView(el2) {
+      el2.innerHTML = `<div class="dd-hero"><h1>Order food to your door</h1><p>Restaurants near you</p></div>
+        <div class="dd-cats">${["🍔 Burgers", "🍕 Pizza", "🍣 Sushi", "🌮 Mexican", "☕ Coffee", "🍗 Wings"].map((c) => `<span class="dd-cat">${c}</span>`).join("")}</div>
+        <div class="dd-grid"></div>`;
+      const grid = el2.querySelector(".dd-grid");
+      DD_RESTOS.forEach((r) => {
+        const card = el(`<div class="dd-card">
+          <div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span>${r.fee === 0 ? '<span class="dd-free">Free delivery</span>' : ""}</div>
+          <div class="dd-card-b"><div class="dd-card-name">${esc(r.name)}</div><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)} · ${r.fee === 0 ? "Free" : money(r.fee) + " fee"}</div><div class="dd-card-cui">${esc(r.cuisine)}</div></div>
+        </div>`);
+        card.onclick = () => { resto = r; view = "resto"; paint(); };
+        grid.appendChild(card);
+      });
+    }
+    function restoView(el2) {
+      const r = resto;
+      el2.innerHTML = `<button class="dd-back">‹ All restaurants</button>
+        <div class="dd-rhero" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span></div>
+        <div class="dd-rhead"><h2>${esc(r.name)}</h2><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)} · ${r.fee === 0 ? "Free delivery" : money(r.fee) + " delivery"}</div><div class="dd-card-cui">${esc(r.cuisine)}</div></div>
+        <h3 class="dd-menu-h">Menu</h3><div class="dd-menu"></div>`;
+      el2.querySelector(".dd-back").onclick = () => { view = "list"; paint(); };
+      const menu = el2.querySelector(".dd-menu");
+      r.menu.forEach((m) => {
+        const row = el(`<div class="dd-item"><div class="dd-item-b"><div class="dd-item-n">${esc(m.n)}</div><div class="dd-item-d">${esc(m.d)}</div><div class="dd-item-p">${money(m.p)}</div></div><button class="dd-add">+ Add</button></div>`);
+        row.querySelector(".dd-add").onclick = () => {
+          const cart = ddStore().cart, ex = cart.find((c) => c.id === r.id + ":" + m.n);
+          if (ex) ex.qty++; else cart.push({ id: r.id + ":" + m.n, n: m.n, p: m.p, qty: 1, resto: r.name });
+          State.save(); render();
+          if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "Added to cart", body: m.n });
+        };
+        menu.appendChild(row);
+      });
+    }
+    function cartView(el2) {
+      const cart = ddStore().cart;
+      if (!cart.length) { el2.innerHTML = `<button class="dd-back">‹ Back</button><div class="dd-empty">🛒 Your cart is empty.<br><span>Add items from a restaurant to get started.</span></div>`; el2.querySelector(".dd-back").onclick = () => { view = "list"; paint(); }; return; }
+      const sub = ddCartTotal(), fee = 1.99, tax = sub * 0.08, total = sub + fee + tax;
+      el2.innerHTML = `<button class="dd-back">‹ Back</button><h2 class="dd-cart-h">Your order</h2>
+        <div class="dd-cart-list"></div>
+        <div class="dd-summary">
+          <div class="dd-sum-row"><span>Subtotal</span><span>${money(sub)}</span></div>
+          <div class="dd-sum-row"><span>Delivery fee</span><span>${money(fee)}</span></div>
+          <div class="dd-sum-row"><span>Taxes & fees</span><span>${money(tax)}</span></div>
+          <div class="dd-sum-row dd-sum-total"><span>Total</span><span>${money(total)}</span></div>
+        </div>
+        <button class="dd-checkout">Place order · ${money(total)}</button>`;
+      el2.querySelector(".dd-back").onclick = () => { view = "list"; paint(); };
+      const list = el2.querySelector(".dd-cart-list");
+      cart.forEach((it) => {
+        const row = el(`<div class="dd-crow"><span class="dd-crow-n">${esc(it.n)}<small>${esc(it.resto)}</small></span><div class="dd-qty"><button class="dd-minus">−</button><span>${it.qty}</span><button class="dd-plus">+</button></div><span class="dd-crow-p">${money(it.p * it.qty)}</span></div>`);
+        row.querySelector(".dd-plus").onclick = () => { it.qty++; State.save(); render(); view = "cart"; paint(); };
+        row.querySelector(".dd-minus").onclick = () => { it.qty--; if (it.qty <= 0) ddStore().cart = ddStore().cart.filter((x) => x !== it); State.save(); render(); view = "cart"; paint(); };
+        list.appendChild(row);
+      });
+      el2.querySelector(".dd-checkout").onclick = () => {
+        const bank = S().bank; if (bank && typeof bank.balance === "number") { if (bank.balance < total) { if (window.Notify) Notify.show({ icon: "", title: "DoorDash", body: "Not enough balance in Forge Bank." }); return; } bank.balance -= total; if (bank.transactions) bank.transactions.unshift({ label: "DoorDash order", amount: -total, ts: Date.now ? Date.now() : 0 }); }
+        ddStore().orders.unshift({ items: ddStore().cart.slice(), total, ts: 0 }); ddStore().cart = []; State.save();
+        view = "track"; paint();
+      };
+    }
+    function trackView(el2) {
+      el2.innerHTML = `<div class="dd-track">
+        <div class="dd-track-emoji">🛵</div>
+        <h2>Order placed!</h2>
+        <p>Your food is on the way.</p>
+        <div class="dd-track-bar"><div class="dd-track-fill"></div></div>
+        <div class="dd-track-steps"><span class="on">Confirmed</span><span class="s2">Preparing</span><span class="s3">On the way</span><span class="s4">Delivered</span></div>
+        <div class="dd-eta">Estimated arrival: <b>25 min</b></div>
+        <button class="dd-checkout" style="max-width:240px;margin:20px auto 0">Back to restaurants</button>
+      </div>`;
+      el2.querySelector(".dd-checkout").onclick = () => { view = "list"; paint(); };
+      const fill = el2.querySelector(".dd-track-fill"); let p = 8;
+      const steps = ["s2", "s3", "s4"]; let si = 0;
+      const iv = setInterval(() => {
+        if (!document.body.contains(el2)) { clearInterval(iv); return; }
+        p = Math.min(100, p + 6); fill.style.width = p + "%";
+        if (p > 30 && si === 0) { el2.querySelector(".s2").classList.add("on"); si = 1; }
+        if (p > 62 && si === 1) { el2.querySelector(".s3").classList.add("on"); si = 2; }
+        if (p >= 100) { const s4 = el2.querySelector(".s4"); if (s4) s4.classList.add("on"); clearInterval(iv); }
+      }, 900);
+    }
+    render();
+  }
+
+  window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo, netflix, flightstats: flightStats, doordash };
 })();

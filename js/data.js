@@ -159,6 +159,7 @@
     { label: "Duolingo", url: "duolingo.local" },
     { label: "Netflix", url: "netflix.local" },
     { label: "FlightStats", url: "flightstats.local" },
+    { label: "DoorDash", url: "doordash.local" },
   ];
 
   window.Catalog = { storeApps, amazonItems, channels, discordServers, bookmarks };

@@ -3128,3 +3128,63 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .mc-end-line { line-height: 1.9; font-size: 1.15rem; text-shadow: 2px 2px #000; }
 .mc-end-hint { position: absolute; bottom: 10px; right: 14px; color: #555; font-size: .72rem; }
 .mc-obf { font-family: "Minecraftia", monospace; }
+
+/* ============================ DoorDash site ============================ */
+.dd { display: flex; flex-direction: column; height: 100%; background: #fff; color: #191919; font-family: "Segoe UI", system-ui, sans-serif; overflow: auto; }
+.dd-top { display: flex; align-items: center; gap: 16px; padding: 12px 22px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff; z-index: 5; }
+.dd-logo { height: 26px; cursor: pointer; }
+.dd-addr { font-size: .88rem; color: #444; }
+.dd-cart-btn { background: #ff3008; color: #fff; border: 0; border-radius: 24px; padding: 9px 18px; font-weight: 700; cursor: pointer; font-size: .86rem; }
+.dd-cart-btn:hover { filter: brightness(1.05); }
+.dd-body { flex: 1; padding: 22px; }
+.dd-hero h1 { margin: 0 0 4px; font-size: 1.8rem; }
+.dd-hero p { margin: 0 0 18px; color: #666; }
+.dd-cats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.dd-cat { background: #f4f4f4; border-radius: 20px; padding: 8px 16px; font-size: .85rem; font-weight: 600; }
+.dd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+.dd-card { border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid #eee; transition: box-shadow .15s, transform .12s; background: #fff; }
+.dd-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.1); transform: translateY(-2px); }
+.dd-card-img { height: 130px; display: flex; align-items: center; justify-content: center; position: relative; }
+.dd-card-img span { font-size: 3.4rem; }
+.dd-free { position: absolute; bottom: 10px; left: 10px; background: #fff; color: #ff3008; font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+.dd-card-b { padding: 12px 14px; }
+.dd-card-name { font-weight: 700; font-size: 1rem; }
+.dd-card-meta { font-size: .8rem; color: #444; margin-top: 3px; }
+.dd-card-cui { font-size: .78rem; color: #888; margin-top: 2px; }
+.dd-back { background: none; border: 0; color: #ff3008; font-weight: 700; cursor: pointer; font-size: .9rem; margin-bottom: 12px; padding: 0; }
+.dd-rhero { height: 160px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.dd-rhero span { font-size: 4.5rem; }
+.dd-rhead h2 { margin: 0 0 4px; font-size: 1.5rem; }
+.dd-menu-h { margin: 22px 0 12px; }
+.dd-menu { display: flex; flex-direction: column; gap: 10px; }
+.dd-item { display: flex; align-items: center; gap: 14px; border: 1px solid #eee; border-radius: 12px; padding: 14px; }
+.dd-item-b { flex: 1; }
+.dd-item-n { font-weight: 600; }
+.dd-item-d { font-size: .82rem; color: #777; margin: 2px 0 6px; }
+.dd-item-p { font-weight: 700; }
+.dd-add { background: #fff; border: 1.5px solid #ff3008; color: #ff3008; border-radius: 20px; padding: 8px 18px; font-weight: 700; cursor: pointer; }
+.dd-add:hover { background: #ff3008; color: #fff; }
+.dd-empty { text-align: center; padding: 60px 20px; color: #666; font-size: 1.2rem; }
+.dd-empty span { font-size: .9rem; color: #999; }
+.dd-cart-h { margin: 0 0 14px; }
+.dd-cart-list { display: flex; flex-direction: column; gap: 8px; }
+.dd-crow { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.dd-crow-n { flex: 1; font-weight: 600; display: flex; flex-direction: column; }
+.dd-crow-n small { font-weight: 400; color: #999; font-size: .74rem; }
+.dd-qty { display: flex; align-items: center; gap: 10px; }
+.dd-qty button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 1rem; }
+.dd-crow-p { font-weight: 700; min-width: 60px; text-align: right; }
+.dd-summary { margin: 18px 0; border-top: 1px solid #eee; padding-top: 14px; }
+.dd-sum-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: .9rem; color: #555; }
+.dd-sum-total { font-weight: 800; font-size: 1.05rem; color: #191919; border-top: 1px solid #eee; margin-top: 6px; padding-top: 10px; }
+.dd-checkout { display: block; width: 100%; background: #ff3008; color: #fff; border: 0; border-radius: 24px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; }
+.dd-checkout:hover { filter: brightness(1.05); }
+.dd-track { text-align: center; padding: 30px 20px; max-width: 460px; margin: 0 auto; }
+.dd-track-emoji { font-size: 4rem; }
+.dd-track h2 { margin: 8px 0 4px; }
+.dd-track p { color: #666; margin: 0 0 20px; }
+.dd-track-bar { height: 8px; background: #eee; border-radius: 5px; overflow: hidden; }
+.dd-track-fill { height: 100%; width: 8%; background: #ff3008; border-radius: 5px; transition: width .8s linear; }
+.dd-track-steps { display: flex; justify-content: space-between; margin: 10px 0 0; font-size: .74rem; color: #bbb; }
+.dd-track-steps .on { color: #ff3008; font-weight: 700; }
+.dd-eta { margin-top: 20px; color: #444; }

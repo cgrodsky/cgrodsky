@@ -13,6 +13,7 @@
     "duolingo": "duolingo", "duolingo.local": "duolingo", "duolingo.com": "duolingo",
     "netflix": "netflix", "netflix.local": "netflix", "netflix.com": "netflix",
     "flightstats": "flightstats", "flightstats.local": "flightstats", "flightstats.com": "flightstats", "flights": "flightstats",
+    "doordash": "doordash", "doordash.local": "doordash", "doordash.com": "doordash",
   };
 
   function resolveSpecial(input) {
