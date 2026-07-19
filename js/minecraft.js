@@ -245,8 +245,9 @@
         ${modsBtn}
         <div class="double">
           <div class="mc-button full" data-act="opts"><div class="title">Options</div></div>
-          <div class="mc-button full" data-act="quit"><div class="title">Quit Game</div></div>
+          <div class="mc-button full" data-act="credits"><div class="title">The End</div></div>
         </div>
+        <div class="mc-button full" data-act="quit"><div class="title">Quit Game</div></div>
         <div class="mc-button full lang" data-act="lang"><div class="title">EN</div></div>
       </div>
       <div class="mc-splash-text">100% 3D!</div>
@@ -256,6 +257,7 @@
       play: () => createWorld(body, ref),
       opts: () => options(body, ref),
       mods: () => modsScreen(body, ref),
+      credits: () => endSequence(body, ref),
       quit: () => ref.close(),
       multi: () => Notify.show({ icon: "", title: "Multiplayer", body: "No servers reachable in the simulation." }),
       realms: () => Notify.show({ icon: "", title: "Realms", body: "Realms isn't available here." }),
@@ -274,6 +276,101 @@
       <button class="mc-btn" id="modsdone" style="margin-top:16px">Done</button>
     </div>`;
     body.querySelector("#modsdone").onclick = () => menu(body, ref);
+  }
+
+  // End-game credits sequence: drifting particles + slow-scrolling two-voice text
+  // using Minecraft's § colour codes. The text below is ORIGINAL (the real End Poem
+  // is a copyrighted work); credits are brief factual attribution.
+  const MC_COL = { "0": "#000000", "1": "#0000AA", "2": "#00AA00", "3": "#00AAAA", "4": "#AA0000", "5": "#AA00AA", "6": "#FFAA00", "7": "#AAAAAA", "8": "#555555", "9": "#5555FF", a: "#55FF55", b: "#55FFFF", c: "#FF5555", d: "#FF55FF", e: "#FFFF55", f: "#FFFFFF" };
+  const END_TEXT = [
+    "§3Another one has reached the end.",
+    "",
+    "§2The builder? The one who never stopped digging?",
+    "",
+    "§3Yes. It shaped a whole world out of almost nothing.",
+    "",
+    "§2It believes these blocks are the universe.",
+    "",
+    "§3Let it believe. The dream is gentler than the waking.",
+    "",
+    "§2It carried §f§klanterns§r §2into the dark and called it courage.",
+    "",
+    "§3It fell a thousand times and stood up a thousand and one.",
+    "",
+    "§2Does it know we were here, watching?",
+    "",
+    "§3It senses something beyond the screen. That is enough.",
+    "",
+    "§2Then tell it the one thing it needs.",
+    "",
+    "§3That the light it searched for was the light it carried in.",
+    "",
+    "§2That the world it made is truer than it dares to think.",
+    "",
+    "§3Player. The game is only resting now.",
+    "",
+    "§2Feel your hands. Feel the floor beneath you.",
+    "",
+    "§3You made it this far. That was never nothing.",
+    "",
+    "§2Now wake up — and go build something real.",
+    "",
+    "",
+    "",
+    "§6Minecraft",
+    "§7created by Markus \"Notch\" Persson & Mojang Studios",
+    "§7music by Daniel Rosenfeld (C418)",
+    "",
+    "§bWindows 12 Edition",
+    "§7a fan-made simulation",
+    "",
+    "",
+    "§aThank you for playing.",
+    "",
+    "",
+  ];
+  function endSequence(body, ref) {
+    const esch = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+    function fmt(line) {
+      if (line === "") return "<div class=\"mc-end-line\">&nbsp;</div>";
+      let out = "", color = "#fff", obf = false;
+      const parts = line.split("§");
+      const add = (t) => { if (!t) return; if (obf) out += `<span class="mc-obf" style="color:${color}" data-len="${t.length}">${esch(t)}</span>`; else out += `<span style="color:${color}">${esch(t)}</span>`; };
+      add(parts[0]);
+      for (let i = 1; i < parts.length; i++) { const c = parts[i][0], rest = parts[i].slice(1); if (c === "k") obf = true; else if (c === "r") { color = "#fff"; obf = false; } else if (MC_COL[c]) { color = MC_COL[c]; obf = false; } add(rest); }
+      return `<div class="mc-end-line">${out}</div>`;
+    }
+    const ov = el(`<div class="mc-end"><div class="mc-end-sky"></div><div class="mc-end-scroll">${END_TEXT.map(fmt).join("")}</div><div class="mc-end-hint">click to skip</div></div>`);
+    const sky = ov.querySelector(".mc-end-sky");
+    for (let i = 0; i < 16; i++) {
+      const px = el(`<span class="mc-end-p"></span>`);
+      px.style.left = (Math.random() * 100) + "%"; px.style.top = (Math.random() * 100) + "%";
+      px.style.animationDelay = (-Math.random() * 24) + "s"; px.style.animationDuration = (18 + Math.random() * 22) + "s";
+      const s = 16 + Math.random() * 46; px.style.width = s + "px"; px.style.height = s + "px"; px.style.opacity = 0.05 + Math.random() * 0.14;
+      sky.appendChild(px);
+    }
+    body.innerHTML = ""; body.appendChild(ov);
+    // glitch the obfuscated (§k) spans
+    const CH = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/\\|#*+";
+    const obfEls = [...ov.querySelectorAll(".mc-obf")];
+    const obfIv = setInterval(() => { obfEls.forEach((e) => { const n = +e.dataset.len; let s = ""; for (let j = 0; j < n; j++) s += CH[Math.floor(Math.random() * CH.length)]; e.textContent = s; }); }, 55);
+    // slow cinematic scroll (JS-driven for reliable timing)
+    const scroll = ov.querySelector(".mc-end-scroll");
+    let raf = null, done = false;
+    function finish() { if (done) return; done = true; clearInterval(obfIv); cancelAnimationFrame(raf); menu(body, ref); }
+    requestAnimationFrame(() => {
+      let y = ov.clientHeight, endY = -scroll.scrollHeight - 20, last = 0;
+      scroll.style.transform = "translateY(" + y + "px)";
+      function step(ts) {
+        if (!last) last = ts; const dt = Math.min(60, ts - last); last = ts;
+        y -= 42 * dt / 1000;                        // ~42px per second
+        scroll.style.transform = "translateY(" + y + "px)";
+        if (y <= endY) { finish(); return; }
+        raf = requestAnimationFrame(step);
+      }
+      raf = requestAnimationFrame(step);
+    });
+    ov.onclick = finish;
   }
 
   function createWorld(body, ref) {
