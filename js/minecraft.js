@@ -440,6 +440,7 @@
       <canvas class="mc3-canvas"></canvas>
       <div class="mc3-crosshair"></div>
       <div class="mc3-hurt"></div>
+      <div class="mc3-bossbar" style="display:none"><div class="mc3-boss-name"></div><div class="mc3-boss-track"><div class="mc3-boss-fill"></div></div></div>
       <div class="mc3-hud">
         <div class="mc3-stats" style="display:${creative ? "none" : "flex"}"><div class="mc3-hearts"></div><div class="mc3-hunger"></div></div>
         <div class="mc3-xprow" style="display:${creative ? "none" : "flex"}"><span class="mc3-xp-lvl">0</span><div class="mc3-xp"><div class="mc3-xp-fill"></div></div></div>
@@ -845,9 +846,11 @@
       zombie:   { hp: 20, hostile: true,  body: 0x27a0a0, head: 0x5aa15a, snout: 0x5aa15a, hh: 1.85, ww: 0.6, spd: 2.1, xp: 5, dmg: 3 },
       creeper:  { hp: 20, hostile: true,  body: 0x4fa53a, head: 0x57b040, snout: 0x2f6d22, hh: 1.5, ww: 0.55, spd: 1.75, xp: 5, dmg: 7, creeper: true, hit: "creeper_hit.wav", die: "creeper_death.wav" },
       villager: { hp: 20, hostile: false, body: 0x8b6d5c, head: 0xc7a088, snout: 0xb08060, hh: 1.9, ww: 0.6, spd: 1.0, xp: 0 },
+      warden:   { hp: 150, hostile: true, body: 0x0c3a3c, head: 0x0a2f31, snout: 0x18d0d8, hh: 2.7, ww: 1.15, spd: 1.35, xp: 60, dmg: 14, boss: true, bossName: "The Warden", bossColor: "#12b5c9" },
     };
     const mobs = [];
     const MOB_CAP = 12;
+    const bossEl = body.querySelector(".mc3-bossbar"), bossNameEl = body.querySelector(".mc3-boss-name"), bossFillEl = body.querySelector(".mc3-boss-fill");
     function makeMobMesh(def) {
       const g = new THREE.Group();
       const mats = [];
@@ -875,7 +878,7 @@
       const { g, mats } = makeMobMesh(def);
       g.position.set(x, sy, z);
       scene.add(g);
-      mobs.push({ type, def, mesh: g, mats, pos: new THREE.Vector3(x, sy, z), vel: new THREE.Vector3(), yaw: Math.random() * 6.28, hp: def.hp, hurtT: 0, wanderT: 0, atkCd: 0, onGround: false });
+      mobs.push({ type, def, mesh: g, mats, pos: new THREE.Vector3(x, sy, z), vel: new THREE.Vector3(), yaw: Math.random() * 6.28, hp: def.hp, maxHp: def.hp, hurtT: 0, wanderT: 0, atkCd: 0, onGround: false });
     }
     function feetY(x, z, fromY) { let y = Math.min(H - 1, Math.floor(fromY) + 1); while (y > 0 && !solid(Math.floor(x), y - 1, Math.floor(z))) y--; return y; }
     function mobHurt(m, dmg, kx, kz) {
@@ -957,6 +960,15 @@
         m.mesh.position.copy(m.pos);
         m.mesh.rotation.y = m.yaw;
       }
+      // boss bar: track the nearest living boss
+      let boss = null, bd = 1e9;
+      for (const m of mobs) { if (m.def.boss && !m.dead) { const d = Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z); if (d < bd) { bd = d; boss = m; } } }
+      if (boss) {
+        bossEl.style.display = "block";
+        bossNameEl.textContent = boss.def.bossName || "Boss";
+        bossFillEl.style.width = Math.max(0, boss.hp / boss.maxHp * 100) + "%";
+        bossFillEl.style.background = boss.def.bossColor || "#e0518a";
+      } else bossEl.style.display = "none";
     }
     let spawnAcc = 0;
     function spawnTick(dt) {
@@ -974,6 +986,8 @@
       }
       const ang = Math.random() * 6.28, dist = 14 + Math.random() * (CH * RENDER - 16);
       const x = player.pos.x + Math.sin(ang) * dist, z = player.pos.z + Math.cos(ang) * dist;
+      // rare boss: only one at a time
+      if (!creative && Math.random() < 0.04 && !mobs.some((m) => m.def.boss)) { spawnMob("warden", x, z); return; }
       const r = Math.random();
       spawnMob(r < 0.16 ? "zombie" : r < 0.30 ? "creeper" : r < 0.48 ? "pig" : r < 0.64 ? "cow" : r < 0.82 ? "sheep" : "chicken", x, z);
     }
