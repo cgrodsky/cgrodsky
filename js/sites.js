@@ -1867,6 +1867,15 @@
     let view = "list", resto = null;
     function money(n) { return "$" + n.toFixed(2); }
 
+    // Branded loading screen shown while the app "boots".
+    function boot() {
+      page.innerHTML = `<div class="dd-load">
+        <img class="dd-load-logo" src="assets/doordash.png?v=1" alt="DoorDash">
+        <div class="dd-load-dots"><span></span><span></span><span></span></div>
+      </div>`;
+      setTimeout(render, 950);
+    }
+
     function render() {
       page.innerHTML = `<div class="dd">
         <div class="dd-top">
@@ -1969,7 +1978,7 @@
         if (p >= 100) { const s4 = el2.querySelector(".s4"); if (s4) s4.classList.add("on"); clearInterval(iv); }
       }, 900);
     }
-    render();
+    boot();
   }
 
   window.Sites = { bank, amazon, microsoft, youtube, discord, duolingo, netflix, flightstats: flightStats, doordash };
