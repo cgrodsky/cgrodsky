@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoorDash Loading Wheel</title>
+<style>
+  :root {
+    --dd-red: #eb1700;      /* DoorDash brand red */
+    --track: #f0efed;       /* light grey track */
+    --size: 96px;           /* wheel diameter */
+    --thickness: 9px;       /* ring thickness */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    color: #191919;
+  }
+
+  /* ---- The loading wheel ---- */
+  .dd-spinner {
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    /* full grey track underneath */
+    border: var(--thickness) solid var(--track);
+    /* one coloured segment on top that sweeps around */
+    border-top-color: var(--dd-red);
+    animation: dd-spin 0.9s linear infinite;
+  }
+
+  @keyframes dd-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .label {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #767676;
+  }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dd-spinner { animation-duration: 2.5s; }
+  }
+</style>
+</head>
+<body>
+  <div class="dd-spinner" role="status" aria-label="Loading"></div>
+  <p class="label">Loading&hellip;</p>
+</body>
+</html>
