@@ -5,7 +5,8 @@
   "use strict";
   const CFG = {
     baseUrl: "https://app-3vrdovwwww73.frontegg.com",
-    clientId: window.FRONTEGG_CLIENT_ID || "",   // public Client ID (NOT the API key) — fill in when provided
+    // Public Client ID (the tenant/vendor id — safe to publish; the API key stays out of the repo).
+    clientId: window.FRONTEGG_CLIENT_ID || "9dba3c08-27f3-4434-a9fe-fde411ea5c0f",
   };
   const KEY = "fe_session_v1";
   const redirectUri = window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "frontegg-callback.html";
