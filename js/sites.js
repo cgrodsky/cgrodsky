@@ -1888,9 +1888,25 @@
           <div class="dd-toggle"><button data-m="Delivery" class="${mode === "Delivery" ? "on" : ""}">Delivery</button><button data-m="Pickup" class="${mode === "Pickup" ? "on" : ""}">Pickup</button></div>
           <button class="dd-bell" title="Notifications">🔔<span class="dd-bell-dot"></span></button>
           <button class="dd-cart-btn">🛒 <span class="dd-cart-n">${ddCartCount()}</span></button>
+          <button class="dd-signin"></button>
         </div>
         <div class="dd-body"></div>
       </div>`;
+      const signBtn = page.querySelector(".dd-signin");
+      function paintSign() {
+        const u = window.FE && FE.user();
+        signBtn.textContent = u ? (u.name || u.email || "Account") : "Sign in";
+        signBtn.classList.toggle("dd-signed", !!u);
+        signBtn.title = u ? "Sign out" : "Sign in with your account";
+      }
+      paintSign();
+      signBtn.onclick = async () => {
+        const u = window.FE && FE.user();
+        if (u) { FE.logout(); paintSign(); render(); return; }
+        if (!window.FE || !FE.configured()) { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DoorDash", body: "Sign-in isn't configured yet (waiting on the Frontegg client ID)." }); return; }
+        try { await FE.login(); render(); }
+        catch (e) { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "Sign in", body: e.message || "Sign-in failed." }); }
+      };
       page.querySelector(".dd-cart-btn").onclick = () => { view = "cart"; paint(); };
       page.querySelector(".dd-logo").onclick = () => { query = ""; view = "list"; render(); };
       const search = page.querySelector(".dd-search-in");
@@ -1909,7 +1925,8 @@
     function listView(el2) {
       const q = query.trim().toLowerCase();
       const list = q ? DD_RESTOS.filter((r) => (r.name + " " + r.cuisine + " " + r.menu.map((m) => m.n).join(" ")).toLowerCase().includes(q)) : DD_RESTOS;
-      const uname = (S().profile && S().profile.username) || (S().account && S().account.name) || "there";
+      const feUser = window.FE && FE.user();
+      const uname = (feUser && (feUser.name || feUser.email)) || (S().profile && S().profile.username) || (S().account && S().account.name) || "there";
       const CATS = [["🥗", "Healthy"], ["🥪", "Sandwiches"], ["🏷️", "Deals"], ["🍣", "Sushi"], ["🍟", "Fast Food"], ["🍕", "Pizza"], ["🌮", "Mexican"], ["🍔", "Burgers"], ["🍳", "Breakfast"], ["☕", "Coffee"]];
       el2.innerHTML = `<div class="dd-hero"><h1>${q ? "Results for “" + esc(query) + "”" : "Welcome back, " + esc(uname)}</h1><p>${list.length} restaurant${list.length === 1 ? "" : "s"} near you</p></div>
         <div class="dd-cats">${CATS.map((c) => `<button class="dd-cat" data-q="${esc(c[1])}">${c[0]} ${c[1]}</button>`).join("")}</div>
