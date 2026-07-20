@@ -4,8 +4,8 @@
 (function () {
   "use strict";
   const CFG = {
-    baseUrl: "https://ni0yxgu17rkh3uz63uk2hl.frontegg.com",
-    clientId: window.FRONTEGG_CLIENT_ID || "",   // fill in when provided
+    baseUrl: "https://app-3vrdovwwww73.frontegg.com",
+    clientId: window.FRONTEGG_CLIENT_ID || "",   // public Client ID (NOT the API key) — fill in when provided
   };
   const KEY = "fe_session_v1";
   const redirectUri = window.location.origin + window.location.pathname.replace(/[^/]*$/, "") + "frontegg-callback.html";
