@@ -3263,3 +3263,5 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dev-hud-vol { display: flex; gap: 4px; justify-content: center; margin-top: 18px; }
 .dev-hud-vol span { width: 10px; height: 10px; border-radius: 2.5px; background: rgba(255,255,255,.22); }
 .dev-hud-vol span.on { background: #fff; }
+.dev-hud-art { max-width: 150px; max-height: 120px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.35)); }
+.dev-hud-brand { color: rgba(255,255,255,.85); font-size: 1rem; font-weight: 700; letter-spacing: .12em; margin-top: 6px; }

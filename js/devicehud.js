@@ -23,11 +23,22 @@
     <line x1="16" y1="92" x2="104" y2="8" stroke="#ff6b6b" stroke-width="7"/>
   </svg>`;
 
+  // Pick artwork + brand mark from the device name.
+  function artFor(name) {
+    const n = String(name).toLowerCase();
+    if (/airpods\s*max/.test(n)) return { img: "assets/hud_airpodsmax.png", brand: "" };
+    if (/airpods|earpods|\bpods\b|buds/.test(n)) return { img: "assets/hud_airpods.png", brand: "" };
+    if (/jbl|speaker|flip|charge\s?\d|boombox|partybox|soundlink|megaboom|wonderboom|srs-|sonos|echo|homepod/.test(n))
+      return { img: "assets/hud_speaker.png", brand: /jbl/.test(n) ? "JBL" : "" };
+    if (/sony|wh-|wf-|xm\d/.test(n)) return { img: "assets/hud_sony.png", brand: "SONY" };
+    return { img: "assets/hud_sony.png", brand: "" };   // generic headphones -> over-ear art
+  }
+
   let hudEl = null, hideT = null;
   function show(opts) {
     const name = (opts && opts.name) || "Headphones";
     const connected = !opts || opts.connected !== false;
-    const isPods = /airpods|buds|pods/i.test(name);
+    const art = artFor(name);
     if (!hudEl) {
       hudEl = document.createElement("div");
       hudEl.className = "dev-hud";
@@ -35,9 +46,10 @@
       hudEl.onclick = hide;
     }
     hudEl.innerHTML = `
-      <div class="dev-hud-icon">${connected ? (isPods ? AIRPODS_SVG : HEADPHONE_SVG) : OFF_SVG}</div>
+      <div class="dev-hud-icon">${connected ? `<img class="dev-hud-art" src="${art.img}?v=1" alt="">` : OFF_SVG}</div>
       <div class="dev-hud-name">${String(name).replace(/[<>&]/g, "")}</div>
       <div class="dev-hud-sub">${connected ? "Connected" : "Disconnected"}</div>
+      ${connected && art.brand ? `<div class="dev-hud-brand">${art.brand}</div>` : ""}
       <div class="dev-hud-vol">${Array.from({ length: 16 }, (_, i) => `<span class="${i < 10 ? "on" : ""}"></span>`).join("")}</div>`;
     clearTimeout(hideT);
     requestAnimationFrame(() => hudEl.classList.add("show"));
