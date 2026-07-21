@@ -1928,7 +1928,7 @@
         const n = b.dataset.n;
         if (n === "switch") { if (window.FE) { FE.logout(); } signBtn.click(); return; }
         sideNav = n; query = "";
-        view = n === "home" ? "list" : n === "orders" ? "orders" : n === "account" ? "account" : n === "deals" ? "deals" : "cat";
+        view = n === "home" ? "list" : n === "orders" ? "orders" : n === "account" ? "account" : n === "deals" ? "deals" : n === "retail" ? "retail" : "cat";
         render();
       });
       const signBtn = page.querySelector(".dd-signin");
@@ -2018,7 +2018,61 @@
       if (view === "orders") return ordersView(bodyEl);
       if (view === "account") return accountView(bodyEl);
       if (view === "deals") return dealsView(bodyEl);
+      if (view === "retail") return retailView(bodyEl);
       if (view === "cat") return catView(bodyEl);
+    }
+    const DD_STORES = [
+      { n: "CVS", min: 15, c: "#cc0000", t: "CVS", tag: `<span class="dd-store-deal">35% off $25+, up to $10</span> with <b class="dd-dp-word">DashPass</b>` },
+      { n: "Carter's", min: 44, c: "#29abe2", t: "carter's", note: "Accepts orders until 7:00 PM", tag: `<span class="dd-store-chip">Farther away</span>` },
+      { n: "Dollar Tree", min: 20, c: "#2e7d32", t: "DT", tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Target", min: 30, c: "#cc0000", t: "T" },
+      { n: "Walgreens", min: 25, c: "#e31837", t: "W", tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Ralphs", min: 15, c: "#d81e2c", t: "R", tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "The Home Depot", min: 34, c: "#f96302", t: "HD" },
+      { n: "Best Buy", min: 16, c: "#0a4abf", t: "BB" },
+      { n: "Five Below", min: 23, c: "#0053a0", t: "f5" },
+      { n: "Ace Hardware", min: 21, c: "#d40029", t: "ACE" },
+    ];
+    function retailView(el2) {
+      el2.innerHTML = `<h2 class="dd-retail-h">Retail</h2>
+        <div class="dd-pills">
+          <button class="dd-pill"><b class="dd-dp-word">Ⓓ</b> DashPass</button>
+          <button class="dd-pill">💳 HSA/FSA</button>
+          <button class="dd-pill">Over 4.5 ★ ▾</button>
+          <button class="dd-pill">Under 30 min</button>
+          <button class="dd-pill">Price ▾</button>
+        </div>
+        <div class="dd-promo">
+          <div class="dd-promo-l">
+            <h3>Coming soon: $40 off Sephora</h3>
+            <p>Save on a $100+ order with DashPass on 7/22 only, at 9am EDT.</p>
+            <button class="dd-promo-btn">Learn more</button>
+          </div>
+          <div class="dd-promo-r"><span class="dd-promo-tag">Ⓓ SUMMER of DASHPASS</span><span class="dd-promo-drop">DEAL<br>DROP<br>7/22</span><span class="dd-promo-sephora">SEPHORA</span></div>
+        </div>
+        <h3 class="dd-stores-h">Top Stores</h3>
+        <div class="dd-stores"></div>
+        <div class="dd-seeall"><div><b>See All Stores Nearby</b><p>Lowe's, Dick's Sporting Goods, Michaels, Grocery Outlet, Sprouts Farmers Market, Smart &amp; Final, Vons, Pet Food…</p></div><span>›</span></div>
+        <div class="dd-swim">
+          <img src="assets/dd_swim.jpg?v=1" alt="">
+          <div class="dd-swim-txt"><h3>Swimwear for the fam</h3><p>Delivered to your door in minutes</p><button class="dd-promo-btn dark">Order now</button></div>
+        </div>`;
+      const wrap = el2.querySelector(".dd-stores");
+      DD_STORES.forEach((s) => {
+        const row = el(`<div class="dd-store">
+          <span class="dd-store-logo" style="color:${s.c}">${esc(s.t)}</span>
+          <div class="dd-store-b">
+            ${s.note ? `<div class="dd-store-note">${esc(s.note)}</div>` : ""}
+            <div class="dd-store-n"><b class="dd-dp-word">Ⓓ</b> ${esc(s.n)}</div>
+            <div class="dd-store-min">${s.min} min</div>
+            ${s.tag ? `<div class="dd-store-tags">${s.tag}</div>` : ""}
+          </div>
+          <button class="dd-store-fav">♡</button>
+        </div>`);
+        row.onclick = (e) => { if (e.target.closest(".dd-store-fav")) { e.target.textContent = e.target.textContent === "♡" ? "❤️" : "♡"; return; } if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: s.n, body: "This store doesn't deliver to the simulation yet." }); };
+        wrap.appendChild(row);
+      });
+      el2.querySelector(".dd-promo-btn").onclick = () => { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DashPass", body: "Deal drops 7/22 at 9am EDT. Set a reminder!" }); };
     }
     function ordersView(el2) {
       const orders = ddStore().orders;

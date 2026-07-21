@@ -3334,3 +3334,42 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-feat-add:hover { transform: scale(1.06); }
 .dd-feat-n { font-weight: 700; font-size: .9rem; margin-top: 8px; }
 .dd-feat-meta { font-size: .8rem; color: #555; margin-top: 2px; }
+
+/* DoorDash Retail page */
+.dd-retail-h { margin: 0 0 14px; font-size: 1.8rem; }
+.dd-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.dd-pill { background: #f4f4f4; border: 0; border-radius: 20px; padding: 10px 18px; font-size: .88rem; font-weight: 700; cursor: pointer; color: #191919; }
+.dd-pill:hover { background: #ececec; }
+.dd-dp-word { color: #eb1700; font-style: normal; }
+.dd-promo { display: flex; border-radius: 14px; overflow: hidden; margin-bottom: 26px; min-height: 150px; }
+.dd-promo-l { flex: 1.2; background: #5b2ee5; color: #fff; padding: 22px 26px; }
+.dd-promo-l h3 { margin: 0 0 8px; font-size: 1.3rem; }
+.dd-promo-l p { margin: 0 0 16px; font-size: .88rem; opacity: .95; }
+.dd-promo-btn { background: #b8f5e4; color: #0a3d30; border: 0; border-radius: 20px; padding: 10px 20px; font-weight: 700; cursor: pointer; }
+.dd-promo-btn.dark { background: #191919; color: #fff; }
+.dd-promo-r { flex: 1; background: #bdeedd; position: relative; display: flex; align-items: center; justify-content: center; }
+.dd-promo-tag { position: absolute; top: 14px; left: 14px; background: #1d1069; color: #fff; font-size: .68rem; font-weight: 800; padding: 4px 10px; border-radius: 12px; }
+.dd-promo-drop { background: #5b2ee5; color: #fff; font-weight: 800; font-size: .8rem; text-align: center; border-radius: 50%; padding: 16px 12px; transform: rotate(-8deg); line-height: 1.2; }
+.dd-promo-sephora { position: absolute; right: 16px; bottom: 18px; background: #000; color: #fff; font-size: .62rem; font-weight: 700; letter-spacing: .18em; border-radius: 50%; width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; }
+.dd-stores-h { margin: 0 0 14px; font-size: 1.4rem; }
+.dd-stores { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.dd-store { display: flex; align-items: center; gap: 14px; border: 1px solid #eee; border-radius: 14px; padding: 16px; cursor: pointer; }
+.dd-store:hover { box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+.dd-store-logo { width: 56px; height: 56px; flex: 0 0 auto; border-radius: 50%; border: 1px solid #eee; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .82rem; }
+.dd-store-b { flex: 1; min-width: 0; }
+.dd-store-note { color: #9a6a00; font-size: .8rem; font-weight: 700; }
+.dd-store-n { font-weight: 800; font-size: 1rem; }
+.dd-store-min { color: #666; font-size: .82rem; margin-top: 1px; }
+.dd-store-tags { margin-top: 6px; font-size: .78rem; color: #444; }
+.dd-store-chip { background: #f4f4f4; border-radius: 12px; padding: 3px 10px; font-weight: 700; font-size: .72rem; }
+.dd-store-deal { background: #fdecec; color: #c81f1f; border-radius: 12px; padding: 3px 10px; font-weight: 700; font-size: .72rem; }
+.dd-store-fav { background: none; border: 0; font-size: 1.3rem; cursor: pointer; color: #444; }
+.dd-seeall { display: flex; align-items: center; gap: 12px; border: 1px solid #eee; border-radius: 14px; padding: 16px 20px; margin-bottom: 26px; cursor: pointer; max-width: 560px; }
+.dd-seeall p { margin: 4px 0 0; color: #777; font-size: .82rem; }
+.dd-seeall span { font-size: 1.4rem; color: #999; margin-left: auto; }
+.dd-swim { display: flex; border-radius: 14px; overflow: hidden; border: 1px solid #eee; margin-bottom: 20px; }
+.dd-swim img { width: 46%; object-fit: cover; display: block; }
+.dd-swim-txt { flex: 1; padding: 26px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.dd-swim-txt h3 { margin: 0; font-size: 1.3rem; }
+.dd-swim-txt p { margin: 0 0 12px; color: #666; }
+.dd-swim-txt .dd-promo-btn { align-self: flex-start; }
