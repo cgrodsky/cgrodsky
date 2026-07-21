@@ -3145,7 +3145,7 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
 .dd-card { border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid #eee; transition: box-shadow .15s, transform .12s; background: #fff; }
 .dd-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.1); transform: translateY(-2px); }
-.dd-card-img { height: 130px; display: flex; align-items: center; justify-content: center; position: relative; }
+.dd-card-img { height: 130px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .dd-card-img span { font-size: 3.4rem; }
 .dd-free { position: absolute; bottom: 10px; left: 10px; background: #fff; color: #ff3008; font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
 .dd-card-b { padding: 12px 14px; }
@@ -3321,3 +3321,16 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-dp-btn { background: #fff; color: #6331DF; border: 0; border-radius: 22px; padding: 11px 20px; font-weight: 800; font-size: .88rem; cursor: pointer; white-space: nowrap; }
 .dd-dp-btn:hover { filter: brightness(.95); }
 .dd-dp-tag { font-style: italic; color: #6331DF; font-size: .72rem; margin-left: 4px; }
+.dd-card-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.dd-rhero-photo { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+
+/* DoorDash featured items (Tony's) */
+.dd-feat { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; }
+.dd-feat-card { flex: 0 0 172px; }
+.dd-feat-img { position: relative; width: 172px; height: 150px; border-radius: 12px; overflow: hidden; }
+.dd-feat-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dd-feat-badge { position: absolute; top: 10px; left: 10px; background: #0e7d46; color: #fff; font-size: .72rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+.dd-feat-add { position: absolute; right: 10px; bottom: 10px; width: 38px; height: 38px; border-radius: 50%; border: 0; background: #fff; color: #191919; font-size: 1.3rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); display: flex; align-items: center; justify-content: center; }
+.dd-feat-add:hover { transform: scale(1.06); }
+.dd-feat-n { font-weight: 700; font-size: .9rem; margin-top: 8px; }
+.dd-feat-meta { font-size: .8rem; color: #555; margin-top: 2px; }

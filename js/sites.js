@@ -1847,7 +1847,14 @@
   const DD_RESTOS = [
     { id: "burger", name: "Burger Barn", cuisine: "American · Burgers", rating: 4.7, eta: "20–30 min", fee: 0, c1: "#f59e0b", c2: "#b45309", emoji: "🍔",
       menu: [{ n: "Classic Cheeseburger", p: 9.49, d: "Beef patty, cheddar, lettuce, tomato" }, { n: "Bacon Double", p: 12.99, d: "Two patties, bacon, special sauce" }, { n: "Crispy Fries", p: 3.99, d: "Golden and salted" }, { n: "Chocolate Shake", p: 4.99, d: "Thick and creamy" }] },
-    { id: "pizza", name: "Tony's Pizzeria", cuisine: "Italian · Pizza", rating: 4.6, eta: "25–35 min", fee: 1.99, c1: "#ef4444", c2: "#7f1d1d", emoji: "🍕",
+    { id: "pizza", name: "Tony's Pizzeria", cuisine: "Italian · Pizza", rating: 4.6, eta: "25–35 min", fee: 1.99, c1: "#ef4444", c2: "#7f1d1d", emoji: "🍕", img: "assets/dd_pizza.jpg",
+      featured: [
+        { n: "Pepperoni Supreme - Large", p: 23.00, img: "assets/dd_item_supreme.jpg", badge: "#1 most liked", like: "100% (20)" },
+        { n: "Classic Pepperoni - Large", p: 19.00, img: "assets/dd_item_pepperoni.jpg", badge: "#2 most liked", like: "95% (24)" },
+        { n: "Garlic Breadsticks", p: 7.50, img: "assets/dd_item_sticks.jpg", badge: "#3 most liked", like: "90% (20)" },
+        { n: "Buffalo Wings (10)", p: 12.00, img: "assets/dd_item_wings.jpg", like: "100% (12)" },
+        { n: "Greek Salad", p: 9.50, img: "assets/dd_item_salad.jpg" },
+      ],
       menu: [{ n: "Margherita Pizza", p: 13.99, d: "Fresh mozzarella, basil, tomato" }, { n: "Pepperoni Pizza", p: 15.49, d: "Loaded with pepperoni" }, { n: "Garlic Knots", p: 5.99, d: "Six knots with marinara" }, { n: "Caesar Salad", p: 7.49, d: "Romaine, parmesan, croutons" }] },
     { id: "sushi", name: "Sakura Sushi", cuisine: "Japanese · Sushi", rating: 4.8, eta: "30–40 min", fee: 2.49, c1: "#10b981", c2: "#065f46", emoji: "🍣",
       menu: [{ n: "California Roll", p: 8.99, d: "Crab, avocado, cucumber" }, { n: "Spicy Tuna Roll", p: 10.49, d: "Tuna, spicy mayo, scallion" }, { n: "Salmon Nigiri (2pc)", p: 6.99, d: "Fresh salmon over rice" }, { n: "Miso Soup", p: 3.49, d: "Tofu, seaweed, scallion" }] },
@@ -2038,7 +2045,7 @@
       el2.innerHTML = `<h2 class="dd-cart-h">🏷️ Deals — free delivery</h2><div class="dd-grid"></div>`;
       const grid = el2.querySelector(".dd-grid");
       deals.forEach((r) => {
-        const card = el(`<div class="dd-card"><div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span><span class="dd-free">Free delivery</span></div>
+        const card = el(`<div class="dd-card"><div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})">${r.img ? `<img class="dd-card-photo" src="${r.img}?v=1" alt="">` : `<span>${r.emoji}</span>`}<span class="dd-free">Free delivery</span></div>
           <div class="dd-card-b"><div class="dd-card-name">${esc(r.name)}</div><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)}</div></div></div>`);
         card.onclick = () => { resto = r; view = "resto"; paint(); };
         grid.appendChild(card);
@@ -2081,7 +2088,7 @@
       if (!list.length) { grid.innerHTML = `<div class="dd-empty" style="grid-column:1/-1">No restaurants match your search.</div>`; return; }
       list.forEach((r) => {
         const card = el(`<div class="dd-card">
-          <div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span>${r.fee === 0 ? '<span class="dd-free">Free delivery</span>' : ""}</div>
+          <div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})">${r.img ? `<img class="dd-card-photo" src="${r.img}?v=1" alt="">` : `<span>${r.emoji}</span>`}${r.fee === 0 ? '<span class="dd-free">Free delivery</span>' : ""}</div>
           <div class="dd-card-b"><div class="dd-card-name">${esc(r.name)}</div><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)} · ${r.fee === 0 ? "Free" : money(r.fee) + " fee"}</div><div class="dd-card-cui">${esc(r.cuisine)}</div></div>
         </div>`);
         card.onclick = () => { resto = r; view = "resto"; paint(); };
@@ -2091,10 +2098,28 @@
     function restoView(el2) {
       const r = resto;
       el2.innerHTML = `<button class="dd-back">‹ All restaurants</button>
-        <div class="dd-rhero" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span></div>
+        <div class="dd-rhero" style="background:linear-gradient(135deg,${r.c1},${r.c2})">${r.img ? `<img class="dd-rhero-photo" src="${r.img}?v=1" alt="">` : `<span>${r.emoji}</span>`}</div>
         <div class="dd-rhead"><h2>${esc(r.name)}</h2><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)} · ${r.fee === 0 ? "Free delivery" : money(r.fee) + " delivery"}</div><div class="dd-card-cui">${esc(r.cuisine)}</div></div>
+        ${r.featured ? `<h3 class="dd-menu-h">Featured items</h3><div class="dd-feat"></div>` : ""}
         <h3 class="dd-menu-h">Menu</h3><div class="dd-menu"></div>`;
       el2.querySelector(".dd-back").onclick = () => { view = "list"; paint(); };
+      if (r.featured) {
+        const feat = el2.querySelector(".dd-feat");
+        r.featured.forEach((m) => {
+          const card = el(`<div class="dd-feat-card">
+            <div class="dd-feat-img"><img src="${m.img}?v=1" alt="">${m.badge ? `<span class="dd-feat-badge">${esc(m.badge)}</span>` : ""}<button class="dd-feat-add">+</button></div>
+            <div class="dd-feat-n">${esc(m.n)}</div>
+            <div class="dd-feat-meta">${money(m.p)}${m.like ? ` · 👍 ${esc(m.like)}` : ""}</div>
+          </div>`);
+          card.querySelector(".dd-feat-add").onclick = () => {
+            const cart = ddStore().cart, ex = cart.find((c) => c.id === r.id + ":" + m.n);
+            if (ex) ex.qty++; else cart.push({ id: r.id + ":" + m.n, n: m.n, p: m.p, qty: 1, resto: r.name });
+            State.save(); render();
+            if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "Added to cart", body: m.n });
+          };
+          feat.appendChild(card);
+        });
+      }
       const menu = el2.querySelector(".dd-menu");
       r.menu.forEach((m) => {
         const row = el(`<div class="dd-item"><div class="dd-item-b"><div class="dd-item-n">${esc(m.n)}</div><div class="dd-item-d">${esc(m.d)}</div><div class="dd-item-p">${money(m.p)}</div></div><button class="dd-add">+ Add</button></div>`);
