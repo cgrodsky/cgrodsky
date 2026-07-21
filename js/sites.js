@@ -1859,6 +1859,13 @@
       menu: [{ n: "10 Buffalo Wings", p: 12.99, d: "Classic buffalo, ranch dip" }, { n: "BBQ Wings (10)", p: 12.99, d: "Sweet & smoky" }, { n: "Loaded Fries", p: 7.49, d: "Cheese, bacon, jalapeño" }, { n: "Mozzarella Sticks", p: 6.49, d: "Six with marinara" }] },
   ];
   function ddStore() { if (!S().appData) S().appData = {}; if (!S().appData.doordash) S().appData.doordash = { cart: [], orders: [] }; const d = S().appData.doordash; if (!d.cart) d.cart = []; if (!d.orders) d.orders = []; return d; }
+  function ddAddrs() {
+    const d = ddStore();
+    if (!d.addresses || !d.addresses.length) { d.addresses = [{ id: "a1", line: "123 Main St", sub: "Thousand Oaks, CA, USA", label: "Home" }]; d.addrSel = "a1"; }
+    if (!d.addrSel) d.addrSel = d.addresses[0].id;
+    return d;
+  }
+  function ddCurAddr() { const d = ddAddrs(); return d.addresses.find((a) => a.id === d.addrSel) || d.addresses[0]; }
   function ddCartTotal() { return ddStore().cart.reduce((s, it) => s + it.p * it.qty, 0); }
   function ddCartCount() { return ddStore().cart.reduce((s, it) => s + it.qty, 0); }
 
@@ -1879,19 +1886,42 @@
       setTimeout(render, 1050);
     }
 
+    const SIDE_NAV = [
+      ["home", "🏠", "Home"], ["grocery", "🍌", "Grocery"], ["retail", "🛍️", "Retail"], ["deals", "🏷️", "Deals"],
+      ["reservations", "📅", "Reservations"], ["alcohol", "🍸", "Alcohol"], ["convenience", "🥤", "Convenience"],
+      ["apparel", "👕", "Apparel"], ["beauty", "💄", "Beauty"], ["flowers", "🌷", "Flowers"],
+      ["pets", "🐾", "Pets"], ["party", "🎈", "Party"], ["gifts", "🎁", "Gifts"],
+    ];
+    const SIDE_FOOT = [["orders", "🧾", "Orders"], ["account", "👤", "Account"], ["switch", "⇄", "Switch Account"]];
+    let sideNav = "home";
+
     function render() {
       page.innerHTML = `<div class="dd">
-        <div class="dd-top">
+        <aside class="dd-sidebar">
           <img class="dd-logo" src="assets/doordash_wordmark.png?v=1" alt="DoorDash">
+          <nav class="dd-nav">${SIDE_NAV.map((n) => `<button class="dd-nav-it ${sideNav === n[0] ? "on" : ""}" data-n="${n[0]}"><span>${n[1]}</span>${n[2]}</button>`).join("")}</nav>
+          <div class="dd-nav-div"></div>
+          <nav class="dd-nav">${SIDE_FOOT.map((n) => `<button class="dd-nav-it ${sideNav === n[0] ? "on" : ""}" data-n="${n[0]}"><span>${n[1]}</span>${n[2]}</button>`).join("")}</nav>
+        </aside>
+        <div class="dd-right">
+        <div class="dd-top">
           <div class="dd-search"><span class="dd-search-ic">🔍</span><input class="dd-search-in" placeholder="Search &quot;7-Eleven&quot;" value="${esc(query)}"></div>
-          <div class="dd-addr-pill">📍 <b>123 Main St</b></div>
+          <button class="dd-addr-pill">📍 <b>${esc(ddCurAddr().line)}</b></button>
           <div class="dd-toggle"><button data-m="Delivery" class="${mode === "Delivery" ? "on" : ""}">Delivery</button><button data-m="Pickup" class="${mode === "Pickup" ? "on" : ""}">Pickup</button></div>
           <button class="dd-bell" title="Notifications">🔔<span class="dd-bell-dot"></span></button>
           <button class="dd-cart-btn">🛒 <span class="dd-cart-n">${ddCartCount()}</span></button>
           <button class="dd-signin"></button>
         </div>
         <div class="dd-body"></div>
+        </div>
       </div>`;
+      page.querySelectorAll(".dd-nav-it").forEach((b) => b.onclick = () => {
+        const n = b.dataset.n;
+        if (n === "switch") { if (window.FE) { FE.logout(); } signBtn.click(); return; }
+        sideNav = n; query = "";
+        view = n === "home" ? "list" : n === "orders" ? "orders" : n === "account" ? "account" : n === "deals" ? "deals" : "cat";
+        render();
+      });
       const signBtn = page.querySelector(".dd-signin");
       function paintSign() {
         const u = window.FE && FE.user();
@@ -1913,7 +1943,62 @@
       search.oninput = () => { query = search.value; view = "list"; paint(); };
       page.querySelectorAll(".dd-toggle button").forEach((b) => b.onclick = () => { mode = b.dataset.m; page.querySelectorAll(".dd-toggle button").forEach((x) => x.classList.toggle("on", x === b)); });
       page.querySelector(".dd-bell").onclick = () => { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DoorDash", body: "No new notifications." }); };
+      page.querySelector(".dd-addr-pill").onclick = addrModal;
       paint();
+    }
+
+    // Addresses settings modal (reference: real DoorDash Addresses sheet).
+    function addrModal() {
+      const host = page.querySelector(".dd");
+      const ov = el(`<div class="dd-addr-ov"><div class="dd-addr-modal">
+        <button class="dd-addr-x" aria-label="Close">&times;</button>
+        <h2>Addresses</h2>
+        <div class="dd-addr-search">🔍 <input class="dd-addr-in" placeholder="Enter Your Address"></div>
+        <button class="dd-addr-label-btn">+ Add label</button>
+        <input class="dd-addr-label-in" placeholder="Label (e.g. Home, Work)" style="display:none">
+        <div class="dd-addr-list"></div>
+      </div></div>`);
+      const input = ov.querySelector(".dd-addr-in"), labelBtn = ov.querySelector(".dd-addr-label-btn"), labelIn = ov.querySelector(".dd-addr-label-in");
+      const listEl = ov.querySelector(".dd-addr-list");
+      function refreshPill() { const b = page.querySelector(".dd-addr-pill b"); if (b) b.textContent = ddCurAddr().line; }
+      function drawList() {
+        const d = ddAddrs();
+        listEl.innerHTML = "";
+        d.addresses.forEach((a) => {
+          const row = el(`<div class="dd-addr-row">
+            <span class="dd-radio ${a.id === d.addrSel ? "on" : ""}"></span>
+            <div class="dd-addr-txt"><b>${esc(a.line)}${a.label ? ` <i class="dd-addr-chip">${esc(a.label)}</i>` : ""}</b>${a.sub ? `<span>${esc(a.sub)}</span>` : ""}</div>
+            <button class="dd-addr-edit" title="Edit">✏️</button>
+          </div>`);
+          row.onclick = (e) => { if (e.target.closest(".dd-addr-edit")) return; d.addrSel = a.id; State.save(); drawList(); refreshPill(); };
+          row.querySelector(".dd-addr-edit").onclick = () => {
+            const txt = row.querySelector(".dd-addr-txt");
+            txt.innerHTML = "";
+            const ed = document.createElement("input"); ed.className = "dd-addr-editin"; ed.value = a.line + (a.sub ? ", " + a.sub : "");
+            txt.appendChild(ed); ed.focus(); ed.setSelectionRange(ed.value.length, ed.value.length);
+            ed.onkeydown = (ev) => {
+              if (ev.key === "Enter") { const v = ed.value.trim(); if (v) { const ix = v.indexOf(","); a.line = ix > 0 ? v.slice(0, ix).trim() : v; a.sub = ix > 0 ? v.slice(ix + 1).trim() : a.sub; State.save(); } drawList(); refreshPill(); }
+              if (ev.key === "Escape") drawList();
+            };
+          };
+          listEl.appendChild(row);
+        });
+      }
+      labelBtn.onclick = () => { labelIn.style.display = labelIn.style.display === "none" ? "block" : "none"; if (labelIn.style.display === "block") labelIn.focus(); };
+      input.onkeydown = (e) => {
+        if (e.key !== "Enter") return;
+        const v = input.value.trim(); if (!v) return;
+        const d = ddAddrs(), ix = v.indexOf(",");
+        const a = { id: "a" + (d.addresses.length + 1) + "_" + v.length, line: ix > 0 ? v.slice(0, ix).trim() : v, sub: ix > 0 ? v.slice(ix + 1).trim() : "", label: labelIn.value.trim() || "" };
+        d.addresses.unshift(a); d.addrSel = a.id; State.save();
+        input.value = ""; labelIn.value = ""; labelIn.style.display = "none";
+        drawList(); refreshPill();
+      };
+      const close = () => ov.remove();
+      ov.querySelector(".dd-addr-x").onclick = close;
+      ov.onclick = (e) => { if (e.target === ov) close(); };
+      drawList();
+      host.appendChild(ov);
     }
     function paint() {
       const bodyEl = page.querySelector(".dd-body");
@@ -1921,6 +2006,46 @@
       if (view === "resto") return restoView(bodyEl);
       if (view === "cart") return cartView(bodyEl);
       if (view === "track") return trackView(bodyEl);
+      if (view === "orders") return ordersView(bodyEl);
+      if (view === "account") return accountView(bodyEl);
+      if (view === "deals") return dealsView(bodyEl);
+      if (view === "cat") return catView(bodyEl);
+    }
+    function ordersView(el2) {
+      const orders = ddStore().orders;
+      if (!orders.length) { el2.innerHTML = `<h2 class="dd-cart-h">Orders</h2><div class="dd-empty">🧾 No orders yet.<br><span>Your past orders will show up here.</span></div>`; return; }
+      el2.innerHTML = `<h2 class="dd-cart-h">Orders</h2><div class="dd-orders">${orders.map((o) => `
+        <div class="dd-order"><div class="dd-order-top"><b>${esc(o.items[0] ? o.items[0].resto : "Order")}</b><span>${money(o.total)}</span></div>
+        <div class="dd-order-items">${o.items.map((it) => esc(it.qty + "× " + it.n)).join(" · ")}</div>
+        <span class="dd-order-badge">Delivered</span></div>`).join("")}</div>`;
+    }
+    function accountView(el2) {
+      const u = window.FE && FE.user();
+      el2.innerHTML = `<h2 class="dd-cart-h">Account</h2>` + (u
+        ? `<div class="dd-acct"><div class="dd-acct-av">${esc((u.name || u.email || "?")[0].toUpperCase())}</div>
+           <div><div class="dd-acct-n">${esc(u.name || "DoorDash user")}</div><div class="dd-acct-e">${esc(u.email || "")}</div></div></div>
+           <button class="dd-checkout" style="max-width:240px" id="ddOut">Sign out</button>`
+        : `<div class="dd-empty">👤 You're not signed in.<br><span>Sign in to sync your account.</span></div>
+           <button class="dd-checkout" style="max-width:240px;margin:0 auto" id="ddIn">Sign in</button>`);
+      const outB = el2.querySelector("#ddOut"), inB = el2.querySelector("#ddIn");
+      if (outB) outB.onclick = () => { FE.logout(); render(); };
+      if (inB) inB.onclick = () => page.querySelector(".dd-signin").click();
+    }
+    function dealsView(el2) {
+      const deals = DD_RESTOS.filter((r) => r.fee === 0);
+      el2.innerHTML = `<h2 class="dd-cart-h">🏷️ Deals — free delivery</h2><div class="dd-grid"></div>`;
+      const grid = el2.querySelector(".dd-grid");
+      deals.forEach((r) => {
+        const card = el(`<div class="dd-card"><div class="dd-card-img" style="background:linear-gradient(135deg,${r.c1},${r.c2})"><span>${r.emoji}</span><span class="dd-free">Free delivery</span></div>
+          <div class="dd-card-b"><div class="dd-card-name">${esc(r.name)}</div><div class="dd-card-meta">⭐ ${r.rating} · ${esc(r.eta)}</div></div></div>`);
+        card.onclick = () => { resto = r; view = "resto"; paint(); };
+        grid.appendChild(card);
+      });
+    }
+    function catView(el2) {
+      const item = SIDE_NAV.find((n) => n[0] === sideNav) || ["", "🛒", "This category"];
+      el2.innerHTML = `<h2 class="dd-cart-h">${item[1]} ${esc(item[2])}</h2>
+        <div class="dd-empty">${item[1]} No ${esc(item[2].toLowerCase())} stores near you yet.<br><span>Check back soon — new stores are added all the time.</span></div>`;
     }
     function listView(el2) {
       const q = query.trim().toLowerCase();
