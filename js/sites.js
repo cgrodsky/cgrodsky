@@ -2022,25 +2022,26 @@
       if (view === "cat") return catView(bodyEl);
     }
     const DD_STORES = [
-      { n: "CVS", min: 15, c: "#cc0000", t: "CVS", tag: `<span class="dd-store-deal">35% off $25+, up to $10</span> with <b class="dd-dp-word">DashPass</b>` },
-      { n: "Carter's", min: 44, c: "#29abe2", t: "carter's", note: "Accepts orders until 7:00 PM", tag: `<span class="dd-store-chip">Farther away</span>` },
-      { n: "Dollar Tree", min: 20, c: "#2e7d32", t: "DT", tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "Target", min: 30, c: "#cc0000", t: "T" },
-      { n: "Walgreens", min: 25, c: "#e31837", t: "W", tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "Ralphs", min: 15, c: "#d81e2c", t: "R", tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "The Home Depot", min: 34, c: "#f96302", t: "HD" },
-      { n: "Best Buy", min: 16, c: "#0a4abf", t: "BB" },
-      { n: "Five Below", min: 23, c: "#0053a0", t: "f5" },
-      { n: "Ace Hardware", min: 21, c: "#d40029", t: "ACE" },
+      { n: "CVS", min: 15, c: "#cc0000", t: "CVS", rating: 4.6, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-deal">35% off $25+, up to $10</span> with <b class="dd-dp-word">DashPass</b>` },
+      { n: "Carter's", min: 44, c: "#29abe2", t: "carter's", rating: 4.4, dashpass: true, hsa: false, price: 2, note: "Accepts orders until 7:00 PM", tag: `<span class="dd-store-chip">Farther away</span>` },
+      { n: "Dollar Tree", min: 20, c: "#2e7d32", t: "DT", rating: 4.3, dashpass: true, hsa: false, price: 1, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Target", min: 30, c: "#cc0000", t: "T", rating: 4.8, dashpass: true, hsa: false, price: 2 },
+      { n: "Walgreens", min: 25, c: "#e31837", t: "W", rating: 4.5, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Ralphs", min: 15, c: "#d81e2c", t: "R", rating: 4.7, dashpass: true, hsa: false, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "The Home Depot", min: 34, c: "#f96302", t: "HD", rating: 4.6, dashpass: false, hsa: false, price: 3 },
+      { n: "Best Buy", min: 16, c: "#0a4abf", t: "BB", rating: 4.9, dashpass: true, hsa: false, price: 3 },
+      { n: "Five Below", min: 23, c: "#0053a0", t: "f5", rating: 4.2, dashpass: true, hsa: false, price: 1 },
+      { n: "Ace Hardware", min: 21, c: "#d40029", t: "ACE", rating: 4.7, dashpass: false, hsa: false, price: 2 },
     ];
+    const ddFilters = { dash: false, hsa: false, rating: 0, under30: false, price: 0 };
     function retailView(el2) {
       el2.innerHTML = `<h2 class="dd-retail-h">Retail</h2>
         <div class="dd-pills">
-          <button class="dd-pill"><b class="dd-dp-word">Ⓓ</b> DashPass</button>
-          <button class="dd-pill">💳 HSA/FSA</button>
-          <button class="dd-pill">Over 4.5 ★ ▾</button>
-          <button class="dd-pill">Under 30 min</button>
-          <button class="dd-pill">Price ▾</button>
+          <button class="dd-pill ${ddFilters.dash ? "on" : ""}" data-f="dash"><b class="dd-dp-word">Ⓓ</b> DashPass</button>
+          <button class="dd-pill ${ddFilters.hsa ? "on" : ""}" data-f="hsa">💳 HSA/FSA</button>
+          <button class="dd-pill ${ddFilters.rating ? "on" : ""}" data-f="rating">${ddFilters.rating ? "Over " + ddFilters.rating.toFixed(1) + " ★" : "Over 4.5 ★"} ▾</button>
+          <button class="dd-pill ${ddFilters.under30 ? "on" : ""}" data-f="under30">Under 30 min</button>
+          <button class="dd-pill ${ddFilters.price ? "on" : ""}" data-f="price">${ddFilters.price ? "$".repeat(ddFilters.price) : "Price"} ▾</button>
         </div>
         <div class="dd-promo">
           <div class="dd-promo-l">
@@ -2058,19 +2059,53 @@
           <div class="dd-swim-txt"><h3>Swimwear for the fam</h3><p>Delivered to your door in minutes</p><button class="dd-promo-btn dark">Order now</button></div>
         </div>`;
       const wrap = el2.querySelector(".dd-stores");
-      DD_STORES.forEach((s) => {
-        const row = el(`<div class="dd-store">
-          <span class="dd-store-logo" style="color:${s.c}">${esc(s.t)}</span>
-          <div class="dd-store-b">
-            ${s.note ? `<div class="dd-store-note">${esc(s.note)}</div>` : ""}
-            <div class="dd-store-n"><b class="dd-dp-word">Ⓓ</b> ${esc(s.n)}</div>
-            <div class="dd-store-min">${s.min} min</div>
-            ${s.tag ? `<div class="dd-store-tags">${s.tag}</div>` : ""}
-          </div>
-          <button class="dd-store-fav">♡</button>
-        </div>`);
-        row.onclick = (e) => { if (e.target.closest(".dd-store-fav")) { e.target.textContent = e.target.textContent === "♡" ? "❤️" : "♡"; return; } if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: s.n, body: "This store doesn't deliver to the simulation yet." }); };
-        wrap.appendChild(row);
+      function drawStores() {
+        const f = ddFilters;
+        const list = DD_STORES.filter((s) =>
+          (!f.dash || s.dashpass) && (!f.hsa || s.hsa) && (!f.rating || s.rating >= f.rating) &&
+          (!f.under30 || s.min < 30) && (!f.price || s.price <= f.price));
+        wrap.innerHTML = "";
+        if (!list.length) { wrap.innerHTML = `<div class="dd-empty" style="grid-column:1/-1">No stores match those filters.</div>`; return; }
+        list.forEach((s) => {
+          const row = el(`<div class="dd-store">
+            <span class="dd-store-logo" style="color:${s.c}">${esc(s.t)}</span>
+            <div class="dd-store-b">
+              ${s.note ? `<div class="dd-store-note">${esc(s.note)}</div>` : ""}
+              <div class="dd-store-n">${s.dashpass ? `<b class="dd-dp-word">Ⓓ</b> ` : ""}${esc(s.n)}</div>
+              <div class="dd-store-min">⭐ ${s.rating.toFixed(1)} · ${s.min} min · ${"$".repeat(s.price)}</div>
+              ${s.tag ? `<div class="dd-store-tags">${s.tag}</div>` : ""}
+            </div>
+            <button class="dd-store-fav">♡</button>
+          </div>`);
+          row.onclick = (e) => { if (e.target.closest(".dd-store-fav")) { e.target.textContent = e.target.textContent === "♡" ? "❤️" : "♡"; return; } if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: s.n, body: "This store doesn't deliver to the simulation yet." }); };
+          wrap.appendChild(row);
+        });
+      }
+      drawStores();
+      // pill behaviour: toggles flip; chevron pills open a small dropdown
+      function dropdown(anchor, options, onPick) {
+        el2.querySelectorAll(".dd-drop").forEach((d) => d.remove());
+        const menu = el(`<div class="dd-drop">${options.map((o, i) => `<button data-i="${i}">${o.label}</button>`).join("")}</div>`);
+        anchor.parentElement.style.position = "relative";
+        const r = anchor.getBoundingClientRect(), pr = anchor.parentElement.getBoundingClientRect();
+        menu.style.left = (r.left - pr.left) + "px";
+        menu.querySelectorAll("button").forEach((b) => b.onclick = (e) => { e.stopPropagation(); onPick(options[+b.dataset.i]); menu.remove(); });
+        anchor.parentElement.appendChild(menu);
+        setTimeout(() => document.addEventListener("click", function h() { menu.remove(); document.removeEventListener("click", h); }, { once: false }), 0);
+      }
+      function repaint() { retailView(el2); }
+      el2.querySelectorAll(".dd-pill").forEach((pill) => pill.onclick = (e) => {
+        e.stopPropagation();
+        const f = pill.dataset.f;
+        if (f === "dash") { ddFilters.dash = !ddFilters.dash; repaint(); }
+        else if (f === "hsa") { ddFilters.hsa = !ddFilters.hsa; repaint(); }
+        else if (f === "under30") { ddFilters.under30 = !ddFilters.under30; repaint(); }
+        else if (f === "rating") dropdown(pill, [
+          { label: "Any rating", v: 0 }, { label: "Over 4.0 ★", v: 4.0 }, { label: "Over 4.5 ★", v: 4.5 }, { label: "Over 4.8 ★", v: 4.8 },
+        ], (o) => { ddFilters.rating = o.v; repaint(); });
+        else if (f === "price") dropdown(pill, [
+          { label: "Any price", v: 0 }, { label: "$", v: 1 }, { label: "$$", v: 2 }, { label: "$$$", v: 3 },
+        ], (o) => { ddFilters.price = o.v; repaint(); });
       });
       el2.querySelector(".dd-promo-btn").onclick = () => { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DashPass", body: "Deal drops 7/22 at 9am EDT. Set a reminder!" }); };
     }
