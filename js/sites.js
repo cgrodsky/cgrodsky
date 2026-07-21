@@ -1875,15 +1875,17 @@
     function money(n) { return "$" + n.toFixed(2); }
 
     // Branded loading screen shown while the app "boots".
+    // DashPass members get the animated DashPass logo + purple spinner.
     function boot() {
+      const dp = !!ddStore().dashpass;
       page.innerHTML = `<div class="dd-load">
-        <img class="dd-load-logo" src="assets/doordash.png?v=1" alt="DoorDash">
-        <div class="dd-spinner" role="status" aria-label="Loading">
+        ${dp ? `<img class="dd-load-dp" src="assets/dashpass.gif?v=1" alt="DashPass">` : `<img class="dd-load-logo" src="assets/doordash.png?v=1" alt="DoorDash">`}
+        <div class="dd-spinner"${dp ? ` style="--dd-red:#6331DF"` : ""} role="status" aria-label="Loading">
           <span></span><span></span><span></span><span></span>
           <span></span><span></span><span></span><span></span>
         </div>
       </div>`;
-      setTimeout(render, 1050);
+      setTimeout(render, dp ? 1500 : 1050);
     }
 
     const SIDE_NAV = [
@@ -2053,9 +2055,27 @@
       const feUser = window.FE && FE.user();
       const uname = (feUser && (feUser.name || feUser.email)) || (S().profile && S().profile.username) || (S().account && S().account.name) || "there";
       const CATS = [["🥗", "Healthy"], ["🥪", "Sandwiches"], ["🏷️", "Deals"], ["🍣", "Sushi"], ["🍟", "Fast Food"], ["🍕", "Pizza"], ["🌮", "Mexican"], ["🍔", "Burgers"], ["🍳", "Breakfast"], ["☕", "Coffee"]];
+      const dp = !!ddStore().dashpass;
       el2.innerHTML = `<div class="dd-hero"><h1>${q ? "Results for “" + esc(query) + "”" : "Welcome back, " + esc(uname)}</h1><p>${list.length} restaurant${list.length === 1 ? "" : "s"} near you</p></div>
         <div class="dd-cats">${CATS.map((c) => `<button class="dd-cat" data-q="${esc(c[1])}">${c[0]} ${c[1]}</button>`).join("")}</div>
-        <div class="dd-grid"></div>`;
+        <div class="dd-grid"></div>
+        <div class="dd-dp-banner ${dp ? "member" : ""}">
+          <div class="dd-dp-txt"><b>DashPass</b><span>${dp ? "You're a member — $0 delivery fees on every order." : "$0 delivery fees and reduced service fees on eligible orders."}</span></div>
+          <button class="dd-dp-btn">${dp ? "✓ Member" : "Get DashPass · $9.99/mo"}</button>
+        </div>`;
+      const dpBtn = el2.querySelector(".dd-dp-btn");
+      dpBtn.onclick = () => {
+        if (ddStore().dashpass) { if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DashPass", body: "You're already a member. Enjoy!" }); return; }
+        const bank = S().bank;
+        if (bank && typeof bank.balance === "number") {
+          if (bank.balance < 9.99) { if (window.Notify) Notify.show({ icon: "", title: "DashPass", body: "Not enough balance in Forge Bank." }); return; }
+          bank.balance -= 9.99;
+          if (bank.transactions) bank.transactions.unshift({ label: "DashPass subscription", amount: -9.99, ts: 0 });
+        }
+        ddStore().dashpass = true; State.save();
+        if (window.Notify) Notify.show({ icon: Icon.mini("doordash", "DoorDash"), title: "DashPass", body: "Welcome to DashPass! $0 delivery fees from now on." });
+        paint();
+      };
       el2.querySelectorAll(".dd-cat").forEach((b) => b.onclick = () => { query = b.dataset.q; const s = page.querySelector(".dd-search-in"); if (s) s.value = query; paint(); });
       const grid = el2.querySelector(".dd-grid");
       if (!list.length) { grid.innerHTML = `<div class="dd-empty" style="grid-column:1/-1">No restaurants match your search.</div>`; return; }
@@ -2090,12 +2110,12 @@
     function cartView(el2) {
       const cart = ddStore().cart;
       if (!cart.length) { el2.innerHTML = `<button class="dd-back">‹ Back</button><div class="dd-empty">🛒 Your cart is empty.<br><span>Add items from a restaurant to get started.</span></div>`; el2.querySelector(".dd-back").onclick = () => { view = "list"; paint(); }; return; }
-      const sub = ddCartTotal(), fee = 1.99, tax = sub * 0.08, total = sub + fee + tax;
+      const sub = ddCartTotal(), fee = ddStore().dashpass ? 0 : 1.99, tax = sub * 0.08, total = sub + fee + tax;
       el2.innerHTML = `<button class="dd-back">‹ Back</button><h2 class="dd-cart-h">Your order</h2>
         <div class="dd-cart-list"></div>
         <div class="dd-summary">
           <div class="dd-sum-row"><span>Subtotal</span><span>${money(sub)}</span></div>
-          <div class="dd-sum-row"><span>Delivery fee</span><span>${money(fee)}</span></div>
+          <div class="dd-sum-row"><span>Delivery fee${ddStore().dashpass ? ` <b class="dd-dp-tag">DashPass</b>` : ""}</span><span>${money(fee)}</span></div>
           <div class="dd-sum-row"><span>Taxes & fees</span><span>${money(tax)}</span></div>
           <div class="dd-sum-row dd-sum-total"><span>Total</span><span>${money(total)}</span></div>
         </div>

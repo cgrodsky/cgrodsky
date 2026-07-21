@@ -3310,3 +3310,14 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-addr-chip { font-style: normal; font-size: .68rem; font-weight: 700; background: #f4f4f4; border-radius: 10px; padding: 2px 8px; margin-left: 6px; color: #555; vertical-align: middle; }
 .dd-addr-edit { background: none; border: 0; cursor: pointer; font-size: .95rem; }
 .dd-addr-editin { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 8px 10px; font-size: .9rem; outline: none; }
+
+/* DashPass */
+.dd-load-dp { width: 240px; max-width: 70%; }
+.dd-dp-banner { display: flex; align-items: center; gap: 16px; margin-top: 26px; background: linear-gradient(100deg, #6331DF, #4a1fc0); color: #fff; border-radius: 14px; padding: 18px 22px; }
+.dd-dp-banner.member { background: linear-gradient(100deg, #4a1fc0, #33127e); }
+.dd-dp-txt { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.dd-dp-txt b { font-size: 1.1rem; font-style: italic; letter-spacing: .3px; }
+.dd-dp-txt span { font-size: .85rem; opacity: .92; }
+.dd-dp-btn { background: #fff; color: #6331DF; border: 0; border-radius: 22px; padding: 11px 20px; font-weight: 800; font-size: .88rem; cursor: pointer; white-space: nowrap; }
+.dd-dp-btn:hover { filter: brightness(.95); }
+.dd-dp-tag { font-style: italic; color: #6331DF; font-size: .72rem; margin-left: 4px; }
