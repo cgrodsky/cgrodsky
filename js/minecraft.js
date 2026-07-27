@@ -517,6 +517,28 @@
       }
       return m;
     }
+    // Crop a region of a mob-skin texture into its own material (async; the
+    // material starts as a flat colour and gains the pixel-art map on load).
+    const skinImgs = {};
+    function skinImg(file) {
+      if (skinImgs[file]) return skinImgs[file];
+      skinImgs[file] = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = "assets/" + file; });
+      return skinImgs[file];
+    }
+    function skinMat(file, rect, baseColor) {
+      const m = new THREE.MeshLambertMaterial({ color: new THREE.Color(baseColor || 0x888888) });
+      m.userData.base = m.color.clone();
+      skinImg(file).then((img) => {
+        if (!img) return;
+        const c = document.createElement("canvas"); c.width = rect[2]; c.height = rect[3];
+        c.getContext("2d").drawImage(img, rect[0], rect[1], rect[2], rect[3], 0, 0, rect[2], rect[3]);
+        const t = new THREE.CanvasTexture(c);
+        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+        m.map = t; m.color.setHex(0xffffff); m.userData.base.setHex(0xffffff); m.needsUpdate = true;
+      });
+      return m;
+    }
+
     function materialFor(id) {
       if (materials[id]) return materials[id];
       const b = BLOCKS[id];
@@ -718,7 +740,7 @@
     // ---------- first-person hand / held item ----------
     const handGroup = new THREE.Group();
     camera.add(handGroup);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.62), new THREE.MeshLambertMaterial({ color: 0xe6b58c }));
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.62), skinMat("skin_steve.png", [44, 20, 4, 12], 0xe6b58c));
     arm.position.set(0.52, -0.46, -0.7); arm.rotation.set(-0.2, 0.35, -0.15);
     handGroup.add(arm);
     const heldBlock = new THREE.Mesh(cube, new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -841,10 +863,15 @@
     const MOB = {
       pig:      { hp: 10, hostile: false, body: 0xe89a9a, head: 0xe89a9a, snout: 0xcf7f7f, hh: 0.55, ww: 0.9, spd: 1.3, xp: 1 },
       cow:      { hp: 10, hostile: false, body: 0x4a3626, head: 0x3a2a1c, snout: 0xd8c8b8, hh: 0.75, ww: 0.9, spd: 1.2, xp: 1 },
-      sheep:    { hp: 8,  hostile: false, body: 0xecebe6, head: 0xd7c3ad, snout: 0xd7c3ad, hh: 0.72, ww: 0.85, spd: 1.1, xp: 1 },
+      sheep:    { hp: 8,  hostile: false, body: 0xecebe6, head: 0xd7c3ad, snout: 0xd7c3ad, hh: 0.72, ww: 0.85, spd: 1.1, xp: 1,
+                  skin: { file: "mob_sheep.png", bodyFile: "mob_sheep_wool.png", body: [28, 10, 16, 12], leg: [2, 20, 4, 6] } },
       chicken:  { hp: 4,  hostile: false, body: 0xf4f4f4, head: 0xf4f4f4, snout: 0xe08a1e, hh: 0.4, ww: 0.5, spd: 1.4, xp: 1, hit: "chicken_hit.wav", die: "chicken_death.wav" },
-      zombie:   { hp: 20, hostile: true,  body: 0x27a0a0, head: 0x5aa15a, snout: 0x5aa15a, hh: 1.85, ww: 0.6, spd: 2.1, xp: 5, dmg: 3 },
-      creeper:  { hp: 20, hostile: true,  body: 0x4fa53a, head: 0x57b040, snout: 0x2f6d22, hh: 1.5, ww: 0.55, spd: 1.75, xp: 5, dmg: 7, creeper: true, hit: "creeper_hit.wav", die: "creeper_death.wav" },
+      zombie:   { hp: 20, hostile: true,  body: 0x27a0a0, head: 0x5aa15a, snout: 0x5aa15a, hh: 1.85, ww: 0.6, spd: 2.1, xp: 5, dmg: 3,
+                  skin: { file: "skin_zombie.png", body: [20, 20, 8, 12], leg: [4, 20, 4, 12] } },
+      creeper:  { hp: 20, hostile: true,  body: 0x4fa53a, head: 0x57b040, snout: 0x2f6d22, hh: 1.5, ww: 0.55, spd: 1.75, xp: 5, dmg: 7, creeper: true, hit: "creeper_hit.wav", die: "creeper_death.wav",
+                  skin: { file: "mob_creeper.png", body: [20, 20, 8, 12], leg: [4, 20, 4, 6] } },
+      enderman: { hp: 40, hostile: false, body: 0x141414, head: 0x141414, snout: 0x141414, hh: 2.5, ww: 0.5, spd: 2.4, xp: 5, ender: true,
+                  skin: { file: "skin_enderman.png", body: [32, 16, 8, 12], leg: [32, 16, 4, 12] } },
       villager: { hp: 20, hostile: false, body: 0x8b6d5c, head: 0xc7a088, snout: 0xb08060, hh: 1.9, ww: 0.6, spd: 1.0, xp: 0 },
       warden:   { hp: 150, hostile: true, body: 0x0c3a3c, head: 0x0a2f31, snout: 0x18d0d8, hh: 2.7, ww: 1.15, spd: 1.35, xp: 60, dmg: 14, boss: true, bossName: "The Warden", bossColor: "#12b5c9" },
     };
@@ -854,20 +881,32 @@
     function makeMobMesh(def) {
       const g = new THREE.Group();
       const mats = [];
-      const part = (w, h, d, col, y, z) => {
-        const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(col) });
-        mat.userData.base = mat.color.clone();
-        mats.push(mat);
-        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-        m.position.set(0, y, z || 0); g.add(m); return m;
-      };
+      const reg = (mat) => { mats.push(mat); return mat; };
+      const solid = (col) => { const m = new THREE.MeshLambertMaterial({ color: new THREE.Color(col) }); m.userData.base = m.color.clone(); return reg(m); };
+      const part = (w, h, d, mat, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(0, y, z || 0); g.add(m); return m; };
       const bodyH = def.hh, w = def.ww;
-      part(w, bodyH, w * 1.2, def.body, bodyH / 2 + 0.2);          // body
-      const head = part(w * 0.8, w * 0.8, w * 0.8, def.head, bodyH + 0.2 + w * 0.35, -w * 0.55); // head
-      part(w * 0.35, w * 0.3, w * 0.2, def.snout, bodyH + 0.2 + w * 0.3, -w * 0.9);              // snout/nose
-      part(w * 0.28, 0.35, w * 0.28, def.body, 0.02, w * 0.3);     // leg back
-      part(w * 0.28, 0.35, w * 0.28, def.body, 0.02, -w * 0.3);    // leg front
-      g.userData.head = head;
+      if (def.skin) {
+        // Real skin: UV-cropped materials. Head is a 6-face box in BoxGeometry
+        // order [+x,-x,+y,-y,+z,-z]; mobs face -z, so "front" goes on -z.
+        const sk = def.skin, hf = sk.file;
+        part(w, bodyH, w * 1.2, skinMat(sk.bodyFile || hf, sk.body, def.body), bodyH / 2 + 0.2);
+        const HEAD = [[0, 8, 8, 8], [16, 8, 8, 8], [8, 0, 8, 8], [16, 0, 8, 8], [24, 8, 8, 8], [8, 8, 8, 8]];
+        const headMats = HEAD.map((r) => reg(skinMat(hf, r, def.head)));
+        const hs = w * 0.85;
+        const head = new THREE.Mesh(new THREE.BoxGeometry(hs, hs, hs), headMats);
+        head.position.set(0, bodyH + 0.2 + hs * 0.4, -w * 0.55); g.add(head);
+        const legMat = skinMat(sk.legFile || hf, sk.leg, def.body); reg(legMat);
+        part(w * 0.28, 0.35, w * 0.28, legMat, 0.02, w * 0.3);
+        part(w * 0.28, 0.35, w * 0.28, legMat, 0.02, -w * 0.3);
+        g.userData.head = head;
+      } else {
+        part(w, bodyH, w * 1.2, solid(def.body), bodyH / 2 + 0.2);          // body
+        const head = part(w * 0.8, w * 0.8, w * 0.8, solid(def.head), bodyH + 0.2 + w * 0.35, -w * 0.55);
+        part(w * 0.35, w * 0.3, w * 0.2, solid(def.snout), bodyH + 0.2 + w * 0.3, -w * 0.9);   // snout/nose
+        part(w * 0.28, 0.35, w * 0.28, solid(def.body), 0.02, w * 0.3);     // leg back
+        part(w * 0.28, 0.35, w * 0.28, solid(def.body), 0.02, -w * 0.3);    // leg front
+        g.userData.head = head;
+      }
       return { g, mats };
     }
     function spawnMob(type, x, z) {
@@ -911,6 +950,13 @@
         if (m.dead) { mobs.splice(i, 1); continue; }
         m.hurtT = Math.max(0, m.hurtT - s);
         m.atkCd = Math.max(0, m.atkCd - s);
+        // endermen blink-teleport now and then (with the shared teleport sound)
+        if (m.def.ender && Math.random() < 0.0015) {
+          const ta = Math.random() * 6.28, td = 4 + Math.random() * 8;
+          m.pos.x += Math.sin(ta) * td; m.pos.z += Math.cos(ta) * td;
+          m.pos.y = feetY(m.pos.x, m.pos.z, m.pos.y + 3);
+          playSfx(TELEPORT_SFX);
+        }
         // AI heading
         let tx = 0, tz = 0;
         if (m.def.hostile && !player.dead) {
@@ -989,7 +1035,7 @@
       // rare boss: only one at a time
       if (!creative && Math.random() < 0.04 && !mobs.some((m) => m.def.boss)) { spawnMob("warden", x, z); return; }
       const r = Math.random();
-      spawnMob(r < 0.16 ? "zombie" : r < 0.30 ? "creeper" : r < 0.48 ? "pig" : r < 0.64 ? "cow" : r < 0.82 ? "sheep" : "chicken", x, z);
+      spawnMob(r < 0.16 ? "zombie" : r < 0.30 ? "creeper" : r < 0.46 ? "pig" : r < 0.62 ? "cow" : r < 0.78 ? "sheep" : r < 0.94 ? "chicken" : "enderman", x, z);
     }
 
     // ---------- mining / placing ----------
