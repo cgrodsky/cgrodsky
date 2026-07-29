@@ -12,3 +12,8 @@ window.FLIGHT_API = {
   http: "http://api.aviationstack.com/v1",
   proxy: "https://api.allorigins.win/raw?url=",
 };
+
+/* Brandfetch Logo Link (real brand logos, e.g. DoorDash Retail stores).
+   Uses the PUBLIC client id — embeddable by design. Do NOT put the secret
+   Brand-API key here; this repo is public and has no server to hide it. */
+window.BRANDFETCH_CLIENT_ID = "2aGHRy7xjDUaw49bTCmi/wFKDwb0iVIavy10eg3evno=";   // public Logo Link client id (safe to embed)

@@ -444,6 +444,7 @@
       } else {
         add("Copy", () => duplicateDesk([s.key]));
         add("Duplicate", () => duplicateDesk([s.key]));
+        if (window.Icon && Icon.pickIcon) add("Change icon…", () => Icon.pickIcon(s.id, s.name, () => renderDesktopIcons()));
       }
     }
     // "App Group" — the headline action: fold the whole selection into a folder.

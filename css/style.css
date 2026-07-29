@@ -3378,3 +3378,24 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .dd-drop { position: absolute; top: 110%; background: #fff; border: 1px solid #e6e6e6; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.15); z-index: 20; display: flex; flex-direction: column; min-width: 150px; overflow: hidden; }
 .dd-drop button { background: #fff; border: 0; text-align: left; padding: 11px 16px; font-size: .88rem; font-weight: 600; cursor: pointer; }
 .dd-drop button:hover { background: #f4f4f4; }
+.dd-store-logo { position: relative; overflow: hidden; }
+.dd-store-logo img { position: absolute; inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); object-fit: contain; background: #fff; z-index: 2; }
+.dd-store-logo i { font-style: normal; }
+
+/* Brandfetch icon picker */
+.icp-ov { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: flex-start; justify-content: center; padding-top: 8vh; z-index: 5000; }
+.icp { width: min(560px, 92%); background: #1c1c22; color: #fff; border: 1px solid #2e2e38; border-radius: 16px; padding: 18px 20px 20px; box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+.icp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.icp-head b { font-size: 1.05rem; }
+.icp-x { background: none; border: 0; color: #aaa; font-size: 1.5rem; cursor: pointer; line-height: 1; }
+.icp-search { display: flex; align-items: center; gap: 8px; background: #26262e; border: 1px solid #3a3a44; border-radius: 10px; padding: 10px 14px; }
+.icp-search input { flex: 1; background: transparent; border: 0; outline: none; color: #fff; font-size: .95rem; }
+.icp-hint { font-size: .74rem; color: #8a8d94; margin: 8px 2px 12px; }
+.icp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; }
+.icp-tile { background: #26262e; border: 1px solid #34343e; border-radius: 12px; padding: 12px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #cfcfd6; }
+.icp-tile:hover { border-color: #6b7bff; background: #2e2e3a; }
+.icp-tile img { width: 46px; height: 46px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
+.icp-tile span { font-size: .72rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.icp-foot { margin-top: 14px; text-align: right; }
+.icp-reset { background: transparent; border: 1px solid #3a3a44; color: #cfcfd6; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: .84rem; }
+.icp-reset:hover { background: #26262e; }

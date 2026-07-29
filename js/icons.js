@@ -339,6 +339,63 @@
     <path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9V4a1 1 0 0 0-1-1H8.914a1 1 0 0 0-.707.293L4.293 7.207A1 1 0 0 0 4 7.914V20a1 1 0 0 0 1 1h6M9 3v4a1 1 0 0 1-1 1H4m11 13a11.426 11.426 0 0 1-3.637-3.99A11.139 11.139 0 0 1 10 11.833L15 10l5 1.833a11.137 11.137 0 0 1-1.363 5.176A11.425 11.425 0 0 1 15.001 21Z"/>
   </svg>`);
 
+  // Brandfetch Logo Link URL for a domain (public client id required).
+  function brandLogoUrl(domain, size) {
+    const c = window.BRANDFETCH_CLIENT_ID; if (!c || !domain) return null;
+    return "https://cdn.brandfetch.io/" + domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "") + "/w/" + (size || 256) + "/h/" + (size || 256) + "?c=" + encodeURIComponent(c);
+  }
+  function setCustomIcon(key, url) {
+    try {
+      if (!State.data.appData) State.data.appData = {};
+      if (!State.data.appData.customIcons) State.data.appData.customIcons = {};
+      const k = String(key || "").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+      if (url) State.data.appData.customIcons[k] = url; else delete State.data.appData.customIcons[k];
+      State.save();
+    } catch (_) {}
+  }
+
+  // Icon picker: search any brand via Brandfetch and apply its logo.
+  function pickIcon(key, label, onDone) {
+    document.querySelectorAll(".icp-ov").forEach((m) => m.remove());
+    const ov = el(`<div class="icp-ov"><div class="icp">
+      <div class="icp-head"><b>Change icon${label ? " · " + label : ""}</b><button class="icp-x" aria-label="Close">&times;</button></div>
+      <div class="icp-search"><span>🔎</span><input class="icp-in" placeholder="Search a brand or domain (e.g. apple.com)" autofocus></div>
+      <div class="icp-hint">Powered by Brandfetch · results appear as you type</div>
+      <div class="icp-grid"></div>
+      <div class="icp-foot"><button class="icp-reset">Reset to default</button></div>
+    </div></div>`);
+    const input = ov.querySelector(".icp-in"), grid = ov.querySelector(".icp-grid");
+    const close = () => ov.remove();
+    ov.querySelector(".icp-x").onclick = close;
+    ov.onclick = (e) => { if (e.target === ov) close(); };
+    ov.querySelector(".icp-reset").onclick = () => { setCustomIcon(key, null); close(); onDone && onDone(); };
+
+    function tile(domain, name) {
+      const url = brandLogoUrl(domain, 128);
+      const t = el(`<button class="icp-tile" title="${name || domain}"><img src="${url}" alt="" onerror="this.closest('.icp-tile').remove()"><span>${name || domain}</span></button>`);
+      t.onclick = () => { setCustomIcon(key, brandLogoUrl(domain, 256)); close(); onDone && onDone(); };
+      return t;
+    }
+    const SUGG = [["apple.com", "Apple"], ["google.com", "Google"], ["microsoft.com", "Microsoft"], ["spotify.com", "Spotify"], ["netflix.com", "Netflix"], ["youtube.com", "YouTube"], ["nvidia.com", "NVIDIA"], ["amazon.com", "Amazon"], ["discord.com", "Discord"], ["figma.com", "Figma"], ["minecraft.net", "Minecraft"], ["doordash.com", "DoorDash"]];
+    function showSuggestions() { grid.innerHTML = ""; SUGG.forEach((d) => grid.appendChild(tile(d[0], d[1]))); }
+    let t = null;
+    input.oninput = () => {
+      clearTimeout(t);
+      const v = input.value.trim();
+      if (!v) { showSuggestions(); return; }
+      t = setTimeout(() => {
+        grid.innerHTML = "";
+        // guess a domain from the query, plus a few common TLDs
+        const base = v.replace(/\s+/g, "").toLowerCase();
+        const domains = /\./.test(base) ? [base] : [base + ".com", base + ".net", base + ".io", base + ".org"];
+        domains.forEach((d) => grid.appendChild(tile(d, d)));
+      }, 260);
+    };
+    showSuggestions();
+    (document.getElementById("screen") || document.body).appendChild(ov);
+    setTimeout(() => input.focus(), 30);
+  }
+
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),
@@ -348,5 +405,8 @@
     alias,
     colorFor,
     gradientFor,
+    brandLogoUrl,
+    setCustomIcon,
+    pickIcon,
   };
 })();

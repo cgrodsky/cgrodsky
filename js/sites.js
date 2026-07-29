@@ -2022,17 +2022,19 @@
       if (view === "cat") return catView(bodyEl);
     }
     const DD_STORES = [
-      { n: "CVS", min: 15, c: "#cc0000", t: "CVS", rating: 4.6, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-deal">35% off $25+, up to $10</span> with <b class="dd-dp-word">DashPass</b>` },
-      { n: "Carter's", min: 44, c: "#29abe2", t: "carter's", rating: 4.4, dashpass: true, hsa: false, price: 2, note: "Accepts orders until 7:00 PM", tag: `<span class="dd-store-chip">Farther away</span>` },
-      { n: "Dollar Tree", min: 20, c: "#2e7d32", t: "DT", rating: 4.3, dashpass: true, hsa: false, price: 1, tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "Target", min: 30, c: "#cc0000", t: "T", rating: 4.8, dashpass: true, hsa: false, price: 2 },
-      { n: "Walgreens", min: 25, c: "#e31837", t: "W", rating: 4.5, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "Ralphs", min: 15, c: "#d81e2c", t: "R", rating: 4.7, dashpass: true, hsa: false, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
-      { n: "The Home Depot", min: 34, c: "#f96302", t: "HD", rating: 4.6, dashpass: false, hsa: false, price: 3 },
-      { n: "Best Buy", min: 16, c: "#0a4abf", t: "BB", rating: 4.9, dashpass: true, hsa: false, price: 3 },
-      { n: "Five Below", min: 23, c: "#0053a0", t: "f5", rating: 4.2, dashpass: true, hsa: false, price: 1 },
-      { n: "Ace Hardware", min: 21, c: "#d40029", t: "ACE", rating: 4.7, dashpass: false, hsa: false, price: 2 },
+      { n: "CVS", domain: "cvs.com", min: 15, c: "#cc0000", t: "CVS", rating: 4.6, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-deal">35% off $25+, up to $10</span> with <b class="dd-dp-word">DashPass</b>` },
+      { n: "Carter's", domain: "carters.com", min: 44, c: "#29abe2", t: "carter's", rating: 4.4, dashpass: true, hsa: false, price: 2, note: "Accepts orders until 7:00 PM", tag: `<span class="dd-store-chip">Farther away</span>` },
+      { n: "Dollar Tree", domain: "dollartree.com", min: 20, c: "#2e7d32", t: "DT", rating: 4.3, dashpass: true, hsa: false, price: 1, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Target", domain: "target.com", min: 30, c: "#cc0000", t: "T", rating: 4.8, dashpass: true, hsa: false, price: 2 },
+      { n: "Walgreens", domain: "walgreens.com", min: 25, c: "#e31837", t: "W", rating: 4.5, dashpass: true, hsa: true, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "Ralphs", domain: "ralphs.com", min: 15, c: "#d81e2c", t: "R", rating: 4.7, dashpass: true, hsa: false, price: 2, tag: `<span class="dd-store-chip">SNAP</span>` },
+      { n: "The Home Depot", domain: "homedepot.com", min: 34, c: "#f96302", t: "HD", rating: 4.6, dashpass: false, hsa: false, price: 3 },
+      { n: "Best Buy", domain: "bestbuy.com", min: 16, c: "#0a4abf", t: "BB", rating: 4.9, dashpass: true, hsa: false, price: 3 },
+      { n: "Five Below", domain: "fivebelow.com", min: 23, c: "#0053a0", t: "f5", rating: 4.2, dashpass: true, hsa: false, price: 1 },
+      { n: "Ace Hardware", domain: "acehardware.com", min: 21, c: "#d40029", t: "ACE", rating: 4.7, dashpass: false, hsa: false, price: 2 },
     ];
+    // Real brand logo via Brandfetch Logo Link when a public client id is set.
+    function brandLogo(domain) { const c = window.BRANDFETCH_CLIENT_ID; return c && domain ? "https://cdn.brandfetch.io/" + domain + "/w/128/h/128?c=" + encodeURIComponent(c) : null; }
     const ddFilters = { dash: false, hsa: false, rating: 0, under30: false, price: 0 };
     function retailView(el2) {
       el2.innerHTML = `<h2 class="dd-retail-h">Retail</h2>
@@ -2068,7 +2070,7 @@
         if (!list.length) { wrap.innerHTML = `<div class="dd-empty" style="grid-column:1/-1">No stores match those filters.</div>`; return; }
         list.forEach((s) => {
           const row = el(`<div class="dd-store">
-            <span class="dd-store-logo" style="color:${s.c}">${esc(s.t)}</span>
+            <span class="dd-store-logo" style="color:${s.c}">${brandLogo(s.domain) ? `<img src="${brandLogo(s.domain)}" alt="" onerror="this.remove()">` : ""}<i>${esc(s.t)}</i></span>
             <div class="dd-store-b">
               ${s.note ? `<div class="dd-store-note">${esc(s.note)}</div>` : ""}
               <div class="dd-store-n">${s.dashpass ? `<b class="dd-dp-word">Ⓓ</b> ` : ""}${esc(s.n)}</div>
