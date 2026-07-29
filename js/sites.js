@@ -2034,7 +2034,7 @@
       { n: "Ace Hardware", domain: "acehardware.com", min: 21, c: "#d40029", t: "ACE", rating: 4.7, dashpass: false, hsa: false, price: 2 },
     ];
     // Real brand logo via Brandfetch Logo Link when a public client id is set.
-    function brandLogo(domain) { const c = window.BRANDFETCH_CLIENT_ID; return c && domain ? "https://cdn.brandfetch.io/" + domain + "/w/128/h/128?c=" + encodeURIComponent(c) : null; }
+    function brandLogo(domain) { return (window.Icon && Icon.brandLogoUrl) ? Icon.brandLogoUrl(domain, 128) : null; }
     const ddFilters = { dash: false, hsa: false, rating: 0, under30: false, price: 0 };
     function retailView(el2) {
       el2.innerHTML = `<h2 class="dd-retail-h">Retail</h2>

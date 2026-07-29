@@ -339,11 +339,14 @@
     <path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9V4a1 1 0 0 0-1-1H8.914a1 1 0 0 0-.707.293L4.293 7.207A1 1 0 0 0 4 7.914V20a1 1 0 0 0 1 1h6M9 3v4a1 1 0 0 1-1 1H4m11 13a11.426 11.426 0 0 1-3.637-3.99A11.139 11.139 0 0 1 10 11.833L15 10l5 1.833a11.137 11.137 0 0 1-1.363 5.176A11.425 11.425 0 0 1 15.001 21Z"/>
   </svg>`);
 
-  // Brandfetch Logo Link URL for a domain (public client id required).
-  function brandLogoUrl(domain, size) {
-    const c = window.BRANDFETCH_CLIENT_ID; if (!c || !domain) return null;
-    return "https://cdn.brandfetch.io/" + domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "") + "/w/" + (size || 256) + "/h/" + (size || 256) + "?c=" + encodeURIComponent(c);
-  }
+  // Real brand logo for a domain. Google's favicon service is keyless and works
+  // from any origin; Brandfetch (if a client id is set AND its domain is
+  // approved) gives higher-res marks, so try it first and fall back on error.
+  function cleanDomain(d) { return String(d || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim(); }
+  function googleLogoUrl(domain, size) { const d = cleanDomain(domain); return d ? "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(d) + "&sz=" + (size >= 128 ? 128 : 64) : null; }
+  function brandfetchUrl(domain, size) { const c = window.BRANDFETCH_CLIENT_ID, d = cleanDomain(domain); return c && d ? "https://cdn.brandfetch.io/" + d + "/w/" + (size || 128) + "/h/" + (size || 128) + "?c=" + encodeURIComponent(c) : null; }
+  // Default logo URL used everywhere = the reliable keyless one.
+  function brandLogoUrl(domain, size) { return googleLogoUrl(domain, size); }
   function setCustomIcon(key, url) {
     try {
       if (!State.data.appData) State.data.appData = {};
@@ -371,9 +374,14 @@
     ov.querySelector(".icp-reset").onclick = () => { setCustomIcon(key, null); close(); onDone && onDone(); };
 
     function tile(domain, name) {
-      const url = brandLogoUrl(domain, 128);
-      const t = el(`<button class="icp-tile" title="${name || domain}"><img src="${url}" alt="" onerror="this.closest('.icp-tile').remove()"><span>${name || domain}</span></button>`);
-      t.onclick = () => { setCustomIcon(key, brandLogoUrl(domain, 256)); close(); onDone && onDone(); };
+      const t = el(`<button class="icp-tile" title="${name || domain}"><img alt=""><span>${name || domain}</span></button>`);
+      const img = t.querySelector("img");
+      // try Brandfetch (crisp) first, then Google favicon, then DuckDuckGo
+      const chain = [brandfetchUrl(domain, 128), googleLogoUrl(domain, 128), "https://icons.duckduckgo.com/ip3/" + cleanDomain(domain) + ".ico"].filter(Boolean);
+      let ci = 0;
+      img.onerror = () => { ci++; if (ci < chain.length) img.src = chain[ci]; else t.remove(); };
+      img.src = chain[0];
+      t.onclick = () => { setCustomIcon(key, chain[ci] || googleLogoUrl(domain, 128)); close(); onDone && onDone(); };
       return t;
     }
     const SUGG = [["apple.com", "Apple"], ["google.com", "Google"], ["microsoft.com", "Microsoft"], ["spotify.com", "Spotify"], ["netflix.com", "Netflix"], ["youtube.com", "YouTube"], ["nvidia.com", "NVIDIA"], ["amazon.com", "Amazon"], ["discord.com", "Discord"], ["figma.com", "Figma"], ["minecraft.net", "Minecraft"], ["doordash.com", "DoorDash"]];
