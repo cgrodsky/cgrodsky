@@ -213,6 +213,18 @@
           <div class="cv-stage" style="width:${ty.w}px;height:${ty.h}px;background:${design.bg}"></div>
         </div>
       </div>
+      <div class="cv-bottombar">
+        <button class="cv-bb cv-bb-notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M4 12h8M4 17h6"/><path d="M15 16l5-5 2 2-5 5h-2z"/></svg>Notes</button>
+        <button class="cv-bb cv-bb-timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="7"/><path d="M12 14V10M10 3h4M18 8l1.5-1.5"/></svg>Timer</button>
+        <span class="grow"></span>
+        <input type="range" class="cv-zoom" min="10" max="200" value="100">
+        <span class="cv-zoom-val">100%</span>
+        <button class="cv-bb cv-bb-pages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M7 18v2M17 18v2"/></svg>Pages</button>
+        <span class="cv-bb-pageidx">1 / 1</span>
+        <button class="cv-bb-ic cv-bb-grid" title="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></button>
+        <button class="cv-bb-ic cv-bb-expand" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg></button>
+        <button class="cv-bb-ic cv-bb-help" title="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.4-1 .8-1 1.6"/><circle cx="12" cy="16.6" r=".7" fill="currentColor" stroke="none"/></svg></button>
+      </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
     const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font");
@@ -515,6 +527,18 @@
       if (ev.target.closest(".cv-add-image")) openImagePicker();
     });
     showPanel("templates");
+
+    // Bottom bar: functional zoom slider + placeholder actions.
+    const zoom = body.querySelector(".cv-zoom"), zoomVal = body.querySelector(".cv-zoom-val");
+    const setZoom = (z) => { stage.style.transform = `scale(${z / 100})`; zoomVal.textContent = z + "%"; };
+    zoom.oninput = () => setZoom(+zoom.value);
+    const bbToast = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
+    body.querySelector(".cv-bb-notes").onclick = () => bbToast("Notes are coming soon.");
+    body.querySelector(".cv-bb-timer").onclick = () => bbToast("Presenter timer is coming soon.");
+    body.querySelector(".cv-bb-pages").onclick = () => bbToast("Page manager is coming soon.");
+    body.querySelector(".cv-bb-grid").onclick = () => bbToast("Grid view is coming soon.");
+    body.querySelector(".cv-bb-expand").onclick = () => bbToast("Full screen is coming soon.");
+    body.querySelector(".cv-bb-help").onclick = () => bbToast("Help is coming soon.");
 
     body.querySelector(".cv-title").oninput = (e) => { design.name = e.target.value; };
     body.querySelector(".cv-back").onclick = () => { saveDesign(); home(body, ref); };

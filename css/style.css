@@ -3517,7 +3517,18 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-font { width: 100%; border: 1px solid #e6e1f5; border-radius: 8px; padding: 9px 8px; font-size: .9rem; font-weight: 600; background: #faf9ff; cursor: pointer; color: #1c1c28; }
 .cv-del { background: #fdecec; border: 0; color: #c0392b; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; }
 .cv-stage-wrap { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 30px; background: #eceef4; }
-.cv-stage { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
+.cv-stage { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 4px; overflow: hidden; flex: 0 0 auto; transform-origin: center; }
+/* Canva editor bottom bar */
+.cv-bottombar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: #fff; border-top: 1px solid #ececf2; flex: 0 0 auto; }
+.cv-bb { display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: .84rem; color: #55525e; cursor: pointer; }
+.cv-bb:hover { background: #f2f2f7; }
+.cv-bb svg { width: 18px; height: 18px; }
+.cv-zoom { width: 130px; accent-color: #7b2ae8; cursor: pointer; }
+.cv-zoom-val { font-size: .82rem; font-weight: 700; color: #55525e; min-width: 38px; text-align: right; }
+.cv-bb-pageidx { font-size: .82rem; font-weight: 700; color: #55525e; white-space: nowrap; }
+.cv-bb-ic { background: none; border: 0; border-radius: 8px; padding: 6px; color: #55525e; cursor: pointer; display: inline-flex; }
+.cv-bb-ic:hover { background: #f2f2f7; }
+.cv-bb-ic svg { width: 19px; height: 19px; }
 .cv-obj { position: absolute; cursor: move; user-select: none; }
 .cv-text { padding: 2px 4px; white-space: nowrap; outline: none; line-height: 1.1; }
 .cv-obj.sel { outline: 2px solid #7b5cff; outline-offset: 2px; }
