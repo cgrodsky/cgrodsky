@@ -3470,6 +3470,23 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-proj-card { display: flex; align-items: center; gap: 8px; background: #f7f6fb; border: 1px solid #ececf2; border-radius: 8px; padding: 8px; cursor: pointer; font-weight: 600; font-size: .82rem; text-align: left; }
 .cv-proj-card:hover { background: #efeafd; }
 .cv-proj-sw { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.1); }
+/* Canva AI panel */
+.cv-ai-h { font-size: 1.55rem; font-weight: 800; line-height: 1.12; background: linear-gradient(90deg, #2b8fd6, #7b3fe4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; margin: 4px 0 10px; }
+.cv-ai-pill { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e9e6f3; border-radius: 26px; padding: 13px 16px; font-weight: 700; color: #1c1c28; cursor: pointer; box-shadow: 0 3px 14px rgba(120,90,240,.14); }
+.cv-ai-pill:hover { background: #faf9ff; }
+.cv-ai-pill svg { width: 20px; height: 20px; flex: 0 0 auto; }
+.cv-ai-box { border: 1px solid #e3e0ee; border-radius: 14px; padding: 10px 12px; margin-top: 8px; }
+.cv-ai-input { width: 100%; border: 0; outline: none; resize: none; min-height: 68px; font-size: .95rem; font-family: inherit; background: transparent; color: #1c1c28; }
+.cv-ai-input::placeholder { color: #9a97a6; }
+.cv-ai-boxbar { display: flex; align-items: center; justify-content: space-between; }
+.cv-ai-plus, .cv-ai-mic { background: none; border: 0; font-size: 1.15rem; cursor: pointer; color: #55525e; padding: 4px; border-radius: 8px; }
+.cv-ai-plus:hover, .cv-ai-mic:hover { background: #f2f2f7; }
+/* Canva Tools palette */
+.cv-tools-palette { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border: 1px solid #eceef2; border-radius: 18px; padding: 10px; width: 66px; margin: 4px auto 0; box-shadow: 0 8px 24px rgba(0,0,0,.09); }
+.cv-tp { width: 46px; height: 46px; border: 0; border-radius: 12px; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cv-tp:hover { background: #f2f2f7; }
+.cv-tp.on { background: #efe9ff; }
+.cv-tp svg { width: 26px; height: 26px; }
 /* Canva Text panel */
 .cv-txt-add { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(90deg, #8b46f0, #7b2ae8); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 800; cursor: pointer; }
 .cv-txt-add svg { width: 18px; height: 18px; }

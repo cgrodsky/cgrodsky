@@ -512,8 +512,48 @@
           vals.forEach((v) => { design.els.push({ t: "rect", x, y: 260 - v, w: bw, h: v, color: "#7b2ae8" }); x += bw + gap; });
           render(); selectEl(null);
         };
+      } else if (id === "ai") {
+        P.innerHTML = `
+          <div class="cv-ai-h">What shall we do with this design?</div>
+          <button class="cv-ai-pill" data-ai="redesign"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.3 6.3l2 2M15.7 15.7l2 2M17.7 6.3l-2 2M8.3 15.7l-2 2"/></svg>Redesign this page</button>
+          <button class="cv-ai-pill" data-ai="bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="14" height="12" rx="2"/><path d="M6 15l3-3 3 2 2-2 3 3"/><circle cx="8.5" cy="9" r="1"/><path d="M19 9v8M15 13h8"/></svg>Add background</button>
+          <button class="cv-ai-pill" data-ai="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="6" rx="1.5"/><path d="M16 7h3v4h-7v3"/><rect x="9" y="14" width="5" height="5" rx="1"/></svg>Change style</button>
+          <div class="cv-ai-box">
+            <textarea class="cv-ai-input" placeholder="Describe your idea"></textarea>
+            <div class="cv-ai-boxbar"><button class="cv-ai-plus" title="Add">＋</button><button class="cv-ai-mic" title="Voice">🎙</button></div>
+          </div>`;
+        const t3 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: m }); };
+        const GRADS = ["linear-gradient(135deg,#ff7e5f,#feb47b)", "linear-gradient(135deg,#2193b0,#6dd5ed)", "linear-gradient(135deg,#8e2de2,#4a00e0)", "linear-gradient(135deg,#11998e,#38ef7d)", "linear-gradient(135deg,#fc5c7d,#6a82fb)", "linear-gradient(135deg,#f7971e,#ffd200)", "linear-gradient(135deg,#c471f5,#fa71cd)"];
+        P.querySelector('[data-ai="redesign"]').onclick = () => t3("Redesign is coming soon.");
+        P.querySelector('[data-ai="bg"]').onclick = () => { let g; do { g = GRADS[Math.floor(Math.random() * GRADS.length)]; } while (g === design.bg && GRADS.length > 1); design.bg = g; stage.style.background = g; t3("Added a fresh background."); };
+        P.querySelector('[data-ai="style"]').onclick = () => t3("Change style is coming soon.");
+        P.querySelector(".cv-ai-plus").onclick = () => t3("Canva AI is coming soon.");
+        P.querySelector(".cv-ai-mic").onclick = () => t3("Voice input is coming soon.");
+      } else if (id === "tools") {
+        P.innerHTML = `<div class="cv-panel-h">Tools</div><div class="cv-tools-palette">
+          <button class="cv-tp on" data-tool="select" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="#7b2ae8" stroke-width="1.8" stroke-linejoin="round"><path d="M6 4l13 6-5.5 1.6L11 19z"/></svg></button>
+          <button class="cv-tp" data-tool="pen" title="Draw"><svg viewBox="0 0 24 24" fill="none" stroke="#e14b3b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l4 4-8 8-4 1 1-4z"/><path d="M4 20c2-2 4 0 6-1"/></svg></button>
+          <button class="cv-tp" data-tool="shape" title="Shapes"><svg viewBox="0 0 24 24"><circle cx="9" cy="10" r="5" fill="#4b4b57"/><rect x="12" y="12" width="8" height="8" rx="1.5" fill="#1c1c28"/></svg></button>
+          <button class="cv-tp" data-tool="line" title="Line"><svg viewBox="0 0 24 24" stroke="#3a86ff" stroke-width="3" stroke-linecap="round"><path d="M6 18L18 6"/></svg></button>
+          <button class="cv-tp" data-tool="sticky" title="Sticky note"><svg viewBox="0 0 24 24"><path d="M5 5h14v10l-4 4H5z" fill="#ffcf3f"/><path d="M15 19v-4h4z" fill="#e5b52f"/></svg></button>
+          <button class="cv-tp" data-tool="text" title="Text"><svg viewBox="0 0 24 24" fill="none" stroke="#7b2ae8" stroke-width="2.2" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg></button>
+          <button class="cv-tp" data-tool="sign" title="Signature"><svg viewBox="0 0 24 24" fill="none" stroke="#1c1c28" stroke-width="1.6" stroke-linecap="round"><path d="M4 16c3 0 3-8 5-8s1 8 3 8 2-4 3-4"/><path d="M6 19h12"/></svg></button>
+          <button class="cv-tp" data-tool="table" title="Table"><svg viewBox="0 0 24 24" fill="#26307a"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="6" y="6" width="4" height="4" fill="#fff"/><rect x="11" y="6" width="4" height="4" fill="#fff"/><rect x="6" y="11" width="4" height="4" fill="#fff"/><rect x="11" y="11" width="4" height="4" fill="#fff"/></svg></button>
+        </div>`;
+        const tt = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
+        const setTool = (b) => P.querySelectorAll(".cv-tp").forEach((x) => x.classList.toggle("on", x === b));
+        P.querySelectorAll(".cv-tp").forEach((b) => b.onclick = () => {
+          setTool(b);
+          const t = b.dataset.tool;
+          if (t === "select") selectEl(null);
+          else if (t === "text") { design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" }); render(); selectEl(design.els.length - 1); }
+          else if (t === "shape") { design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); }
+          else if (t === "line") { design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); }
+          else if (t === "sticky") { design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); }
+          else tt(b.title + " is coming soon.");
+        });
       } else {
-        const meta = { ai: "Describe what you want and let Canva AI draft it for you.", tools: "Handy editing tools live here.", apps: "Connect your favorite apps to Canva.", components: "Reusable building blocks for your design.", audio: "Add background music and sound effects.", videos: "Drop in video clips and animations.", bulk: "Create many designs at once from your data.", translate: "Translate your design into another language." };
+        const meta = { apps: "Connect your favorite apps to Canva.", components: "Reusable building blocks for your design.", audio: "Add background music and sound effects.", videos: "Drop in video clips and animations.", bulk: "Create many designs at once from your data.", translate: "Translate your design into another language." };
         P.innerHTML = placeholder((RAIL.find((r) => r.id === id) || {}).label || "Canva", meta[id] || "Coming soon.");
       }
     }
