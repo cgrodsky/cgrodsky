@@ -184,6 +184,17 @@
         <span class="grow"></span>
         <button class="cv-dl">⬇ Download</button>
       </div>
+      <div class="cv-subbar" style="display:none">
+        <button class="cv-sb cv-sb-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/></svg>Ask Canva</button>
+        <span class="cv-sb-div"></span>
+        <button class="cv-sb cv-sb-edit">Edit</button>
+        <span class="cv-sb-div"></span>
+        <label class="cv-sb cv-sb-color" title="Color"><span class="cv-color-wheel"></span><input type="color" value="#7b5cff"></label>
+        <button class="cv-sb cv-sb-animate">Animate</button>
+        <button class="cv-sb cv-sb-position">Position</button>
+        <span class="cv-sb-div"></span>
+        <button class="cv-sb cv-sb-comment" title="Comment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button>
+      </div>
       <div class="cv-work">
         <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<img class="cv-rail-crown" src="assets/cv_pro.png?v=1" alt="Pro">' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>
         <div class="cv-panel">
@@ -202,7 +213,7 @@
       </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -235,8 +246,21 @@
       else if (has) { sizeRow.style.display = "flex"; sizeIn.min = 40; sizeIn.max = 500; sizeIn.value = design.els[i].w || 140; }
       else sizeRow.style.display = "none";
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
+      subbar.style.display = has ? "flex" : "none";
     }
     rembgBtn.onclick = () => removeBg();
+
+    // Contextual toolbar (shown when an element is selected).
+    const toast = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
+    subbar.querySelector(".cv-sb-ask").onclick = () => toast("Ask Canva is coming soon.");
+    subbar.querySelector(".cv-sb-edit").onclick = () => toast("Edit tools are in the left panel.");
+    subbar.querySelector(".cv-sb-animate").onclick = () => toast("Animations are coming soon.");
+    subbar.querySelector(".cv-sb-comment").onclick = () => toast("Comments are coming soon.");
+    subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
+    subbar.querySelector(".cv-sb-position").onclick = () => {
+      if (sel == null) return;
+      const e = design.els.splice(sel, 1)[0]; design.els.push(e); render(); selectEl(design.els.length - 1);
+    };
     sizeIn.oninput = () => {
       if (sel == null) return;
       const e = design.els[sel];
