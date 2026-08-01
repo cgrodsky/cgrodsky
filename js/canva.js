@@ -428,8 +428,16 @@
       const key = window.POOF_API_KEY;
       if (!key) { if (window.Notify) Notify.show({ title: "Canva", body: "No Poof API key configured." }); return; }
       const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Removing background…", subtitle: "poof.bg", etaMs: 7000, cancel: false }) : null;
-      // Poof takes a multipart image_file only, so turn whatever src we have into a blob first.
-      fetch(e.src).then((r) => r.blob())
+      // Poof takes a multipart image_file only, so we must send the raw bytes. Data URLs and
+      // same-origin assets fetch directly; remote images are CORS-blocked, so proxy those.
+      const isRemote = /^https?:\/\//i.test(e.src) && e.src.indexOf(location.origin) !== 0;
+      const proxy = (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
+      const getBytes = () => {
+        if (isRemote) return fetch(proxy(e.src)).then((r) => { if (!r.ok) throw new Error("image " + r.status); return r.blob(); });
+        return fetch(e.src).then((r) => { if (!r.ok) throw new Error("image " + r.status); return r.blob(); })
+          .catch(() => fetch(proxy(e.src)).then((r) => r.blob()));   // fallback if direct fetch is blocked
+      };
+      getBytes()
         .then((blob) => { const fd = new FormData(); fd.append("image_file", blob, "image.png");
           return fetch("https://api.poof.bg/v1/remove", { method: "POST", headers: { "x-api-key": key }, body: fd }); })
         .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
