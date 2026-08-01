@@ -152,6 +152,7 @@
           <button class="cv-tool" data-add="text">＋ Text</button>
           <button class="cv-tool" data-add="rect">▭ Rectangle</button>
           <button class="cv-tool" data-add="circle">● Circle</button>
+          <button class="cv-tool cv-add-image">🖼 Image</button>
           <div class="cv-panel-h">Background</div>
           <div class="cv-swatches cv-bg-sw"></div>
           <div class="cv-panel-h cv-sel-h" style="display:none">Selected</div>
@@ -197,10 +198,17 @@
       const has = i != null && design.els[i];
       selH.style.display = selTools.style.display = has ? "block" : "none";
       selTools.style.display = has ? "flex" : "none";
-      if (has && design.els[i].t === "text") { sizeRow.style.display = "flex"; sizeIn.value = design.els[i].size || 32; }
+      if (has && design.els[i].t === "text") { sizeRow.style.display = "flex"; sizeIn.min = 10; sizeIn.max = 120; sizeIn.value = design.els[i].size || 32; }
+      else if (has) { sizeRow.style.display = "flex"; sizeIn.min = 40; sizeIn.max = 500; sizeIn.value = design.els[i].w || 140; }
       else sizeRow.style.display = "none";
     }
-    sizeIn.oninput = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].size = +sizeIn.value; render(); selectEl(sel); } };
+    sizeIn.oninput = () => {
+      if (sel == null) return;
+      const e = design.els[sel];
+      if (e.t === "text") e.size = +sizeIn.value;
+      else { const ratio = (e.h || 1) / (e.w || 1); e.w = +sizeIn.value; e.h = Math.round(e.w * ratio); }
+      render(); selectEl(sel);
+    };
     body.querySelector(".cv-del").onclick = () => { if (sel != null) { design.els.splice(sel, 1); sel = null; render(); selectEl(null); } };
 
     function render() {
@@ -208,6 +216,7 @@
       design.els.forEach((e, i) => {
         let o;
         if (e.t === "text") o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400}">${esc(e.text || "Text")}</div>`);
+        else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
         dragify(o, e, i);
@@ -229,12 +238,67 @@
     stage.onclick = (ev) => { if (ev.target === stage) selectEl(null); };
     render();
 
-    body.querySelectorAll(".cv-tool").forEach((b) => b.onclick = () => {
+    body.querySelectorAll(".cv-tool[data-add]").forEach((b) => b.onclick = () => {
       const kind = b.dataset.add;
       if (kind === "text") design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" });
       else design.els.push({ t: kind, x: 60, y: 60, w: 140, h: 140, color: kind === "circle" ? "#7b5cff" : "#3a86ff" });
       render(); selectEl(design.els.length - 1);
     });
+
+    // Drop an image element onto the stage, sizing it from the image's natural aspect ratio.
+    function addImage(src) {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = Math.min(ty.w * 0.6, 360, img.naturalWidth || 240);
+        const w = Math.max(60, Math.round(maxW));
+        const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
+        design.els.push({ t: "image", x: 40, y: 40, w, h: Math.round(w * ratio), src });
+        render(); selectEl(design.els.length - 1);
+      };
+      img.onerror = () => {
+        if (window.Notify) Notify.show({ title: "Canva", body: "Couldn't load that image." });
+      };
+      img.src = src;
+    }
+
+    body.querySelector(".cv-add-image").onclick = () => {
+      const ov = el(`<div class="cv-imgpick">
+        <div class="cv-imgpick-card">
+          <div class="cv-imgpick-h">Add an image</div>
+          <button class="cv-imgpick-btn cv-ip-upload">⬆ Upload from device</button>
+          <button class="cv-imgpick-btn cv-ip-brand">✦ Brand logo</button>
+          <button class="cv-imgpick-btn cv-ip-url">🔗 Paste image URL</button>
+          <button class="cv-imgpick-x">Cancel</button>
+        </div>
+      </div>`);
+      const close = () => ov.remove();
+      ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+      ov.querySelector(".cv-imgpick-x").onclick = close;
+      ov.querySelector(".cv-ip-upload").onclick = () => {
+        const inp = document.createElement("input");
+        inp.type = "file"; inp.accept = "image/*";
+        inp.onchange = () => {
+          const f = inp.files && inp.files[0]; if (!f) return;
+          const r = new FileReader();
+          r.onload = () => { addImage(r.result); close(); };
+          r.readAsDataURL(f);
+        };
+        inp.click();
+      };
+      ov.querySelector(".cv-ip-brand").onclick = () => {
+        const d = prompt("Brand or website (e.g. spotify.com):");
+        if (!d) return;
+        const domain = d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+        const src = window.Icon && Icon.brandLogoUrl ? Icon.brandLogoUrl(domain) : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+        addImage(src); close();
+      };
+      ov.querySelector(".cv-ip-url").onclick = () => {
+        const u = prompt("Image URL:");
+        if (!u) return;
+        addImage(u.trim()); close();
+      };
+      body.querySelector(".cv").appendChild(ov);
+    };
 
     body.querySelector(".cv-title").oninput = (e) => { design.name = e.target.value; };
     body.querySelector(".cv-back").onclick = () => { saveDesign(); home(body, ref); };
