@@ -53,7 +53,7 @@
     { id: "components", label: "Components", svg: `<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>` },
     { id: "audio", label: "Audio", svg: `<circle cx="7" cy="17" r="2.5"/><circle cx="17" cy="15" r="2.5"/><path d="M9.5 17V7l10-2v10"/>` },
     { id: "videos", label: "Videos", svg: `<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M10 9l5 3-5 3z"/>` },
-    { id: "background", label: "Background", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M6 18l4-4M9 20l7-7M13 20l6-6"/>` },
+    { id: "background", label: "Background", svg: `<path d="M4 8L8 4M4 13L13 4M4 19L19 4M9 20L20 9M14 20L20 14M18 20L20 18"/>` },
     { id: "bulk", label: "Bulk create", svg: `<rect x="7" y="7" width="12" height="12" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/><path d="M13 11v4M11 13h4"/>` },
     { id: "translate", label: "Translate", svg: `<path d="M4 6h8M8 4v2M6 6c0 4-2 6-2 6M5 8c0 2 3 4 5 4"/><path d="M13 20l4-9 4 9M14.5 17h5"/>` },
     { id: "charts", label: "Charts", svg: `<path d="M5 5v14h14"/><rect x="8" y="11" width="2.5" height="5"/><rect x="12.5" y="8" width="2.5" height="8"/><rect x="17" y="13" width="2.5" height="3"/>` },
