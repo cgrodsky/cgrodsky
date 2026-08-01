@@ -197,7 +197,7 @@
     body.innerHTML = `<div class="cv">
       <aside class="cv-side">
         <div class="cv-brand"><img class="cv-wordmark" src="assets/canva_wordmark.png?v=1" alt="Canva"></div>
-        <button class="cv-nav on">🏠 Home</button>
+        <button class="cv-nav cv-nav-home on"><span class="cv-home-ic"><svg class="cv-ic-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 10.6 4.3a2 2 0 0 1 2.8 0L20 10.6V19a1.5 1.5 0 0 1-1.5 1.5H15V16a3 3 0 0 0-6 0v4.5H5.5A1.5 1.5 0 0 1 4 19z"/></svg><svg class="cv-ic-fill" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 10.6 4.3a2 2 0 0 1 2.8 0L20 10.6V19a1.5 1.5 0 0 1-1.5 1.5H15V16a3 3 0 0 0-6 0v4.5H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span> Home</button>
         <button class="cv-nav">📁 Projects</button>
         <button class="cv-nav">✨ Brand</button>
         <button class="cv-nav">📐 Templates</button>

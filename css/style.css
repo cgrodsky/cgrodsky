@@ -3409,6 +3409,11 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-nav { display: flex; align-items: center; gap: 10px; background: transparent; border: 0; text-align: left; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: .9rem; font-weight: 600; color: #333; }
 .cv-nav:hover { background: #f2f2f7; }
 .cv-nav.on { background: #eee9ff; color: #7b2ae8; }
+.cv-home-ic { display: inline-flex; width: 20px; height: 20px; }
+.cv-home-ic svg { width: 20px; height: 20px; }
+.cv-nav-home .cv-ic-fill { display: none; }
+.cv-nav-home:hover .cv-ic-out, .cv-nav-home.on .cv-ic-out { display: none; }
+.cv-nav-home:hover .cv-ic-fill, .cv-nav-home.on .cv-ic-fill { display: inline; }
 .cv-new { margin-top: 12px; background: linear-gradient(90deg, #7d2ae8, #5433ff); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; }
 .cv-new:hover { filter: brightness(1.06); }
 .cv-main { flex: 1; overflow: auto; padding: 22px 26px; }
