@@ -409,8 +409,29 @@
           grid.appendChild(c);
         });
       } else if (id === "text") {
-        P.innerHTML = `<div class="cv-panel-h">Text</div>
-          <button class="cv-tool" data-add="text">＋ Add a text box</button>`;
+        P.innerHTML = `
+          <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search fonts and combinations"></div>
+          <button class="cv-txt-add" data-add="text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg>Add a text box</button>
+          <button class="cv-txt-magic">✎ Magic Write</button>
+          <div class="cv-txt-team"><span class="cv-txt-teamname">${esc(profileName())}'s Team ▾</span><button class="cv-txt-edit">Edit</button></div>
+          <button class="cv-txt-brandfonts">Add your brand fonts</button>
+          <div class="cv-panel-h">Default text styles</div>
+          <button class="cv-txt-style" data-role="heading">Add a heading</button>
+          <button class="cv-txt-style" data-role="subheading">Add a subheading</button>
+          <button class="cv-txt-style" data-role="body">Add a little bit of body text</button>
+          <div class="cv-panel-h">Dynamic text</div>
+          <button class="cv-tool cv-txt-pagenum">🔢 Page numbers</button>`;
+        const styles = { heading: { text: "Add a heading", size: 48, bold: true }, subheading: { text: "Add a subheading", size: 30, bold: true }, body: { text: "Add a little bit of body text", size: 18, bold: false } };
+        P.querySelectorAll(".cv-txt-style").forEach((b) => b.onclick = () => {
+          const s = styles[b.dataset.role];
+          design.els.push({ t: "text", x: 40, y: 40, text: s.text, size: s.size, color: "#111111", bold: s.bold });
+          render(); selectEl(design.els.length - 1);
+        });
+        const t2 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
+        P.querySelector(".cv-txt-magic").onclick = () => t2("Magic Write is coming soon.");
+        P.querySelector(".cv-txt-edit").onclick = () => t2("Brand fonts are coming soon.");
+        P.querySelector(".cv-txt-brandfonts").onclick = () => t2("Brand fonts are coming soon.");
+        P.querySelector(".cv-txt-pagenum").onclick = () => t2("Page numbers are coming soon.");
       } else if (id === "uploads") {
         const c = store(); if (!c.uploads) c.uploads = [];
         P.innerHTML = `
@@ -490,7 +511,7 @@
     });
     // Delegate panel actions so dynamically-built tool buttons keep working.
     body.querySelector(".cv-panel").addEventListener("click", (ev) => {
-      const add = ev.target.closest(".cv-tool[data-add]"); if (add) { addEl(add.dataset.add); return; }
+      const add = ev.target.closest("[data-add]"); if (add) { addEl(add.dataset.add); return; }
       if (ev.target.closest(".cv-add-image")) openImagePicker();
     });
     showPanel("templates");

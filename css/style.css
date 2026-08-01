@@ -3470,6 +3470,20 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-proj-card { display: flex; align-items: center; gap: 8px; background: #f7f6fb; border: 1px solid #ececf2; border-radius: 8px; padding: 8px; cursor: pointer; font-weight: 600; font-size: .82rem; text-align: left; }
 .cv-proj-card:hover { background: #efeafd; }
 .cv-proj-sw { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.1); }
+/* Canva Text panel */
+.cv-txt-add { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(90deg, #8b46f0, #7b2ae8); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 800; cursor: pointer; }
+.cv-txt-add svg { width: 18px; height: 18px; }
+.cv-txt-add:hover { filter: brightness(1.05); }
+.cv-txt-magic, .cv-txt-brandfonts { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; color: #1c1c28; }
+.cv-txt-magic:hover, .cv-txt-brandfonts:hover { background: #f7f6fb; }
+.cv-txt-team { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.cv-txt-teamname { font-weight: 800; font-size: .92rem; }
+.cv-txt-edit { background: none; border: 0; color: #7b2ae8; font-weight: 700; cursor: pointer; }
+.cv-txt-style { text-align: left; background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px 14px; cursor: pointer; color: #111; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-txt-style:hover { background: #f7f6fb; }
+.cv-txt-style[data-role="heading"] { font-size: 1.6rem; font-weight: 800; }
+.cv-txt-style[data-role="subheading"] { font-size: 1.15rem; font-weight: 700; }
+.cv-txt-style[data-role="body"] { font-size: .9rem; }
 /* Canva Uploads panel */
 .cv-up-search { display: flex; align-items: center; gap: 8px; border: 1px solid #e3e0ee; border-radius: 10px; padding: 9px 12px; color: #8b8896; }
 .cv-up-search svg { width: 18px; height: 18px; flex: 0 0 auto; }
