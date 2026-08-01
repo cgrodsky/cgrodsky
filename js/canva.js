@@ -102,7 +102,7 @@
   // Left editor rail — mirrors Canva's icon rail. `svg` is the inner markup of a 24×24 line icon.
   const RAIL = [
     { id: "templates", label: "Templates", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="12" y1="12" x2="20" y2="12"/>` },
-    { id: "elements", label: "Elements", svg: `<circle cx="8" cy="8" r="4"/><rect x="13" y="13" width="7" height="7" rx="1.2"/><path d="M4 20l4-6 4 6z"/>` },
+    { id: "elements", label: "Elements", svg: `<path d="M6 3.5 2 11h8z"/><rect x="13" y="3" width="8" height="8" fill="currentColor" stroke="none"/><circle cx="11.5" cy="17" r="5.5" fill="currentColor" stroke="none"/>` },
     { id: "text", label: "Text", svg: `<path d="M5 6h14"/><path d="M12 6v13"/><path d="M9 19h6"/>` },
     { id: "brand", label: "Brand", pro: true, svg: `<ellipse cx="12" cy="12" rx="7" ry="5"/><path d="M9 12a3 3 0 0 1 6 0"/><path d="M9 12v-1.5"/><path d="M15 12v-1.5"/>` },
     { id: "ai", label: "Canva AI", svg: `<path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/>` },

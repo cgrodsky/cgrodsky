@@ -86,6 +86,11 @@ html, body {
 .lock-go { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; font-size: 1.2rem; }
 .lock-go:hover { background: var(--accent); }
 .lock-err { color: #ff7676; min-height: 1em; font-size: .85rem; margin-top: 8px; }
+.lock-touchid { display: inline-flex; align-items: center; gap: 8px; margin: 14px auto 4px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); color: #fff; border-radius: 22px; padding: 8px 16px 8px 10px; font-weight: 600; font-size: .9rem; cursor: pointer; }
+.lock-touchid:hover { background: rgba(255,255,255,.24); }
+.lock-touchid img { width: 26px; height: 26px; object-fit: contain; filter: invert(1) brightness(1.6); }
+.lock-touchid.scanning img { animation: tidPulse .5s ease-in-out infinite; }
+@keyframes tidPulse { 0%,100% { opacity: .5; } 50% { opacity: 1; filter: invert(1) brightness(1.6) drop-shadow(0 0 5px #6cf); } }
 .lock-actions { margin-top: 10px; }
 .lock-actions .btn-text { color: rgba(255,255,255,0.7); font-size: .8rem; }
 .lock-fade { animation: fadeOut 0.35s forwards; }

@@ -19,6 +19,7 @@
           <button type="submit" class="lock-go" title="Sign in">&#8594;</button>
         </form>
         <div class="lock-err"></div>
+        ${pr.fingerprint ? `<button type="button" class="lock-touchid" title="Unlock with Touch ID"><img src="assets/touchid.png?v=1" alt="Touch ID"><span>Touch ID</span></button>` : ""}
         <div class="lock-actions"><button type="button" class="btn-text lock-forgot">Forgot PIN?</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
       </div>
     </div>`);
@@ -49,6 +50,8 @@
       else { err.textContent = "Incorrect — try again."; inp.value = ""; layer.querySelector(".lock-card").classList.add("shake"); setTimeout(() => layer.querySelector(".lock-card").classList.remove("shake"), 350); }
     };
     layer.querySelector(".lock-skip").onclick = unlock;
+    const tid = layer.querySelector(".lock-touchid");
+    if (tid) tid.onclick = () => { tid.classList.add("scanning"); setTimeout(unlock, 550); };
     // Forgot PIN/password — set a new one without the old (personal sim).
     layer.querySelector(".lock-forgot").onclick = () => {
       const isPin = pr.authType === "pin";
