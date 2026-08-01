@@ -3456,6 +3456,10 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-proj-card { display: flex; align-items: center; gap: 8px; background: #f7f6fb; border: 1px solid #ececf2; border-radius: 8px; padding: 8px; cursor: pointer; font-weight: 600; font-size: .82rem; text-align: left; }
 .cv-proj-card:hover { background: #efeafd; }
 .cv-proj-sw { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.1); }
+.cv-el-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cv-el-card { aspect-ratio: 1; border: 1px solid #ececf2; border-radius: 8px; background: #fbfbfe; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; }
+.cv-el-card:hover { outline: 2px solid #7b2ae8; }
+.cv-el-card img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .cv-rembg { background: #f0ecff; border: 1px solid #ddd3ff; color: #6331df; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; }
 .cv-rembg:hover { background: #e5ddff; }
 .cv-tool { background: #f4f2fb; border: 1px solid #e6e1f5; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; text-align: left; }

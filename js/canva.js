@@ -28,6 +28,17 @@
     { name: "Clean Doc", type: "doc", bg: "#ffffff", els: [{ t: "text", x: 50, y: 60, text: "Project Brief", size: 36, color: "#111", bold: true }, { t: "text", x: 50, y: 140, text: "Overview and goals for the new launch.", size: 18, color: "#555" }] },
   ];
 
+  // Draggable graphics available under the Elements panel — click to drop on the canvas.
+  const ELEMENTS = [
+    { name: "Loading bar", src: "assets/cv_el_loadbar.png" },
+    { name: "TikTok", src: "assets/cv_el_tiktok.png" },
+    { name: "TikTok wide", src: "assets/cv_el_tiktok_wide.png" },
+    { name: "Telegram", src: "assets/cv_el_telegram.png" },
+    { name: "Like", src: "assets/cv_el_like.png" },
+    { name: "Snapchat", src: "assets/cv_el_snapchat.png" },
+    { name: "LEGO", src: "assets/cv_el_lego.png" },
+  ];
+
   // Left editor rail — mirrors Canva's icon rail. `svg` is the inner markup of a 24×24 line icon.
   const RAIL = [
     { id: "templates", label: "Templates", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="12" y1="12" x2="20" y2="12"/>` },
@@ -321,18 +332,17 @@
     function removeBg() {
       if (sel == null || !design.els[sel] || design.els[sel].t !== "image") return;
       const idx = sel, e = design.els[idx];
-      const key = window.REMOVEBG_API_KEY;
-      if (!key) { if (window.Notify) Notify.show({ title: "Canva", body: "No remove.bg API key configured." }); return; }
-      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Removing background…", subtitle: "remove.bg", etaMs: 7000, cancel: false }) : null;
-      const send = (fd) => fetch("https://api.remove.bg/v1.0/removebg", { method: "POST", headers: { "X-Api-Key": key }, body: fd })
+      const key = window.POOF_API_KEY;
+      if (!key) { if (window.Notify) Notify.show({ title: "Canva", body: "No Poof API key configured." }); return; }
+      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Removing background…", subtitle: "poof.bg", etaMs: 7000, cancel: false }) : null;
+      // Poof takes a multipart image_file only, so turn whatever src we have into a blob first.
+      fetch(e.src).then((r) => r.blob())
+        .then((blob) => { const fd = new FormData(); fd.append("image_file", blob, "image.png");
+          return fetch("https://api.poof.bg/v1/remove", { method: "POST", headers: { "x-api-key": key }, body: fd }); })
         .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
         .then((blob) => new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); }))
         .then((dataUrl) => { design.els[idx].src = dataUrl; render(); selectEl(idx); if (prog) prog.complete(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Background removed." }); })
         .catch((err) => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Couldn't remove background (" + err.message + ")." }); });
-      const fd = new FormData();
-      fd.append("size", "auto");
-      if (/^data:/.test(e.src)) fetch(e.src).then((r) => r.blob()).then((b) => { fd.append("image_file", b, "image.png"); send(fd); });
-      else { fd.append("image_url", e.src); send(fd); }
     }
 
     // ---- Left rail: switch the panel body per rail item ---------------------
@@ -351,9 +361,17 @@
           list.appendChild(c);
         });
       } else if (id === "elements") {
-        P.innerHTML = `<div class="cv-panel-h">Elements</div>
+        P.innerHTML = `<div class="cv-panel-h">Shapes</div>
           <button class="cv-tool" data-add="rect">▭ Rectangle</button>
-          <button class="cv-tool" data-add="circle">● Circle</button>`;
+          <button class="cv-tool" data-add="circle">● Circle</button>
+          <div class="cv-panel-h">Graphics</div>
+          <div class="cv-el-grid"></div>`;
+        const grid = P.querySelector(".cv-el-grid");
+        ELEMENTS.forEach((g) => {
+          const c = el(`<button class="cv-el-card" title="${esc(g.name)}"><img src="${esc(g.src)}?v=1" alt="${esc(g.name)}" draggable="false"></button>`);
+          c.onclick = () => addImage(g.src);
+          grid.appendChild(c);
+        });
       } else if (id === "text") {
         P.innerHTML = `<div class="cv-panel-h">Text</div>
           <button class="cv-tool" data-add="text">＋ Add a text box</button>`;
