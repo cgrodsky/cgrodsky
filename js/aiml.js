@@ -23,4 +23,4 @@ window.BRANDFETCH_BASE = "https://api.brandfetch.io/v2";
 /* Poof (poof.bg) — used by Canva's "Remove background" on image elements.
    POST https://api.poof.bg/v1/remove with header x-api-key and a multipart
    image_file; returns the cut-out PNG as binary. */
-window.POOF_API_KEY = "P31BnHusFPFj8KYkAEnMgg16";
+window.POOF_API_KEY = "pk_471c354e1dd7facbeb1c54d4ace3d3ac";
