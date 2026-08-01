@@ -71,6 +71,42 @@
   function profileEmail() { const st = store(); return st.profile.email || (S().account && S().account.email) || (S().profile && S().profile.email) || "you@example.com"; }
   function profilePhoto() { const st = store(); return st.profile.photo || (S().profile && S().profile.picture) || null; }
 
+  // Canva Pro (premium). Gate features behind a paid subscription (fake money via Pay).
+  function isPremium() { return !!store().premium; }
+  function requirePremium(cb) { if (isPremium()) return cb(); premiumModal(cb); }
+  function premiumModal(cb) {
+    const ov = el(`<div class="pay-mask cv-prem-mask">
+      <div class="cv-prem">
+        <div class="cv-prem-hero">
+          <img src="assets/cv_pro.png?v=1" class="cv-prem-crown" alt="Pro">
+          <div class="cv-prem-title">Canva Pro</div>
+          <div class="cv-prem-sub">Unlock premium design tools</div>
+        </div>
+        <ul class="cv-prem-feats">
+          <li>Upload your own fonts</li>
+          <li>Premium templates &amp; elements</li>
+          <li>One-click Background Remover</li>
+          <li>100 GB of cloud storage</li>
+        </ul>
+        <div class="cv-prem-price"><b>$12.99</b> <span>/ month</span></div>
+        <button class="cv-prem-buy">Upgrade to Canva Pro</button>
+        <button class="cv-prem-cancel">Maybe later</button>
+      </div>
+    </div>`);
+    const close = () => ov.remove();
+    ov.querySelector(".cv-prem-cancel").onclick = close;
+    ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+    ov.querySelector(".cv-prem-buy").onclick = () => {
+      close();
+      window.Pay.ensureCard(() => {
+        const st = store(); st.premium = true; State.save();
+        if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva Pro", body: "You're on Canva Pro 🎉 Premium features unlocked." });
+        cb();
+      });
+    };
+    document.getElementById("screen").appendChild(ov);
+  }
+
   function open(createWindow) {
     const make = createWindow || window.WM.createWindow;
     const ref = make({ title: "Canva", icon: window.Icon ? Icon.mini("canva", "Canva") : "", width: 1000, height: 660, appId: "canva" });
@@ -267,9 +303,12 @@
     function allFonts() { return FONTS.concat(((store().fonts) || []).map((f) => f.name)); }
     function fillFontSelect() { const cur = fontSel.value; fontSel.innerHTML = allFonts().map((f) => `<option value="${esc(f)}" style="font-family:'${esc(f)}'">${esc(f)}</option>`).join(""); if (cur) fontSel.value = cur; }
     function registerFont(name, src) { try { if (!window.FontFace) return; const ff = new FontFace(name, `url(${src})`); ff.load().then((face) => document.fonts.add(face)).catch(() => {}); } catch (e) {} }
-    function uploadFont() {
-      const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".ttf,.otf,.woff,.woff2,font/*";
-      inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return; const r = new FileReader();
+    function uploadFont() { requirePremium(doUploadFont); }   // premium-gated
+    function doUploadFont() {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".ttf";
+      inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return;
+        if (!/\.ttf$/i.test(f.name)) { if (window.Notify) Notify.show({ title: "Canva", body: "Please choose a .ttf font file." }); return; }
+        const r = new FileReader();
         r.onload = () => {
           const name = (f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim()) || "Custom Font";
           const st = store(); if (!st.fonts) st.fonts = [];
@@ -549,7 +588,7 @@
           <button class="cv-txt-add" data-add="text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg>Add a text box</button>
           <button class="cv-txt-magic">✎ Magic Write</button>
           <div class="cv-txt-team"><span class="cv-txt-teamname">${esc(profileName())}'s Team ▾</span><button class="cv-txt-edit">Edit</button></div>
-          <button class="cv-txt-brandfonts">Add your brand fonts</button>
+          <button class="cv-txt-brandfonts">Add your brand fonts <img src="assets/cv_pro.png?v=1" class="cv-inline-crown" alt="Pro"></button>
           <div class="cv-panel-h">Default text styles</div>
           <button class="cv-txt-style" data-role="heading">Add a heading</button>
           <button class="cv-txt-style" data-role="subheading">Add a subheading</button>
