@@ -312,7 +312,7 @@
         <button class="cv-sb cv-sb-animate">Animate</button>
         <button class="cv-sb cv-sb-position">Position</button>
         <span class="cv-sb-div"></span>
-        <button class="cv-sb cv-sb-comment" title="Comment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8v5M9.5 10.5h5"/></svg></button>
+        <button class="cv-sb cv-sb-comment" title="Comment"><img class="cv-sb-cmimg" src="assets/cv_comment.png?v=1" alt="Comment"></button>
       </div>
       <div class="cv-work">
         <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<img class="cv-rail-crown" src="assets/cv_pro.png?v=1" alt="Pro">' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>

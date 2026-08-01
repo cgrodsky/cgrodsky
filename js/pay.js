@@ -24,6 +24,7 @@
             <button type="button" title="Apple Pay (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#111">Pay</text></svg></button>
             <button type="button" title="Google Pay (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#111">G Pay</text></svg></button>
             <button type="button" title="PayPal (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#003087">PayPal</text></svg></button>
+            <button type="button" title="Amazon Pay (fake)"><img src="assets/amazon_pay.png" alt="Amazon Pay" style="height:16px;width:auto;display:block"></button>
           </div>
           <div class="separator"><hr class="line"><p>OR PAY WITH CARD</p><hr class="line"></div>
           <div class="credit-card-info--form">

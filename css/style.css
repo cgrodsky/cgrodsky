@@ -3512,6 +3512,7 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-sb { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; border-radius: 8px; padding: 7px 10px; font-weight: 700; font-size: .88rem; color: #1c1c28; cursor: pointer; }
 .cv-sb:hover { background: #f2f2f7; }
 .cv-sb svg { width: 18px; height: 18px; }
+.cv-sb-cmimg { width: 18px; height: 18px; object-fit: contain; display: block; }
 .cv-sb-div { width: 1px; height: 20px; background: #e3e3ea; margin: 0 4px; }
 .cv-sb-color { position: relative; padding: 5px; }
 .cv-sb-color input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
