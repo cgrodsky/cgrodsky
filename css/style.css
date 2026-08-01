@@ -3643,6 +3643,21 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-h-e { top: calc(50% - 6px); right: -7px; cursor: ew-resize; }
 .cv-h-w { top: calc(50% - 6px); left: -7px; cursor: ew-resize; }
 .cv-image { object-fit: contain; background: transparent; }
+/* Picture frames */
+.cv-frame { overflow: hidden; background: #e8e6ef; color: #a29fb3; display: flex; align-items: center; justify-content: center; }
+.cv-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cv-frame-ph { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.cv-frame-ph svg { width: 38%; height: 38%; }
+.cv-frame-square { border-radius: 0; }
+.cv-frame-rounded { border-radius: 18px; }
+.cv-frame-circle { border-radius: 50%; }
+.cv-frame-heart { -webkit-clip-path: url(#cvHeart); clip-path: url(#cvHeart); }
+.cv-frame-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.cv-frame-card { aspect-ratio: 1; border: 1px solid #ececf2; border-radius: 8px; background: #fbfbfe; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.cv-frame-card:hover { outline: 2px solid #7b2ae8; }
+.cv-frame-mini { width: 26px; height: 26px; background: #cfcbe0; display: block; }
+.cv-frame-photo { background: #f0ecff; border: 1px solid #ddd3ff; color: #6331df; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; }
+.cv-frame-photo:hover { background: #e5ddff; }
 .cv-draw { display: block; }
 /* Canva element animations */
 .cv-anim { animation-duration: .6s; animation-fill-mode: both; animation-timing-function: cubic-bezier(.2,.7,.3,1); }

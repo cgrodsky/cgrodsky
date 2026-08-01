@@ -48,7 +48,16 @@
     { name: "Cupcake", src: "assets/cv_el_cupcake.png" },
     { name: "Cupcakes", src: "assets/cv_el_cupcakes.png" },
     { name: "Cake", src: "assets/cv_el_cake.png" },
+    { name: "Ping pong", src: "assets/cv_el_pingpong.png" },
+    { name: "Fish", src: "assets/cv_el_fish_orange.png" },
+    { name: "Blue fish", src: "assets/cv_el_fish_blue.png" },
+    { name: "Poop", src: "assets/cv_el_poop.png" },
+    { name: "Rainbow", src: "assets/cv_el_rainbow.png" },
+    { name: "Toad", src: "assets/cv_el_toad.png" },
   ];
+
+  // Picture frames — shaped placeholders you drop a photo into.
+  const FRAMES = [{ shape: "square", name: "Square" }, { shape: "rounded", name: "Rounded" }, { shape: "circle", name: "Circle" }, { shape: "heart", name: "Heart" }];
 
   // Element animation presets (map to CSS @keyframes cv-anim-<id>).
   const ANIMS = [
@@ -287,6 +296,7 @@
             </div>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
             <button class="cv-rembg" style="display:none">✂ Remove background</button>
+            <button class="cv-frame-photo" style="display:none">🖼 Add photo to frame</button>
             <button class="cv-del">🗑 Delete</button>
           </div>
         </div>
@@ -308,7 +318,8 @@
       </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row");
+    body.querySelector(".cv").appendChild(el(`<svg width="0" height="0" style="position:absolute"><defs><clipPath id="cvHeart" clipPathUnits="objectBoundingBox"><path d="M.5.95C.1.68 0 .42 0 .26 0 .09 .17 0 .3 .1 .4 .17 .47 .27 .5 .34 .53 .27 .6 .17 .7 .1 .83 0 1 .09 1 .26 1 .42 .9 .68 .5 .95Z"/></clipPath></defs></svg>`));
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row"), framePhotoBtn = body.querySelector(".cv-frame-photo");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -373,6 +384,7 @@
       fmtRow.style.display = isText ? "flex" : "none";
       if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); }
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
+      framePhotoBtn.style.display = has && design.els[i].t === "frame" ? "block" : "none";
       subbar.style.display = has ? "flex" : "none";
       if (has && design.els[i].t !== "text") showFrame(i); else clearFrame();
     }
@@ -436,6 +448,7 @@
     fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); record(); } };
     fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); record(); } });
     rembgBtn.onclick = () => removeBg();
+    framePhotoBtn.onclick = () => fillFrame();
 
     // Contextual toolbar (shown when an element is selected).
     const toast = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
@@ -466,6 +479,7 @@
         if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; const wrap = e.w ? `width:${e.w}px;white-space:normal;` : ""; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}';${wrap}">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+        else if (e.t === "frame") { const inner = e.src ? `<img src="${esc(e.src)}" alt="" draggable="false">` : `<span class="cv-frame-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 3 3-3 6 6"/><circle cx="8.5" cy="9.5" r="1.5"/></svg></span>`; o = el(`<div class="cv-obj cv-frame cv-frame-${e.shape}" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 180}px;height:${e.h || 180}px">${inner}</div>`); }
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
         if (e.anim) o.classList.add("cv-anim", "cv-anim-" + e.anim);
@@ -645,7 +659,8 @@
       body.querySelector(".cv").appendChild(ov);
     }
 
-    function openImagePicker() {
+    function openImagePicker(onPick) {
+      const pick = onPick || addImage;
       const ov = el(`<div class="cv-imgpick">
         <div class="cv-imgpick-card">
           <div class="cv-imgpick-h">Add an image</div>
@@ -664,7 +679,7 @@
         inp.onchange = () => {
           const f = inp.files && inp.files[0]; if (!f) return;
           const r = new FileReader();
-          r.onload = () => { addImage(r.result); close(); };
+          r.onload = () => { pick(r.result); close(); };
           r.readAsDataURL(f);
         };
         inp.click();
@@ -674,14 +689,25 @@
         if (!d) return;
         const domain = d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
         const src = window.Icon && Icon.brandLogoUrl ? Icon.brandLogoUrl(domain) : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-        addImage(src); close();
+        pick(src); close();
       };
       ov.querySelector(".cv-ip-url").onclick = () => {
         const u = prompt("Image URL:");
         if (!u) return;
-        addImage(u.trim()); close();
+        pick(u.trim()); close();
       };
       body.querySelector(".cv").appendChild(ov);
+    }
+
+    // Frames: a shaped placeholder you drop a picture into (image is clipped to the shape).
+    function addFrame(shape) {
+      design.els.push({ t: "frame", shape: shape, x: 60, y: 60, w: 200, h: 200, src: null });
+      render(); selectEl(design.els.length - 1); record();
+    }
+    function fillFrame() {
+      if (sel == null || !design.els[sel] || design.els[sel].t !== "frame") return;
+      const idx = sel;
+      openImagePicker((src) => { design.els[idx].src = src; render(); selectEl(idx); record(); });
     }
 
     // Remove the background of the selected image via the remove.bg API.
@@ -728,8 +754,16 @@
         P.innerHTML = `<div class="cv-panel-h">Shapes</div>
           <button class="cv-tool" data-add="rect">▭ Rectangle</button>
           <button class="cv-tool" data-add="circle">● Circle</button>
+          <div class="cv-panel-h">Frames</div>
+          <div class="cv-frame-grid"></div>
           <div class="cv-panel-h">Graphics</div>
           <div class="cv-el-grid"></div>`;
+        const fgrid = P.querySelector(".cv-frame-grid");
+        FRAMES.forEach((f) => {
+          const c = el(`<button class="cv-frame-card" title="${esc(f.name)} frame"><span class="cv-frame-mini cv-frame-${f.shape}"></span></button>`);
+          c.onclick = () => addFrame(f.shape);
+          fgrid.appendChild(c);
+        });
         const grid = P.querySelector(".cv-el-grid");
         ELEMENTS.forEach((g) => {
           const c = el(`<button class="cv-el-card" title="${esc(g.name)}"><img src="${esc(g.src)}?v=1" alt="${esc(g.name)}" draggable="false"></button>`);
