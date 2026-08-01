@@ -44,6 +44,10 @@
     { name: "Alien", src: "assets/cv_el_alien.png" },
     { name: "Owl", src: "assets/cv_el_owl.png" },
     { name: "Campfire", src: "assets/cv_el_campfire.png" },
+    { name: "? Block", src: "assets/cv_el_qblock.png" },
+    { name: "Cupcake", src: "assets/cv_el_cupcake.png" },
+    { name: "Cupcakes", src: "assets/cv_el_cupcakes.png" },
+    { name: "Cake", src: "assets/cv_el_cake.png" },
   ];
 
   // Element animation presets (map to CSS @keyframes cv-anim-<id>).
@@ -395,7 +399,7 @@
     subbar.querySelector(".cv-sb-ask").onclick = () => toast("Ask Canva is coming soon.");
     subbar.querySelector(".cv-sb-edit").onclick = () => toast("Edit tools are in the left panel.");
     subbar.querySelector(".cv-sb-animate").onclick = () => openAnimate();
-    subbar.querySelector(".cv-sb-comment").onclick = () => toast("Comments are coming soon.");
+    subbar.querySelector(".cv-sb-comment").onclick = () => addComment();
     subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
     subbar.querySelector(".cv-sb-color input").addEventListener("change", () => { if (sel != null) record(); });
     subbar.querySelector(".cv-sb-position").onclick = () => {
@@ -416,7 +420,7 @@
       stage.innerHTML = "";
       design.els.forEach((e, i) => {
         let o;
-        if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}'">${esc(e.text || "Text")}</div>`); }
+        if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; const wrap = e.w ? `width:${e.w}px;white-space:normal;` : ""; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}';${wrap}">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
@@ -425,6 +429,36 @@
         dragify(o, e, i);
         stage.appendChild(o);
       });
+      renderComments();
+    }
+    function renderComments() {
+      (design.comments || []).forEach((cm, ci) => {
+        const pin = el(`<button class="cv-comment-pin" data-ci="${ci}" style="left:${cm.x}px;top:${cm.y}px" title="${esc(cm.author || "")}">💬</button>`);
+        pin.onclick = (ev) => { ev.stopPropagation(); showComment(ci); };
+        stage.appendChild(pin);
+      });
+    }
+    function showComment(ci) {
+      stage.querySelectorAll(".cv-comment-pop").forEach((p) => p.remove());
+      const cm = design.comments && design.comments[ci]; if (!cm) return;
+      const pop = el(`<div class="cv-comment-pop" style="left:${cm.x + 26}px;top:${cm.y}px">
+        <div class="cv-comment-author">${esc(cm.author || "You")}</div>
+        <div class="cv-comment-text">${esc(cm.text)}</div>
+        <div class="cv-comment-actions"><button class="cv-comment-reply">Reply</button><button class="cv-comment-del">Resolve</button></div>
+      </div>`);
+      pop.querySelector(".cv-comment-del").onclick = () => { design.comments.splice(ci, 1); render(); record(); };
+      pop.querySelector(".cv-comment-reply").onclick = () => { const r = prompt("Reply"); if (r && r.trim()) { cm.text += "\n↳ " + r.trim(); render(); record(); showComment(ci); } };
+      stage.appendChild(pop);
+    }
+    function addComment() {
+      const txt = prompt("Add a comment"); if (!txt || !txt.trim()) return;
+      if (!design.comments) design.comments = [];
+      let x = ty.w / 2 - 12, y = ty.h / 2 - 12;
+      if (sel != null && design.els[sel]) { x = (design.els[sel].x || 0) + (design.els[sel].w || 60); y = (design.els[sel].y || 0) - 6; }
+      x = Math.max(4, Math.min(ty.w - 28, x)); y = Math.max(4, Math.min(ty.h - 28, y));
+      design.comments.push({ x, y, text: txt.trim(), author: profileName() });
+      render(); record();
+      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Comment added." });
     }
     function dragify(o, e, i) {
       o.addEventListener("pointerdown", (ev) => {
@@ -438,13 +472,31 @@
       });
       o.addEventListener("click", (ev) => { ev.stopPropagation(); selectEl(i); });
     }
-    stage.onclick = (ev) => { if (ev.target === stage) selectEl(null); };
+    stage.onclick = (ev) => { if (ev.target === stage) { selectEl(null); stage.querySelectorAll(".cv-comment-pop").forEach((p) => p.remove()); } };
     render();
 
     // ---- Freehand pen / pencil drawing -------------------------------------
     let drawMode = null;   // {color,width} while the pen/signature tool is active
     function enableDraw(opts) { drawMode = opts; stage.classList.add("cv-drawing"); selectEl(null); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Draw on the canvas. Pick the Select tool (or Esc) to stop." }); }
     function disableDraw() { drawMode = null; stage.classList.remove("cv-drawing"); }
+
+    // Magic Write: generate text from a prompt via the AI API and drop it on the canvas.
+    function magicWrite() {
+      const q = prompt("Magic Write — what should I write about?"); if (!q || !q.trim()) return;
+      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Magic Write…", subtitle: "Writing your copy", etaMs: 6000, cancel: false }) : null;
+      const insert = (txt) => {
+        design.els.push({ t: "text", x: 40, y: 40, text: txt, size: 22, color: "#111111", w: Math.round(ty.w * 0.72) });
+        render(); selectEl(design.els.length - 1); record();
+        if (prog) prog.complete();
+      };
+      fetch("https://api.aimlapi.com/v1/chat/completions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.AIML_KEY },
+        body: JSON.stringify({ model: "baidu/ernie-4-5-0-3b", messages: [{ role: "user", content: `Write a short, punchy piece of copy about: ${q.trim()}. Keep it under 55 words. Reply with only the copy.` }] }),
+      }).then((r) => r.json()).then((j) => {
+        const txt = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "").trim();
+        if (txt) insert(txt); else { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Magic Write couldn't generate text." }); }
+      }).catch(() => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Magic Write failed (network/CORS)." }); });
+    }
 
     // Animate panel: apply a motion preset to the selected element (plays on render).
     function openAnimate() {
@@ -659,7 +711,7 @@
           render(); selectEl(design.els.length - 1);
         });
         const t2 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
-        P.querySelector(".cv-txt-magic").onclick = () => t2("Magic Write is coming soon.");
+        P.querySelector(".cv-txt-magic").onclick = () => magicWrite();
         P.querySelector(".cv-txt-edit").onclick = () => uploadFont();
         P.querySelector(".cv-txt-brandfonts").onclick = () => uploadFont();
         P.querySelector(".cv-txt-pagenum").onclick = () => t2("Page numbers are coming soon.");
