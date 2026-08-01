@@ -338,6 +338,42 @@
       img.src = src;
     }
 
+    // GIPHY search — pick a GIF to drop on the canvas as an (animated) image element.
+    function openGiphy() {
+      const key = window.GIPHY_API_KEY;
+      const trending = `https://api.giphy.com/v1/gifs/trending?api_key=${key}&limit=24&rating=g`;
+      const ov = el(`<div class="cv-imgpick cv-giphy-ov">
+        <div class="cv-giphy">
+          <div class="cv-giphy-top"><strong>GIPHY</strong><button class="cv-giphy-x" title="Close">✕</button></div>
+          <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input class="cv-giphy-q" placeholder="Search GIPHY"></div>
+          <div class="cv-giphy-grid"></div>
+        </div>
+      </div>`);
+      const grid = ov.querySelector(".cv-giphy-grid"), q = ov.querySelector(".cv-giphy-q");
+      const close = () => ov.remove();
+      ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+      ov.querySelector(".cv-giphy-x").onclick = close;
+      const load = (url) => {
+        grid.innerHTML = `<div class="cv-empty">Loading…</div>`;
+        fetch(url).then((r) => r.json()).then((j) => {
+          grid.innerHTML = "";
+          const items = j.data || [];
+          if (!items.length) { grid.appendChild(el(`<div class="cv-empty">No GIFs found.</div>`)); return; }
+          items.forEach((g) => {
+            const img = g.images || {}, src = (img.fixed_width && img.fixed_width.url) || (img.original && img.original.url);
+            if (!src) return;
+            const b = el(`<button class="cv-giphy-card"><img src="${esc(src)}" alt="" draggable="false"></button>`);
+            b.onclick = () => { addImage(src); close(); };
+            grid.appendChild(b);
+          });
+        }).catch(() => { grid.innerHTML = `<div class="cv-empty">Couldn't reach GIPHY.</div>`; });
+      };
+      load(trending);
+      let deb;
+      q.oninput = () => { clearTimeout(deb); const v = q.value.trim(); deb = setTimeout(() => load(v ? `https://api.giphy.com/v1/gifs/search?api_key=${key}&q=${encodeURIComponent(v)}&limit=24&rating=g` : trending), 300); };
+      body.querySelector(".cv").appendChild(ov);
+    }
+
     function openImagePicker() {
       const ov = el(`<div class="cv-imgpick">
         <div class="cv-imgpick-card">
@@ -570,7 +606,7 @@
         const alist = P.querySelector(".cv-app-list");
         const drawApps = () => { alist.innerHTML = ""; APPS.forEach((a) => {
           const row = el(`<button class="cv-app-row"><span class="cv-app-ic" style="background:${a.c}">${a.emoji}</span><span class="cv-app-meta"><span class="cv-app-name">${esc(a.name)}</span><span class="cv-app-desc">${esc(a.desc)}</span></span><span class="cv-app-more">•••</span></button>`);
-          row.onclick = () => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: a.name + " — coming soon." }); };
+          row.onclick = () => { if (a.name === "GIPHY") openGiphy(); else if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: a.name + " — coming soon." }); };
           alist.appendChild(row); }); };
         drawApps();
         P.querySelectorAll(".cv-app-pill").forEach((p) => p.onclick = () => P.querySelectorAll(".cv-app-pill").forEach((x) => x.classList.toggle("on", x === p)));

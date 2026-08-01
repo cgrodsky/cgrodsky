@@ -3466,6 +3466,15 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-share-opt { background: none; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .cv-share-opt-ic { width: 52px; height: 52px; border-radius: 50%; background: #f2f2f7; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 .cv-share-opt-l { font-size: .72rem; font-weight: 600; text-align: center; line-height: 1.15; color: #1c1c28; }
+/* GIPHY picker */
+.cv-giphy { width: 460px; max-width: 94%; height: 70%; max-height: 560px; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.32); display: flex; flex-direction: column; gap: 10px; }
+.cv-giphy-top { display: flex; align-items: center; justify-content: space-between; }
+.cv-giphy-top strong { font-size: 1.1rem; }
+.cv-giphy-x { background: none; border: 0; font-size: 1rem; cursor: pointer; color: #55525e; }
+.cv-giphy-grid { flex: 1; overflow-y: auto; column-count: 3; column-gap: 8px; }
+.cv-giphy-card { width: 100%; border: 0; padding: 0; margin: 0 0 8px; background: none; cursor: pointer; border-radius: 8px; overflow: hidden; display: block; break-inside: avoid; }
+.cv-giphy-card img { width: 100%; display: block; border-radius: 8px; }
+.cv-giphy-card:hover { outline: 2px solid #7b2ae8; }
 /* Canva Apps panel */
 .cv-app-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
 .cv-app-pill { background: #fff; border: 1px solid #e3e0ee; border-radius: 20px; padding: 8px 14px; font-weight: 700; font-size: .82rem; color: #1c1c28; cursor: pointer; white-space: nowrap; }

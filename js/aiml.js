@@ -24,3 +24,7 @@ window.BRANDFETCH_BASE = "https://api.brandfetch.io/v2";
    POST https://api.poof.bg/v1/remove with header x-api-key and a multipart
    image_file; returns the cut-out PNG as binary. */
 window.POOF_API_KEY = "pk_471c354e1dd7facbeb1c54d4ace3d3ac";
+
+/* GIPHY — powers the GIPHY app in Canva's Apps panel. GET the search/trending
+   endpoints with api_key in the query; the API is CORS-enabled for browsers. */
+window.GIPHY_API_KEY = "k6lB9GA3q2cXzeOfXVS2UROmXC1RjLoS";
