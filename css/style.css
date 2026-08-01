@@ -3600,6 +3600,17 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-obj { position: absolute; cursor: move; user-select: none; }
 .cv-text { padding: 2px 4px; white-space: nowrap; outline: none; line-height: 1.1; }
 .cv-obj.sel { outline: 2px solid #7b5cff; outline-offset: 2px; }
+/* PowerPoint-style resize frame + handles */
+.cv-selframe { position: absolute; border: 1.5px solid #7b2ae8; box-sizing: border-box; pointer-events: none; z-index: 6; }
+.cv-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 1.5px solid #7b2ae8; border-radius: 50%; box-sizing: border-box; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.25); touch-action: none; }
+.cv-h-nw { top: -7px; left: -7px; cursor: nwse-resize; }
+.cv-h-se { bottom: -7px; right: -7px; cursor: nwse-resize; }
+.cv-h-ne { top: -7px; right: -7px; cursor: nesw-resize; }
+.cv-h-sw { bottom: -7px; left: -7px; cursor: nesw-resize; }
+.cv-h-n { top: -7px; left: calc(50% - 6px); cursor: ns-resize; }
+.cv-h-s { bottom: -7px; left: calc(50% - 6px); cursor: ns-resize; }
+.cv-h-e { top: calc(50% - 6px); right: -7px; cursor: ew-resize; }
+.cv-h-w { top: calc(50% - 6px); left: -7px; cursor: ew-resize; }
 .cv-image { object-fit: contain; background: transparent; }
 .cv-wordmark { height: 26px; width: auto; display: block; margin: 2px 0 2px; }
 

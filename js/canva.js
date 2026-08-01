@@ -272,6 +272,47 @@
       if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); }
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
       subbar.style.display = has ? "flex" : "none";
+      if (has && design.els[i].t !== "text") showFrame(i); else clearFrame();
+    }
+
+    // PowerPoint-style resize frame: 8 handles around the selected image/shape.
+    let frameNode = null;
+    function clearFrame() { if (frameNode) { frameNode.remove(); frameNode = null; } }
+    function placeFrame() { if (!frameNode || sel == null) return; const e = design.els[sel]; if (!e) return; frameNode.style.left = e.x + "px"; frameNode.style.top = e.y + "px"; frameNode.style.width = (e.w || 140) + "px"; frameNode.style.height = (e.h || 140) + "px"; }
+    function showFrame(i) {
+      clearFrame();
+      const e = design.els[i]; if (!e || e.t === "text") return;
+      frameNode = el(`<div class="cv-selframe">${["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((p) => `<div class="cv-handle cv-h-${p}" data-pos="${p}"></div>`).join("")}</div>`);
+      const objNode = stage.querySelector(`.cv-obj[data-i="${i}"]`);
+      frameNode.querySelectorAll(".cv-handle").forEach((h) => h.addEventListener("pointerdown", (ev) => {
+        ev.stopPropagation(); ev.preventDefault();
+        const pos = h.dataset.pos, corner = pos.length === 2;
+        const east = pos.includes("e"), west = pos.includes("w"), north = pos.includes("n"), south = pos.includes("s");
+        const sx = ev.clientX, sy = ev.clientY, ox = e.x, oy = e.y, ow = e.w || 140, oh = e.h || 140, ratio = oh / (ow || 1);
+        const scale = (parseFloat((body.querySelector(".cv-zoom") || {}).value) || 100) / 100;
+        const mv = (m) => {
+          const dx = (m.clientX - sx) / scale, dy = (m.clientY - sy) / scale;
+          let nx = ox, ny = oy, nw = ow, nh = oh;
+          if (corner) {                                   // corners keep aspect ratio
+            const deltaW = east ? dx : -dx;
+            nw = Math.max(20, ow + deltaW); nh = Math.max(20, Math.round(nw * ratio));
+            if (west) nx = ox + (ow - nw);
+            if (north) ny = oy + (oh - nh);
+          } else {                                        // edges stretch one side
+            if (east) nw = Math.max(20, ow + dx);
+            if (west) { nw = Math.max(20, ow - dx); nx = ox + (ow - nw); }
+            if (south) nh = Math.max(20, oh + dy);
+            if (north) { nh = Math.max(20, oh - dy); ny = oy + (oh - nh); }
+          }
+          e.x = nx; e.y = ny; e.w = nw; e.h = nh;
+          if (objNode) { objNode.style.left = nx + "px"; objNode.style.top = ny + "px"; objNode.style.width = nw + "px"; objNode.style.height = nh + "px"; }
+          placeFrame();
+        };
+        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); render(); selectEl(i); };
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      }));
+      stage.appendChild(frameNode);
+      placeFrame();
     }
     fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); } };
     fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); } });
@@ -315,7 +356,7 @@
         selectEl(i);
         const r = stage.getBoundingClientRect(); const ox = ev.clientX - e.x, oy = ev.clientY - e.y;
         let moved = false;
-        const mv = (m) => { moved = true; e.x = Math.max(0, Math.min(ty.w - 10, m.clientX - ox)); e.y = Math.max(0, Math.min(ty.h - 10, m.clientY - oy)); o.style.left = e.x + "px"; o.style.top = e.y + "px"; };
+        const mv = (m) => { moved = true; e.x = Math.max(0, Math.min(ty.w - 10, m.clientX - ox)); e.y = Math.max(0, Math.min(ty.h - 10, m.clientY - oy)); o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) placeFrame(); };
         const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); };
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
