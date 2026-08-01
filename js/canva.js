@@ -8,12 +8,16 @@
   const cw = (o) => window.WM.createWindow(o);
 
   const TYPES = [
-    { id: "ig", name: "Instagram Post", w: 520, h: 520, emoji: "📷" },
-    { id: "pres", name: "Presentation", w: 720, h: 405, emoji: "🖥️" },
-    { id: "poster", name: "Poster", w: 420, h: 594, emoji: "🖼️" },
-    { id: "logo", name: "Logo", w: 480, h: 480, emoji: "✨" },
-    { id: "story", name: "Story", w: 360, h: 640, emoji: "📱" },
-    { id: "doc", name: "Doc", w: 560, h: 420, emoji: "📄" },
+    { id: "pres", name: "Presentation", w: 720, h: 405, emoji: "🎬", c: "#f2542d" },
+    { id: "ig", name: "Social media", w: 520, h: 520, emoji: "❤️", c: "#f22e63" },
+    { id: "video", name: "Video", w: 720, h: 405, emoji: "🎥", c: "#a533ff" },
+    { id: "poster", name: "Poster", w: 420, h: 594, emoji: "🖼️", c: "#0aa5b5" },
+    { id: "doc", name: "Doc", w: 560, h: 420, emoji: "📄", c: "#2b83f6" },
+    { id: "whiteboard", name: "Whiteboard", w: 700, h: 460, emoji: "🧮", c: "#22b573" },
+    { id: "logo", name: "Logo", w: 480, h: 480, emoji: "✨", c: "#7b2ae8" },
+    { id: "story", name: "Story", w: 360, h: 640, emoji: "📱", c: "#e8478b" },
+    { id: "website", name: "Website", w: 720, h: 460, emoji: "🌐", c: "#2e6bff" },
+    { id: "email", name: "Email", w: 560, h: 640, emoji: "✉️", c: "#4453d6" },
   ];
   const TEMPLATES = [
     { name: "Sunset Sale", type: "ig", bg: "linear-gradient(135deg,#ff7e5f,#feb47b)", els: [{ t: "text", x: 60, y: 180, text: "BIG SALE", size: 64, color: "#fff", bold: true }, { t: "text", x: 60, y: 270, text: "Up to 50% off", size: 26, color: "#fff" }] },
@@ -46,17 +50,17 @@
         <button class="cv-new">＋ Create a design</button>
       </aside>
       <main class="cv-main">
-        <div class="cv-hero"><input class="cv-search" placeholder="Search millions of templates"></div>
-        <h2 class="cv-h">Start a design</h2>
+        <div class="cv-hero"><img class="cv-banner" src="assets/canva_banner${Math.random() < 0.5 ? 1 : 2}.jpg?v=1" alt=""><input class="cv-search" placeholder="Search anything"></div>
         <div class="cv-types"></div>
         <h2 class="cv-h">Templates for you</h2>
         <div class="cv-tpls"></div>
-        ${recents.length ? `<h2 class="cv-h">Recent designs</h2><div class="cv-recents"></div>` : ""}
+        <h2 class="cv-h">${recents.length ? "Continue designing" : "Start designing"}</h2>
+        ${recents.length ? `<div class="cv-recents"></div>` : `<div class="cv-empty-note">Your recent designs will show up here.</div>`}
       </main>
     </div>`;
     const typesEl = body.querySelector(".cv-types");
     TYPES.forEach((t) => {
-      const c = el(`<button class="cv-type"><span class="cv-type-ic">${t.emoji}</span><span>${esc(t.name)}</span><small>${t.w}×${t.h}</small></button>`);
+      const c = el(`<button class="cv-type"><span class="cv-type-ic" style="background:${t.c}">${t.emoji}</span><span>${esc(t.name)}</span></button>`);
       c.onclick = () => editor(body, ref, { type: t.id, bg: "#ffffff", els: [], name: "Untitled " + t.name });
       typesEl.appendChild(c);
     });
