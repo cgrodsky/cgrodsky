@@ -42,6 +42,7 @@
     { name: "Tree", src: "assets/cv_el_tree.png" },
     { name: "Alien", src: "assets/cv_el_alien.png" },
     { name: "Owl", src: "assets/cv_el_owl.png" },
+    { name: "Campfire", src: "assets/cv_el_campfire.png" },
   ];
 
   // Left editor rail — mirrors Canva's icon rail. `svg` is the inner markup of a 24×24 line icon.
