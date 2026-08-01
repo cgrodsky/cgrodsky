@@ -144,7 +144,7 @@
     </div>`;
     const typesEl = body.querySelector(".cv-types");
     TYPES.forEach((t) => {
-      const ic = t.img ? `<span class="cv-type-ic cv-type-img"><img src="${t.img}?v=1" alt=""></span>` : `<span class="cv-type-ic" style="background:${t.c}">${t.emoji}</span>`;
+      const ic = t.img ? `<span class="cv-type-ic cv-type-img"><img src="${t.img}?v=2" alt=""></span>` : `<span class="cv-type-ic" style="background:${t.c}">${t.emoji}</span>`;
       const c = el(`<button class="cv-type">${ic}<span>${esc(t.name)}</span></button>`);
       c.onclick = () => editor(body, ref, { type: t.id, bg: "#ffffff", els: [], name: "Untitled " + t.name });
       typesEl.appendChild(c);
