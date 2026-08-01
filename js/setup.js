@@ -120,7 +120,7 @@
       p += Math.random() * 6 + 2.5;
       if (p >= 100) {
         p = 100; fill.style.width = "100%"; pct.textContent = "100%"; status.textContent = "Download complete"; speed.textContent = "";
-        clearInterval(iv); setTimeout(oobeRegion, 1000);
+        clearInterval(iv); setTimeout(oobeDisplayOptimize, 1000);
       } else {
         fill.style.width = p + "%"; pct.textContent = Math.floor(p) + "%";
         status.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 25))];
@@ -186,6 +186,7 @@
 
   const ILLUS = {
     globe: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilGl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilGl)"/><g fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="2.5"><ellipse cx="100" cy="100" rx="30" ry="72"/><ellipse cx="100" cy="100" rx="58" ry="72"/><line x1="28" y1="100" x2="172" y2="100"/><path d="M40 62 H160"/><path d="M40 138 H160"/></g></svg>`,
+    display: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilDsp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><rect x="30" y="44" width="140" height="92" rx="12" fill="url(#ilDsp)"/><rect x="44" y="58" width="112" height="64" rx="5" fill="#fff" fill-opacity=".92"/><rect x="86" y="136" width="28" height="16" fill="url(#ilDsp)"/><rect x="66" y="152" width="68" height="9" rx="4.5" fill="url(#ilDsp)"/><rect x="132" y="74" width="34" height="60" rx="7" fill="#2f6bff"/><rect x="138" y="80" width="22" height="42" rx="2" fill="#fff" fill-opacity=".92"/></svg>`,
     gear: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilAc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilAc)"/><circle cx="100" cy="62" r="13" fill="#fff"/><path d="M62 84 H138 M100 84 V132 M100 132 L74 168 M100 132 L126 168" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round"/></svg>`,
     apps: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilPad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5cf6"/><stop offset="1" stop-color="#5b3ee0"/></linearGradient><linearGradient id="ilMus" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc7"/><stop offset="1" stop-color="#e3008c"/></linearGradient><linearGradient id="ilPic" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#43d69a"/><stop offset="1" stop-color="#0a9d6e"/></linearGradient></defs><g transform="translate(24 74) rotate(-8)"><path d="M30 20 Q30 0 55 2 H115 Q140 0 140 20 L152 66 Q158 92 130 92 Q114 92 108 78 L104 68 H66 L62 78 Q56 92 40 92 Q12 92 18 66 Z" fill="url(#ilPad)"/><rect x="42" y="34" width="9" height="27" rx="3" fill="#fff"/><rect x="33" y="43" width="27" height="9" rx="3" fill="#fff"/><circle cx="112" cy="40" r="6" fill="#fff"/><circle cx="128" cy="52" r="6" fill="#fff"/><circle cx="112" cy="64" r="6" fill="#fff"/></g><g transform="translate(150 22)"><rect x="40" y="0" width="10" height="58" rx="5" fill="url(#ilMus)"/><circle cx="30" cy="60" r="15" fill="url(#ilMus)"/><path d="M40 0 q22 4 22 22 V6 q0 -8 -22 -6 Z" fill="url(#ilMus)"/></g><g transform="translate(178 98)"><rect x="0" y="0" width="64" height="52" rx="8" fill="url(#ilPic)"/><circle cx="18" cy="18" r="7" fill="#fff"/><path d="M6 44 L26 24 L40 38 L50 30 L58 44 Z" fill="#fff"/></g></svg>`,
     lock: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilLk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><path d="M100 20 L160 42 V96 Q160 150 100 178 Q40 150 40 96 V42 Z" fill="url(#ilLk)"/><rect x="76" y="88" width="48" height="40" rx="6" fill="#fff"/><path d="M84 88 V76 a16 16 0 0 1 32 0 V88" fill="none" stroke="#fff" stroke-width="7"/><circle cx="100" cy="104" r="6" fill="#2f6bff"/><rect x="97" y="106" width="6" height="12" rx="3" fill="#2f6bff"/></svg>`,
@@ -193,6 +194,28 @@
     restore: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilBolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#e0245e"/></linearGradient></defs><rect x="40" y="40" width="120" height="120" rx="28" fill="url(#ilBolt)"/><path d="M108 62 L78 108 H98 L92 138 L124 90 H104 Z" fill="#fff"/></svg>`,
     cards: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilNote" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd3ff"/><stop offset="1" stop-color="#4aa8ff"/></linearGradient></defs><g transform="translate(28 55) rotate(-6)"><rect x="0" y="0" width="78" height="96" rx="8" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><rect x="0" y="0" width="78" height="20" rx="8" fill="url(#ilNote)"/><path d="M12 40 H62 M12 54 H62 M12 68 H46" stroke="#c6d2e6" stroke-width="4" stroke-linecap="round"/><path d="M52 74 l18 -18 8 8 -18 18 -10 2 2 -10Z" fill="#f5a623"/></g><g transform="translate(118 48) rotate(6)"><rect x="0" y="0" width="76" height="104" rx="10" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><path d="M38 24 C58 46 60 58 46 66 C40 70 40 62 40 62 C40 62 40 70 34 70 C20 62 22 46 38 24Z" fill="#1d1d21"/><rect x="34" y="70" width="8" height="14" fill="#1d1d21"/></g><g transform="translate(196 108)"><circle cx="24" cy="24" r="24" fill="#e50914"/><path d="M18 14 L36 24 L18 34 Z" fill="#fff"/></g></svg>`,
   };
+
+  // ---- Display optimization (the first thing you see) ----
+  function oobeDisplayOptimize() {
+    const start = S().displayScale ? Math.round(S().displayScale * 100) : 100;
+    const node = el(`<div>
+      <h1>Let's optimize your display</h1>
+      <p class="sub">Drag the slider so Windows 12 looks best on your screen.</p>
+      <div class="oobe-optrow">
+        <img class="oobe-opt-ic" src="assets/opt_phone.png?v=1" alt="Phone">
+        <input type="range" class="oobe-opt-slider" min="80" max="120" value="${start}">
+        <img class="oobe-opt-ic" src="assets/opt_monitor.png?v=1" alt="Monitor">
+      </div>
+      <div class="oobe-opt-preview"><div class="oobe-opt-screen"><span class="oobe-opt-bar"></span><span class="oobe-opt-tile"></span><span class="oobe-opt-tile"></span><span class="oobe-opt-tile"></span></div></div>
+      <div class="oobe-opt-val">${start}%</div>
+      <div class="oobe-actions"><button class="btn-primary" id="next">Looks good</button></div>
+    </div>`);
+    const slider = node.querySelector(".oobe-opt-slider"), screenEl = node.querySelector(".oobe-opt-screen"), val = node.querySelector(".oobe-opt-val");
+    const apply = () => { const v = +slider.value; screenEl.style.transform = `scale(${v / 100})`; val.textContent = v + "%"; };
+    slider.oninput = apply; apply();
+    node.querySelector("#next").onclick = () => { S().displayScale = +slider.value / 100; State.save(); oobeRegion(); };
+    oobe(node, { illustration: ILLUS.display });
+  }
 
   // ---- Region & language ----
   function oobeRegion() {

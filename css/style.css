@@ -1646,6 +1646,17 @@ body.dark .searchbar { border-color: #5f6368; }
   background: transparent; border: 0; border-bottom: 2px solid rgba(255,255,255,.28); border-radius: 0; color: #fff; padding: 8px 2px; }
 .oobe-content .field input:focus, .oobe-content select:focus { border-bottom-color: #7c5cff; outline: none; }
 .oobe-content select option { color: #111; }
+.oobe-optrow { display: flex; align-items: center; gap: 16px; margin: 22px 0 10px; }
+.oobe-opt-ic { height: 30px; width: auto; object-fit: contain; flex: 0 0 auto; opacity: .8; }
+.oobe-opt-slider { flex: 1; accent-color: #2f6bff; height: 6px; cursor: pointer; }
+.oobe-opt-preview { height: 130px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.06); border-radius: 12px; overflow: hidden; }
+.oobe-opt-screen { width: 190px; height: 110px; background: linear-gradient(135deg, #2f6bff, #5ec8ff); border-radius: 8px; padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); transition: transform .12s ease; transform-origin: center; position: relative; }
+.oobe-opt-bar { position: absolute; left: 10px; right: 10px; top: 10px; height: 12px; border-radius: 4px; background: rgba(255,255,255,.85); }
+.oobe-opt-tile { position: absolute; width: 46px; height: 46px; border-radius: 8px; background: rgba(255,255,255,.9); top: 34px; }
+.oobe-opt-tile:nth-of-type(2) { left: 10px; }
+.oobe-opt-tile:nth-of-type(3) { left: 68px; }
+.oobe-opt-tile:nth-of-type(4) { left: 126px; }
+.oobe-opt-val { text-align: center; font-weight: 700; color: #cfe0ff; margin-top: 8px; }
 .oobe-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 22px; }
 .oobe-actions.spread { justify-content: space-between; }
 .oobe-panel .btn-primary { background: #7c5cff; border-radius: 6px; padding: 9px 26px; }
