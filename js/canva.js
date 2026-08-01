@@ -38,7 +38,7 @@
     const recents = store().designs;
     body.innerHTML = `<div class="cv">
       <aside class="cv-side">
-        <div class="cv-brand">${window.Icon ? Icon.mini("canva", "Canva") : ""}<b>Canva</b></div>
+        <div class="cv-brand"><img class="cv-wordmark" src="assets/canva_wordmark.png?v=1" alt="Canva"></div>
         <button class="cv-nav on">🏠 Home</button>
         <button class="cv-nav">📁 Projects</button>
         <button class="cv-nav">✨ Brand</button>
