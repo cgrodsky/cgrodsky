@@ -51,6 +51,7 @@
     { id: "codeeditor", name: "Code Editor", cat: "Developer", price: 0, builtin: "codeeditor", desc: "Edit HTML / CSS / JS with live preview and console." },
     { id: "vscode", name: "Visual Studio Code", cat: "Developer", price: 0, builtin: "vscode", desc: "A full code editor: explorer, tabs, syntax highlighting, command palette, and live preview." },
     { id: "achievements", name: "Achievements", cat: "System", price: 0, builtin: "achievements", desc: "Track milestones across Windows 12 apps." },
+    { id: "canva", name: "Canva", cat: "Multimedia", price: 0, builtin: "canva", desc: "Canva — design posts, posters, logos and slides with drag-and-drop." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).
