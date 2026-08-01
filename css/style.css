@@ -3432,7 +3432,8 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 /* editor */
 .cv-edit { flex-direction: column; position: relative; }
 .brand-gradient-horizontal { background: linear-gradient(90deg, #FF007F 0%, #7B2CBF 100%); }
-.cv-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: linear-gradient(90deg, #FF007F 0%, #7B2CBF 100%); border-bottom: 0; color: #fff; }
+/* Canva editor top bar: teal → blue → purple, sampled from the reference. */
+.cv-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: linear-gradient(90deg, #3FC1CB 0%, #4C74D3 52%, #7B45E0 100%); border-bottom: 0; color: #fff; }
 .cv-back { background: none; border: 0; color: #fff; font-weight: 700; cursor: pointer; }
 .cv-back:hover { opacity: .85; }
 .cv-title { border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; font-size: .95rem; font-weight: 600; outline: none; color: #fff; background: transparent; }
