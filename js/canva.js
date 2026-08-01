@@ -327,6 +327,7 @@
               <button class="cv-fmt" data-fmt="italic" title="Italic"><i>I</i></button>
               <button class="cv-fmt" data-fmt="underline" title="Underline"><u>U</u></button>
               <button class="cv-fmt" data-fmt="strike" title="Strikethrough"><s>S</s></button>
+              <button class="cv-fmt cv-align" title="Alignment"></button>
             </div>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
             <button class="cv-rembg" style="display:none">✂ Remove background</button>
@@ -353,7 +354,14 @@
     </div>`;
     const stage = body.querySelector(".cv-stage");
     body.querySelector(".cv").appendChild(el(`<svg width="0" height="0" style="position:absolute"><defs><clipPath id="cvHeart" clipPathUnits="objectBoundingBox"><path d="M.5.95C.1.68 0 .42 0 .26 0 .09 .17 0 .3 .1 .4 .17 .47 .27 .5 .34 .53 .27 .6 .17 .7 .1 .83 0 1 .09 1 .26 1 .42 .9 .68 .5 .95Z"/></clipPath></defs></svg>`));
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row"), framePhotoBtn = body.querySelector(".cv-frame-photo");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row"), framePhotoBtn = body.querySelector(".cv-frame-photo"), alignBtn = body.querySelector(".cv-align");
+    const ALIGN_ORDER = ["left", "center", "right", "justify"];
+    const ALIGN_IC = {
+      left: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg>`,
+      center: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg>`,
+      right: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg>`,
+      justify: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>`,
+    };
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -416,7 +424,7 @@
       else sizeRow.style.display = "none";
       fontSel.style.display = isText ? "block" : "none";
       fmtRow.style.display = isText ? "flex" : "none";
-      if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); }
+      if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt[data-fmt]").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); alignBtn.innerHTML = ALIGN_IC[e.align || "left"]; }
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
       framePhotoBtn.style.display = has && design.els[i].t === "frame" ? "block" : "none";
       subbar.style.display = has ? "flex" : "none";
@@ -480,7 +488,8 @@
       placeFrame();
     }
     fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); record(); } };
-    fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); record(); } });
+    fmtRow.querySelectorAll(".cv-fmt[data-fmt]").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); record(); } });
+    alignBtn.onclick = () => { if (sel != null && design.els[sel].t === "text") { const e = design.els[sel]; e.align = ALIGN_ORDER[(ALIGN_ORDER.indexOf(e.align || "left") + 1) % ALIGN_ORDER.length]; render(); selectEl(sel); record(); } };
     rembgBtn.onclick = () => removeBg();
     framePhotoBtn.onclick = () => fillFrame();
 
@@ -510,7 +519,7 @@
       stage.innerHTML = "";
       design.els.forEach((e, i) => {
         let o;
-        if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; const wrap = e.w ? `width:${e.w}px;white-space:normal;` : ""; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}';${wrap}">${esc(e.text || "Text")}</div>`); }
+        if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; const wrap = e.w ? `width:${e.w}px;white-space:normal;` : ""; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};text-align:${e.align || "left"};font-family:'${(e.font || "Nunito").replace(/'/g, "")}';${wrap}">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
         else if (e.t === "table") { const cells = Array.from({ length: (e.rows || 3) * (e.cols || 3) }, () => `<div class="cv-td"></div>`).join(""); o = el(`<div class="cv-obj cv-table" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 240}px;height:${e.h || 160}px;grid-template-columns:repeat(${e.cols || 3},1fr);grid-template-rows:repeat(${e.rows || 3},1fr);--tc:${e.color || "#1c1c28"}">${cells}</div>`); }

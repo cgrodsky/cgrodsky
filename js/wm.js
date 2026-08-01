@@ -1020,16 +1020,23 @@
   function showPowerMenu() {
     startMenu.querySelectorAll(".start-powmenu").forEach((m) => m.remove());
     const lockSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
-    const restartSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 1 0-2.3 5.6M20 5v6h-6"/></svg>`;
-    const powerSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 4v8M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>`;
+    const restartSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v6h6"/><path d="M3.5 9a9 9 0 1 1-.4 5.5"/></svg>`;
+    const powerSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 4v8"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>`;
+    const sleepSvg = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.6 6.6 0 0 0 20 14.5z"/></svg>`;
     const m = el(`<div class="start-powmenu">
       <button data-a="lock">${lockSvg} Lock</button>
+      <button data-a="sleep">${sleepSvg} Sleep</button>
       <button data-a="restart">${restartSvg} Restart</button>
       <button data-a="shutdown">${powerSvg} Shut down</button>
     </div>`);
     startMenu.appendChild(m);
     const close = () => m.remove();
     m.querySelector('[data-a="lock"]').onclick = () => { close(); startMenu.classList.remove("open"); if (window.Lock) Lock.run(() => {}); };
+    m.querySelector('[data-a="sleep"]').onclick = () => {
+      close(); startMenu.classList.remove("open");
+      const z = el(`<div class="sleep-overlay"></div>`); screen().appendChild(z);
+      setTimeout(() => z.addEventListener("click", () => { z.remove(); if (window.Lock) Lock.run(() => {}); }), 400);
+    };
     m.querySelector('[data-a="restart"]').onclick = () => location.reload();
     m.querySelector('[data-a="shutdown"]').onclick = () => {
       const off = el(`<div class="power-off"></div>`); screen().appendChild(off);
