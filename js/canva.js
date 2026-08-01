@@ -173,6 +173,7 @@
   }
 
   const PALETTE = ["#111111", "#ffffff", "#ff5a5f", "#ff9f1c", "#ffd54a", "#2ec4b6", "#3a86ff", "#7b5cff", "#e84393", "#00b894", "#636e72", "#fab1a0"];
+  const FONTS = ["Nunito", "Poppins", "Montserrat", "Playfair Display", "Oswald", "Lobster", "Pacifico", "Bebas Neue", "Dancing Script", "Roboto Slab", "Arial", "Georgia", "Times New Roman", "Courier New", "Comic Sans MS", "Impact"];
 
   function editor(body, ref, design, existingIndex) {
     const ty = TYPES.find((x) => x.id === design.type) || TYPES[0];
@@ -202,6 +203,7 @@
           <div class="cv-panel-h cv-sel-h" style="display:none">Selected</div>
           <div class="cv-sel-tools" style="display:none">
             <div class="cv-swatches cv-el-sw"></div>
+            <select class="cv-font" style="display:none">${FONTS.map((f) => `<option value="${esc(f)}" style="font-family:'${esc(f)}'">${esc(f)}</option>`).join("")}</select>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
             <button class="cv-rembg" style="display:none">✂ Remove background</button>
             <button class="cv-del">🗑 Delete</button>
@@ -213,7 +215,7 @@
       </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -242,12 +244,16 @@
       const has = i != null && design.els[i];
       selH.style.display = selTools.style.display = has ? "block" : "none";
       selTools.style.display = has ? "flex" : "none";
-      if (has && design.els[i].t === "text") { sizeRow.style.display = "flex"; sizeIn.min = 10; sizeIn.max = 120; sizeIn.value = design.els[i].size || 32; }
+      const isText = has && design.els[i].t === "text";
+      if (isText) { sizeRow.style.display = "flex"; sizeIn.min = 10; sizeIn.max = 120; sizeIn.value = design.els[i].size || 32; }
       else if (has) { sizeRow.style.display = "flex"; sizeIn.min = 40; sizeIn.max = 500; sizeIn.value = design.els[i].w || 140; }
       else sizeRow.style.display = "none";
+      fontSel.style.display = isText ? "block" : "none";
+      if (isText) fontSel.value = design.els[i].font || "Nunito";
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
       subbar.style.display = has ? "flex" : "none";
     }
+    fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); } };
     rembgBtn.onclick = () => removeBg();
 
     // Contextual toolbar (shown when an element is selected).
@@ -274,7 +280,7 @@
       stage.innerHTML = "";
       design.els.forEach((e, i) => {
         let o;
-        if (e.t === "text") o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400}">${esc(e.text || "Text")}</div>`);
+        if (e.t === "text") o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-family:'${(e.font || "Nunito").replace(/'/g, "")}'">${esc(e.text || "Text")}</div>`);
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };

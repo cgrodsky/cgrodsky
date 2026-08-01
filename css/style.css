@@ -3485,6 +3485,7 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-sel-tools { flex-direction: column; gap: 10px; }
 .cv-size-row { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #555; }
 .cv-size { flex: 1; }
+.cv-font { width: 100%; border: 1px solid #e6e1f5; border-radius: 8px; padding: 9px 8px; font-size: .9rem; font-weight: 600; background: #faf9ff; cursor: pointer; color: #1c1c28; }
 .cv-del { background: #fdecec; border: 0; color: #c0392b; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; }
 .cv-stage-wrap { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 30px; background: #eceef4; }
 .cv-stage { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.18); border-radius: 4px; overflow: hidden; flex: 0 0 auto; }
