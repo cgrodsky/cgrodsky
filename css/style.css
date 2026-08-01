@@ -3479,3 +3479,18 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-select { border: 1px solid #d0d0da; border-radius: 8px; padding: 9px 14px; font-size: .88rem; background: #fff; cursor: pointer; min-width: 170px; }
 .cv-type-img { background: transparent !important; box-shadow: none; }
 .cv-type-img img { width: 100%; height: 100%; object-fit: contain; border-radius: 14px; }
+
+/* Reusable generating-progress UI (Canva-SDK-style) */
+.pjob { position: absolute; inset: 0; background: rgba(255,255,255,.82); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 60; }
+.pjob-in { width: min(340px, 80%); text-align: center; display: flex; flex-direction: column; gap: 14px; }
+.pjob-title { font-size: 1.05rem; font-weight: 700; color: #1c1c28; }
+.pjob-bar { height: 8px; background: rgba(0,0,0,.1); border-radius: 6px; overflow: hidden; }
+.pjob-fill { height: 100%; width: 0; background: linear-gradient(90deg, #7b5cff, #19c2ff); border-radius: 6px; transition: width .15s linear; }
+.pjob-done .pjob-fill { transition: width .3s ease; }
+.pjob-sub { font-size: .82rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pjob-cancel { align-self: center; background: transparent; border: 1px solid #d0d0da; color: #444; border-radius: 8px; padding: 9px 22px; font-weight: 600; cursor: pointer; }
+.pjob-cancel:hover { background: rgba(0,0,0,.05); }
+/* dark-app variant (Copilot etc.) */
+.cop-shell .pjob, .mv .pjob, .xb .pjob { background: rgba(20,20,26,.8); }
+.cop-shell .pjob-title, .mv .pjob-title { color: #fff; }
+.cop-shell .pjob-sub, .mv .pjob-sub { color: #aab; }

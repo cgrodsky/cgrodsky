@@ -43,23 +43,33 @@
       const prompt = ta.value.trim();
       if (!prompt) return;
       btn.disabled = true; btn.textContent = "Generating...";
+      let aborted = false;
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const job = window.ProgressUI ? ProgressUI.show(body, {
+        title: "Creating your image…", subtitle: `“${prompt.slice(0, 60)}”`, etaMs: 14000,
+        onCancel: () => { aborted = true; if (ctrl) ctrl.abort(); btn.disabled = false; btn.textContent = "Generate"; },
+      }) : null;
       try {
         const r = await fetch(BASE() + "/images/generations", {
-          method: "POST",
+          method: "POST", signal: ctrl ? ctrl.signal : undefined,
           headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KEY() },
           body: JSON.stringify({ model: "google/nano-banana-2", prompt }),
         });
+        if (aborted) return;
         if (!r.ok) throw new Error("HTTP " + r.status);
         const j = await r.json();
-        // AIML response shapes vary by model; check the common ones.
         const url = j.images?.[0]?.url || j.data?.[0]?.url || j.image?.url || j.url;
         if (!url) throw new Error("No image in response: " + JSON.stringify(j).slice(0, 200));
         history.unshift({ url, prompt, ts: Date.now() });
         State.save();
-        renderGallery();
+        if (job) job.complete(renderGallery); else renderGallery();
         ta.value = "";
-      } catch (e) { alert("Image generation failed: " + (e.message || e)); }
-      btn.disabled = false; btn.textContent = "Generate";
+      } catch (e) {
+        if (aborted || (e && e.name === "AbortError")) return;
+        if (job) job.remove();
+        alert("Image generation failed: " + (e.message || e));
+      }
+      if (!aborted) { btn.disabled = false; btn.textContent = "Generate"; }
     };
   };
 
