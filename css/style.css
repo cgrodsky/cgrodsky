@@ -3470,6 +3470,21 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-proj-card { display: flex; align-items: center; gap: 8px; background: #f7f6fb; border: 1px solid #ececf2; border-radius: 8px; padding: 8px; cursor: pointer; font-weight: 600; font-size: .82rem; text-align: left; }
 .cv-proj-card:hover { background: #efeafd; }
 .cv-proj-sw { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.1); }
+/* Canva Uploads panel */
+.cv-up-search { display: flex; align-items: center; gap: 8px; border: 1px solid #e3e0ee; border-radius: 10px; padding: 9px 12px; color: #8b8896; }
+.cv-up-search svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.cv-up-search input { border: 0; outline: none; flex: 1; font-size: .9rem; background: transparent; color: #1c1c28; }
+.cv-up-row { display: flex; gap: 8px; }
+.cv-up-upload { flex: 1; background: linear-gradient(90deg, #8b46f0, #7b2ae8); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 800; cursor: pointer; }
+.cv-up-upload:hover { filter: brightness(1.05); }
+.cv-up-more { width: 46px; flex: 0 0 auto; background: #f1ecff; color: #7b2ae8; border: 0; border-radius: 10px; font-weight: 800; cursor: pointer; letter-spacing: 1px; }
+.cv-up-more:hover { background: #e7ddff; }
+.cv-up-record { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; color: #1c1c28; }
+.cv-up-record:hover { background: #f7f6fb; }
+.cv-up-tabs { display: flex; gap: 12px; border-bottom: 1px solid #ececf2; margin-top: 2px; overflow-x: auto; }
+.cv-up-tab { background: none; border: 0; padding: 8px 0; font-weight: 700; font-size: .84rem; color: #8b8896; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+.cv-up-tab.on { color: #1c1c28; border-bottom-color: #7b2ae8; }
+.cv-up-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cv-el-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cv-el-card { aspect-ratio: 1; border: 1px solid #ececf2; border-radius: 8px; background: #fbfbfe; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; }
 .cv-el-card:hover { outline: 2px solid #7b2ae8; }

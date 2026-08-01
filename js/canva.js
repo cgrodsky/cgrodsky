@@ -412,9 +412,44 @@
         P.innerHTML = `<div class="cv-panel-h">Text</div>
           <button class="cv-tool" data-add="text">＋ Add a text box</button>`;
       } else if (id === "uploads") {
-        P.innerHTML = `<div class="cv-panel-h">Uploads</div>
-          <button class="cv-tool cv-add-image">🖼 Add an image</button>
-          <div class="cv-empty">Upload from your device, drop in a brand logo, or paste an image URL. Select an image to remove its background.</div>`;
+        const c = store(); if (!c.uploads) c.uploads = [];
+        P.innerHTML = `
+          <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input class="cv-up-q" placeholder="Search keywords, tags, color"></div>
+          <div class="cv-up-row">
+            <button class="cv-up-upload">Upload files</button>
+            <button class="cv-up-more" title="More">•••</button>
+          </div>
+          <button class="cv-up-record">Record yourself</button>
+          <div class="cv-up-tabs">
+            <button class="cv-up-tab on" data-tab="images">Images</button>
+            <button class="cv-up-tab" data-tab="videos">Videos</button>
+            <button class="cv-up-tab" data-tab="audio">Audio</button>
+            <button class="cv-up-tab" data-tab="designs">Designs</button>
+            <button class="cv-up-tab" data-tab="folders">Folders</button>
+          </div>
+          <div class="cv-up-grid"></div>`;
+        const grid = P.querySelector(".cv-up-grid"), q = P.querySelector(".cv-up-q");
+        const draw = (filter) => {
+          grid.innerHTML = "";
+          const items = c.uploads.filter((u) => !filter || (u.name || "").toLowerCase().includes(filter.toLowerCase()));
+          if (!items.length) { grid.appendChild(el(`<div class="cv-empty">Your uploaded images show up here. Tap Upload files to add some.</div>`)); return; }
+          items.forEach((u) => { const b = el(`<button class="cv-el-card" title="${esc(u.name || "")}"><img src="${esc(u.src)}" alt="" draggable="false"></button>`); b.onclick = () => addImage(u.src); grid.appendChild(b); });
+        };
+        draw("");
+        q.oninput = (e) => draw(e.target.value);
+        P.querySelector(".cv-up-upload").onclick = () => {
+          const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+          inp.onchange = () => { const files = Array.from(inp.files || []); let pending = files.length; if (!pending) return;
+            files.forEach((f) => { const r = new FileReader(); r.onload = () => { c.uploads.unshift({ src: r.result, name: f.name }); State.save(); if (--pending === 0) draw(q.value); }; r.readAsDataURL(f); }); };
+          inp.click();
+        };
+        P.querySelector(".cv-up-more").onclick = () => openImagePicker();
+        P.querySelector(".cv-up-record").onclick = () => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Recording is coming soon." }); };
+        P.querySelectorAll(".cv-up-tab").forEach((t) => t.onclick = () => {
+          P.querySelectorAll(".cv-up-tab").forEach((x) => x.classList.toggle("on", x === t));
+          if (t.dataset.tab === "images") draw(q.value);
+          else { grid.innerHTML = ""; grid.appendChild(el(`<div class="cv-empty">No ${esc(t.textContent.toLowerCase())} yet.</div>`)); }
+        });
       } else if (id === "background") {
         P.innerHTML = `<div class="cv-panel-h">Background</div><div class="cv-swatches cv-bg-sw"></div>`;
         colorPanel(P.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
