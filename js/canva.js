@@ -571,9 +571,11 @@
     // Right-click context menu: copy / paste / duplicate / delete.
     let clipboard = null;
     function copySel() { if (sel != null && design.els[sel]) clipboard = JSON.parse(JSON.stringify(design.els[sel])); }
+    function cutSel() { if (sel != null && design.els[sel]) { clipboard = JSON.parse(JSON.stringify(design.els[sel])); design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); } }
     function pasteClip() { if (!clipboard) return; const c = JSON.parse(JSON.stringify(clipboard)); c.x = (c.x || 0) + 18; c.y = (c.y || 0) + 18; design.els.push(c); render(); selectEl(design.els.length - 1); record(); }
     function closeCtx() { const m = body.querySelector(".cv-ctx"); if (m) m.remove(); }
     const CTX_IC = {
+      cut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 7.7l12 8.3M8 16.3l12-8.3"/></svg>`,
       copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 16v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2"/></svg>`,
       paste: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>`,
       dup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><rect x="8" y="8" width="12" height="12" rx="2"/></svg>`,
@@ -586,6 +588,7 @@
       const cvRect = body.querySelector(".cv").getBoundingClientRect();
       const has = sel != null;
       const menu = el(`<div class="cv-ctx" style="left:${ev.clientX - cvRect.left}px;top:${ev.clientY - cvRect.top}px">
+        <button data-act="cut"${has ? "" : " disabled"}>${CTX_IC.cut}Cut</button>
         <button data-act="copy"${has ? "" : " disabled"}>${CTX_IC.copy}Copy</button>
         <button data-act="paste"${clipboard ? "" : " disabled"}>${CTX_IC.paste}Paste</button>
         <button data-act="dup"${has ? "" : " disabled"}>${CTX_IC.dup}Duplicate</button>
@@ -593,7 +596,8 @@
       </div>`);
       menu.querySelectorAll("button").forEach((b) => b.onclick = () => {
         const a = b.dataset.act; closeCtx();
-        if (a === "copy") copySel();
+        if (a === "cut") cutSel();
+        else if (a === "copy") copySel();
         else if (a === "paste") pasteClip();
         else if (a === "dup") duplicateSel();
         else if (a === "del" && sel != null) { design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); }
@@ -1162,6 +1166,7 @@
         return;
       }
       if (meta && k === "c") { copySel(); return; }
+      if (meta && k === "x") { if (sel != null) { e.preventDefault(); cutSel(); } return; }
       if (meta && k === "v") { e.preventDefault(); pasteClip(); return; }
       if (sel == null) return;
       if (meta && k === "d") { e.preventDefault(); duplicateSel(); return; }
