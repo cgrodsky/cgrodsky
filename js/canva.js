@@ -46,6 +46,12 @@
     { name: "Campfire", src: "assets/cv_el_campfire.png" },
   ];
 
+  // Element animation presets (map to CSS @keyframes cv-anim-<id>).
+  const ANIMS = [
+    { id: "fade", name: "Fade" }, { id: "rise", name: "Rise" }, { id: "pan", name: "Pan" }, { id: "pop", name: "Pop" },
+    { id: "tumble", name: "Tumble" }, { id: "bounce", name: "Bounce" }, { id: "breathe", name: "Breathe" }, { id: "drift", name: "Drift" },
+  ];
+
   // Left editor rail — mirrors Canva's icon rail. `svg` is the inner markup of a 24×24 line icon.
   const RAIL = [
     { id: "templates", label: "Templates", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="12" y1="12" x2="20" y2="12"/>` },
@@ -388,7 +394,7 @@
     const toast = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
     subbar.querySelector(".cv-sb-ask").onclick = () => toast("Ask Canva is coming soon.");
     subbar.querySelector(".cv-sb-edit").onclick = () => toast("Edit tools are in the left panel.");
-    subbar.querySelector(".cv-sb-animate").onclick = () => toast("Animations are coming soon.");
+    subbar.querySelector(".cv-sb-animate").onclick = () => openAnimate();
     subbar.querySelector(".cv-sb-comment").onclick = () => toast("Comments are coming soon.");
     subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
     subbar.querySelector(".cv-sb-color input").addEventListener("change", () => { if (sel != null) record(); });
@@ -415,6 +421,7 @@
         else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
+        if (e.anim) o.classList.add("cv-anim", "cv-anim-" + e.anim);
         dragify(o, e, i);
         stage.appendChild(o);
       });
@@ -438,6 +445,25 @@
     let drawMode = null;   // {color,width} while the pen/signature tool is active
     function enableDraw(opts) { drawMode = opts; stage.classList.add("cv-drawing"); selectEl(null); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Draw on the canvas. Pick the Select tool (or Esc) to stop." }); }
     function disableDraw() { drawMode = null; stage.classList.remove("cv-drawing"); }
+
+    // Animate panel: apply a motion preset to the selected element (plays on render).
+    function openAnimate() {
+      if (sel == null || !design.els[sel]) return;
+      body.querySelectorAll(".cv-rail-btn").forEach((b) => b.classList.remove("on"));
+      const cur = design.els[sel].anim || "";
+      panelBody.innerHTML = `<div class="cv-panel-h">Animate</div>
+        <button class="cv-tool cv-anim-play">▶ Play</button>
+        <button class="cv-anim-opt${cur ? "" : " on"}" data-anim="">None</button>
+        <div class="cv-anim-grid">${ANIMS.map((a) => `<button class="cv-anim-opt cv-anim-card${cur === a.id ? " on" : ""}" data-anim="${a.id}">${esc(a.name)}</button>`).join("")}</div>`;
+      panelBody.querySelector(".cv-anim-play").onclick = () => { render(); selectEl(sel); };
+      panelBody.querySelectorAll(".cv-anim-opt").forEach((b) => b.onclick = () => {
+        if (sel == null) return;
+        const id = b.dataset.anim;
+        if (id) design.els[sel].anim = id; else delete design.els[sel].anim;
+        panelBody.querySelectorAll(".cv-anim-opt").forEach((x) => x.classList.toggle("on", x === b));
+        render(); selectEl(sel); record();
+      });
+    }
     stage.addEventListener("pointerdown", (ev) => {
       if (!drawMode) return;
       ev.stopPropagation(); ev.preventDefault();

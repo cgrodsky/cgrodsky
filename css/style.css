@@ -3631,6 +3631,29 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-h-w { top: calc(50% - 6px); left: -7px; cursor: ew-resize; }
 .cv-image { object-fit: contain; background: transparent; }
 .cv-draw { display: block; }
+/* Canva element animations */
+.cv-anim { animation-duration: .6s; animation-fill-mode: both; animation-timing-function: cubic-bezier(.2,.7,.3,1); }
+.cv-anim-fade { animation-name: cvFade; }
+.cv-anim-rise { animation-name: cvRise; }
+.cv-anim-pan { animation-name: cvPan; }
+.cv-anim-pop { animation-name: cvPop; }
+.cv-anim-tumble { animation-name: cvTumble; }
+.cv-anim-bounce { animation-name: cvBounce; animation-duration: .9s; }
+.cv-anim-breathe { animation-name: cvBreathe; animation-duration: 2.4s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.cv-anim-drift { animation-name: cvDrift; animation-duration: 3s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; animation-direction: alternate; }
+@keyframes cvFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cvRise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes cvPan { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@keyframes cvPop { 0% { opacity: 0; transform: scale(.4); } 70% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes cvTumble { from { opacity: 0; transform: rotate(-18deg) scale(.8); } to { opacity: 1; transform: none; } }
+@keyframes cvBounce { 0% { opacity: 0; transform: translateY(-42px); } 60% { opacity: 1; transform: translateY(6px); } 80% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+@keyframes cvBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes cvDrift { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+.cv-anim-play { background: #efe9ff !important; color: #7b2ae8; border-color: #ddd0fb !important; }
+.cv-anim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cv-anim-opt { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px 10px; font-weight: 700; font-size: .86rem; color: #1c1c28; cursor: pointer; text-align: center; }
+.cv-anim-opt:hover { background: #f7f6fb; }
+.cv-anim-opt.on { background: #efe9ff; border-color: #cdbdfb; color: #7b2ae8; }
 .cv-stage.cv-drawing { cursor: crosshair; }
 .cv-stage.cv-drawing .cv-obj { pointer-events: none; }
 .cv-wordmark { height: 26px; width: auto; display: block; margin: 2px 0 2px; }
