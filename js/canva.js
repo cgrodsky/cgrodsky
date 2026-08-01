@@ -567,6 +567,40 @@
       o.addEventListener("click", (ev) => { ev.stopPropagation(); selectEl(i); });
     }
     stage.onclick = (ev) => { if (ev.target === stage) { selectEl(null); stage.querySelectorAll(".cv-comment-pop").forEach((p) => p.remove()); } };
+
+    // Right-click context menu: copy / paste / duplicate / delete.
+    let clipboard = null;
+    function copySel() { if (sel != null && design.els[sel]) clipboard = JSON.parse(JSON.stringify(design.els[sel])); }
+    function pasteClip() { if (!clipboard) return; const c = JSON.parse(JSON.stringify(clipboard)); c.x = (c.x || 0) + 18; c.y = (c.y || 0) + 18; design.els.push(c); render(); selectEl(design.els.length - 1); record(); }
+    function closeCtx() { const m = body.querySelector(".cv-ctx"); if (m) m.remove(); }
+    const CTX_IC = {
+      copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 16v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2"/></svg>`,
+      paste: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>`,
+      dup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><rect x="8" y="8" width="12" height="12" rx="2"/></svg>`,
+      del: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>`,
+    };
+    stage.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault(); closeCtx();
+      const objEl = ev.target.closest(".cv-obj");
+      if (objEl) selectEl(+objEl.dataset.i);
+      const cvRect = body.querySelector(".cv").getBoundingClientRect();
+      const has = sel != null;
+      const menu = el(`<div class="cv-ctx" style="left:${ev.clientX - cvRect.left}px;top:${ev.clientY - cvRect.top}px">
+        <button data-act="copy"${has ? "" : " disabled"}>${CTX_IC.copy}Copy</button>
+        <button data-act="paste"${clipboard ? "" : " disabled"}>${CTX_IC.paste}Paste</button>
+        <button data-act="dup"${has ? "" : " disabled"}>${CTX_IC.dup}Duplicate</button>
+        <button data-act="del"${has ? "" : " disabled"}>${CTX_IC.del}Delete</button>
+      </div>`);
+      menu.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        const a = b.dataset.act; closeCtx();
+        if (a === "copy") copySel();
+        else if (a === "paste") pasteClip();
+        else if (a === "dup") duplicateSel();
+        else if (a === "del" && sel != null) { design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); }
+      });
+      body.querySelector(".cv").appendChild(menu);
+    });
+    stage.addEventListener("pointerdown", () => closeCtx(), true);
     render();
 
     // ---- Freehand pen / pencil drawing -------------------------------------
@@ -867,7 +901,7 @@
           <button class="cv-txt-add" data-add="text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M12 6v13M9 19h6"/></svg>Add a text box</button>
           <button class="cv-txt-magic">✎ Magic Write</button>
           <div class="cv-txt-team"><span class="cv-txt-teamname">${esc(profileName())}'s Team ▾</span><button class="cv-txt-edit">Edit</button></div>
-          <button class="cv-txt-brandfonts">Add your brand fonts <img src="assets/cv_pro.png?v=1" class="cv-inline-crown" alt="Pro"></button>
+          <button class="cv-txt-brandfonts"><svg class="cv-upfont-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-1-7.9A5 5 0 0 1 16 8.5a3.5 3.5 0 0 1 1 6.8"/><path d="M12 21v-8M9 16l3-3 3 3"/></svg> Add your brand fonts <img src="assets/cv_pro.png?v=1" class="cv-inline-crown" alt="Pro"></button>
           <div class="cv-panel-h">Default text styles</div>
           <button class="cv-txt-style" data-role="heading">Add a heading</button>
           <button class="cv-txt-style" data-role="subheading">Add a subheading</button>
@@ -1127,6 +1161,8 @@
         }
         return;
       }
+      if (meta && k === "c") { copySel(); return; }
+      if (meta && k === "v") { e.preventDefault(); pasteClip(); return; }
       if (sel == null) return;
       if (meta && k === "d") { e.preventDefault(); duplicateSel(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); return; }

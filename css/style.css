@@ -3573,7 +3573,14 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-txt-add { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(90deg, #8b46f0, #7b2ae8); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 800; cursor: pointer; }
 .cv-txt-add svg { width: 18px; height: 18px; }
 .cv-txt-add:hover { filter: brightness(1.05); }
-.cv-txt-magic, .cv-txt-brandfonts { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; color: #1c1c28; }
+.cv-txt-magic, .cv-txt-brandfonts { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; color: #1c1c28; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.cv-upfont-ic { width: 18px; height: 18px; flex: 0 0 auto; }
+/* Canva right-click context menu */
+.cv-ctx { position: absolute; z-index: 50; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.24); padding: 6px; min-width: 168px; }
+.cv-ctx button { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-radius: 7px; padding: 9px 10px; font-size: .88rem; font-weight: 600; color: #1c1c28; cursor: pointer; text-align: left; }
+.cv-ctx button:hover:not([disabled]) { background: #f2f2f7; }
+.cv-ctx button[disabled] { opacity: .4; cursor: default; }
+.cv-ctx svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .cv-txt-magic:hover, .cv-txt-brandfonts:hover { background: #f7f6fb; }
 .cv-txt-team { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
 .cv-txt-teamname { font-weight: 800; font-size: .92rem; }
