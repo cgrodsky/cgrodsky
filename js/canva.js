@@ -179,7 +179,7 @@
         <button class="cv-dl">⬇ Download</button>
       </div>
       <div class="cv-work">
-        <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<span class="cv-rail-crown">♛</span>' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>
+        <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<img class="cv-rail-crown" src="assets/cv_pro.png?v=1" alt="Pro">' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>
         <div class="cv-panel">
           <div class="cv-panel-body"></div>
           <div class="cv-panel-h cv-sel-h" style="display:none">Selected</div>

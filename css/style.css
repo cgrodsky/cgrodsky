@@ -3448,7 +3448,7 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-rail-btn.on { background: #e9e5fb; color: #7b2ae8; }
 .cv-rail-ic { position: relative; }
 .cv-rail-ic svg { width: 24px; height: 24px; display: block; }
-.cv-rail-crown { position: absolute; top: -7px; right: -8px; font-size: .62rem; color: #f4b400; }
+.cv-rail-crown { position: absolute; top: -8px; right: -9px; width: 13px; height: 13px; object-fit: contain; }
 .cv-rail-lbl { font-size: .62rem; font-weight: 600; line-height: 1.1; text-align: center; }
 .cv-panel { width: 220px; flex: 0 0 auto; background: #fff; border-right: 1px solid #ececf2; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .cv-panel-body { display: flex; flex-direction: column; gap: 8px; }
