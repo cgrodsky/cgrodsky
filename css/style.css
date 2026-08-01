@@ -3494,3 +3494,8 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cop-shell .pjob, .mv .pjob, .xb .pjob { background: rgba(20,20,26,.8); }
 .cop-shell .pjob-title, .mv .pjob-title { color: #fff; }
 .cop-shell .pjob-sub, .mv .pjob-sub { color: #aab; }
+.cv-add-color { position: relative; display: flex; align-items: center; justify-content: center; color: #7b2ae8; font-size: 1.1rem; font-weight: 700; background: #f4f2fb !important; border: 1px dashed #b9a9ef !important; cursor: pointer; }
+.cv-add-color input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.cv-sw-custom { position: relative; }
+.cv-sw-x { position: absolute; top: -6px; right: -6px; width: 15px; height: 15px; border-radius: 50%; background: #191919; color: #fff; font-size: .7rem; line-height: 15px; text-align: center; opacity: 0; transition: opacity .1s; }
+.cv-sw-custom:hover .cv-sw-x { opacity: 1; }

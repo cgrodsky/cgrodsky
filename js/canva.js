@@ -169,9 +169,27 @@
     const stage = body.querySelector(".cv-stage");
     const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size");
 
-    function swatches(host, cb) { host.innerHTML = ""; PALETTE.forEach((c) => { const b = el(`<button class="cv-sw" style="background:${c}"></button>`); b.onclick = () => cb(c); host.appendChild(b); }); }
-    swatches(body.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
-    swatches(body.querySelector(".cv-el-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } });
+    // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
+    function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
+    function colorPanel(host, apply) {
+      host.innerHTML = "";
+      const add = el(`<label class="cv-sw cv-add-color" title="Add a color">＋<input type="color" value="#143f6b"></label>`);
+      add.querySelector("input").oninput = (e) => {
+        const c = e.target.value; const cols = customColors();
+        if (!cols.includes(c)) cols.unshift(c); if (cols.length > 24) cols.pop();
+        State.save(); apply(c); colorPanel(host, apply);
+      };
+      host.appendChild(add);
+      PALETTE.forEach((c) => { const b = el(`<button class="cv-sw" style="background:${c}"></button>`); b.onclick = () => apply(c); host.appendChild(b); });
+      customColors().forEach((c) => {
+        const b = el(`<button class="cv-sw cv-sw-custom" style="background:${c}" title="${c}"><span class="cv-sw-x">×</span></button>`);
+        b.onclick = () => apply(c);
+        b.querySelector(".cv-sw-x").onclick = (e) => { e.stopPropagation(); const cols = customColors(); const i = cols.indexOf(c); if (i >= 0) cols.splice(i, 1); State.save(); colorPanel(host, apply); };
+        host.appendChild(b);
+      });
+    }
+    colorPanel(body.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
+    colorPanel(body.querySelector(".cv-el-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } });
 
     function selectEl(i) {
       sel = i;
