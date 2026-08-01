@@ -380,13 +380,30 @@
     // PowerPoint-style resize frame: 8 handles around the selected image/shape.
     let frameNode = null;
     function clearFrame() { if (frameNode) { frameNode.remove(); frameNode = null; } }
-    function placeFrame() { if (!frameNode || sel == null) return; const e = design.els[sel]; if (!e) return; frameNode.style.left = e.x + "px"; frameNode.style.top = e.y + "px"; frameNode.style.width = (e.w || 140) + "px"; frameNode.style.height = (e.h || 140) + "px"; }
+    function placeFrame() { if (!frameNode || sel == null) return; const e = design.els[sel]; if (!e) return; frameNode.style.left = e.x + "px"; frameNode.style.top = e.y + "px"; frameNode.style.width = (e.w || 140) + "px"; frameNode.style.height = (e.h || 140) + "px"; frameNode.style.transform = "rotate(" + (e.rot || 0) + "deg)"; }
     function showFrame(i) {
       clearFrame();
       const e = design.els[i]; if (!e || e.t === "text") return;
-      frameNode = el(`<div class="cv-selframe">${["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((p) => `<div class="cv-handle cv-h-${p}" data-pos="${p}"></div>`).join("")}</div>`);
+      frameNode = el(`<div class="cv-selframe">${["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((p) => `<div class="cv-handle cv-h-${p}" data-pos="${p}"></div>`).join("")}<div class="cv-rot-stalk"></div><div class="cv-handle cv-h-rot" title="Rotate"></div></div>`);
       const objNode = stage.querySelector(`.cv-obj[data-i="${i}"]`);
-      frameNode.querySelectorAll(".cv-handle").forEach((h) => h.addEventListener("pointerdown", (ev) => {
+      // Rotate handle: spin the element around its centre.
+      frameNode.querySelector(".cv-h-rot").addEventListener("pointerdown", (ev) => {
+        ev.stopPropagation(); ev.preventDefault();
+        const rect = stage.getBoundingClientRect();
+        const scale = (parseFloat((body.querySelector(".cv-zoom") || {}).value) || 100) / 100;
+        const cx = rect.left + (e.x + (e.w || 140) / 2) * scale, cy = rect.top + (e.y + (e.h || 140) / 2) * scale;
+        const mv = (m) => {
+          let deg = Math.atan2(m.clientY - cy, m.clientX - cx) * 180 / Math.PI + 90;
+          if (m.shiftKey) deg = Math.round(deg / 15) * 15;
+          e.rot = Math.round(deg);
+          const t = "rotate(" + e.rot + "deg)";
+          if (objNode) { objNode.style.transform = t; objNode.style.setProperty("--rot", e.rot + "deg"); }
+          frameNode.style.transform = t;
+        };
+        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); render(); selectEl(i); record(); };
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
+      frameNode.querySelectorAll(".cv-handle[data-pos]").forEach((h) => h.addEventListener("pointerdown", (ev) => {
         ev.stopPropagation(); ev.preventDefault();
         const pos = h.dataset.pos, corner = pos.length === 2;
         const east = pos.includes("e"), west = pos.includes("w"), north = pos.includes("n"), south = pos.includes("s");
@@ -452,6 +469,8 @@
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
         if (e.anim) o.classList.add("cv-anim", "cv-anim-" + e.anim);
+        o.style.setProperty("--rot", (e.rot || 0) + "deg");
+        if (e.rot) o.style.transform = "rotate(" + e.rot + "deg)";
         dragify(o, e, i);
         stage.appendChild(o);
       });

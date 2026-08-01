@@ -3629,7 +3629,10 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-text { padding: 2px 4px; white-space: nowrap; outline: none; line-height: 1.1; }
 .cv-obj.sel { outline: 2px solid #7b5cff; outline-offset: 2px; }
 /* PowerPoint-style resize frame + handles */
-.cv-selframe { position: absolute; border: 1.5px solid #7b2ae8; box-sizing: border-box; pointer-events: none; z-index: 6; }
+.cv-selframe { position: absolute; border: 1.5px solid #7b2ae8; box-sizing: border-box; pointer-events: none; z-index: 6; transform-origin: center; }
+.cv-rot-stalk { position: absolute; left: 50%; top: -26px; width: 1.5px; height: 24px; background: #7b2ae8; transform: translateX(-50%); }
+.cv-h-rot { top: -34px; left: calc(50% - 6px); cursor: grab; }
+.cv-h-rot:active { cursor: grabbing; }
 .cv-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 1.5px solid #7b2ae8; border-radius: 50%; box-sizing: border-box; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.25); touch-action: none; }
 .cv-h-nw { top: -7px; left: -7px; cursor: nwse-resize; }
 .cv-h-se { bottom: -7px; right: -7px; cursor: nwse-resize; }
@@ -3652,13 +3655,13 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-anim-breathe { animation-name: cvBreathe; animation-duration: 2.4s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
 .cv-anim-drift { animation-name: cvDrift; animation-duration: 3s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; animation-direction: alternate; }
 @keyframes cvFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes cvRise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
-@keyframes cvPan { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
-@keyframes cvPop { 0% { opacity: 0; transform: scale(.4); } 70% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
-@keyframes cvTumble { from { opacity: 0; transform: rotate(-18deg) scale(.8); } to { opacity: 1; transform: none; } }
-@keyframes cvBounce { 0% { opacity: 0; transform: translateY(-42px); } 60% { opacity: 1; transform: translateY(6px); } 80% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
-@keyframes cvBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-@keyframes cvDrift { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+@keyframes cvRise { from { opacity: 0; transform: translateY(28px) rotate(var(--rot,0deg)); } to { opacity: 1; transform: rotate(var(--rot,0deg)); } }
+@keyframes cvPan { from { opacity: 0; transform: translateX(-40px) rotate(var(--rot,0deg)); } to { opacity: 1; transform: rotate(var(--rot,0deg)); } }
+@keyframes cvPop { 0% { opacity: 0; transform: scale(.4) rotate(var(--rot,0deg)); } 70% { opacity: 1; transform: scale(1.08) rotate(var(--rot,0deg)); } 100% { transform: scale(1) rotate(var(--rot,0deg)); } }
+@keyframes cvTumble { from { opacity: 0; transform: rotate(calc(-18deg + var(--rot,0deg))) scale(.8); } to { opacity: 1; transform: rotate(var(--rot,0deg)); } }
+@keyframes cvBounce { 0% { opacity: 0; transform: translateY(-42px) rotate(var(--rot,0deg)); } 60% { opacity: 1; transform: translateY(6px) rotate(var(--rot,0deg)); } 80% { transform: translateY(-3px) rotate(var(--rot,0deg)); } 100% { transform: translateY(0) rotate(var(--rot,0deg)); } }
+@keyframes cvBreathe { 0%, 100% { transform: scale(1) rotate(var(--rot,0deg)); } 50% { transform: scale(1.06) rotate(var(--rot,0deg)); } }
+@keyframes cvDrift { from { transform: translateY(0) rotate(var(--rot,0deg)); } to { transform: translateY(-10px) rotate(var(--rot,0deg)); } }
 .cv-anim-play { background: #efe9ff !important; color: #7b2ae8; border-color: #ddd0fb !important; }
 .cv-anim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .cv-anim-opt { background: #fff; border: 1px solid #e3e0ee; border-radius: 10px; padding: 12px 10px; font-weight: 700; font-size: .86rem; color: #1c1c28; cursor: pointer; text-align: center; }
