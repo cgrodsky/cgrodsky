@@ -28,7 +28,10 @@
     { name: "Clean Doc", type: "doc", bg: "#ffffff", els: [{ t: "text", x: 50, y: 60, text: "Project Brief", size: 36, color: "#111", bold: true }, { t: "text", x: 50, y: 140, text: "Overview and goals for the new launch.", size: 18, color: "#555" }] },
   ];
 
-  function store() { if (!S().appData) S().appData = {}; if (!S().appData.canva) S().appData.canva = { designs: [] }; if (!S().appData.canva.designs) S().appData.canva.designs = []; return S().appData.canva; }
+  function store() { if (!S().appData) S().appData = {}; if (!S().appData.canva) S().appData.canva = { designs: [] }; if (!S().appData.canva.designs) S().appData.canva.designs = []; const c = S().appData.canva; if (!c.profile) c.profile = {}; return c; }
+  function profileName() { const st = store(); return st.profile.name || (S().profile && S().profile.username) || (S().account && S().account.name) || "You"; }
+  function profileEmail() { const st = store(); return st.profile.email || (S().account && S().account.email) || (S().profile && S().profile.email) || "you@example.com"; }
+  function profilePhoto() { const st = store(); return st.profile.photo || (S().profile && S().profile.picture) || null; }
 
   function open(createWindow) {
     const make = createWindow || window.WM.createWindow;
@@ -48,6 +51,7 @@
         <button class="cv-nav">✨ Brand</button>
         <button class="cv-nav">📐 Templates</button>
         <button class="cv-new">＋ Create a design</button>
+        <button class="cv-profile"><span class="cv-avatar">${profilePhoto() ? `<img src="${esc(profilePhoto())}" alt="">` : esc(profileName()[0].toUpperCase())}</span><span class="cv-profile-n">${esc(profileName())}</span></button>
       </aside>
       <main class="cv-main">
         <div class="cv-hero"><img class="cv-banner" src="assets/canva_banner${Math.random() < 0.5 ? 1 : 2}.jpg?v=1" alt=""><input class="cv-search" placeholder="Search anything"></div>
@@ -84,6 +88,50 @@
       });
     }
     body.querySelector(".cv-new").onclick = () => editor(body, ref, { type: "ig", bg: "#ffffff", els: [], name: "Untitled design" });
+    body.querySelector(".cv-profile").onclick = () => profileScreen(body, ref);
+  }
+
+  function profileScreen(body, ref) {
+    const st = store();
+    const NAV = [["Your profile", "👤", true], ["Account and security", "🔐"], ["Accessibility", "♿"], ["Message preferences", "✉️"], ["Privacy controls", "🔒"], ["Data and storage", "🗄️"], ["Your teams", "👥"], ["AI personalization", "✨"], ["Your apps", "▦"]];
+    body.innerHTML = `<div class="cv">
+      <aside class="cv-side">
+        <div class="cv-brand"><img class="cv-wordmark" src="assets/canva_wordmark.png?v=1" alt="Canva"></div>
+        ${NAV.map((n) => `<button class="cv-nav ${n[2] ? "on" : ""}">${n[1]} ${esc(n[0])}</button>`).join("")}
+        <button class="cv-nav cv-back-nav" style="margin-top:auto">‹ Back to home</button>
+      </aside>
+      <main class="cv-main cv-profile-main">
+        <h1 class="cv-p-title">Your profile</h1>
+        <h2 class="cv-p-sec">Your account</h2>
+        <div class="cv-card">
+          <div class="cv-p-row">
+            <div class="cv-p-photo">${profilePhoto() ? `<img src="${esc(profilePhoto())}" alt="">` : esc(profileName()[0].toUpperCase())}</div>
+            <div class="cv-p-photo-lbl"><b>Profile Photo</b></div>
+            <span class="grow"></span>
+            ${profilePhoto() ? `<button class="cv-link cv-photo-remove">Remove photo</button>` : ""}
+            <button class="cv-btn cv-photo-change">Change photo</button>
+          </div>
+          <div class="cv-p-row"><div><b>Name</b><div class="cv-p-val">${esc(profileName())}</div></div><span class="grow"></span><button class="cv-btn cv-edit-name">Edit</button></div>
+          <div class="cv-p-row"><div><b>Email address</b><div class="cv-p-val">${esc(profileEmail())}</div></div><span class="grow"></span><button class="cv-btn cv-edit-email">Edit</button></div>
+          <div class="cv-p-row"><div><b>What will you be using Canva for?</b></div><span class="grow"></span>
+            <select class="cv-select cv-use"><option>Personal</option><option>Small business</option><option>Large company</option><option>Student</option><option>Teacher</option><option>Nonprofit</option></select></div>
+          <div class="cv-p-row"><div><b>Language</b></div><span class="grow"></span>
+            <select class="cv-select cv-lang"><option>English (US)</option><option>English (UK)</option><option>Español</option><option>Français</option><option>Deutsch</option><option>日本語</option></select></div>
+        </div>
+      </main>
+    </div>`;
+    body.querySelector(".cv-back-nav").onclick = () => home(body, ref);
+    const use = body.querySelector(".cv-use"); if (st.profile.use) use.value = st.profile.use; use.onchange = () => { st.profile.use = use.value; State.save(); };
+    const lang = body.querySelector(".cv-lang"); if (st.profile.lang) lang.value = st.profile.lang; lang.onchange = () => { st.profile.lang = lang.value; State.save(); };
+    body.querySelector(".cv-edit-name").onclick = () => { const v = prompt("Your name", profileName()); if (v != null && v.trim()) { st.profile.name = v.trim(); State.save(); profileScreen(body, ref); } };
+    body.querySelector(".cv-edit-email").onclick = () => { const v = prompt("Email address", profileEmail()); if (v != null && v.trim()) { st.profile.email = v.trim(); State.save(); profileScreen(body, ref); } };
+    const rem = body.querySelector(".cv-photo-remove"); if (rem) rem.onclick = () => { st.profile.photo = null; State.save(); profileScreen(body, ref); };
+    body.querySelector(".cv-photo-change").onclick = () => {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+      inp.onchange = () => { const f = inp.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { st.profile.photo = r.result; State.save(); profileScreen(body, ref); }; r.readAsDataURL(f); };
+      inp.click();
+    };
+    body.querySelectorAll(".cv-nav:not(.on):not(.cv-back-nav)").forEach((b) => b.onclick = () => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: b.textContent.trim() + " — coming soon." }); });
   }
 
   const PALETTE = ["#111111", "#ffffff", "#ff5a5f", "#ff9f1c", "#ffd54a", "#2ec4b6", "#3a86ff", "#7b5cff", "#e84393", "#00b894", "#636e72", "#fab1a0"];
