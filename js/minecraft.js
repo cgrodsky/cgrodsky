@@ -13,7 +13,7 @@
     1:  { name: "Grass", color: "#5fa83b", solid: true, hardness: 0.6, drop: 2, tex: "grass", texTop: "grass_top", texBottom: "dirt" },
     2:  { name: "Dirt", color: "#8a5a2b", solid: true, hardness: 0.5, drop: 2, tex: "dirt" },
     3:  { name: "Stone", color: "#8c8c8c", solid: true, hardness: 1.5, drop: 17, tex: "stone" },
-    4:  { name: "Log", color: "#6b4a25", solid: true, hardness: 2, drop: 4, tex: "log" },
+    4:  { name: "Log", color: "#6b4a25", solid: true, hardness: 2, drop: 4, tex: "log", texTop: "log_top", texBottom: "log_top" },
     5:  { name: "Leaves", color: "#3e9b3e", solid: true, hardness: 0.2, drop: 5, tex: "leaves", cutout: true },
     6:  { name: "Sand", color: "#e3d59b", solid: true, hardness: 0.5, drop: 6, tex: "sand" },
     7:  { name: "Planks", color: "#b08243", solid: true, hardness: 2, drop: 7, tex: "planks" },
@@ -81,7 +81,7 @@
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
   // Bump when a mc_*.png texture changes — images aren't covered by index.html's ?v=
-  const TEXV = "2";
+  const TEXV = "3";
   const ITEMS = {
     200: { name: "Ender Pearl", color: "#14c7a8", item: true, tex: "ender_pearl" },
     201: { name: "Stick", color: "#b08a52", item: true, tex: "stick" },

@@ -3630,6 +3630,9 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-h-e { top: calc(50% - 6px); right: -7px; cursor: ew-resize; }
 .cv-h-w { top: calc(50% - 6px); left: -7px; cursor: ew-resize; }
 .cv-image { object-fit: contain; background: transparent; }
+.cv-draw { display: block; }
+.cv-stage.cv-drawing { cursor: crosshair; }
+.cv-stage.cv-drawing .cv-obj { pointer-events: none; }
 .cv-wordmark { height: 26px; width: auto; display: block; margin: 2px 0 2px; }
 
 /* Canva image picker */

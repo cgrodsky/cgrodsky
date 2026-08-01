@@ -412,6 +412,7 @@
         let o;
         if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}'">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
+        else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
         dragify(o, e, i);
@@ -432,6 +433,36 @@
     }
     stage.onclick = (ev) => { if (ev.target === stage) selectEl(null); };
     render();
+
+    // ---- Freehand pen / pencil drawing -------------------------------------
+    let drawMode = null;   // {color,width} while the pen/signature tool is active
+    function enableDraw(opts) { drawMode = opts; stage.classList.add("cv-drawing"); selectEl(null); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Draw on the canvas. Pick the Select tool (or Esc) to stop." }); }
+    function disableDraw() { drawMode = null; stage.classList.remove("cv-drawing"); }
+    stage.addEventListener("pointerdown", (ev) => {
+      if (!drawMode) return;
+      ev.stopPropagation(); ev.preventDefault();
+      const rect = stage.getBoundingClientRect();
+      const scale = (parseFloat((body.querySelector(".cv-zoom") || {}).value) || 100) / 100;
+      const toXY = (m) => [(m.clientX - rect.left) / scale, (m.clientY - rect.top) / scale];
+      const pts = [toXY(ev)];
+      const preview = el(`<svg class="cv-draw-preview" style="position:absolute;left:0;top:0;width:${ty.w}px;height:${ty.h}px;pointer-events:none;overflow:visible;z-index:7"><polyline fill="none" stroke="${drawMode.color}" stroke-width="${drawMode.width}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+      const poly = preview.querySelector("polyline");
+      const upd = () => poly.setAttribute("points", pts.map((p) => p.join(",")).join(" "));
+      upd(); stage.appendChild(preview);
+      const mv = (m) => { pts.push(toXY(m)); upd(); };
+      const up = () => {
+        document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up);
+        preview.remove();
+        if (pts.length < 2) return;
+        const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), pad = drawMode.width;
+        const minX = Math.min.apply(null, xs) - pad, minY = Math.min.apply(null, ys) - pad;
+        const w = Math.max(1, Math.max.apply(null, xs) + pad - minX), h = Math.max(1, Math.max.apply(null, ys) + pad - minY);
+        const rel = pts.map((p) => [+(p[0] - minX).toFixed(1), +(p[1] - minY).toFixed(1)]);
+        design.els.push({ t: "path", x: minX, y: minY, w, h, vbW: w, vbH: h, color: drawMode.color, width: drawMode.width, pts: rel });
+        render(); selectEl(design.els.length - 1); record();
+      };
+      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+    }, true);
 
     function addEl(kind) {
       if (kind === "text") design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" });
@@ -707,11 +738,13 @@
         P.querySelectorAll(".cv-tp").forEach((b) => b.onclick = () => {
           setTool(b);
           const t = b.dataset.tool;
-          if (t === "select") selectEl(null);
-          else if (t === "text") { design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" }); render(); selectEl(design.els.length - 1); record(); }
-          else if (t === "shape") { design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); record(); }
-          else if (t === "line") { design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); record(); }
-          else if (t === "sticky") { design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); record(); }
+          if (t === "select") { disableDraw(); selectEl(null); }
+          else if (t === "pen") enableDraw({ color: "#1c1c28", width: 6 });
+          else if (t === "sign") enableDraw({ color: "#1c1c28", width: 3 });
+          else if (t === "text") { disableDraw(); design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "shape") { disableDraw(); design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "line") { disableDraw(); design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "sticky") { disableDraw(); design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); record(); }
           else tt(b.title + " is coming soon.");
         });
       } else if (id === "apps") {
@@ -833,6 +866,7 @@
       if (!body.isConnected || !body.querySelector(".cv-edit")) return;
       const ae = document.activeElement, typing = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
       const meta = e.ctrlKey || e.metaKey, k = (e.key || "").toLowerCase();
+      if (e.key === "Escape") { disableDraw(); selectEl(null); return; }
       if (meta && k === "z") { e.preventDefault(); e.shiftKey ? redoHist() : undo(); return; }
       if (meta && k === "y") { e.preventDefault(); redoHist(); return; }
       if (typing) {
