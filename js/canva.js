@@ -205,6 +205,12 @@
           <div class="cv-sel-tools" style="display:none">
             <div class="cv-swatches cv-el-sw"></div>
             <select class="cv-font" style="display:none">${FONTS.map((f) => `<option value="${esc(f)}" style="font-family:'${esc(f)}'">${esc(f)}</option>`).join("")}</select>
+            <div class="cv-fmt-row" style="display:none">
+              <button class="cv-fmt" data-fmt="bold" title="Bold"><b>B</b></button>
+              <button class="cv-fmt" data-fmt="italic" title="Italic"><i>I</i></button>
+              <button class="cv-fmt" data-fmt="underline" title="Underline"><u>U</u></button>
+              <button class="cv-fmt" data-fmt="strike" title="Strikethrough"><s>S</s></button>
+            </div>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
             <button class="cv-rembg" style="display:none">✂ Remove background</button>
             <button class="cv-del">🗑 Delete</button>
@@ -228,7 +234,7 @@
       </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -262,11 +268,13 @@
       else if (has) { sizeRow.style.display = "flex"; sizeIn.min = 40; sizeIn.max = 500; sizeIn.value = design.els[i].w || 140; }
       else sizeRow.style.display = "none";
       fontSel.style.display = isText ? "block" : "none";
-      if (isText) fontSel.value = design.els[i].font || "Nunito";
+      fmtRow.style.display = isText ? "flex" : "none";
+      if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); }
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
       subbar.style.display = has ? "flex" : "none";
     }
     fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); } };
+    fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); } });
     rembgBtn.onclick = () => removeBg();
 
     // Contextual toolbar (shown when an element is selected).
@@ -293,7 +301,7 @@
       stage.innerHTML = "";
       design.els.forEach((e, i) => {
         let o;
-        if (e.t === "text") o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-family:'${(e.font || "Nunito").replace(/'/g, "")}'">${esc(e.text || "Text")}</div>`);
+        if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}'">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
@@ -598,14 +606,15 @@
           <div class="cv-app-list"></div>`;
         const APPS = [
           { name: "Simplebooklet", desc: "Publish and track flipbooks.", c: "#f0932b", emoji: "📖" },
-          { name: "GIPHY", desc: "Add GIFs to your designs.", c: "#111111", emoji: "🎞️" },
+          { name: "GIPHY", desc: "Add GIFs to your designs.", c: "#111111", img: "assets/cv_app_giphy.png" },
           { name: "D-ID AI Avatars", desc: "Add a talking head video.", c: "#5b6cf0", emoji: "🧑" },
           { name: "YouTube", desc: "Embed videos in your design.", c: "#ff0000", emoji: "▶️" },
           { name: "Mockups", desc: "Put your design on products.", c: "#22b573", emoji: "🖼️" },
         ];
         const alist = P.querySelector(".cv-app-list");
         const drawApps = () => { alist.innerHTML = ""; APPS.forEach((a) => {
-          const row = el(`<button class="cv-app-row"><span class="cv-app-ic" style="background:${a.c}">${a.emoji}</span><span class="cv-app-meta"><span class="cv-app-name">${esc(a.name)}</span><span class="cv-app-desc">${esc(a.desc)}</span></span><span class="cv-app-more">•••</span></button>`);
+          const icon = a.img ? `<span class="cv-app-ic cv-app-ic-img"><img src="${esc(a.img)}?v=1" alt="${esc(a.name)}"></span>` : `<span class="cv-app-ic" style="background:${a.c}">${a.emoji}</span>`;
+          const row = el(`<button class="cv-app-row">${icon}<span class="cv-app-meta"><span class="cv-app-name">${esc(a.name)}</span><span class="cv-app-desc">${esc(a.desc)}</span></span><span class="cv-app-more">•••</span></button>`);
           row.onclick = () => { if (a.name === "GIPHY") openGiphy(); else if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: a.name + " — coming soon." }); };
           alist.appendChild(row); }); };
         drawApps();
