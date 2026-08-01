@@ -54,6 +54,10 @@
     { name: "Poop", src: "assets/cv_el_poop.png" },
     { name: "Rainbow", src: "assets/cv_el_rainbow.png" },
     { name: "Toad", src: "assets/cv_el_toad.png" },
+    { name: "Flower", src: "assets/cv_el_flower.png" },
+    { name: "Rainbow", src: "assets/cv_el_rainbowcloud.png" },
+    { name: "Cat", src: "assets/cv_el_cat.png" },
+    { name: "Paw", src: "assets/cv_el_paw.png" },
   ];
 
   // Picture frames — shaped placeholders you drop a photo into.
