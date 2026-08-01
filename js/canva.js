@@ -184,6 +184,7 @@
         <input class="cv-title" value="${esc(design.name || "Untitled design")}">
         <span class="grow"></span>
         <button class="cv-dl">⬇ Download</button>
+        <button class="cv-share-btn">Share</button>
       </div>
       <div class="cv-subbar" style="display:none">
         <button class="cv-sb cv-sb-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/></svg>Ask Canva</button>
@@ -552,8 +553,34 @@
           else if (t === "sticky") { design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); }
           else tt(b.title + " is coming soon.");
         });
+      } else if (id === "apps") {
+        P.innerHTML = `
+          <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search Canva apps"></div>
+          <div class="cv-up-tabs"><button class="cv-up-tab on" data-atab="discover">Discover</button><button class="cv-up-tab" data-atab="your">Your apps</button></div>
+          <div class="cv-app-pills"><button class="cv-app-pill on">For you</button><button class="cv-app-pill">AI generation</button><button class="cv-app-pill">Audio and video</button></div>
+          <div class="cv-panel-h">Made for presentations</div>
+          <div class="cv-app-list"></div>`;
+        const APPS = [
+          { name: "Simplebooklet", desc: "Publish and track flipbooks.", c: "#f0932b", emoji: "📖" },
+          { name: "GIPHY", desc: "Add GIFs to your designs.", c: "#111111", emoji: "🎞️" },
+          { name: "D-ID AI Avatars", desc: "Add a talking head video.", c: "#5b6cf0", emoji: "🧑" },
+          { name: "YouTube", desc: "Embed videos in your design.", c: "#ff0000", emoji: "▶️" },
+          { name: "Mockups", desc: "Put your design on products.", c: "#22b573", emoji: "🖼️" },
+        ];
+        const alist = P.querySelector(".cv-app-list");
+        const drawApps = () => { alist.innerHTML = ""; APPS.forEach((a) => {
+          const row = el(`<button class="cv-app-row"><span class="cv-app-ic" style="background:${a.c}">${a.emoji}</span><span class="cv-app-meta"><span class="cv-app-name">${esc(a.name)}</span><span class="cv-app-desc">${esc(a.desc)}</span></span><span class="cv-app-more">•••</span></button>`);
+          row.onclick = () => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: a.name + " — coming soon." }); };
+          alist.appendChild(row); }); };
+        drawApps();
+        P.querySelectorAll(".cv-app-pill").forEach((p) => p.onclick = () => P.querySelectorAll(".cv-app-pill").forEach((x) => x.classList.toggle("on", x === p)));
+        P.querySelectorAll(".cv-up-tab").forEach((t) => t.onclick = () => {
+          P.querySelectorAll(".cv-up-tab").forEach((x) => x.classList.toggle("on", x === t));
+          if (t.dataset.atab === "your") { alist.innerHTML = ""; alist.appendChild(el(`<div class="cv-empty">You haven't added any apps yet.</div>`)); }
+          else drawApps();
+        });
       } else {
-        const meta = { apps: "Connect your favorite apps to Canva.", components: "Reusable building blocks for your design.", audio: "Add background music and sound effects.", videos: "Drop in video clips and animations.", bulk: "Create many designs at once from your data.", translate: "Translate your design into another language." };
+        const meta = { components: "Reusable building blocks for your design.", audio: "Add background music and sound effects.", videos: "Drop in video clips and animations.", bulk: "Create many designs at once from your data.", translate: "Translate your design into another language." };
         P.innerHTML = placeholder((RAIL.find((r) => r.id === id) || {}).label || "Canva", meta[id] || "Coming soon.");
       }
     }
@@ -586,6 +613,48 @@
       saveDesign();
       if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: `“${design.name}” downloaded (${ty.w}×${ty.h}).` });
     };
+    body.querySelector(".cv-share-btn").onclick = () => openShare();
+
+    function openShare() {
+      saveDesign();
+      const link = `https://canva.com/design/${(design.name || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Math.random().toString(36).slice(2, 8)}`;
+      const share = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
+      const items = [
+        { k: "download", label: "Download", emoji: "⬇️" }, { k: "brand", label: "Brand Template", emoji: "🗂️" },
+        { k: "present", label: "Present", emoji: "▶️", c: "#e8562a" }, { k: "public", label: "Public view link", emoji: "🔗" },
+        { k: "record", label: "Present and record", emoji: "🎥" }, { k: "website", label: "Website", emoji: "🌐", c: "#5b3df5" },
+        { k: "ppt", label: "Microsoft PowerPoint", emoji: "📊", c: "#c43e1c" }, { k: "all", label: "See all", emoji: "•••" },
+      ];
+      const ov = el(`<div class="cv-imgpick cv-share-ov">
+        <div class="cv-share">
+          <div class="cv-share-toprow"><h3>Share design</h3><span class="cv-share-vis">📊 0 visitors</span><button class="cv-share-gear" title="Settings">⚙</button></div>
+          <div class="cv-share-h">People with access</div>
+          <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Add people"></div>
+          <div class="cv-share-ppl"><span class="cv-share-av">${esc((profileName()[0] || "Y").toUpperCase())}</span><button class="cv-share-addp">＋</button></div>
+          <div class="cv-share-h">Access level</div>
+          <button class="cv-share-access"><span class="cv-share-lock">🔒</span>Only you can access<span class="cv-share-caret">⌄</span></button>
+          <button class="cv-share-copy">🔗 Copy link</button>
+          <div class="cv-share-perso">Personalize your link <img src="assets/cv_pro.png?v=1" class="cv-share-crown" alt="Pro"></div>
+          <div class="cv-share-sep"></div>
+          <div class="cv-share-grid">${items.map((i) => `<button class="cv-share-opt" data-k="${i.k}"><span class="cv-share-opt-ic" style="${i.c ? `background:${i.c};color:#fff` : ""}">${i.emoji}</span><span class="cv-share-opt-l">${esc(i.label)}</span></button>`).join("")}</div>
+        </div>
+      </div>`);
+      const close = () => ov.remove();
+      ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+      ov.querySelector(".cv-share-copy").onclick = () => {
+        const done = () => share("Link copied to clipboard.");
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
+      };
+      ov.querySelector(".cv-share-gear").onclick = () => share("Share settings are coming soon.");
+      ov.querySelector(".cv-share-addp").onclick = () => share("Collaborators are coming soon.");
+      ov.querySelector(".cv-share-access").onclick = () => share("More access levels are coming soon.");
+      ov.querySelector(".cv-share-perso").onclick = () => share("Personalized links are coming soon.");
+      ov.querySelectorAll(".cv-share-opt").forEach((b) => b.onclick = () => {
+        if (b.dataset.k === "download") { close(); share(`“${design.name}” downloaded (${ty.w}×${ty.h}).`); }
+        else share((items.find((i) => i.k === b.dataset.k) || {}).label + " — coming soon.");
+      });
+      body.querySelector(".cv").appendChild(ov);
+    }
 
     function saveDesign() {
       const st = store();
