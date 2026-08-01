@@ -435,6 +435,8 @@ input[type=range] { width: 100%; }
 /* Desktop right-click context menu extras */
 .desk-rightclick { min-width: 220px; }
 .desk-ctx .dctx-ic { display: inline-flex; align-items: center; width: 20px; opacity: .85; }
+.dctx-cp { width: 16px; height: 16px; vertical-align: -3px; object-fit: contain; }
+.desk-ctx button.dctx-dim { opacity: .45; }
 .desk-ctx .dctx-lbl { flex: 1; }
 .desk-ctx .dctx-arrow { opacity: .5; font-size: 1.1rem; }
 .desk-ctx button.has-sub { }

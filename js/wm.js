@@ -191,6 +191,7 @@
   // Current multi-selection on the desktop, keyed by icon "key"
   // (app id, "dup:"+uid, or "grp:"+gid).
   let deskSel = new Set();
+  let sysClipboard = [];   // desktop copy/paste clipboard (keys)
   function clearDeskSel() { deskSel.clear(); if (desktop) { desktop.querySelectorAll(".dicon.selected").forEach((x) => x.classList.remove("selected")); desktop.querySelectorAll(".desk-appgroup.sel").forEach((x) => x.classList.remove("sel")); } }
 
   function groupBoxMenu(g, anchor) {
@@ -278,6 +279,13 @@
     ]);
     menu.appendChild(newBtn);
     menu.appendChild(mkItem(iconRow(ICN.group, "Add to app group"), () => { if (deskSel.size) makeGroupFromSelection(); else Notify.show({ icon: "", title: "App groups", body: "Select icons first, then add them to a group." }); }));
+    const pasteBtn = mkItem(iconRow(`<img class="dctx-cp" src="assets/sys_paste.png?v=1" alt="">`, "Paste"), () => {
+      if (!sysClipboard.length) { Notify.show({ icon: "", title: "Paste", body: "Nothing to paste. Right-click an icon and choose Copy first." }); return; }
+      duplicateDesk(sysClipboard);
+      Notify.show({ icon: "", title: "Pasted", body: sysClipboard.length + " item" + (sysClipboard.length > 1 ? "s" : "") + " pasted to the desktop." });
+    });
+    if (!sysClipboard.length) pasteBtn.classList.add("dctx-dim");
+    menu.appendChild(pasteBtn);
     menu.appendChild(mkItem(iconRow(ICN.refresh, "Refresh"), () => renderDesktopIcons()));
     menu.appendChild(el(`<div class="dctx-sep"></div>`));
     menu.appendChild(mkItem(iconRow(ICN.brush, "Personalize"), () => open("settings")));
@@ -443,7 +451,7 @@
         add("Rename", () => { const nm = promptName("Rename group", s.group.name); if (nm) { s.group.name = nm; State.save(); renderDesktopIcons(); } });
         add("Ungroup", () => { const gs = deskGroups(); const i = gs.findIndex((g) => g.id === s.group.id); if (i >= 0) gs.splice(i, 1); State.save(); clearDeskSel(); renderDesktopIcons(); });
       } else {
-        add("Copy", () => duplicateDesk([s.key]));
+        add(`<img class="dctx-cp" src="assets/sys_copy.png?v=1" alt=""> Copy`, () => { sysClipboard = [...deskSel]; if (window.Notify) Notify.show({ icon: "", title: "Copied", body: selKeys.length + " item" + (selKeys.length > 1 ? "s" : "") + " copied. Right-click the desktop to paste." }); });
         add("Duplicate", () => duplicateDesk([s.key]));
         if (window.Icon && Icon.pickIcon) add("Change icon…", () => Icon.pickIcon(s.id, s.name, () => renderDesktopIcons()));
       }
