@@ -27,7 +27,7 @@
   function langOf(name) { const e = (name.split(".").pop() || "").toLowerCase(); if (e === "htm") return "html"; if (LANG[e]) return e; return "txt"; }
   const FILE_ICON = {
     html: `<span class="vs-fic" style="color:#e44d26">&#60;&#62;</span>`,
-    css: `<span class="vs-fic" style="color:#42a5f5">#</span>`,
+    css: `<img class="vs-fic vs-fic-img" src="assets/vscode_css.png?v=1" alt="css">`,
     js: `<span class="vs-fic" style="color:#f7df1e">JS</span>`,
     json: `<span class="vs-fic" style="color:#cbcb41">{}</span>`,
     md: `<span class="vs-fic" style="color:#42a5f5">M&#8595;</span>`,

@@ -2555,6 +2555,7 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .vs-file.on { background: #37373d; }
 .vs-file-nm { flex: 1; }
 .vs-fic { font-size: .68rem; font-weight: 700; width: 18px; display: inline-block; text-align: center; }
+.vs-fic-img { width: 16px; height: 16px; vertical-align: -3px; object-fit: contain; }
 .vs-file-x { opacity: 0; color: #999; font-size: 1rem; }
 .vs-file:hover .vs-file-x { opacity: .7; }
 .vs-file-x:hover { opacity: 1 !important; color: #fff; }
