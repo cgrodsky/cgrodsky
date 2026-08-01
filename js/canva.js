@@ -58,6 +58,16 @@
     { name: "Rainbow", src: "assets/cv_el_rainbowcloud.png" },
     { name: "Cat", src: "assets/cv_el_cat.png" },
     { name: "Paw", src: "assets/cv_el_paw.png" },
+    { name: "Tree", src: "assets/cv_el_tree.png" },
+    { name: "Dog bowl", src: "assets/cv_el_dogbowl.png" },
+    { name: "Candy corn", src: "assets/cv_el_candycorn.png" },
+    { name: "Candle", src: "assets/cv_el_candle.png" },
+    { name: "Computer", src: "assets/cv_el_computer.png" },
+    { name: "Laptop", src: "assets/cv_el_laptop.png" },
+    { name: "Pizza", src: "assets/cv_el_pizza.png" },
+    { name: "Kiss", src: "assets/cv_el_kiss.png" },
+    { name: "Thinking", src: "assets/cv_el_thinking.png" },
+    { name: "Laugh", src: "assets/cv_el_laugh.png" },
   ];
 
   // Picture frames — shaped placeholders you drop a photo into.
