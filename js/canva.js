@@ -6,6 +6,7 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
   const S = () => State.data;
   const cw = (o) => window.WM.createWindow(o);
+  let cvKeyHandler = null;   // document keydown listener for the open editor (shortcuts)
 
   const TYPES = [
     { id: "pres", name: "Presentation", w: 720, h: 405, img: "assets/cv_presentation.png", c: "#f2542d" },
@@ -182,6 +183,7 @@
       <div class="cv-topbar">
         <button class="cv-back">‹ Home</button>
         <input class="cv-title" value="${esc(design.name || "Untitled design")}">
+        <span class="cv-saved">☁ All changes saved</span>
         <span class="grow"></span>
         <button class="cv-dl">⬇ Download</button>
         <button class="cv-share-btn">Share</button>
@@ -255,7 +257,32 @@
         host.appendChild(b);
       });
     }
-    colorPanel(body.querySelector(".cv-el-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } });
+    colorPanel(body.querySelector(".cv-el-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); record(); } });
+
+    const savedEl = body.querySelector(".cv-saved");
+    let savedTimer = null;
+    function flashSaved() { if (!savedEl) return; savedEl.textContent = "☁ Saving…"; clearTimeout(savedTimer); savedTimer = setTimeout(() => { savedEl.textContent = "☁ All changes saved"; }, 500); }
+
+    // Custom uploaded fonts (persisted) feed the font dropdown alongside the built-ins.
+    function allFonts() { return FONTS.concat(((store().fonts) || []).map((f) => f.name)); }
+    function fillFontSelect() { const cur = fontSel.value; fontSel.innerHTML = allFonts().map((f) => `<option value="${esc(f)}" style="font-family:'${esc(f)}'">${esc(f)}</option>`).join(""); if (cur) fontSel.value = cur; }
+    function registerFont(name, src) { try { if (!window.FontFace) return; const ff = new FontFace(name, `url(${src})`); ff.load().then((face) => document.fonts.add(face)).catch(() => {}); } catch (e) {} }
+    function uploadFont() {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".ttf,.otf,.woff,.woff2,font/*";
+      inp.onchange = () => { const f = inp.files && inp.files[0]; if (!f) return; const r = new FileReader();
+        r.onload = () => {
+          const name = (f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim()) || "Custom Font";
+          const st = store(); if (!st.fonts) st.fonts = [];
+          if (!st.fonts.some((x) => x.name === name)) st.fonts.unshift({ name, src: r.result });
+          State.save(); registerFont(name, r.result); fillFontSelect();
+          if (sel != null && design.els[sel] && design.els[sel].t === "text") { design.els[sel].font = name; render(); selectEl(sel); }
+          if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: `Font “${name}” added.` });
+        };
+        r.readAsDataURL(f); };
+      inp.click();
+    }
+    ((store().fonts) || []).forEach((f) => registerFont(f.name, f.src));
+    fillFontSelect();
 
     function selectEl(i) {
       sel = i;
@@ -308,14 +335,14 @@
           if (objNode) { objNode.style.left = nx + "px"; objNode.style.top = ny + "px"; objNode.style.width = nw + "px"; objNode.style.height = nh + "px"; }
           placeFrame();
         };
-        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); render(); selectEl(i); };
+        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); render(); selectEl(i); record(); };
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }));
       stage.appendChild(frameNode);
       placeFrame();
     }
-    fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); } };
-    fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); } });
+    fontSel.onchange = () => { if (sel != null && design.els[sel].t === "text") { design.els[sel].font = fontSel.value; render(); selectEl(sel); record(); } };
+    fmtRow.querySelectorAll(".cv-fmt").forEach((b) => b.onclick = () => { if (sel != null && design.els[sel].t === "text") { const k = b.dataset.fmt; design.els[sel][k] = !design.els[sel][k]; render(); selectEl(sel); record(); } });
     rembgBtn.onclick = () => removeBg();
 
     // Contextual toolbar (shown when an element is selected).
@@ -325,9 +352,10 @@
     subbar.querySelector(".cv-sb-animate").onclick = () => toast("Animations are coming soon.");
     subbar.querySelector(".cv-sb-comment").onclick = () => toast("Comments are coming soon.");
     subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
+    subbar.querySelector(".cv-sb-color input").addEventListener("change", () => { if (sel != null) record(); });
     subbar.querySelector(".cv-sb-position").onclick = () => {
       if (sel == null) return;
-      const e = design.els.splice(sel, 1)[0]; design.els.push(e); render(); selectEl(design.els.length - 1);
+      const e = design.els.splice(sel, 1)[0]; design.els.push(e); render(); selectEl(design.els.length - 1); record();
     };
     sizeIn.oninput = () => {
       if (sel == null) return;
@@ -336,7 +364,8 @@
       else { const ratio = (e.h || 1) / (e.w || 1); e.w = +sizeIn.value; e.h = Math.round(e.w * ratio); }
       render(); selectEl(sel);
     };
-    body.querySelector(".cv-del").onclick = () => { if (sel != null) { design.els.splice(sel, 1); sel = null; render(); selectEl(null); } };
+    sizeIn.addEventListener("change", () => { if (sel != null) record(); });
+    body.querySelector(".cv-del").onclick = () => { if (sel != null) { design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); } };
 
     function render() {
       stage.innerHTML = "";
@@ -357,7 +386,7 @@
         const r = stage.getBoundingClientRect(); const ox = ev.clientX - e.x, oy = ev.clientY - e.y;
         let moved = false;
         const mv = (m) => { moved = true; e.x = Math.max(0, Math.min(ty.w - 10, m.clientX - ox)); e.y = Math.max(0, Math.min(ty.h - 10, m.clientY - oy)); o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) placeFrame(); };
-        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); };
+        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (moved) record(); };
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       o.addEventListener("click", (ev) => { ev.stopPropagation(); selectEl(i); });
@@ -368,7 +397,7 @@
     function addEl(kind) {
       if (kind === "text") design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" });
       else design.els.push({ t: kind, x: 60, y: 60, w: 140, h: 140, color: kind === "circle" ? "#7b5cff" : "#3a86ff" });
-      render(); selectEl(design.els.length - 1);
+      render(); selectEl(design.els.length - 1); record();
     }
 
     // Drop an image element onto the stage, sizing it from the image's natural aspect ratio.
@@ -379,7 +408,7 @@
         const w = Math.max(60, Math.round(maxW));
         const ratio = (img.naturalHeight || 1) / (img.naturalWidth || 1);
         design.els.push({ t: "image", x: 40, y: 40, w, h: Math.round(w * ratio), src });
-        render(); selectEl(design.els.length - 1);
+        render(); selectEl(design.els.length - 1); record();
       };
       img.onerror = () => {
         if (window.Notify) Notify.show({ title: "Canva", body: "Couldn't load that image." });
@@ -483,7 +512,7 @@
           return fetch("https://api.poof.bg/v1/remove", { method: "POST", headers: { "x-api-key": key }, body: fd }); })
         .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
         .then((blob) => new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); }))
-        .then((dataUrl) => { design.els[idx].src = dataUrl; render(); selectEl(idx); if (prog) prog.complete(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Background removed." }); })
+        .then((dataUrl) => { design.els[idx].src = dataUrl; render(); selectEl(idx); record(); if (prog) prog.complete(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Background removed." }); })
         .catch((err) => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Couldn't remove background (" + err.message + ")." }); });
     }
 
@@ -499,7 +528,7 @@
         const list = P.querySelector(".cv-tpl-list");
         TEMPLATES.forEach((t) => {
           const c = el(`<button class="cv-tpl-card" style="background:${t.bg}"><span>${esc(t.name)}</span></button>`);
-          c.onclick = () => { design.bg = t.bg; stage.style.background = t.bg; design.els = JSON.parse(JSON.stringify(t.els)); render(); selectEl(null); };
+          c.onclick = () => { design.bg = t.bg; stage.style.background = t.bg; design.els = JSON.parse(JSON.stringify(t.els)); render(); selectEl(null); record(); };
           list.appendChild(c);
         });
       } else if (id === "elements") {
@@ -535,8 +564,8 @@
         });
         const t2 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: m }); };
         P.querySelector(".cv-txt-magic").onclick = () => t2("Magic Write is coming soon.");
-        P.querySelector(".cv-txt-edit").onclick = () => t2("Brand fonts are coming soon.");
-        P.querySelector(".cv-txt-brandfonts").onclick = () => t2("Brand fonts are coming soon.");
+        P.querySelector(".cv-txt-edit").onclick = () => uploadFont();
+        P.querySelector(".cv-txt-brandfonts").onclick = () => uploadFont();
         P.querySelector(".cv-txt-pagenum").onclick = () => t2("Page numbers are coming soon.");
       } else if (id === "uploads") {
         const c = store(); if (!c.uploads) c.uploads = [];
@@ -579,12 +608,12 @@
         });
       } else if (id === "background") {
         P.innerHTML = `<div class="cv-panel-h">Background</div><div class="cv-swatches cv-bg-sw"></div>`;
-        colorPanel(P.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
+        colorPanel(P.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; record(); });
       } else if (id === "brand") {
         P.innerHTML = `<div class="cv-panel-h">Brand Kit</div>
           <div class="cv-swatches cv-brand-sw"></div>
           <button class="cv-tool cv-brand-logo">✦ Add your logo</button>`;
-        colorPanel(P.querySelector(".cv-brand-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } else { design.bg = c; stage.style.background = c; } });
+        colorPanel(P.querySelector(".cv-brand-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } else { design.bg = c; stage.style.background = c; } record(); });
         P.querySelector(".cv-brand-logo").onclick = () => {
           const d = prompt("Brand or website (e.g. spotify.com):"); if (!d) return;
           const domain = d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -604,7 +633,7 @@
         P.querySelector(".cv-add-chart").onclick = () => {
           const vals = [80, 130, 60, 160, 110]; const bw = 26, gap = 16; let x = 40;
           vals.forEach((v) => { design.els.push({ t: "rect", x, y: 260 - v, w: bw, h: v, color: "#7b2ae8" }); x += bw + gap; });
-          render(); selectEl(null);
+          render(); selectEl(null); record();
         };
       } else if (id === "ai") {
         P.innerHTML = `
@@ -619,7 +648,7 @@
         const t3 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: m }); };
         const GRADS = ["linear-gradient(135deg,#ff7e5f,#feb47b)", "linear-gradient(135deg,#2193b0,#6dd5ed)", "linear-gradient(135deg,#8e2de2,#4a00e0)", "linear-gradient(135deg,#11998e,#38ef7d)", "linear-gradient(135deg,#fc5c7d,#6a82fb)", "linear-gradient(135deg,#f7971e,#ffd200)", "linear-gradient(135deg,#c471f5,#fa71cd)"];
         P.querySelector('[data-ai="redesign"]').onclick = () => t3("Redesign is coming soon.");
-        P.querySelector('[data-ai="bg"]').onclick = () => { let g; do { g = GRADS[Math.floor(Math.random() * GRADS.length)]; } while (g === design.bg && GRADS.length > 1); design.bg = g; stage.style.background = g; t3("Added a fresh background."); };
+        P.querySelector('[data-ai="bg"]').onclick = () => { let g; do { g = GRADS[Math.floor(Math.random() * GRADS.length)]; } while (g === design.bg && GRADS.length > 1); design.bg = g; stage.style.background = g; record(); t3("Added a fresh background."); };
         P.querySelector('[data-ai="style"]').onclick = () => t3("Change style is coming soon.");
         P.querySelector(".cv-ai-plus").onclick = () => t3("Canva AI is coming soon.");
         P.querySelector(".cv-ai-mic").onclick = () => t3("Voice input is coming soon.");
@@ -640,10 +669,10 @@
           setTool(b);
           const t = b.dataset.tool;
           if (t === "select") selectEl(null);
-          else if (t === "text") { design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" }); render(); selectEl(design.els.length - 1); }
-          else if (t === "shape") { design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); }
-          else if (t === "line") { design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); }
-          else if (t === "sticky") { design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); }
+          else if (t === "text") { design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "shape") { design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "line") { design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "sticky") { design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); record(); }
           else tt(b.title + " is coming soon.");
         });
       } else if (id === "apps") {
@@ -749,6 +778,41 @@
       });
       body.querySelector(".cv").appendChild(ov);
     }
+
+    // ---- Undo / redo history + keyboard shortcuts --------------------------
+    let past = [], future = [];
+    function snapshot() { return JSON.stringify({ els: design.els, bg: design.bg }); }
+    let present = snapshot();
+    function record() { past.push(present); if (past.length > 60) past.shift(); present = snapshot(); future.length = 0; saveDesign(); flashSaved(); }
+    function restore(s) { const o = JSON.parse(s); design.els = o.els; design.bg = o.bg; stage.style.background = design.bg; render(); selectEl(null); saveDesign(); }
+    function undo() { if (!past.length) return; future.push(present); present = past.pop(); restore(present); }
+    function redoHist() { if (!future.length) return; past.push(present); present = future.pop(); restore(present); }
+    function duplicateSel() { if (sel == null || !design.els[sel]) return; const c = JSON.parse(JSON.stringify(design.els[sel])); c.x = (c.x || 0) + 16; c.y = (c.y || 0) + 16; design.els.push(c); render(); selectEl(design.els.length - 1); record(); }
+
+    if (cvKeyHandler) document.removeEventListener("keydown", cvKeyHandler);
+    cvKeyHandler = (e) => {
+      if (!body.isConnected || !body.querySelector(".cv-edit")) return;
+      const ae = document.activeElement, typing = ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
+      const meta = e.ctrlKey || e.metaKey, k = (e.key || "").toLowerCase();
+      if (meta && k === "z") { e.preventDefault(); e.shiftKey ? redoHist() : undo(); return; }
+      if (meta && k === "y") { e.preventDefault(); redoHist(); return; }
+      if (typing) {
+        if (meta && sel != null && design.els[sel] && design.els[sel].t === "text" && ["b", "i", "u"].includes(k)) {
+          e.preventDefault(); const m = { b: "bold", i: "italic", u: "underline" }; design.els[sel][m[k]] = !design.els[sel][m[k]]; render(); selectEl(sel); record();
+        }
+        return;
+      }
+      if (sel == null) return;
+      if (meta && k === "d") { e.preventDefault(); duplicateSel(); return; }
+      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); design.els.splice(sel, 1); sel = null; render(); selectEl(null); record(); return; }
+      const step = e.shiftKey ? 10 : 1, se = design.els[sel];
+      if (e.key === "ArrowLeft") { e.preventDefault(); se.x -= step; render(); selectEl(sel); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); se.x += step; render(); selectEl(sel); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); se.y -= step; render(); selectEl(sel); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); se.y += step; render(); selectEl(sel); }
+      else return;
+    };
+    document.addEventListener("keydown", cvKeyHandler);
 
     function saveDesign() {
       const st = store();

@@ -3439,6 +3439,7 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-title { border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; font-size: .95rem; font-weight: 600; outline: none; color: #fff; background: transparent; }
 .cv-title::placeholder { color: rgba(255,255,255,.7); }
 .cv-title:focus { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.16); color: #fff; }
+.cv-saved { font-size: .78rem; color: rgba(255,255,255,.85); font-weight: 600; white-space: nowrap; }
 .cv-dl { background: #fff; color: #7B2CBF; border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 700; cursor: pointer; }
 .cv-dl:hover { background: #f4eefc; }
 .cv-share-btn { background: rgba(255,255,255,.16); color: #fff; border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 700; cursor: pointer; }
