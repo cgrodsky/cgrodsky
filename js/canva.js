@@ -8,7 +8,7 @@
   const cw = (o) => window.WM.createWindow(o);
 
   const TYPES = [
-    { id: "pres", name: "Presentation", w: 720, h: 405, emoji: "🎬", c: "#f2542d" },
+    { id: "pres", name: "Presentation", w: 720, h: 405, img: "assets/cv_presentation.png", c: "#f2542d" },
     { id: "ig", name: "Social media", w: 520, h: 520, emoji: "❤️", c: "#f22e63" },
     { id: "video", name: "Video", w: 720, h: 405, emoji: "🎥", c: "#a533ff" },
     { id: "poster", name: "Poster", w: 420, h: 594, emoji: "🖼️", c: "#0aa5b5" },
@@ -64,7 +64,8 @@
     </div>`;
     const typesEl = body.querySelector(".cv-types");
     TYPES.forEach((t) => {
-      const c = el(`<button class="cv-type"><span class="cv-type-ic" style="background:${t.c}">${t.emoji}</span><span>${esc(t.name)}</span></button>`);
+      const ic = t.img ? `<span class="cv-type-ic cv-type-img"><img src="${t.img}?v=1" alt=""></span>` : `<span class="cv-type-ic" style="background:${t.c}">${t.emoji}</span>`;
+      const c = el(`<button class="cv-type">${ic}<span>${esc(t.name)}</span></button>`);
       c.onclick = () => editor(body, ref, { type: t.id, bg: "#ffffff", els: [], name: "Untitled " + t.name });
       typesEl.appendChild(c);
     });
