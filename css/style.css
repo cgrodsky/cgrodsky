@@ -3430,6 +3430,16 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-tpl span { display: block; margin-top: 6px; font-size: .82rem; color: #444; }
 .cv-tpl:hover .cv-tpl-thumb { box-shadow: 0 6px 18px rgba(0,0,0,.14); }
 /* editor */
+.cv-offline { flex-direction: column; align-items: center; justify-content: space-between; background: #fff; text-align: center; overflow: hidden; }
+.cv-off-top { padding: 40px 24px 0; max-width: 620px; }
+.cv-off-logo { height: 40px; width: auto; margin: 8px auto 34px; display: block; }
+.cv-off-h { font-size: 2rem; font-weight: 800; color: #1c1c28; margin: 0 0 22px; }
+.cv-off-sub { color: #55525e; font-size: 1rem; line-height: 1.6; margin: 0 0 18px; }
+.cv-off-link { color: #7b2ae8; text-decoration: underline; cursor: pointer; }
+.cv-off-err { color: #9a97a6; font-size: .86rem; margin-bottom: 20px; }
+.cv-off-reload { background: linear-gradient(90deg, #8b46f0, #7b2ae8); color: #fff; border: 0; border-radius: 10px; padding: 11px 26px; font-weight: 700; cursor: pointer; }
+.cv-off-reload:hover { filter: brightness(1.05); }
+.cv-off-art { width: 100%; height: 200px; margin-top: auto; display: block; }
 .cv-edit { flex-direction: column; position: relative; }
 .brand-gradient-horizontal { background: linear-gradient(90deg, #FF007F 0%, #7B2CBF 100%); }
 /* Canva editor top bar: teal → blue → purple, sampled from the reference. */

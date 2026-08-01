@@ -117,11 +117,37 @@
     document.getElementById("screen").appendChild(ov);
   }
 
+  function isOffline() { const q = S().appData && S().appData.quickSettings; return q ? !q.wifi : false; }
+  function boot(body, ref) { if (isOffline()) offlineScreen(body, ref); else home(body, ref); }
+
   function open(createWindow) {
     const make = createWindow || window.WM.createWindow;
     const ref = make({ title: "Canva", icon: window.Icon ? Icon.mini("canva", "Canva") : "", width: 1000, height: 660, appId: "canva" });
-    home(ref.body, ref);
+    boot(ref.body, ref);
     return ref;
+  }
+
+  // Shown when Wi-Fi is off — Canva can't reach its servers.
+  function offlineScreen(body, ref) {
+    const ray = (Math.random().toString(16).slice(2, 8) + Math.random().toString(16).slice(2, 8)).slice(0, 12) + "-ORD";
+    body.innerHTML = `<div class="cv cv-offline">
+      <div class="cv-off-top">
+        <img class="cv-off-logo" src="assets/canva_wordmark.png?v=1" alt="Canva">
+        <h1 class="cv-off-h">We couldn't load this page</h1>
+        <p class="cv-off-sub">Reloading the page often helps. If it keeps happening, check our <a class="cv-off-link">status page</a> for known issues.</p>
+        <div class="cv-off-err">Error: 400 • Ray ID: ${ray}</div>
+        <button class="cv-off-reload">Reload</button>
+      </div>
+      <svg class="cv-off-art" viewBox="0 0 400 170" preserveAspectRatio="xMidYMax slice">
+        <defs><pattern id="cvStripe" width="12" height="12" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#4b2fd6"/><rect width="6" height="12" fill="#ffcf3f"/></pattern></defs>
+        <g fill="#e2f2fb"><ellipse cx="55" cy="72" rx="58" ry="34"/><ellipse cx="120" cy="84" rx="52" ry="30"/><ellipse cx="335" cy="60" rx="62" ry="36"/><ellipse cx="385" cy="86" rx="46" ry="28"/></g>
+        <path d="M0 150 Q80 104 175 145 T400 140 L400 170 L0 170Z" fill="#66bd63"/>
+        <path d="M0 162 Q120 124 245 158 T400 152 L400 170 L0 170Z" fill="#3f9e46"/>
+        <g><rect x="188" y="112" width="6" height="54" fill="#cfe0f0"/><rect x="210" y="112" width="6" height="54" fill="#cfe0f0"/><rect x="174" y="112" width="56" height="14" rx="3" fill="url(#cvStripe)"/><rect x="174" y="131" width="56" height="14" rx="3" fill="url(#cvStripe)"/><circle cx="180" cy="109" r="6" fill="#ff5a5f"/><circle cx="224" cy="109" r="6" fill="#ff5a5f"/></g>
+      </svg>
+    </div>`;
+    body.querySelector(".cv-off-reload").onclick = () => boot(body, ref);
+    body.querySelector(".cv-off-link").onclick = (e) => { e.preventDefault(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva Status", body: "All systems operational." }); };
   }
 
   function home(body, ref) {
