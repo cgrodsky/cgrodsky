@@ -451,6 +451,7 @@
         add("Rename", () => { const nm = promptName("Rename group", s.group.name); if (nm) { s.group.name = nm; State.save(); renderDesktopIcons(); } });
         add("Ungroup", () => { const gs = deskGroups(); const i = gs.findIndex((g) => g.id === s.group.id); if (i >= 0) gs.splice(i, 1); State.save(); clearDeskSel(); renderDesktopIcons(); });
       } else {
+        add(`<img class="dctx-cp" src="assets/sys_cut.png?v=1" alt=""> Cut`, () => { sysClipboard = [...deskSel]; const n = selKeys.length; deleteSelection(); if (window.Notify) Notify.show({ icon: "", title: "Cut", body: n + " item" + (n > 1 ? "s" : "") + " cut. Right-click the desktop to paste." }); });
         add(`<img class="dctx-cp" src="assets/sys_copy.png?v=1" alt=""> Copy`, () => { sysClipboard = [...deskSel]; if (window.Notify) Notify.show({ icon: "", title: "Copied", body: selKeys.length + " item" + (selKeys.length > 1 ? "s" : "") + " copied. Right-click the desktop to paste." }); });
         add("Duplicate", () => duplicateDesk([s.key]));
         if (window.Icon && Icon.pickIcon) add("Change icon…", () => Icon.pickIcon(s.id, s.name, () => renderDesktopIcons()));
