@@ -58,7 +58,6 @@
     { name: "Rainbow", src: "assets/cv_el_rainbowcloud.png" },
     { name: "Cat", src: "assets/cv_el_cat.png" },
     { name: "Paw", src: "assets/cv_el_paw.png" },
-    { name: "Tree", src: "assets/cv_el_tree.png" },
     { name: "Dog bowl", src: "assets/cv_el_dogbowl.png" },
     { name: "Candy corn", src: "assets/cv_el_candycorn.png" },
     { name: "Candle", src: "assets/cv_el_candle.png" },
@@ -72,6 +71,17 @@
 
   // Picture frames — shaped placeholders you drop a photo into.
   const FRAMES = [{ shape: "square", name: "Square" }, { shape: "rounded", name: "Rounded" }, { shape: "circle", name: "Circle" }, { shape: "heart", name: "Heart" }];
+
+  // Cohesive style palettes used by Canva AI (Change style / Redesign / generate).
+  const STYLE_SETS = [
+    { bg: "linear-gradient(135deg,#2193b0,#6dd5ed)", colors: ["#ffffff", "#ffd54a", "#0b3954"] },
+    { bg: "#12121a", colors: ["#7b5cff", "#ff5a5f", "#ffffff"] },
+    { bg: "linear-gradient(135deg,#ff9a9e,#fecfef)", colors: ["#7a2048", "#ffffff", "#ff5a5f"] },
+    { bg: "linear-gradient(135deg,#11998e,#38ef7d)", colors: ["#053225", "#ffffff", "#ffd54a"] },
+    { bg: "#faf3e0", colors: ["#e07a5f", "#3d405b", "#81b29a"] },
+    { bg: "linear-gradient(135deg,#8e2de2,#4a00e0)", colors: ["#ffd54a", "#ffffff", "#ff5a5f"] },
+  ];
+  const rand = (a) => a[Math.floor(Math.random() * a.length)];
 
   // Element animation presets (map to CSS @keyframes cv-anim-<id>).
   const ANIMS = [
@@ -466,7 +476,7 @@
 
     // Contextual toolbar (shown when an element is selected).
     const toast = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
-    subbar.querySelector(".cv-sb-ask").onclick = () => toast("Ask Canva is coming soon.");
+    subbar.querySelector(".cv-sb-ask").onclick = () => showPanel("ai");
     subbar.querySelector(".cv-sb-edit").onclick = () => toast("Edit tools are in the left panel.");
     subbar.querySelector(".cv-sb-animate").onclick = () => openAnimate();
     subbar.querySelector(".cv-sb-comment").onclick = () => addComment();
@@ -493,6 +503,7 @@
         if (e.t === "text") { const deco = [e.underline && "underline", e.strike && "line-through"].filter(Boolean).join(" ") || "none"; const wrap = e.w ? `width:${e.w}px;white-space:normal;` : ""; o = el(`<div class="cv-obj cv-text" contenteditable="true" data-i="${i}" style="left:${e.x}px;top:${e.y}px;font-size:${e.size || 32}px;color:${e.color};font-weight:${e.bold ? 800 : 400};font-style:${e.italic ? "italic" : "normal"};text-decoration:${deco};font-family:'${(e.font || "Nunito").replace(/'/g, "")}';${wrap}">${esc(e.text || "Text")}</div>`); }
         else if (e.t === "image") o = el(`<img class="cv-obj cv-image" data-i="${i}" src="${esc(e.src)}" alt="" draggable="false" style="left:${e.x}px;top:${e.y}px;width:${e.w || 160}px;height:${e.h || 160}px">`);
         else if (e.t === "path") o = el(`<svg class="cv-obj cv-draw" data-i="${i}" viewBox="0 0 ${e.vbW || e.w} ${e.vbH || e.h}" preserveAspectRatio="none" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px;overflow:visible"><polyline points="${(e.pts || []).map((p) => p.join(",")).join(" ")}" fill="none" stroke="${e.color}" stroke-width="${e.width || 4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+        else if (e.t === "table") { const cells = Array.from({ length: (e.rows || 3) * (e.cols || 3) }, () => `<div class="cv-td"></div>`).join(""); o = el(`<div class="cv-obj cv-table" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 240}px;height:${e.h || 160}px;grid-template-columns:repeat(${e.cols || 3},1fr);grid-template-rows:repeat(${e.rows || 3},1fr);--tc:${e.color || "#1c1c28"}">${cells}</div>`); }
         else if (e.t === "frame") { const inner = e.src ? `<img src="${esc(e.src)}" alt="" draggable="false">` : `<span class="cv-frame-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 3 3-3 6 6"/><circle cx="8.5" cy="9.5" r="1.5"/></svg></span>`; o = el(`<div class="cv-obj cv-frame cv-frame-${e.shape}" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 180}px;height:${e.h || 180}px">${inner}</div>`); }
         else o = el(`<div class="cv-obj cv-shape" data-i="${i}" style="left:${e.x}px;top:${e.y}px;width:${e.w || 120}px;height:${e.h || 120}px;background:${e.color};border-radius:${e.t === "circle" ? "50%" : "6px"}"></div>`);
         if (e.t === "text") o.oninput = () => { e.text = o.textContent; };
@@ -569,6 +580,45 @@
         const txt = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "").trim();
         if (txt) insert(txt); else { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Magic Write couldn't generate text." }); }
       }).catch(() => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Magic Write failed (network/CORS)." }); });
+    }
+
+    // Canva AI — Change style / Redesign restyle the page; generateDesign makes one from a prompt.
+    function applyStyle(animate) {
+      const set = rand(STYLE_SETS);
+      design.bg = set.bg; stage.style.background = set.bg;
+      design.els.forEach((e) => {
+        if (e.t === "text" || e.t === "path" || e.t === "rect" || e.t === "circle") e.color = rand(set.colors);
+        if (animate) e.anim = rand(ANIMS).id;
+      });
+      render(); selectEl(null); record();
+      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: animate ? "Redesigned your page." : "Applied a new style." });
+    }
+    function generateDesign(idea) {
+      if (!idea || !idea.trim()) return;
+      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Generating a design…", subtitle: "Canva AI", etaMs: 7000, cancel: false }) : null;
+      const build = (headline, tagline) => {
+        const set = rand(STYLE_SETS);
+        design.bg = set.bg; stage.style.background = set.bg;
+        const light = /#fff|linear-gradient/.test(set.bg) ? "#ffffff" : "#111111";
+        design.els = [
+          { t: "text", x: Math.round(ty.w * 0.08), y: Math.round(ty.h * 0.3), text: headline, size: 52, color: light, bold: true, w: Math.round(ty.w * 0.84), anim: "rise" },
+          { t: "text", x: Math.round(ty.w * 0.08), y: Math.round(ty.h * 0.3) + 96, text: tagline, size: 22, color: light, w: Math.round(ty.w * 0.84), anim: "fade" },
+        ];
+        render(); selectEl(null); record();
+        if (prog) prog.complete();
+      };
+      fetch("https://api.aimlapi.com/v1/chat/completions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.AIML_KEY },
+        body: JSON.stringify({ model: "baidu/ernie-4-5-0-3b", messages: [{ role: "user", content: `Design brief: "${idea.trim()}". Give a punchy headline (max 5 words) and a short tagline (max 12 words). Reply EXACTLY as: HEADLINE | TAGLINE` }] }),
+      }).then((r) => r.json()).then((j) => {
+        const out = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "").trim();
+        const parts = out.split("|");
+        build((parts[0] || idea).trim().slice(0, 40) || idea, (parts[1] || "").trim().slice(0, 90));
+      }).catch(() => { build(idea.trim().slice(0, 40), ""); });   // offline fallback: use the idea itself
+    }
+    function addTable() {
+      design.els.push({ t: "table", x: 60, y: 60, w: 260, h: 170, rows: 3, cols: 3, color: "#1c1c28" });
+      render(); selectEl(design.els.length - 1); record();
     }
 
     // Animate panel: apply a motion preset to the selected element (plays on render).
@@ -888,10 +938,12 @@
           </div>`;
         const t3 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: m }); };
         const GRADS = ["linear-gradient(135deg,#ff7e5f,#feb47b)", "linear-gradient(135deg,#2193b0,#6dd5ed)", "linear-gradient(135deg,#8e2de2,#4a00e0)", "linear-gradient(135deg,#11998e,#38ef7d)", "linear-gradient(135deg,#fc5c7d,#6a82fb)", "linear-gradient(135deg,#f7971e,#ffd200)", "linear-gradient(135deg,#c471f5,#fa71cd)"];
-        P.querySelector('[data-ai="redesign"]').onclick = () => t3("Redesign is coming soon.");
+        P.querySelector('[data-ai="redesign"]').onclick = () => applyStyle(true);
         P.querySelector('[data-ai="bg"]').onclick = () => { let g; do { g = GRADS[Math.floor(Math.random() * GRADS.length)]; } while (g === design.bg && GRADS.length > 1); design.bg = g; stage.style.background = g; record(); t3("Added a fresh background."); };
-        P.querySelector('[data-ai="style"]').onclick = () => t3("Change style is coming soon.");
-        P.querySelector(".cv-ai-plus").onclick = () => t3("Canva AI is coming soon.");
+        P.querySelector('[data-ai="style"]').onclick = () => applyStyle(false);
+        const aiInput = P.querySelector(".cv-ai-input");
+        P.querySelector(".cv-ai-plus").onclick = () => { generateDesign(aiInput.value); aiInput.value = ""; };
+        aiInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); generateDesign(aiInput.value); aiInput.value = ""; } });
         P.querySelector(".cv-ai-mic").onclick = () => t3("Voice input is coming soon.");
       } else if (id === "tools") {
         P.innerHTML = `<div class="cv-panel-h">Tools</div><div class="cv-tools-palette">
@@ -916,6 +968,7 @@
           else if (t === "shape") { disableDraw(); design.els.push({ t: "circle", x: 60, y: 60, w: 140, h: 140, color: "#7b5cff" }); render(); selectEl(design.els.length - 1); record(); }
           else if (t === "line") { disableDraw(); design.els.push({ t: "rect", x: 60, y: 200, w: 220, h: 6, color: "#3a86ff" }); render(); selectEl(design.els.length - 1); record(); }
           else if (t === "sticky") { disableDraw(); design.els.push({ t: "rect", x: 60, y: 60, w: 180, h: 160, color: "#ffd54a" }); render(); selectEl(design.els.length - 1); record(); }
+          else if (t === "table") { disableDraw(); addTable(); }
           else tt(b.title + " is coming soon.");
         });
       } else if (id === "apps") {
