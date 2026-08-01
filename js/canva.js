@@ -75,6 +75,8 @@
     { name: "Green tree", src: "assets/cv_el_tree2.png" },
     { name: "Dog", src: "assets/cv_el_dog.png" },
     { name: "Cat 2", src: "assets/cv_el_cat2.png" },
+    { name: "Netflix", src: "assets/cv_el_netflix.png" },
+    { name: "Netflix N", src: "assets/cv_el_netflix_n.png" },
   ];
 
   // Picture frames — shaped placeholders you drop a photo into.
