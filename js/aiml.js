@@ -13,7 +13,9 @@ window.FLIGHT_API = {
   proxy: "https://api.allorigins.win/raw?url=",
 };
 
-/* Brandfetch Logo Link (real brand logos, e.g. DoorDash Retail stores).
-   Uses the PUBLIC client id — embeddable by design. Do NOT put the secret
-   Brand-API key here; this repo is public and has no server to hide it. */
-window.BRANDFETCH_CLIENT_ID = "2aGHRy7xjDUaw49bTCmi/wFKDwb0iVIavy10eg3evno=";   // public Logo Link client id (safe to embed)
+/* Brandfetch — real brand logos for the icon picker & DoorDash Retail.
+   Hardcoded per user request (rotate it whenever you're done). The Brand API
+   returns CORS access-control-allow-origin:* so it works straight from the
+   browser. If it's ever unavailable we fall back to a keyless favicon source. */
+window.BRANDFETCH_API_KEY = "2aGHRy7xjDUaw49bTCmi/wFKDwb0iVIavy10eg3evno=";
+window.BRANDFETCH_BASE = "https://api.brandfetch.io/v2";

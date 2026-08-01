@@ -339,14 +339,33 @@
     <path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 9V4a1 1 0 0 0-1-1H8.914a1 1 0 0 0-.707.293L4.293 7.207A1 1 0 0 0 4 7.914V20a1 1 0 0 0 1 1h6M9 3v4a1 1 0 0 1-1 1H4m11 13a11.426 11.426 0 0 1-3.637-3.99A11.139 11.139 0 0 1 10 11.833L15 10l5 1.833a11.137 11.137 0 0 1-1.363 5.176A11.425 11.425 0 0 1 15.001 21Z"/>
   </svg>`);
 
-  // Real brand logo for a domain. Google's favicon service is keyless and works
-  // from any origin; Brandfetch (if a client id is set AND its domain is
-  // approved) gives higher-res marks, so try it first and fall back on error.
   function cleanDomain(d) { return String(d || "").replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim(); }
   function googleLogoUrl(domain, size) { const d = cleanDomain(domain); return d ? "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(d) + "&sz=" + (size >= 128 ? 128 : 64) : null; }
-  function brandfetchUrl(domain, size) { const c = window.BRANDFETCH_CLIENT_ID, d = cleanDomain(domain); return c && d ? "https://cdn.brandfetch.io/" + d + "/w/" + (size || 128) + "/h/" + (size || 128) + "?c=" + encodeURIComponent(c) : null; }
-  // Default logo URL used everywhere = the reliable keyless one.
+  // Default logo URL used for inline spots (store rows etc.) — keyless & instant.
   function brandLogoUrl(domain, size) { return googleLogoUrl(domain, size); }
+
+  // Full Brandfetch brand fetch (works from the browser; CORS is open). Returns
+  // the raw logo variants so the picker can show icon/wordmark/light/dark, etc.
+  const brandCache = {};
+  async function fetchBrand(domain) {
+    const d = cleanDomain(domain); if (!d) return null;
+    if (brandCache[d]) return brandCache[d];
+    const key = window.BRANDFETCH_API_KEY, base = window.BRANDFETCH_BASE || "https://api.brandfetch.io/v2";
+    if (!key) return null;
+    try {
+      const r = await fetch(base + "/brands/" + encodeURIComponent(d), { headers: { Authorization: "Bearer " + key } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      const out = { name: j.name || d, domain: d, logos: [] };
+      (j.logos || []).forEach((lg) => {
+        (lg.formats || []).forEach((f) => {
+          if (f.src && /^https?:/.test(f.src)) out.logos.push({ src: f.src, label: (lg.type || "logo") + (lg.theme ? " · " + lg.theme : "") + " · " + (f.format || ""), format: f.format });
+        });
+      });
+      brandCache[d] = out;
+      return out;
+    } catch (_) { return null; }
+  }
   function setCustomIcon(key, url) {
     try {
       if (!State.data.appData) State.data.appData = {};
@@ -373,32 +392,39 @@
     ov.onclick = (e) => { if (e.target === ov) close(); };
     ov.querySelector(".icp-reset").onclick = () => { setCustomIcon(key, null); close(); onDone && onDone(); };
 
-    function tile(domain, name) {
+    const apply = (url) => { setCustomIcon(key, url); close(); onDone && onDone(); };
+    function logoTile(src, label) {
+      const t = el(`<button class="icp-tile" title="${label || ""}"><img src="${src}" alt="" onerror="this.closest('.icp-tile').remove()"><span>${label || ""}</span></button>`);
+      t.onclick = () => apply(src);
+      return t;
+    }
+    // Fallback tile (keyless favicon) used when the Brand API has nothing.
+    function faviconTile(domain, name) {
       const t = el(`<button class="icp-tile" title="${name || domain}"><img alt=""><span>${name || domain}</span></button>`);
       const img = t.querySelector("img");
-      // try Brandfetch (crisp) first, then Google favicon, then DuckDuckGo
-      const chain = [brandfetchUrl(domain, 128), googleLogoUrl(domain, 128), "https://icons.duckduckgo.com/ip3/" + cleanDomain(domain) + ".ico"].filter(Boolean);
-      let ci = 0;
-      img.onerror = () => { ci++; if (ci < chain.length) img.src = chain[ci]; else t.remove(); };
-      img.src = chain[0];
-      t.onclick = () => { setCustomIcon(key, chain[ci] || googleLogoUrl(domain, 128)); close(); onDone && onDone(); };
+      const chain = [googleLogoUrl(domain, 128), "https://icons.duckduckgo.com/ip3/" + cleanDomain(domain) + ".ico"];
+      let ci = 0; img.onerror = () => { ci++; if (ci < chain.length) img.src = chain[ci]; else t.remove(); }; img.src = chain[0];
+      t.onclick = () => apply(chain[ci] || googleLogoUrl(domain, 128));
       return t;
     }
     const SUGG = [["apple.com", "Apple"], ["google.com", "Google"], ["microsoft.com", "Microsoft"], ["spotify.com", "Spotify"], ["netflix.com", "Netflix"], ["youtube.com", "YouTube"], ["nvidia.com", "NVIDIA"], ["amazon.com", "Amazon"], ["discord.com", "Discord"], ["figma.com", "Figma"], ["minecraft.net", "Minecraft"], ["doordash.com", "DoorDash"]];
-    function showSuggestions() { grid.innerHTML = ""; SUGG.forEach((d) => grid.appendChild(tile(d[0], d[1]))); }
-    let t = null;
-    input.oninput = () => {
-      clearTimeout(t);
-      const v = input.value.trim();
-      if (!v) { showSuggestions(); return; }
-      t = setTimeout(() => {
-        grid.innerHTML = "";
-        // guess a domain from the query, plus a few common TLDs
-        const base = v.replace(/\s+/g, "").toLowerCase();
-        const domains = /\./.test(base) ? [base] : [base + ".com", base + ".net", base + ".io", base + ".org"];
-        domains.forEach((d) => grid.appendChild(tile(d, d)));
-      }, 260);
-    };
+    function showSuggestions() { grid.innerHTML = ""; SUGG.forEach((d) => grid.appendChild(faviconTile(d[0], d[1]))); }
+
+    let reqId = 0;
+    async function search(query) {
+      const my = ++reqId;
+      const base = query.replace(/\s+/g, "").toLowerCase();
+      const domain = /\./.test(base) ? base : base + ".com";
+      grid.innerHTML = `<div class="icp-loading">Searching “${cleanDomain(domain)}”…</div>`;
+      const brand = await fetchBrand(domain);
+      if (my !== reqId) return;
+      grid.innerHTML = "";
+      if (brand && brand.logos.length) { brand.logos.forEach((l) => grid.appendChild(logoTile(l.src, l.label))); }
+      else { grid.appendChild(faviconTile(domain, cleanDomain(domain))); if (!/\./.test(base)) [base + ".net", base + ".io", base + ".org"].forEach((d) => grid.appendChild(faviconTile(d, d))); }
+    }
+    let dt = null;
+    input.oninput = () => { clearTimeout(dt); const v = input.value.trim(); if (!v) { reqId++; showSuggestions(); return; } dt = setTimeout(() => search(v), 350); };
+    input.onkeydown = (e) => { if (e.key === "Enter") { clearTimeout(dt); const v = input.value.trim(); if (v) search(v); } };
     showSuggestions();
     (document.getElementById("screen") || document.body).appendChild(ov);
     setTimeout(() => input.focus(), 30);

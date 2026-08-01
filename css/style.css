@@ -3399,3 +3399,4 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .icp-foot { margin-top: 14px; text-align: right; }
 .icp-reset { background: transparent; border: 1px solid #3a3a44; color: #cfcfd6; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: .84rem; }
 .icp-reset:hover { background: #26262e; }
+.icp-loading { grid-column: 1/-1; color: #8a8d94; padding: 30px; text-align: center; }
