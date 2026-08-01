@@ -620,6 +620,23 @@
       design.els.push({ t: "table", x: 60, y: 60, w: 260, h: 170, rows: 3, cols: 3, color: "#1c1c28" });
       render(); selectEl(design.els.length - 1); record();
     }
+    // Magic Media: generate an image from a text prompt and drop it on the canvas.
+    function generateImage(p) {
+      if (!p || !p.trim()) return;
+      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Generating image…", subtitle: "Canva AI", etaMs: 14000, cancel: false }) : null;
+      fetch("https://api.aimlapi.com/v1/images/generations", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + window.AIML_KEY },
+        body: JSON.stringify({ model: "google/nano-banana-2", prompt: p.trim() }),
+      }).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then((j) => {
+          const url = (j.images && j.images[0] && j.images[0].url) || (j.data && j.data[0] && j.data[0].url) || (j.image && j.image.url) || j.url;
+          if (!url) throw new Error("no image");
+          const st = store(); if (!st.uploads) st.uploads = []; st.uploads.unshift({ src: url, name: p.trim().slice(0, 40) }); State.save();
+          addImage(url); if (prog) prog.complete();
+          if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: "Image generated." });
+        })
+        .catch((err) => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva AI", body: "Image generation failed (" + err.message + ")." }); });
+    }
 
     // Animate panel: apply a motion preset to the selected element (plays on render).
     function openAnimate() {
@@ -934,7 +951,7 @@
           <button class="cv-ai-pill" data-ai="style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="6" rx="1.5"/><path d="M16 7h3v4h-7v3"/><rect x="9" y="14" width="5" height="5" rx="1"/></svg>Change style</button>
           <div class="cv-ai-box">
             <textarea class="cv-ai-input" placeholder="Describe your idea"></textarea>
-            <div class="cv-ai-boxbar"><button class="cv-ai-plus" title="Add">＋</button><button class="cv-ai-mic" title="Voice">🎙</button></div>
+            <div class="cv-ai-boxbar"><button class="cv-ai-plus" title="Generate a design">＋</button><button class="cv-ai-img" title="Generate an image">🎨 Image</button><span class="grow"></span><button class="cv-ai-mic" title="Voice">🎙</button></div>
           </div>`;
         const t3 = (m) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva AI", body: m }); };
         const GRADS = ["linear-gradient(135deg,#ff7e5f,#feb47b)", "linear-gradient(135deg,#2193b0,#6dd5ed)", "linear-gradient(135deg,#8e2de2,#4a00e0)", "linear-gradient(135deg,#11998e,#38ef7d)", "linear-gradient(135deg,#fc5c7d,#6a82fb)", "linear-gradient(135deg,#f7971e,#ffd200)", "linear-gradient(135deg,#c471f5,#fa71cd)"];
@@ -943,6 +960,7 @@
         P.querySelector('[data-ai="style"]').onclick = () => applyStyle(false);
         const aiInput = P.querySelector(".cv-ai-input");
         P.querySelector(".cv-ai-plus").onclick = () => { generateDesign(aiInput.value); aiInput.value = ""; };
+        P.querySelector(".cv-ai-img").onclick = () => { generateImage(aiInput.value); };
         aiInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); generateDesign(aiInput.value); aiInput.value = ""; } });
         P.querySelector(".cv-ai-mic").onclick = () => t3("Voice input is coming soon.");
       } else if (id === "tools") {

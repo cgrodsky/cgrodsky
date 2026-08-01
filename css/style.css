@@ -3553,9 +3553,11 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-ai-box { border: 1px solid #e3e0ee; border-radius: 14px; padding: 10px 12px; margin-top: 8px; }
 .cv-ai-input { width: 100%; border: 0; outline: none; resize: none; min-height: 68px; font-size: .95rem; font-family: inherit; background: transparent; color: #1c1c28; }
 .cv-ai-input::placeholder { color: #9a97a6; }
-.cv-ai-boxbar { display: flex; align-items: center; justify-content: space-between; }
+.cv-ai-boxbar { display: flex; align-items: center; gap: 6px; }
 .cv-ai-plus, .cv-ai-mic { background: none; border: 0; font-size: 1.15rem; cursor: pointer; color: #55525e; padding: 4px; border-radius: 8px; }
 .cv-ai-plus:hover, .cv-ai-mic:hover { background: #f2f2f7; }
+.cv-ai-img { background: #efe9ff; border: 0; color: #7b2ae8; font-weight: 700; font-size: .82rem; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.cv-ai-img:hover { background: #e5ddff; }
 /* Canva Tools palette */
 .cv-tools-palette { display: flex; flex-direction: column; align-items: center; gap: 6px; background: #fff; border: 1px solid #eceef2; border-radius: 18px; padding: 10px; width: 66px; margin: 4px auto 0; box-shadow: 0 8px 24px rgba(0,0,0,.09); }
 .cv-tp { width: 46px; height: 46px; border: 0; border-radius: 12px; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
