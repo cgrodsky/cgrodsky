@@ -9,7 +9,7 @@
 
   const TYPES = [
     { id: "pres", name: "Presentation", w: 720, h: 405, img: "assets/cv_presentation.png", c: "#f2542d" },
-    { id: "ig", name: "Social media", w: 520, h: 520, emoji: "❤️", c: "#f22e63" },
+    { id: "ig", name: "Social media", w: 520, h: 520, img: "assets/cv_social.png", c: "#f22e63" },
     { id: "video", name: "Video", w: 720, h: 405, emoji: "🎥", c: "#a533ff" },
     { id: "poster", name: "Poster", w: 420, h: 594, emoji: "🖼️", c: "#0aa5b5" },
     { id: "doc", name: "Doc", w: 560, h: 420, emoji: "📄", c: "#2b83f6" },
@@ -26,6 +26,26 @@
     { name: "Party Poster", type: "poster", bg: "linear-gradient(135deg,#8e2de2,#4a00e0)", els: [{ t: "text", x: 40, y: 120, text: "FRIDAY", size: 60, color: "#ffd54a", bold: true }, { t: "text", x: 40, y: 220, text: "Night Vibes", size: 30, color: "#fff" }, { t: "rect", x: 40, y: 300, w: 300, h: 6, color: "#ffd54a" }] },
     { name: "Minimal Story", type: "story", bg: "#f4f1ea", els: [{ t: "text", x: 40, y: 260, text: "new drop", size: 40, color: "#222", bold: true }, { t: "text", x: 40, y: 330, text: "shop now →", size: 22, color: "#a06a3a" }] },
     { name: "Clean Doc", type: "doc", bg: "#ffffff", els: [{ t: "text", x: 50, y: 60, text: "Project Brief", size: 36, color: "#111", bold: true }, { t: "text", x: 50, y: 140, text: "Overview and goals for the new launch.", size: 18, color: "#555" }] },
+  ];
+
+  // Left editor rail — mirrors Canva's icon rail. `svg` is the inner markup of a 24×24 line icon.
+  const RAIL = [
+    { id: "templates", label: "Templates", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="12" y1="12" x2="20" y2="12"/>` },
+    { id: "elements", label: "Elements", svg: `<circle cx="8" cy="8" r="4"/><rect x="13" y="13" width="7" height="7" rx="1.2"/><path d="M4 20l4-6 4 6z"/>` },
+    { id: "text", label: "Text", svg: `<path d="M5 6h14"/><path d="M12 6v13"/><path d="M9 19h6"/>` },
+    { id: "brand", label: "Brand", pro: true, svg: `<ellipse cx="12" cy="12" rx="7" ry="5"/><path d="M9 12a3 3 0 0 1 6 0"/><path d="M9 12v-1.5"/><path d="M15 12v-1.5"/>` },
+    { id: "ai", label: "Canva AI", svg: `<path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/>` },
+    { id: "uploads", label: "Uploads", svg: `<path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/>` },
+    { id: "tools", label: "Tools", svg: `<path d="M4 20l7-7"/><path d="M13 6l5 5"/><path d="M11 8l5 5 3-3a3 3 0 0 0-4-4z"/>` },
+    { id: "projects", label: "Projects", svg: `<path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/>` },
+    { id: "apps", label: "Apps", svg: `<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M17 14v6M14 17h6"/>` },
+    { id: "components", label: "Components", svg: `<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/>` },
+    { id: "audio", label: "Audio", svg: `<circle cx="7" cy="17" r="2.5"/><circle cx="17" cy="15" r="2.5"/><path d="M9.5 17V7l10-2v10"/>` },
+    { id: "videos", label: "Videos", svg: `<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M10 9l5 3-5 3z"/>` },
+    { id: "background", label: "Background", svg: `<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M6 18l4-4M9 20l7-7M13 20l6-6"/>` },
+    { id: "bulk", label: "Bulk create", svg: `<rect x="7" y="7" width="12" height="12" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/><path d="M13 11v4M11 13h4"/>` },
+    { id: "translate", label: "Translate", svg: `<path d="M4 6h8M8 4v2M6 6c0 4-2 6-2 6M5 8c0 2 3 4 5 4"/><path d="M13 20l4-9 4 9M14.5 17h5"/>` },
+    { id: "charts", label: "Charts", svg: `<path d="M5 5v14h14"/><rect x="8" y="11" width="2.5" height="5"/><rect x="12.5" y="8" width="2.5" height="8"/><rect x="17" y="13" width="2.5" height="3"/>` },
   ];
 
   function store() { if (!S().appData) S().appData = {}; if (!S().appData.canva) S().appData.canva = { designs: [] }; if (!S().appData.canva.designs) S().appData.canva.designs = []; const c = S().appData.canva; if (!c.profile) c.profile = {}; return c; }
@@ -148,17 +168,14 @@
         <button class="cv-dl">⬇ Download</button>
       </div>
       <div class="cv-work">
+        <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<span class="cv-rail-crown">♛</span>' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>
         <div class="cv-panel">
-          <button class="cv-tool" data-add="text">＋ Text</button>
-          <button class="cv-tool" data-add="rect">▭ Rectangle</button>
-          <button class="cv-tool" data-add="circle">● Circle</button>
-          <button class="cv-tool cv-add-image">🖼 Image</button>
-          <div class="cv-panel-h">Background</div>
-          <div class="cv-swatches cv-bg-sw"></div>
+          <div class="cv-panel-body"></div>
           <div class="cv-panel-h cv-sel-h" style="display:none">Selected</div>
           <div class="cv-sel-tools" style="display:none">
             <div class="cv-swatches cv-el-sw"></div>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
+            <button class="cv-rembg" style="display:none">✂ Remove background</button>
             <button class="cv-del">🗑 Delete</button>
           </div>
         </div>
@@ -168,7 +185,7 @@
       </div>
     </div>`;
     const stage = body.querySelector(".cv-stage");
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -189,7 +206,6 @@
         host.appendChild(b);
       });
     }
-    colorPanel(body.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
     colorPanel(body.querySelector(".cv-el-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } });
 
     function selectEl(i) {
@@ -201,7 +217,9 @@
       if (has && design.els[i].t === "text") { sizeRow.style.display = "flex"; sizeIn.min = 10; sizeIn.max = 120; sizeIn.value = design.els[i].size || 32; }
       else if (has) { sizeRow.style.display = "flex"; sizeIn.min = 40; sizeIn.max = 500; sizeIn.value = design.els[i].w || 140; }
       else sizeRow.style.display = "none";
+      rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
     }
+    rembgBtn.onclick = () => removeBg();
     sizeIn.oninput = () => {
       if (sel == null) return;
       const e = design.els[sel];
@@ -238,12 +256,11 @@
     stage.onclick = (ev) => { if (ev.target === stage) selectEl(null); };
     render();
 
-    body.querySelectorAll(".cv-tool[data-add]").forEach((b) => b.onclick = () => {
-      const kind = b.dataset.add;
+    function addEl(kind) {
       if (kind === "text") design.els.push({ t: "text", x: 40, y: 40, text: "Your text", size: 36, color: "#111111" });
       else design.els.push({ t: kind, x: 60, y: 60, w: 140, h: 140, color: kind === "circle" ? "#7b5cff" : "#3a86ff" });
       render(); selectEl(design.els.length - 1);
-    });
+    }
 
     // Drop an image element onto the stage, sizing it from the image's natural aspect ratio.
     function addImage(src) {
@@ -261,7 +278,7 @@
       img.src = src;
     }
 
-    body.querySelector(".cv-add-image").onclick = () => {
+    function openImagePicker() {
       const ov = el(`<div class="cv-imgpick">
         <div class="cv-imgpick-card">
           <div class="cv-imgpick-h">Add an image</div>
@@ -298,7 +315,96 @@
         addImage(u.trim()); close();
       };
       body.querySelector(".cv").appendChild(ov);
-    };
+    }
+
+    // Remove the background of the selected image via the remove.bg API.
+    function removeBg() {
+      if (sel == null || !design.els[sel] || design.els[sel].t !== "image") return;
+      const idx = sel, e = design.els[idx];
+      const key = window.REMOVEBG_API_KEY;
+      if (!key) { if (window.Notify) Notify.show({ title: "Canva", body: "No remove.bg API key configured." }); return; }
+      const prog = window.ProgressUI ? ProgressUI.show(body.querySelector(".cv-stage-wrap"), { title: "Removing background…", subtitle: "remove.bg", etaMs: 7000, cancel: false }) : null;
+      const send = (fd) => fetch("https://api.remove.bg/v1.0/removebg", { method: "POST", headers: { "X-Api-Key": key }, body: fd })
+        .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+        .then((blob) => new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); }))
+        .then((dataUrl) => { design.els[idx].src = dataUrl; render(); selectEl(idx); if (prog) prog.complete(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Background removed." }); })
+        .catch((err) => { if (prog) prog.remove(); if (window.Notify) Notify.show({ title: "Canva", body: "Couldn't remove background (" + err.message + ")." }); });
+      const fd = new FormData();
+      fd.append("size", "auto");
+      if (/^data:/.test(e.src)) fetch(e.src).then((r) => r.blob()).then((b) => { fd.append("image_file", b, "image.png"); send(fd); });
+      else { fd.append("image_url", e.src); send(fd); }
+    }
+
+    // ---- Left rail: switch the panel body per rail item ---------------------
+    const panelBody = body.querySelector(".cv-panel-body");
+    function placeholder(title, desc) { return `<div class="cv-panel-h">${esc(title)}</div><div class="cv-empty">${esc(desc)}</div>`; }
+
+    function showPanel(id) {
+      body.querySelectorAll(".cv-rail-btn").forEach((b) => b.classList.toggle("on", b.dataset.rail === id));
+      const P = panelBody;
+      if (id === "templates") {
+        P.innerHTML = `<div class="cv-panel-h">Templates</div><div class="cv-tpl-list"></div>`;
+        const list = P.querySelector(".cv-tpl-list");
+        TEMPLATES.forEach((t) => {
+          const c = el(`<button class="cv-tpl-card" style="background:${t.bg}"><span>${esc(t.name)}</span></button>`);
+          c.onclick = () => { design.bg = t.bg; stage.style.background = t.bg; design.els = JSON.parse(JSON.stringify(t.els)); render(); selectEl(null); };
+          list.appendChild(c);
+        });
+      } else if (id === "elements") {
+        P.innerHTML = `<div class="cv-panel-h">Elements</div>
+          <button class="cv-tool" data-add="rect">▭ Rectangle</button>
+          <button class="cv-tool" data-add="circle">● Circle</button>`;
+      } else if (id === "text") {
+        P.innerHTML = `<div class="cv-panel-h">Text</div>
+          <button class="cv-tool" data-add="text">＋ Add a text box</button>`;
+      } else if (id === "uploads") {
+        P.innerHTML = `<div class="cv-panel-h">Uploads</div>
+          <button class="cv-tool cv-add-image">🖼 Add an image</button>
+          <div class="cv-empty">Upload from your device, drop in a brand logo, or paste an image URL. Select an image to remove its background.</div>`;
+      } else if (id === "background") {
+        P.innerHTML = `<div class="cv-panel-h">Background</div><div class="cv-swatches cv-bg-sw"></div>`;
+        colorPanel(P.querySelector(".cv-bg-sw"), (c) => { design.bg = c; stage.style.background = c; });
+      } else if (id === "brand") {
+        P.innerHTML = `<div class="cv-panel-h">Brand Kit</div>
+          <div class="cv-swatches cv-brand-sw"></div>
+          <button class="cv-tool cv-brand-logo">✦ Add your logo</button>`;
+        colorPanel(P.querySelector(".cv-brand-sw"), (c) => { if (sel != null) { design.els[sel].color = c; render(); selectEl(sel); } else { design.bg = c; stage.style.background = c; } });
+        P.querySelector(".cv-brand-logo").onclick = () => {
+          const d = prompt("Brand or website (e.g. spotify.com):"); if (!d) return;
+          const domain = d.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+          addImage(window.Icon && Icon.brandLogoUrl ? Icon.brandLogoUrl(domain) : `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`);
+        };
+      } else if (id === "projects") {
+        P.innerHTML = `<div class="cv-panel-h">Projects</div><div class="cv-proj-list"></div>`;
+        const list = P.querySelector(".cv-proj-list"), ds = store().designs || [];
+        if (!ds.length) list.appendChild(el(`<div class="cv-empty">No saved designs yet.</div>`));
+        ds.forEach((d, i) => {
+          const c = el(`<button class="cv-proj-card"><span class="cv-proj-sw" style="background:${d.bg}"></span>${esc(d.name || "Untitled")}</button>`);
+          c.onclick = () => { saveDesign(); editor(body, ref, JSON.parse(JSON.stringify(d)), i); };
+          list.appendChild(c);
+        });
+      } else if (id === "charts") {
+        P.innerHTML = `<div class="cv-panel-h">Charts</div><button class="cv-tool cv-add-chart">📊 Add a bar chart</button>`;
+        P.querySelector(".cv-add-chart").onclick = () => {
+          const vals = [80, 130, 60, 160, 110]; const bw = 26, gap = 16; let x = 40;
+          vals.forEach((v) => { design.els.push({ t: "rect", x, y: 260 - v, w: bw, h: v, color: "#7b2ae8" }); x += bw + gap; });
+          render(); selectEl(null);
+        };
+      } else {
+        const meta = { ai: "Describe what you want and let Canva AI draft it for you.", tools: "Handy editing tools live here.", apps: "Connect your favorite apps to Canva.", components: "Reusable building blocks for your design.", audio: "Add background music and sound effects.", videos: "Drop in video clips and animations.", bulk: "Create many designs at once from your data.", translate: "Translate your design into another language." };
+        P.innerHTML = placeholder((RAIL.find((r) => r.id === id) || {}).label || "Canva", meta[id] || "Coming soon.");
+      }
+    }
+
+    body.querySelector(".cv-rail").addEventListener("click", (ev) => {
+      const b = ev.target.closest(".cv-rail-btn"); if (b) showPanel(b.dataset.rail);
+    });
+    // Delegate panel actions so dynamically-built tool buttons keep working.
+    body.querySelector(".cv-panel").addEventListener("click", (ev) => {
+      const add = ev.target.closest(".cv-tool[data-add]"); if (add) { addEl(add.dataset.add); return; }
+      if (ev.target.closest(".cv-add-image")) openImagePicker();
+    });
+    showPanel("templates");
 
     body.querySelector(".cv-title").oninput = (e) => { design.name = e.target.value; };
     body.querySelector(".cv-back").onclick = () => { saveDesign(); home(body, ref); };

@@ -19,3 +19,8 @@ window.FLIGHT_API = {
    browser. If it's ever unavailable we fall back to a keyless favicon source. */
 window.BRANDFETCH_API_KEY = "2aGHRy7xjDUaw49bTCmi/wFKDwb0iVIavy10eg3evno=";
 window.BRANDFETCH_BASE = "https://api.brandfetch.io/v2";
+
+/* remove.bg — used by Canva's "Remove background" on image elements.
+   POST https://api.remove.bg/v1.0/removebg with header X-Api-Key and either an
+   image_file (blob) or image_url; returns a cut-out PNG. */
+window.REMOVEBG_API_KEY = "P31BnHusFPFj8KYkAEnMgg16";
