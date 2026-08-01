@@ -120,6 +120,7 @@
     { id: "powerpoint", name: "PowerPoint" },
     { id: "excel", name: "Excel" },
     { id: "forms", name: "Forms" },
+    { id: "canva", name: "Canva" },
   ];
 
   function xpOn() { return !!(S().desktop && S().desktop.xpTheme); }
