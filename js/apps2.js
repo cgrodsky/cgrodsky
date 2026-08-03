@@ -639,6 +639,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
   // ---------- Files (a virtual, persistent file manager) ----------
   const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png" };
+  const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png" };
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -746,6 +747,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           if (isFolder) { path = path.concat(name); render(); } else openFile(name, node);
         };
         item.querySelector(".files-menu").onclick = (e) => { e.stopPropagation(); itemMenu(e.currentTarget, name, node); };
+        if (isFolder && FOLDER_ICON_OPEN[name]) {
+          const fimg = item.querySelector(".files-is-folder");
+          item.addEventListener("mouseenter", () => { fimg.src = FOLDER_ICON_OPEN[name]; });
+          item.addEventListener("mouseleave", () => { fimg.src = folderSrc; });
+        }
         grid.appendChild(item);
       });
 
