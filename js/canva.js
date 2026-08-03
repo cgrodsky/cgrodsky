@@ -203,6 +203,7 @@
         <button class="cv-nav">📁 Projects</button>
         <button class="cv-nav">✨ Brand</button>
         <button class="cv-nav">📐 Templates</button>
+        <button class="cv-nav cv-nav-more">••• More</button>
         <button class="cv-new">＋ Create a design</button>
         <button class="cv-profile"><span class="cv-avatar">${profilePhoto() ? `<img src="${esc(profilePhoto())}" alt="">` : esc(profileName()[0].toUpperCase())}</span><span class="cv-profile-n">${esc(profileName())}</span></button>
       </aside>
@@ -241,7 +242,35 @@
         rEl.appendChild(card);
       });
     }
-    body.querySelector(".cv-new").onclick = () => editor(body, ref, { type: "ig", bg: "#ffffff", els: [], name: "Untitled design" });
+    // Create a design → a picker of design types (not a random one).
+    body.querySelector(".cv-new").onclick = (ev) => {
+      body.querySelectorAll(".cv-create-menu, .cv-more-menu").forEach((m) => m.remove());
+      const r = ev.currentTarget.getBoundingClientRect(), cvR = body.querySelector(".cv").getBoundingClientRect();
+      const menu = el(`<div class="cv-create-menu" style="left:${r.left - cvR.left}px;top:${r.bottom - cvR.top + 6}px">
+        <div class="cv-cm-search"><input placeholder="Search designs"></div>
+        <div class="cv-cm-list">${TYPES.map((t) => `<button class="cv-cm-item" data-t="${t.id}"><span class="cv-cm-ic" style="background:${t.img ? "transparent" : t.c}">${t.img ? `<img src="${t.img}?v=2" alt="">` : t.emoji}</span><span class="cv-cm-meta"><span>${esc(t.name)}</span><span class="cv-cm-dim">${t.w} × ${t.h} px</span></span></button>`).join("")}</div>
+      </div>`);
+      menu.querySelectorAll(".cv-cm-item").forEach((b) => b.onclick = () => { menu.remove(); const t = TYPES.find((x) => x.id === b.dataset.t); editor(body, ref, { type: t.id, bg: "#ffffff", els: [], name: "Untitled " + t.name }); });
+      const si = menu.querySelector(".cv-cm-search input");
+      si.oninput = () => { const q = si.value.toLowerCase(); menu.querySelectorAll(".cv-cm-item").forEach((b) => { b.style.display = b.textContent.toLowerCase().includes(q) ? "flex" : "none"; }); };
+      body.querySelector(".cv").appendChild(menu);
+      setTimeout(() => { si.focus(); document.addEventListener("pointerdown", function h(x) { if (!menu.contains(x.target) && x.target !== ev.target) { menu.remove(); document.removeEventListener("pointerdown", h); } }); }, 0);
+    };
+    // More menu (Apps, Grow, Content Planner, Design School).
+    body.querySelector(".cv-nav-more").onclick = (ev) => {
+      body.querySelectorAll(".cv-more-menu, .cv-create-menu").forEach((m) => m.remove());
+      const r = ev.currentTarget.getBoundingClientRect(), cvR = body.querySelector(".cv").getBoundingClientRect();
+      const ITEMS = [
+        { t: "Apps", d: "Connect design and productivity tools.", i: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M17 14v6M14 17h6"/></svg>` },
+        { t: "Grow", d: "AI tools to grow your marketing.", i: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 14l5-5 4 3 7-7"/><path d="M14 5h6v6"/></svg>` },
+        { t: "Content Planner", d: "Take control of your social channels.", i: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>` },
+        { t: "Design School", d: "Learn how to design with Canva.", i: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 8l1.3 2.7L16 11l-2 1.8.5 2.7L12 14.3 9.5 15.5 10 12.8 8 11l2.7-.3z"/></svg>` },
+      ];
+      const menu = el(`<div class="cv-more-menu" style="left:${r.right - cvR.left + 6}px;top:${r.top - cvR.top}px">${ITEMS.map((x) => `<button class="cv-more-item"><span class="cv-more-ic">${x.i}</span><span class="cv-more-meta"><span class="cv-more-t">${x.t}</span><span class="cv-more-d">${x.d}</span></span></button>`).join("")}</div>`);
+      menu.querySelectorAll(".cv-more-item").forEach((b, k) => b.onclick = () => { menu.remove(); if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: ITEMS[k].t + " — coming soon." }); });
+      body.querySelector(".cv").appendChild(menu);
+      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!menu.contains(x.target) && x.target !== ev.target) { menu.remove(); document.removeEventListener("pointerdown", h); } }), 0);
+    };
     body.querySelector(".cv-profile").onclick = () => profileScreen(body, ref);
   }
 
@@ -329,6 +358,16 @@
           <div class="cv-stage" style="width:${ty.w}px;height:${ty.h}px;background:${design.bg}"></div>
         </div>
       </div>
+      ${ty.id === "video" ? `<div class="cv-timeline">
+        <div class="cv-tl-transport"><span class="cv-tl-cur">0:00</span><button class="cv-tl-play" title="Play">▶</button><span class="cv-tl-dur">0:05</span></div>
+        <div class="cv-tl-ruler">${[0, 10, 20, 30, 40, 50].map((s) => `<span class="cv-tl-mark">${s}s</span>`).join("")}</div>
+        <div class="cv-tl-tracks">
+          <div class="cv-tl-track"><span>＋ Add elements</span></div>
+          <div class="cv-tl-track cv-tl-media"><span>＋ or drag and drop media</span></div>
+          <div class="cv-tl-track"><span>♪ Add audio</span></div>
+          <div class="cv-tl-playhead"></div>
+        </div>
+      </div>` : ""}
       <div class="cv-bottombar">
         <button class="cv-bb cv-bb-notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M4 12h8M4 17h6"/><path d="M15 16l5-5 2 2-5 5h-2z"/></svg>Notes</button>
         <button class="cv-bb cv-bb-timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="7"/><path d="M12 14V10M10 3h4M18 8l1.5-1.5"/></svg>Timer</button>
@@ -1153,6 +1192,17 @@
     body.querySelector(".cv-bb-grid").onclick = () => bbToast("Grid view is coming soon.");
     body.querySelector(".cv-bb-expand").onclick = () => bbToast("Full screen is coming soon.");
     body.querySelector(".cv-bb-help").onclick = () => bbToast("Help is coming soon.");
+    // Video timeline: play button sweeps a playhead over 5 seconds.
+    const tlPlay = body.querySelector(".cv-tl-play"), playhead = body.querySelector(".cv-tl-playhead"), tlCur = body.querySelector(".cv-tl-cur");
+    if (tlPlay) {
+      let tlRaf = null, tlPlaying = false;
+      tlPlay.onclick = () => {
+        if (tlPlaying) { tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlPlay.textContent = "▶"; return; }
+        tlPlaying = true; tlPlay.textContent = "❚❚"; const dur = 5000; let start = null;
+        const loop = (ts) => { if (!tlPlaying) return; if (!start) start = ts; const p = Math.min(1, (ts - start) / dur); playhead.style.left = (p * 100) + "%"; tlCur.textContent = "0:0" + Math.floor(p * 5); if (p < 1) { tlRaf = requestAnimationFrame(loop); } else { tlPlaying = false; tlPlay.textContent = "▶"; } };
+        tlRaf = requestAnimationFrame(loop);
+      };
+    }
 
     body.querySelector(".cv-title").oninput = (e) => { design.name = e.target.value; };
     body.querySelector(".cv-back").onclick = () => { saveDesign(); home(body, ref); };
