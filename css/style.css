@@ -995,6 +995,23 @@ body.dark .searchbar { border-color: #5f6368; }
 .bb-menu-pop { position: absolute; right: 8px; top: 46px; z-index: 60; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.22); padding: 6px; display: flex; flex-direction: column; min-width: 170px; }
 .bb-menu-pop button { text-align: left; padding: 9px 12px; border-radius: 7px; font-size: .88rem; }
 .browser-bar { position: relative; }
+/* Google page top bar + apps grid (waffle) */
+.google-top { position: absolute; top: 14px; right: 18px; display: flex; align-items: center; gap: 16px; z-index: 5; }
+.g-top-link { color: #5f6368; font-size: .85rem; cursor: pointer; }
+.g-top-link:hover { text-decoration: underline; }
+.g-apps { background: none; border: 0; color: #5f6368; cursor: pointer; padding: 6px; border-radius: 50%; display: inline-flex; }
+.g-apps:hover { background: rgba(60,64,67,.1); }
+.g-apps-pop { position: absolute; top: 40px; right: 0; background: #fff; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.28); padding: 14px; z-index: 30; }
+.g-apps-grid { display: grid; grid-template-columns: repeat(3, 78px); gap: 4px; }
+.g-app { background: none; border: 0; border-radius: 8px; padding: 12px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.g-app:hover { background: #f1f3f4; }
+.g-app-ic { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.g-app-n { font-size: .74rem; color: #3c4043; }
+/* Classic-Chrome look when the XP theme is on */
+body.xp-theme .browser-bar { background: linear-gradient(#f1f1f1, #d8d8d8); border-bottom: 1px solid #a0a0a0; padding: 6px 8px; }
+body.xp-theme .browser-bar .addr { background: #fff; border: 1px solid #b7b7b7; border-radius: 3px; box-shadow: inset 0 1px 2px rgba(0,0,0,.08); }
+body.xp-theme .browser-bar .bb-nav, body.xp-theme .browser-bar .bb-ic { border-radius: 3px; }
+body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 .browser-bar .addr { flex: 1; display: flex; align-items: center; gap: 6px; background: var(--bg); border-radius: 16px; padding: 6px 12px; }
 .browser-bar .addr input { flex: 1; border: none; background: none; color: var(--text); outline: none; font-size: 0.9rem; }
 .browser-bar .addr.locked input { color: var(--text-dim); }

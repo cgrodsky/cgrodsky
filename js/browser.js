@@ -67,6 +67,11 @@
     const colors = ["#4285F4", "#EA4335", "#FBBC05", "#4285F4", "#34A853", "#EA4335"];
     const letters = "Google".split("").map((ch, i) => `<span style="color:${colors[i]}">${ch}</span>`).join("");
     const page = el(`<div class="google-home">
+      <div class="google-top">
+        <a class="g-top-link" data-url="https://mail.google.com">Gmail</a>
+        <a class="g-top-link" data-url="https://www.google.com/imghp">Images</a>
+        <button class="g-apps" title="Google apps"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="5" r="1.8"/><circle cx="12" cy="5" r="1.8"/><circle cx="19" cy="5" r="1.8"/><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="12" cy="19" r="1.8"/><circle cx="19" cy="19" r="1.8"/></svg></button>
+      </div>
       <div class="google-logo">${letters}</div>
       <form class="searchbar" autocomplete="off">
         <div class="searchbar-wrapper">
@@ -101,6 +106,22 @@
         rec.onresult = (ev) => { input.value = ev.results[0][0].transcript; ctx.navigate(input.value.trim()); };
         rec.start();
       } catch (_) { input.focus(); }
+    };
+    // Top links + Google apps grid (waffle).
+    page.querySelectorAll(".g-top-link").forEach((a) => a.onclick = () => ctx.navigate(a.dataset.url));
+    const G_APPS = [
+      { n: "Account", c: "#5f6368", e: "👤", u: "https://myaccount.google.com" }, { n: "Search", c: "#4285F4", e: "🔍", u: "home" }, { n: "Maps", c: "#34A853", e: "📍", u: "https://maps.google.com" },
+      { n: "YouTube", c: "#FF0000", e: "▶️", u: "https://youtube.com" }, { n: "Play", c: "#00c4b3", e: "▶", u: "https://play.google.com" }, { n: "News", c: "#4285F4", e: "📰", u: "https://news.google.com" },
+      { n: "Gmail", c: "#EA4335", e: "✉️", u: "https://mail.google.com" }, { n: "Drive", c: "#FBBC05", e: "📁", u: "https://drive.google.com" }, { n: "Calendar", c: "#4285F4", e: "📅", u: "https://calendar.google.com" },
+      { n: "Photos", c: "#EA4335", e: "🖼️", u: "https://photos.google.com" }, { n: "Translate", c: "#4285F4", e: "🌐", u: "https://translate.google.com" }, { n: "Meet", c: "#00897B", e: "📹", u: "https://meet.google.com" },
+    ];
+    page.querySelector(".g-apps").onclick = (ev) => {
+      ev.stopPropagation();
+      page.querySelectorAll(".g-apps-pop").forEach((m) => m.remove());
+      const pop = el(`<div class="g-apps-pop"><div class="g-apps-grid">${G_APPS.map((a) => `<button class="g-app" data-u="${a.u}"><span class="g-app-ic" style="background:${a.c}">${a.e}</span><span class="g-app-n">${a.n}</span></button>`).join("")}</div></div>`);
+      pop.querySelectorAll(".g-app").forEach((b) => b.onclick = () => { pop.remove(); ctx.navigate(b.dataset.u); });
+      page.querySelector(".google-top").appendChild(pop);
+      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!pop.contains(x.target)) { pop.remove(); document.removeEventListener("pointerdown", h); } }), 0);
     };
     ctx.page.appendChild(page);
   }
