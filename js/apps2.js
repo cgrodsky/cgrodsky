@@ -638,6 +638,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png" };
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -673,6 +674,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     } },
     Downloads: { type: "folder", children: {} },
     Pictures: { type: "folder", children: {} },
+    Videos: { type: "folder", children: {} },
     Music: { type: "folder", children: {} },
   }, WIN_FS());
 
@@ -681,6 +683,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     if (S().appData.files == null) S().appData.files = { root: FILE_SEED() };
     const root = S().appData.files.root;
     if (!root["Local Disk (C:)"]) { Object.assign(root, WIN_FS()); State.save(); }   // migrate existing users
+    if (!root["Videos"]) { root["Videos"] = { type: "folder", children: {} }; State.save(); }
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
@@ -700,7 +703,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       body.innerHTML = `<div style="display:flex;height:100%">
         <div class="files-side">
           <div class="muted files-side-h">This PC</div>
-          ${["Desktop", "Documents", "Downloads", "Pictures", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
+          ${["Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
         </div>
         <div style="flex:1;display:flex;flex-direction:column;min-width:0">
           <div class="files-toolbar">
@@ -732,7 +735,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
           : node.kind === "system" ? `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#c7cdd6"/><rect x="3" y="4" width="18" height="4.5" rx="2" fill="#8a94a6"/><circle cx="12" cy="14" r="3.4" fill="none" stroke="#5a6472" stroke-width="1.6"/><path d="M12 10.6v-1.4M12 18.8v-1.4M15.4 14h1.4M7.2 14h1.4" stroke="#5a6472" stroke-width="1.6"/></svg>`
           : docSvg("#8a94a6");
-        const folderSrc = name === "Music" ? "assets/musicfolder.png" : "assets/folder.png";
+        const folderSrc = FOLDER_ICON[name] || "assets/folder.png";
         const glyph = isFolder ? `<img class="files-folder-img files-is-folder" src="${folderSrc}" alt="">` : fileGlyph;
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
