@@ -638,7 +638,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png" };
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png" };
   const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png" };
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
