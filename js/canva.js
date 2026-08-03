@@ -303,17 +303,6 @@
         <button class="cv-dl">⬇ Download</button>
         <button class="cv-share-btn">Share</button>
       </div>
-      <div class="cv-subbar" style="display:none">
-        <button class="cv-sb cv-sb-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/></svg>Ask Canva</button>
-        <span class="cv-sb-div"></span>
-        <button class="cv-sb cv-sb-edit">Edit</button>
-        <span class="cv-sb-div"></span>
-        <label class="cv-sb cv-sb-color" title="Color"><span class="cv-color-wheel"></span><input type="color" value="#7b5cff"></label>
-        <button class="cv-sb cv-sb-animate">Animate</button>
-        <button class="cv-sb cv-sb-position">Position</button>
-        <span class="cv-sb-div"></span>
-        <button class="cv-sb cv-sb-comment" title="Comment"><img class="cv-sb-cmimg" src="assets/cv_comment.png?v=1" alt="Comment"></button>
-      </div>
       <div class="cv-work">
         <div class="cv-rail">${RAIL.map((r) => `<button class="cv-rail-btn" data-rail="${r.id}"><span class="cv-rail-ic">${r.pro ? '<img class="cv-rail-crown" src="assets/cv_pro.png?v=1" alt="Pro">' : ""}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${r.svg}</svg></span><span class="cv-rail-lbl">${esc(r.label)}</span></button>`).join("")}</div>
         <div class="cv-panel">
@@ -355,7 +344,7 @@
     </div>`;
     const stage = body.querySelector(".cv-stage");
     body.querySelector(".cv").appendChild(el(`<svg width="0" height="0" style="position:absolute"><defs><clipPath id="cvHeart" clipPathUnits="objectBoundingBox"><path d="M.5.95C.1.68 0 .42 0 .26 0 .09 .17 0 .3 .1 .4 .17 .47 .27 .5 .34 .53 .27 .6 .17 .7 .1 .83 0 1 .09 1 .26 1 .42 .9 .68 .5 .95Z"/></clipPath></defs></svg>`));
-    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), subbar = body.querySelector(".cv-subbar"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row"), framePhotoBtn = body.querySelector(".cv-frame-photo"), alignBtn = body.querySelector(".cv-align");
+    const selH = body.querySelector(".cv-sel-h"), selTools = body.querySelector(".cv-sel-tools"), sizeRow = body.querySelector(".cv-size-row"), sizeIn = body.querySelector(".cv-size"), rembgBtn = body.querySelector(".cv-rembg"), fontSel = body.querySelector(".cv-font"), fmtRow = body.querySelector(".cv-fmt-row"), framePhotoBtn = body.querySelector(".cv-frame-photo"), alignBtn = body.querySelector(".cv-align");
     const ALIGN_ORDER = ["left", "center", "right", "justify"];
     const ALIGN_IC = {
       left: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg>`,
@@ -431,7 +420,7 @@
       framePhotoBtn.style.display = has && design.els[i].t === "frame" ? "block" : "none";
       opRow.style.display = has ? "flex" : "none";
       if (has) opIn.value = Math.round((design.els[i].opacity != null ? design.els[i].opacity : 1) * 100);
-      subbar.style.display = has ? "flex" : "none";
+      if (has) showPill(i); else clearPill();
       if (has && design.els[i].t !== "text") showFrame(i); else clearFrame();
     }
 
@@ -497,14 +486,8 @@
     rembgBtn.onclick = () => removeBg();
     framePhotoBtn.onclick = () => fillFrame();
 
-    // Contextual toolbar (shown when an element is selected).
+    // Floating selection toolbar (a pill above the selected element).
     const toast = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
-    subbar.querySelector(".cv-sb-ask").onclick = () => showPanel("ai");
-    subbar.querySelector(".cv-sb-edit").onclick = () => toast("Edit tools are in the left panel.");
-    subbar.querySelector(".cv-sb-animate").onclick = () => openAnimate();
-    subbar.querySelector(".cv-sb-comment").onclick = () => addComment();
-    subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
-    subbar.querySelector(".cv-sb-color input").addEventListener("change", () => { if (sel != null) record(); });
     function reorder(kind) {
       if (sel == null) return;
       const e = design.els.splice(sel, 1)[0]; let ni = sel;
@@ -514,17 +497,47 @@
       else if (kind === "backward") ni = Math.max(0, sel - 1);
       design.els.splice(ni, 0, e); render(); selectEl(ni); record();
     }
-    subbar.querySelector(".cv-sb-position").onclick = (ev) => {
-      if (sel == null) return;
-      body.querySelectorAll(".cv-pos-menu").forEach((m) => m.remove());
-      const btn = ev.currentTarget, r = btn.getBoundingClientRect(), cvR = body.querySelector(".cv").getBoundingClientRect();
-      const menu = el(`<div class="cv-pos-menu" style="left:${r.left - cvR.left}px;top:${r.bottom - cvR.top + 4}px">
-        <button data-o="front">⤒ To front</button><button data-o="forward">↑ Forward</button>
-        <button data-o="backward">↓ Backward</button><button data-o="back">⤓ To back</button></div>`);
-      menu.querySelectorAll("button").forEach((b) => b.onclick = () => { menu.remove(); reorder(b.dataset.o); });
-      body.querySelector(".cv").appendChild(menu);
-      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!menu.contains(x.target)) { menu.remove(); document.removeEventListener("pointerdown", h); } }), 0);
-    };
+    let pillNode = null;
+    function clearPill() { if (pillNode) { pillNode.remove(); pillNode = null; } }
+    function placePill() {
+      if (!pillNode || sel == null) return;
+      const e = design.els[sel]; if (!e) return;
+      const obj = stage.querySelector(`.cv-obj[data-i="${sel}"]`);
+      const w = obj ? obj.offsetWidth : (e.w || 140);
+      pillNode.style.left = (e.x + w / 2) + "px";
+      pillNode.style.top = Math.max(2, (e.y - 46)) + "px";
+    }
+    function showPill(i) {
+      clearPill();
+      const e = design.els[i]; if (!e) return;
+      const locked = !!e.locked;
+      pillNode = el(`<div class="cv-pill">
+        <button class="cv-pl cv-pl-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6a4 4 0 1 0 0 8"/><path d="M18 4l.7 1.8L20.5 6.5 18.7 7.2 18 9l-.7-1.8L15.5 6.5 17.3 5.8z"/></svg>Ask Canva</button>
+        <button class="cv-pl cv-pl-comment" title="Comment"><img src="assets/cv_comment.png?v=1" alt=""></button>
+        <button class="cv-pl cv-pl-lock" title="${locked ? "Unlock" : "Lock"}">${locked ? "🔒" : "🔓"}</button>
+        <button class="cv-pl cv-pl-dup" title="Duplicate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 16v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2"/></svg></button>
+        <button class="cv-pl cv-pl-del" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>
+        <button class="cv-pl cv-pl-more" title="More">&#8943;</button>
+      </div>`);
+      pillNode.querySelector(".cv-pl-ask").onclick = (ev) => { ev.stopPropagation(); showPanel("ai"); };
+      pillNode.querySelector(".cv-pl-comment").onclick = (ev) => { ev.stopPropagation(); addComment(); };
+      pillNode.querySelector(".cv-pl-lock").onclick = (ev) => { ev.stopPropagation(); e.locked = !e.locked; render(); selectEl(i); record(); };
+      pillNode.querySelector(".cv-pl-dup").onclick = (ev) => { ev.stopPropagation(); duplicateSel(); };
+      pillNode.querySelector(".cv-pl-del").onclick = (ev) => { ev.stopPropagation(); design.els.splice(i, 1); sel = null; render(); selectEl(null); record(); };
+      pillNode.querySelector(".cv-pl-more").onclick = (ev) => {
+        ev.stopPropagation();
+        body.querySelectorAll(".cv-pos-menu").forEach((m) => m.remove());
+        const r = ev.currentTarget.getBoundingClientRect(), cvR = body.querySelector(".cv").getBoundingClientRect();
+        const menu = el(`<div class="cv-pos-menu" style="left:${r.left - cvR.left - 120}px;top:${r.bottom - cvR.top + 4}px">
+          <button data-a="animate">✨ Animate</button><button data-o="front">⤒ To front</button><button data-o="forward">↑ Forward</button>
+          <button data-o="backward">↓ Backward</button><button data-o="back">⤓ To back</button></div>`);
+        menu.querySelectorAll("button").forEach((b) => b.onclick = () => { menu.remove(); if (b.dataset.a === "animate") openAnimate(); else reorder(b.dataset.o); });
+        body.querySelector(".cv").appendChild(menu);
+        setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!menu.contains(x.target)) { menu.remove(); document.removeEventListener("pointerdown", h); } }), 0);
+      };
+      stage.appendChild(pillNode);
+      placePill();
+    }
     opIn.oninput = () => { if (sel != null && design.els[sel]) { design.els[sel].opacity = +opIn.value / 100; const o = stage.querySelector(`.cv-obj[data-i="${sel}"]`); if (o) o.style.opacity = design.els[sel].opacity; } };
     opIn.addEventListener("change", () => { if (sel != null) record(); });
     sizeIn.oninput = () => {
@@ -592,6 +605,7 @@
       o.addEventListener("pointerdown", (ev) => {
         if (o.isContentEditable && document.activeElement === o) return;   // let text editing work
         selectEl(i);
+        if (e.locked) return;   // locked elements can't be moved
         const r = stage.getBoundingClientRect(); const ox = ev.clientX - e.x, oy = ev.clientY - e.y;
         let moved = false;
         const mv = (m) => {
@@ -606,7 +620,7 @@
           else if (Math.abs(ny) < SNAP) { ny = 0; showGuide("h", 0); }
           else if (Math.abs((ny + h) - ty.h) < SNAP) { ny = ty.h - h; showGuide("h", ty.h); }
           e.x = Math.max(0, Math.min(ty.w - 10, nx)); e.y = Math.max(0, Math.min(ty.h - 10, ny));
-          o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) placeFrame();
+          o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) { placeFrame(); placePill(); }
         };
         const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); clearGuides(); if (moved) record(); };
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
@@ -1118,7 +1132,8 @@
     }
 
     body.querySelector(".cv-rail").addEventListener("click", (ev) => {
-      const b = ev.target.closest(".cv-rail-btn"); if (b) showPanel(b.dataset.rail);
+      const b = ev.target.closest(".cv-rail-btn"); if (!b) return;
+      if (b.dataset.rail === "brand") requirePremium(() => showPanel("brand")); else showPanel(b.dataset.rail);
     });
     // Delegate panel actions so dynamically-built tool buttons keep working.
     body.querySelector(".cv-panel").addEventListener("click", (ev) => {

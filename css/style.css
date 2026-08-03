@@ -3551,6 +3551,13 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-app-desc { font-size: .78rem; color: #8b8896; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cv-app-more { color: #8b8896; font-weight: 800; }
 /* Contextual toolbar shown when an element is selected */
+/* Floating selection pill above the selected element */
+.cv-pill { position: absolute; z-index: 9; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; background: #fff; border-radius: 9px; box-shadow: 0 4px 16px rgba(0,0,0,.22); padding: 4px; white-space: nowrap; }
+.cv-pl { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; border-radius: 7px; padding: 7px 9px; font-weight: 700; font-size: .84rem; color: #1c1c28; cursor: pointer; }
+.cv-pl:hover { background: #f2f2f7; }
+.cv-pl svg { width: 17px; height: 17px; }
+.cv-pl img { width: 17px; height: 17px; object-fit: contain; }
+.cv-pl-more { font-size: 1rem; padding: 7px 8px; }
 .cv-subbar { display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #fff; border-bottom: 1px solid #ececf2; }
 .cv-sb { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; border-radius: 8px; padding: 7px 10px; font-weight: 700; font-size: .88rem; color: #1c1c28; cursor: pointer; }
 .cv-sb:hover { background: #f2f2f7; }
