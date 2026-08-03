@@ -991,6 +991,7 @@ body.dark .searchbar { border-color: #5f6368; }
 .browser-bar button:hover { background: rgba(127,127,127,0.15); }
 .browser-bar .bb-ic { display: inline-flex; align-items: center; justify-content: center; }
 .browser-bar .bb-ic svg { display: block; }
+.browser-bar .bb-copilot img { width: 18px; height: 18px; object-fit: contain; display: block; }
 .browser-bar .bb-fav.on svg { fill: #f5b400; stroke: #f5b400; }
 .bb-menu-pop { position: absolute; right: 8px; top: 46px; z-index: 60; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.22); padding: 6px; display: flex; flex-direction: column; min-width: 170px; }
 .bb-menu-pop button { text-align: left; padding: 9px 12px; border-radius: 7px; font-size: .88rem; }
@@ -1006,6 +1007,8 @@ body.dark .searchbar { border-color: #5f6368; }
 .g-app { background: none; border: 0; border-radius: 8px; padding: 12px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px; }
 .g-app:hover { background: #f1f3f4; }
 .g-app-ic { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.g-app-ic-img { background: none !important; }
+.g-app-ic-img img { width: 28px; height: 28px; object-fit: contain; }
 .g-app-n { font-size: .74rem; color: #3c4043; }
 /* Classic-Chrome look when the XP theme is on */
 body.xp-theme .browser-bar { background: linear-gradient(#f1f1f1, #d8d8d8); border-bottom: 1px solid #a0a0a0; padding: 6px 8px; }

@@ -639,7 +639,8 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
   // ---------- Files (a virtual, persistent file manager) ----------
   const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png" };
-  const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png" };
+  const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/picturesfolder_open.png", Pictures: "assets/picturesfolder_open.png" };
+  const FICONV = "2";   // bump to force iPad to refetch updated folder icons
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -738,7 +739,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
           : node.kind === "system" ? `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#c7cdd6"/><rect x="3" y="4" width="18" height="4.5" rx="2" fill="#8a94a6"/><circle cx="12" cy="14" r="3.4" fill="none" stroke="#5a6472" stroke-width="1.6"/><path d="M12 10.6v-1.4M12 18.8v-1.4M15.4 14h1.4M7.2 14h1.4" stroke="#5a6472" stroke-width="1.6"/></svg>`
           : docSvg("#8a94a6");
-        const folderSrc = FOLDER_ICON[name] || "assets/folder.png";
+        const folderSrc = (FOLDER_ICON[name] || "assets/folder.png") + "?v=" + FICONV;
         const glyph = isFolder ? `<img class="files-folder-img files-is-folder" src="${folderSrc}" alt="">` : fileGlyph;
         const item = el(`<div class="files-item" title="${escapeHtml(name)}">
           <div class="files-ic">${glyph}</div>
@@ -751,7 +752,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
         item.querySelector(".files-menu").onclick = (e) => { e.stopPropagation(); itemMenu(e.currentTarget, name, node); };
         if (isFolder && FOLDER_ICON_OPEN[name]) {
           const fimg = item.querySelector(".files-is-folder");
-          item.addEventListener("mouseenter", () => { fimg.src = FOLDER_ICON_OPEN[name]; });
+          item.addEventListener("mouseenter", () => { fimg.src = FOLDER_ICON_OPEN[name] + "?v=" + FICONV; });
           item.addEventListener("mouseleave", () => { fimg.src = folderSrc; });
         }
         grid.appendChild(item);

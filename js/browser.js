@@ -110,16 +110,15 @@
     // Top links + Google apps grid (waffle).
     page.querySelectorAll(".g-top-link").forEach((a) => a.onclick = () => ctx.navigate(a.dataset.url));
     const G_APPS = [
-      { n: "Account", c: "#5f6368", e: "👤", u: "https://myaccount.google.com" }, { n: "Search", c: "#4285F4", e: "🔍", u: "home" }, { n: "Maps", c: "#34A853", e: "📍", u: "https://maps.google.com" },
-      { n: "YouTube", c: "#FF0000", e: "▶️", u: "https://youtube.com" }, { n: "Play", c: "#00c4b3", e: "▶", u: "https://play.google.com" }, { n: "News", c: "#4285F4", e: "📰", u: "https://news.google.com" },
-      { n: "Gmail", c: "#EA4335", e: "✉️", u: "https://mail.google.com" }, { n: "Drive", c: "#FBBC05", e: "📁", u: "https://drive.google.com" }, { n: "Calendar", c: "#4285F4", e: "📅", u: "https://calendar.google.com" },
-      { n: "Photos", c: "#EA4335", e: "🖼️", u: "https://photos.google.com" }, { n: "Translate", c: "#4285F4", e: "🌐", u: "https://translate.google.com" }, { n: "Meet", c: "#00897B", e: "📹", u: "https://meet.google.com" },
+      { n: "Classroom", img: "assets/gapp_classroom.png" }, { n: "Gmail", img: "assets/gapp_gmail.png" }, { n: "Meet", img: "assets/gapp_meet.png" },
+      { n: "Calendar", img: "assets/gapp_calendar.png" }, { n: "Drive", img: "assets/gapp_drive.png" }, { n: "Maps", img: "assets/gapp_maps.png" },
+      { n: "Sheets", img: "assets/gapp_sheets.png" },
     ];
     page.querySelector(".g-apps").onclick = (ev) => {
       ev.stopPropagation();
       page.querySelectorAll(".g-apps-pop").forEach((m) => m.remove());
-      const pop = el(`<div class="g-apps-pop"><div class="g-apps-grid">${G_APPS.map((a) => `<button class="g-app" data-u="${a.u}"><span class="g-app-ic" style="background:${a.c}">${a.e}</span><span class="g-app-n">${a.n}</span></button>`).join("")}</div></div>`);
-      pop.querySelectorAll(".g-app").forEach((b) => b.onclick = () => { pop.remove(); ctx.navigate(b.dataset.u); });
+      const pop = el(`<div class="g-apps-pop"><div class="g-apps-grid">${G_APPS.map((a) => `<button class="g-app">${a.img ? `<span class="g-app-ic g-app-ic-img"><img src="${a.img}?v=1" alt=""></span>` : `<span class="g-app-ic" style="background:${a.c}">${a.e}</span>`}<span class="g-app-n">${a.n}</span></button>`).join("")}</div></div>`);
+      pop.querySelectorAll(".g-app").forEach((b) => b.onclick = () => { pop.remove(); });   // not linked yet
       page.querySelector(".google-top").appendChild(pop);
       setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!pop.contains(x.target)) { pop.remove(); document.removeEventListener("pointerdown", h); } }), 0);
     };
@@ -145,6 +144,12 @@
       <div class="bookmark-bar"></div>
       <div class="browser-page"></div>`;
 
+    // Edge gets a Copilot button on the toolbar (like real Edge's Copilot).
+    if (opts.edge) {
+      const cp = el(`<button class="bb-ic bb-copilot" title="Copilot"><img src="assets/copilot.png?v=1" alt="Copilot" onerror="this.replaceWith(document.createTextNode('◈'))"></button>`);
+      cp.onclick = () => { if (window.WM) WM.open("copilot"); };
+      body.querySelector(".bb-menu").before(cp);
+    }
     const urlInput = body.querySelector(".url");
     const page = body.querySelector(".browser-page");
     const lock = body.querySelector(".lock");
