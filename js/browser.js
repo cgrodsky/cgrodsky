@@ -3,6 +3,7 @@
   "use strict";
 
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
   const SPECIAL = {
     "bank": "bank", "bank.local": "bank",
@@ -21,6 +22,45 @@
     if (!raw || raw === "home" || raw === "newtab" || raw === "about:home") return "home";
     const key = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
     return SPECIAL[key] || SPECIAL[raw] || null;
+  }
+
+  // Microsoft Edge new-tab: Bing search box, quick-link tiles, and a news feed (original copy).
+  const EDGE_NEWS = [
+    { cat: "Weather", title: "Sunny skies expected through the weekend", src: "Weather Center", img: "linear-gradient(135deg,#48b1f3,#8fd3ff)" },
+    { cat: "Technology", title: "Foldable laptops steal the show at this year's tech expo", src: "Tech Daily", img: "linear-gradient(135deg,#7b5cff,#5433ff)" },
+    { cat: "Sports", title: "Home team clinches a playoff spot in an overtime thriller", src: "Sports Wire", img: "linear-gradient(135deg,#22b573,#0a9d6e)" },
+    { cat: "Finance", title: "Markets edge higher as tech shares rally", src: "Market Watch", img: "linear-gradient(135deg,#f7971e,#ffd200)" },
+    { cat: "Science", title: "Researchers map a new region of the deep ocean", src: "Science Today", img: "linear-gradient(135deg,#2193b0,#6dd5ed)" },
+    { cat: "Travel", title: "Ten underrated cities worth a visit this year", src: "Travel Guide", img: "linear-gradient(135deg,#ff7e5f,#feb47b)" },
+  ];
+  function renderEdgeHome(ctx) {
+    const page = el(`<div class="edge-home">
+      <div class="edge-hero">
+        <div class="edge-hero-top"><span class="edge-weather">🌤 72°F</span><span class="grow"></span><button class="edge-gear" title="Page settings">⚙</button></div>
+        <form class="edge-search-form">
+          <div class="edge-search">
+            <svg class="edge-bing" viewBox="0 0 24 24"><path d="M6 3l4 1.4v11l6-2.8-2.9-1-1.4-3.6L16 10l3 1.3v3.3L9 20V4.8z" fill="#008373"/></svg>
+            <input class="edge-q" placeholder="Search the web" autofocus>
+            <button type="submit" class="edge-go" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
+          </div>
+        </form>
+        <div class="edge-tiles"></div>
+      </div>
+      <div class="edge-feed">
+        <div class="edge-feed-tabs"><button class="on">My Feed</button><button>News</button><button>Sports</button><button>Money</button><button>Entertainment</button><button>Health</button></div>
+        <div class="edge-cards"></div>
+      </div>
+    </div>`);
+    const tiles = page.querySelector(".edge-tiles");
+    Catalog.bookmarks.slice(0, 8).forEach((b) => {
+      const t = el(`<button class="edge-tile"><span class="edge-tile-ic">${Icon.md(b.label.toLowerCase(), b.label)}</span><span class="edge-tile-lb">${b.label}</span></button>`);
+      t.onclick = () => ctx.navigate(b.url);
+      tiles.appendChild(t);
+    });
+    page.querySelector(".edge-search-form").onsubmit = (e) => { e.preventDefault(); const q = page.querySelector(".edge-q").value.trim(); if (q) ctx.navigate("https://www.bing.com/search?q=" + encodeURIComponent(q)); };
+    const cards = page.querySelector(".edge-cards");
+    EDGE_NEWS.forEach((n) => cards.appendChild(el(`<div class="edge-card"><div class="edge-card-img" style="background:${n.img}"></div><div class="edge-card-body"><div class="edge-card-cat">${esc(n.cat)}</div><div class="edge-card-title">${esc(n.title)}</div><div class="edge-card-src">${esc(n.src)}</div></div></div>`)));
+    ctx.page.appendChild(page);
   }
 
   function renderHome(ctx) {
@@ -101,7 +141,7 @@
         lock.textContent = "";
         body.querySelector(".addr").classList.remove("locked-site");
         urlInput.value = "";
-        renderHome(ctx);
+        if (opts.edge) renderEdgeHome(ctx); else renderHome(ctx);
         return;
       }
       if (special) {
@@ -133,6 +173,10 @@
   let lastBrowserCreate = null;
   AppRegistry.browser = function (createWindow) { lastBrowserCreate = createWindow; return openBrowser(createWindow); };
   AppRegistry.chrome = function (createWindow) { lastBrowserCreate = createWindow; return openBrowser(createWindow, "home", { title: "Chrome", icon: Icon.mini("chrome", "Chrome"), appId: "chrome" }); };
+  AppRegistry.edge = function (createWindow) { lastBrowserCreate = createWindow; return openBrowser(createWindow, "home", { title: "Microsoft Edge", icon: Icon.mini("edge", "Microsoft Edge"), appId: "edge", edge: true }); };
+  if (window.Icon && Icon.register) {
+    Icon.register("edge", `<svg viewBox="0 0 48 48"><defs><linearGradient id="edgeA" x1="8" y1="34" x2="42" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0c59a4"/><stop offset="1" stop-color="#114a8b"/></linearGradient><radialGradient id="edgeB" cx="0" cy="0" r="1" gradientTransform="matrix(20 0 0 19 24 27)" gradientUnits="userSpaceOnUse"><stop offset=".7" stop-color="#35c1f1"/><stop offset=".9" stop-color="#258ccf"/><stop offset="1" stop-color="#1077bc"/></radialGradient><radialGradient id="edgeC" cx="0" cy="0" r="1" gradientTransform="matrix(6 -18 30 10 21 14)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ac1e2"/><stop offset="1" stop-color="#2aa458"/></radialGradient></defs><path d="M40 30c-1 4-3 7-6 9a19 19 0 0 1-26-6c6 4 14 3 18-2 3-4 2-8-2-9 5-1 12 1 16 8z" fill="url(#edgeA)"/><path d="M8 33A19 19 0 0 1 24 5c5 0 10 2 13 6-3-2-8-3-12-1-6 2-9 8-7 13 1 4 5 6 9 6-6 2-13 1-16-6z" fill="url(#edgeB)"/><path d="M37 11c-3-4-8-6-13-6a19 19 0 0 0-17 12c2-5 7-9 12-9 7 0 10 4 11 8 1 3-1 6-4 7 6 0 10-4 11-9-1-1-1-2 0-3z" fill="url(#edgeC)"/></svg>`);
+  }
 
   window.Browser = {
     openTo(url) {

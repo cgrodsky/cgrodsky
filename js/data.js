@@ -33,6 +33,7 @@
     { id: "fileexplorer", name: "File Explorer", cat: "System", price: 0, builtin: "fileexplorer", desc: "Your file manager — browse This PC, folders, and the C: drive." },
     { id: "messenger", name: "Messenger", cat: "Social", price: 0, builtin: "messenger", desc: "Windows Messenger — chat with tech personas who reply like real people." },
     { id: "chrome", name: "Chrome", cat: "Productivity", price: 0, builtin: "chrome", desc: "Google Chrome — browse the web." },
+    { id: "edge", name: "Microsoft Edge", cat: "System", price: 0, builtin: "edge", desc: "Browse the web with Microsoft Edge and a Bing new tab." },
     { id: "vlc", name: "VLC media player", cat: "Multimedia", price: 0, builtin: "vlc", desc: "VLC — play almost any video or audio file from your device." },
     { id: "word", name: "Word", cat: "Productivity", price: 0, builtin: "word", desc: "Microsoft Word — write documents with a full formatting ribbon." },
     { id: "powerpoint", name: "PowerPoint", cat: "Productivity", price: 0, builtin: "powerpoint", desc: "Microsoft PowerPoint — build slide decks and present them." },

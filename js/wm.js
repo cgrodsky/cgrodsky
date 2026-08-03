@@ -106,7 +106,7 @@
 
   // ---------------- Desktop ----------------
   const DEFAULT_SHORTCUTS = [
-    { id: "browser", name: "Edge" },
+    { id: "edge", name: "Microsoft Edge" },
     { id: "chrome", name: "Chrome" },
     { id: "store__", name: "Store" },
     { id: "youtubeApp", name: "YouTube" },
@@ -1046,7 +1046,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {
