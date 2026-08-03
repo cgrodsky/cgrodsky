@@ -176,7 +176,7 @@
       // now live on the desktop instead of the search bar.
       const src = (S().appData && S().appData.appGroups) || [
         { name: "Office", apps: ["word", "powerpoint", "excel", "outlook", "onenote", "forms", "notepad"] },
-        { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
+        { name: "Essentials", apps: ["settings", "fileexplorer", "calculator", "copilot"] },
       ];
       S().desktop.groups = src.map((g, i) => ({ id: "grp" + i + "_" + Math.abs(hashStr(g.name)), name: g.name, apps: g.apps.slice() }));
       State.save();
@@ -775,7 +775,7 @@
           <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "winflag", "Windows")}</div>
           <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
           <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
-          <div class="tb-btn" data-open="files" title="Files">${Icon.mini("files", "Files")}</div>
+          <div class="tb-btn" data-open="fileexplorer" title="File Explorer">${Icon.mini("fileexplorer", "File Explorer")}</div>
           <div class="tb-btn" data-open="photos" title="Photos">${Icon.mini("photos", "Photos")}</div>
         </div>
       </div>
@@ -814,7 +814,7 @@
     notepad: [{ label: "New note", act: () => open("notepad") }],
     browser: [{ label: "New tab", act: () => open("browser") }],
     paint: [{ label: "New drawing", act: () => open("paint") }],
-    files: [{ label: "New window", act: () => open("files") }],
+    fileexplorer: [{ label: "New window", act: () => open("fileexplorer") }],
     copilot: [{ label: "New chat", act: () => open("copilot") }],
     minecraft: [{ label: "Play", act: () => open("minecraft") }],
   };
@@ -956,7 +956,7 @@
     if (!S().appData) S().appData = {};
     if (!S().appData.appGroups) S().appData.appGroups = [
       { name: "Office", apps: ["word", "powerpoint", "excel", "notepad"] },
-      { name: "Essentials", apps: ["settings", "files", "calculator", "copilot"] },
+      { name: "Essentials", apps: ["settings", "fileexplorer", "calculator", "copilot"] },
     ];
     return S().appData.appGroups;
   }
@@ -1046,7 +1046,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "files", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "achievements", "store__"].includes(id);
   }
 
   function toggleStart() {

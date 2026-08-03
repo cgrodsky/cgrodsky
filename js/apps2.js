@@ -638,21 +638,49 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FILE_SEED = () => ({
+  const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
+  // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
+  function WIN_FS() {
+    const folder = (children) => ({ type: "folder", children: children || {} });
+    const fill = (names) => { const o = {}; names.forEach((n) => (o[n] = sysFile())); return o; };
+    const sys32 = fill(["kernel32.dll", "user32.dll", "gdi32.dll", "ntdll.dll", "advapi32.dll", "shell32.dll", "ole32.dll", "ws2_32.dll", "d3d11.dll", "cmd.exe", "conhost.exe", "notepad.exe", "calc.exe", "taskmgr.exe", "mmc.exe", "regedit.exe", "rundll32.exe", "svchost.exe", "winlogon.exe", "csrss.exe", "dwm.exe", "hal.dll", "ntoskrnl.exe", "drivers.dll"]);
+    sys32["drivers"] = folder(fill(["disk.sys", "ntfs.sys", "tcpip.sys", "usbhub.sys", "volsnap.sys", "acpi.sys"]));
+    sys32["config"] = folder(); sys32["Tasks"] = folder(); sys32["en-US"] = folder(); sys32["spool"] = folder();
+    const windows = folder({
+      "System32": folder(sys32),
+      "SysWOW64": folder(fill(["kernel32.dll", "user32.dll", "cmd.exe"])),
+      "Fonts": folder(fill(["segoeui.ttf", "arial.ttf", "consola.ttf", "tahoma.ttf"])),
+      "Temp": folder(),
+      "explorer.exe": sysFile(),
+      "win.ini": { type: "file", kind: "text", content: "; for 16-bit app support\n[fonts]\n[extensions]\n[mci extensions]\n[files]\n", ts: 0 },
+      "system.ini": { type: "file", kind: "text", content: "; for 16-bit app support\n[386Enh]\n[drivers]\nwave=mmdrv.dll\n[mci]\n", ts: 0 },
+    });
+    return {
+      "Local Disk (C:)": folder({
+        "Windows": windows,
+        "Program Files": folder({ "Windows Defender": folder(), "Internet Explorer": folder(), "Common Files": folder(), "Windows NT": folder() }),
+        "Program Files (x86)": folder({ "Common Files": folder() }),
+        "ProgramData": folder(),
+        "Users": folder({ "You": folder({ "Desktop": folder(), "Documents": folder(), "Downloads": folder() }), "Public": folder() }),
+      }),
+    };
+  }
+  const FILE_SEED = () => Object.assign({
     Desktop: { type: "folder", children: {} },
     Documents: { type: "folder", children: {
-      "Welcome.txt": { type: "file", kind: "text", content: "Welcome to Windows 12!\n\nThis is your Files app. Create folders, make text notes, and organize things — everything is saved in this browser.", ts: 0 },
+      "Welcome.txt": { type: "file", kind: "text", content: "Welcome to Windows 12!\n\nThis is your File Explorer. Create folders, make text notes, and organize things — everything is saved in this browser.", ts: 0 },
       "Notes.txt": { type: "file", kind: "text", content: "- Try the Ender Pearl in Mincraft\n- Pick a color in Paint\n- Watch something on Netflix", ts: 0 },
     } },
     Downloads: { type: "folder", children: {} },
     Pictures: { type: "folder", children: {} },
     Music: { type: "folder", children: {} },
-  });
+  }, WIN_FS());
 
   AppRegistry.files = function () {
-    const { body } = cw({ title: "Files", icon: Icon.mini("files", "Files"), width: 800, height: 540, appId: "files" });
+    const { body } = cw({ title: "File Explorer", icon: Icon.mini("fileexplorer", "File Explorer"), width: 820, height: 560, appId: "fileexplorer" });
     if (S().appData.files == null) S().appData.files = { root: FILE_SEED() };
     const root = S().appData.files.root;
+    if (!root["Local Disk (C:)"]) { Object.assign(root, WIN_FS()); State.save(); }   // migrate existing users
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
@@ -702,6 +730,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>`
           : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>`
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
+          : node.kind === "system" ? `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#c7cdd6"/><rect x="3" y="4" width="18" height="4.5" rx="2" fill="#8a94a6"/><circle cx="12" cy="14" r="3.4" fill="none" stroke="#5a6472" stroke-width="1.6"/><path d="M12 10.6v-1.4M12 18.8v-1.4M15.4 14h1.4M7.2 14h1.4" stroke="#5a6472" stroke-width="1.6"/></svg>`
           : docSvg("#8a94a6");
         const folderSrc = name === "Music" ? "assets/musicfolder.png" : "assets/folder.png";
         const glyph = isFolder ? `<img class="files-folder-img files-is-folder" src="${folderSrc}" alt="">` : fileGlyph;
@@ -779,6 +808,8 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
     render();
   };
+  // File Explorer and Files are the same app now — File Explorer opens the manager.
+  AppRegistry.fileexplorer = AppRegistry.files;
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 })();
