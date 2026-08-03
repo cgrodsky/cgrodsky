@@ -111,10 +111,15 @@
 
     body.innerHTML = `
       <div class="browser-bar">
-        <button class="back" title="Back">&#8592;</button>
-        <button class="reload" title="Reload">&#8635;</button>
+        <button class="bb-nav back" title="Back">&#8592;</button>
+        <button class="bb-nav fwd" title="Forward">&#8594;</button>
+        <button class="bb-nav reload" title="Reload">&#8635;</button>
+        <button class="bb-nav home-btn" title="Home"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></button>
         <div class="addr"><span class="lock muted" style="font-size:.72rem"></span><input class="url" placeholder="Search or enter address"></div>
-        <button class="go" title="Go">&#8594;</button>
+        <button class="bb-ic bb-read" title="Read aloud"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg></button>
+        <button class="bb-ic bb-fav" title="Add to favorites"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4l2.5 5 5.5.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9L9.5 9z"/></svg></button>
+        <button class="bb-ic bb-collections" title="Collections"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
+        <button class="bb-ic bb-menu" title="Settings and more">&#8943;</button>
       </div>
       <div class="bookmark-bar"></div>
       <div class="browser-page"></div>`;
@@ -123,7 +128,7 @@
     const page = body.querySelector(".browser-page");
     const lock = body.querySelector(".lock");
     const bmBar = body.querySelector(".bookmark-bar");
-    const history = [];
+    const history = [], forward = [];
 
     Catalog.bookmarks.forEach((b) => {
       const bm = el(`<div class="bm">${b.label}</div>`);
@@ -132,7 +137,7 @@
     });
 
     function navigate(url, pushHistory = true) {
-      if (pushHistory && urlInput.value) history.push(urlInput.value);
+      if (pushHistory) { history.push(urlInput.value || "home"); forward.length = 0; }
       urlInput.value = url;
       page.innerHTML = "";
       const special = resolveSpecial(url);
@@ -160,12 +165,48 @@
       }
     }
 
-    body.querySelector(".go").onclick = () => navigate(urlInput.value);
     urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") navigate(urlInput.value); });
     body.querySelector(".reload").onclick = () => navigate(urlInput.value, false);
-    body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev) navigate(prev, false); };
+    body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev != null) { forward.push(urlInput.value || "home"); navigate(prev, false); } };
+    body.querySelector(".fwd").onclick = () => { const nxt = forward.pop(); if (nxt != null) { history.push(urlInput.value || "home"); navigate(nxt, false); } };
+    body.querySelector(".home-btn").onclick = () => navigate("home");
+    const notify = (msg) => { if (window.Notify) Notify.show({ icon: opts.icon || "", title: opts.title || "Edge", body: msg }); };
+    // Read aloud — TTS of the visible page text (toggle).
+    let speaking = false;
+    body.querySelector(".bb-read").onclick = () => {
+      if (!window.speechSynthesis) { notify("Read aloud isn't available here."); return; }
+      if (speaking) { speechSynthesis.cancel(); speaking = false; return; }
+      const txt = (page.innerText || "").trim().slice(0, 700);
+      if (!txt) { notify("Nothing to read on this page."); return; }
+      const u = new SpeechSynthesisUtterance(txt); u.onend = () => { speaking = false; };
+      speechSynthesis.cancel(); speechSynthesis.speak(u); speaking = true;
+      notify("Reading this page aloud…");
+    };
+    // Favorites — toggle the star.
+    const favBtn = body.querySelector(".bb-fav");
+    favBtn.onclick = () => { favBtn.classList.toggle("on"); notify(favBtn.classList.contains("on") ? "Added to favorites." : "Removed from favorites."); };
+    body.querySelector(".bb-collections").onclick = () => notify("Collections are coming soon.");
+    // Settings and more (…) menu.
+    body.querySelector(".bb-menu").onclick = (ev) => {
+      body.querySelectorAll(".bb-menu-pop").forEach((m) => m.remove());
+      const m = el(`<div class="bb-menu-pop">
+        <button data-a="newtab">New tab</button><button data-a="reload">Reload</button>
+        <button data-a="read">Read aloud</button><button data-a="fav">Favorites</button>
+        <button data-a="settings">Settings</button></div>`);
+      m.querySelectorAll("button").forEach((b) => b.onclick = () => {
+        m.remove();
+        const a = b.dataset.a;
+        if (a === "newtab") navigate("home");
+        else if (a === "reload") navigate(urlInput.value, false);
+        else if (a === "read") body.querySelector(".bb-read").click();
+        else if (a === "fav") favBtn.click();
+        else notify("Settings are coming soon.");
+      });
+      body.querySelector(".browser-bar").appendChild(m);
+      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!m.contains(x.target)) { m.remove(); document.removeEventListener("pointerdown", h); } }), 0);
+    };
 
-    navigate(startUrl || "home");
+    navigate(startUrl || "home", false);
     return { navigate };
   }
 
