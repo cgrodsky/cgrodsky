@@ -3664,6 +3664,16 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-obj { position: absolute; cursor: move; user-select: none; }
 .cv-text { padding: 2px 4px; white-space: nowrap; outline: none; line-height: 1.1; }
 .cv-obj.sel { outline: 2px solid #7b5cff; outline-offset: 2px; }
+/* Smart alignment guides */
+.cv-guide { position: absolute; background: #e8478b; z-index: 7; pointer-events: none; }
+.cv-guide-v { top: 0; bottom: 0; width: 1px; }
+.cv-guide-h { left: 0; right: 0; height: 1px; }
+/* Opacity row + Position (layer) menu */
+.cv-op-row { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #555; }
+.cv-op-row input { flex: 1; accent-color: #7b2ae8; }
+.cv-pos-menu { position: absolute; z-index: 40; background: #fff; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.22); padding: 6px; display: flex; flex-direction: column; min-width: 150px; }
+.cv-pos-menu button { background: none; border: 0; border-radius: 7px; padding: 9px 10px; text-align: left; font-weight: 600; font-size: .86rem; color: #1c1c28; cursor: pointer; }
+.cv-pos-menu button:hover { background: #f2f2f7; }
 /* PowerPoint-style resize frame + handles */
 .cv-selframe { position: absolute; border: 1.5px solid #7b2ae8; box-sizing: border-box; pointer-events: none; z-index: 6; transform-origin: center; }
 .cv-rot-stalk { position: absolute; left: 50%; top: -26px; width: 1.5px; height: 24px; background: #7b2ae8; transform: translateX(-50%); }

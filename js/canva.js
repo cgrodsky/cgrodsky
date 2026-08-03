@@ -330,6 +330,7 @@
               <button class="cv-fmt cv-align" title="Alignment"></button>
             </div>
             <label class="cv-size-row" style="display:none">Size <input type="range" class="cv-size" min="10" max="120"></label>
+            <label class="cv-op-row">Opacity <input type="range" class="cv-op" min="0" max="100" value="100"></label>
             <button class="cv-rembg" style="display:none">✂ Remove background</button>
             <button class="cv-frame-photo" style="display:none">🖼 Add photo to frame</button>
             <button class="cv-del">🗑 Delete</button>
@@ -362,6 +363,7 @@
       right: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg>`,
       justify: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>`,
     };
+    const opRow = body.querySelector(".cv-op-row"), opIn = body.querySelector(".cv-op");
 
     // Color panel: default swatches + an "add color" picker + deletable custom colors (persisted).
     function customColors() { const st = store(); if (!st.colors) st.colors = []; return st.colors; }
@@ -427,6 +429,8 @@
       if (isText) { fontSel.value = design.els[i].font || "Nunito"; const e = design.els[i]; fmtRow.querySelectorAll(".cv-fmt[data-fmt]").forEach((b) => b.classList.toggle("on", !!e[b.dataset.fmt])); alignBtn.innerHTML = ALIGN_IC[e.align || "left"]; }
       rembgBtn.style.display = has && design.els[i].t === "image" ? "block" : "none";
       framePhotoBtn.style.display = has && design.els[i].t === "frame" ? "block" : "none";
+      opRow.style.display = has ? "flex" : "none";
+      if (has) opIn.value = Math.round((design.els[i].opacity != null ? design.els[i].opacity : 1) * 100);
       subbar.style.display = has ? "flex" : "none";
       if (has && design.els[i].t !== "text") showFrame(i); else clearFrame();
     }
@@ -501,10 +505,28 @@
     subbar.querySelector(".cv-sb-comment").onclick = () => addComment();
     subbar.querySelector(".cv-sb-color input").oninput = (e) => { if (sel != null && design.els[sel].t !== "image") { design.els[sel].color = e.target.value; render(); selectEl(sel); } };
     subbar.querySelector(".cv-sb-color input").addEventListener("change", () => { if (sel != null) record(); });
-    subbar.querySelector(".cv-sb-position").onclick = () => {
+    function reorder(kind) {
       if (sel == null) return;
-      const e = design.els.splice(sel, 1)[0]; design.els.push(e); render(); selectEl(design.els.length - 1); record();
+      const e = design.els.splice(sel, 1)[0]; let ni = sel;
+      if (kind === "front") ni = design.els.length;
+      else if (kind === "back") ni = 0;
+      else if (kind === "forward") ni = Math.min(design.els.length, sel + 1);
+      else if (kind === "backward") ni = Math.max(0, sel - 1);
+      design.els.splice(ni, 0, e); render(); selectEl(ni); record();
+    }
+    subbar.querySelector(".cv-sb-position").onclick = (ev) => {
+      if (sel == null) return;
+      body.querySelectorAll(".cv-pos-menu").forEach((m) => m.remove());
+      const btn = ev.currentTarget, r = btn.getBoundingClientRect(), cvR = body.querySelector(".cv").getBoundingClientRect();
+      const menu = el(`<div class="cv-pos-menu" style="left:${r.left - cvR.left}px;top:${r.bottom - cvR.top + 4}px">
+        <button data-o="front">⤒ To front</button><button data-o="forward">↑ Forward</button>
+        <button data-o="backward">↓ Backward</button><button data-o="back">⤓ To back</button></div>`);
+      menu.querySelectorAll("button").forEach((b) => b.onclick = () => { menu.remove(); reorder(b.dataset.o); });
+      body.querySelector(".cv").appendChild(menu);
+      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!menu.contains(x.target)) { menu.remove(); document.removeEventListener("pointerdown", h); } }), 0);
     };
+    opIn.oninput = () => { if (sel != null && design.els[sel]) { design.els[sel].opacity = +opIn.value / 100; const o = stage.querySelector(`.cv-obj[data-i="${sel}"]`); if (o) o.style.opacity = design.els[sel].opacity; } };
+    opIn.addEventListener("change", () => { if (sel != null) record(); });
     sizeIn.oninput = () => {
       if (sel == null) return;
       const e = design.els[sel];
@@ -529,6 +551,7 @@
         if (e.anim) o.classList.add("cv-anim", "cv-anim-" + e.anim);
         o.style.setProperty("--rot", (e.rot || 0) + "deg");
         if (e.rot) o.style.transform = "rotate(" + e.rot + "deg)";
+        if (e.opacity != null && e.opacity !== 1) o.style.opacity = e.opacity;
         dragify(o, e, i);
         stage.appendChild(o);
       });
@@ -563,14 +586,29 @@
       render(); record();
       if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: "Comment added." });
     }
+    function clearGuides() { stage.querySelectorAll(".cv-guide").forEach((g) => g.remove()); }
+    function showGuide(dir, pos) { stage.appendChild(el(`<div class="cv-guide cv-guide-${dir}" style="${dir === "v" ? "left" : "top"}:${pos}px"></div>`)); }
     function dragify(o, e, i) {
       o.addEventListener("pointerdown", (ev) => {
         if (o.isContentEditable && document.activeElement === o) return;   // let text editing work
         selectEl(i);
         const r = stage.getBoundingClientRect(); const ox = ev.clientX - e.x, oy = ev.clientY - e.y;
         let moved = false;
-        const mv = (m) => { moved = true; e.x = Math.max(0, Math.min(ty.w - 10, m.clientX - ox)); e.y = Math.max(0, Math.min(ty.h - 10, m.clientY - oy)); o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) placeFrame(); };
-        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); if (moved) record(); };
+        const mv = (m) => {
+          moved = true;
+          let nx = m.clientX - ox, ny = m.clientY - oy;
+          const w = o.offsetWidth || e.w || 0, h = o.offsetHeight || e.h || 0, SNAP = 6;
+          clearGuides();
+          if (Math.abs((nx + w / 2) - ty.w / 2) < SNAP) { nx = Math.round(ty.w / 2 - w / 2); showGuide("v", ty.w / 2); }
+          else if (Math.abs(nx) < SNAP) { nx = 0; showGuide("v", 0); }
+          else if (Math.abs((nx + w) - ty.w) < SNAP) { nx = ty.w - w; showGuide("v", ty.w); }
+          if (Math.abs((ny + h / 2) - ty.h / 2) < SNAP) { ny = Math.round(ty.h / 2 - h / 2); showGuide("h", ty.h / 2); }
+          else if (Math.abs(ny) < SNAP) { ny = 0; showGuide("h", 0); }
+          else if (Math.abs((ny + h) - ty.h) < SNAP) { ny = ty.h - h; showGuide("h", ty.h); }
+          e.x = Math.max(0, Math.min(ty.w - 10, nx)); e.y = Math.max(0, Math.min(ty.h - 10, ny));
+          o.style.left = e.x + "px"; o.style.top = e.y + "px"; if (i === sel) placeFrame();
+        };
+        const up = () => { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); clearGuides(); if (moved) record(); };
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       });
       o.addEventListener("click", (ev) => { ev.stopPropagation(); selectEl(i); });
