@@ -638,8 +638,8 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png" };
-  const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png" };
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png" };
+  const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png" };
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -668,6 +668,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     };
   }
   const FILE_SEED = () => Object.assign({
+    OneDrive: { type: "folder", children: {} },
     Desktop: { type: "folder", children: {} },
     Documents: { type: "folder", children: {
       "Welcome.txt": { type: "file", kind: "text", content: "Welcome to Windows 12!\n\nThis is your File Explorer. Create folders, make text notes, and organize things — everything is saved in this browser.", ts: 0 },
@@ -685,6 +686,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     const root = S().appData.files.root;
     if (!root["Local Disk (C:)"]) { Object.assign(root, WIN_FS()); State.save(); }   // migrate existing users
     if (!root["Videos"]) { root["Videos"] = { type: "folder", children: {} }; State.save(); }
+    if (!root["OneDrive"]) { root["OneDrive"] = { type: "folder", children: {} }; State.save(); }
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
@@ -704,7 +706,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       body.innerHTML = `<div style="display:flex;height:100%">
         <div class="files-side">
           <div class="muted files-side-h">This PC</div>
-          ${["Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
+          ${["OneDrive", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
         </div>
         <div style="flex:1;display:flex;flex-direction:column;min-width:0">
           <div class="files-toolbar">
