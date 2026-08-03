@@ -1011,7 +1011,8 @@
           <button class="cv-txt-style" data-role="subheading">Add a subheading</button>
           <button class="cv-txt-style" data-role="body">Add a little bit of body text</button>
           <div class="cv-panel-h">Dynamic text</div>
-          <button class="cv-tool cv-txt-pagenum">🔢 Page numbers</button>`;
+          ${ty.id === "video" ? `<button class="cv-dyn cv-dyn-captions"><span class="cv-dyn-ic"><img src="assets/cv_dyn_captions.png?v=1" alt=""></span>Captions</button>` : ""}
+          <button class="cv-dyn cv-dyn-pagenum"><span class="cv-dyn-ic"><img src="assets/cv_dyn_pagenum.png?v=1" alt=""></span>Page numbers</button>`;
         const styles = { heading: { text: "Add a heading", size: 48, bold: true }, subheading: { text: "Add a subheading", size: 30, bold: true }, body: { text: "Add a little bit of body text", size: 18, bold: false } };
         P.querySelectorAll(".cv-txt-style").forEach((b) => b.onclick = () => {
           const s = styles[b.dataset.role];
@@ -1022,7 +1023,11 @@
         P.querySelector(".cv-txt-magic").onclick = () => magicWrite();
         P.querySelector(".cv-txt-edit").onclick = () => uploadFont();
         P.querySelector(".cv-txt-brandfonts").onclick = () => uploadFont();
-        P.querySelector(".cv-txt-pagenum").onclick = () => t2("Page numbers are coming soon.");
+        P.querySelector(".cv-dyn-pagenum").onclick = () => {
+          design.els.push({ t: "text", x: ty.w - 62, y: ty.h - 52, text: "1", size: 24, color: "#111111", bold: true });
+          render(); selectEl(design.els.length - 1); record();
+        };
+        const capBtn = P.querySelector(".cv-dyn-captions"); if (capBtn) capBtn.onclick = () => {};   // video only, not wired yet
       } else if (id === "uploads") {
         const c = store(); if (!c.uploads) c.uploads = [];
         P.innerHTML = `
@@ -1142,8 +1147,18 @@
           <div class="cv-up-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search Canva apps"></div>
           <div class="cv-up-tabs"><button class="cv-up-tab on" data-atab="discover">Discover</button><button class="cv-up-tab" data-atab="your">Your apps</button></div>
           <div class="cv-app-pills"><button class="cv-app-pill on">For you</button><button class="cv-app-pill">AI generation</button><button class="cv-app-pill">Audio and video</button></div>
-          <div class="cv-panel-h">Made for presentations</div>
-          <div class="cv-app-list"></div>`;
+          <div class="cv-panel-h">Collections</div>
+          <div class="cv-app-collection">
+            <div class="cv-coll-text"><b>Your go-to apps, in Canva AI</b><span>Connect your workflows. Bring your favorite tools into Canva AI.</span></div>
+            <div class="cv-coll-icons"><img src="assets/gapp_gmail.png?v=1"><img src="assets/gapp_meet.png?v=1"><img src="assets/gapp_calendar.png?v=1"><img src="assets/gapp_drive.png?v=1"></div>
+          </div>
+          <div class="cv-panel-h">Made for video</div>
+          <div class="cv-app-list"></div>
+          <div class="cv-panel-h">Trending</div>
+          <div class="cv-app-trending">
+            <div class="cv-trend-card" style="background:linear-gradient(135deg,#ffe3c2,#ffd0a0)"><span>Make text stand out with TypeGradient ›</span></div>
+            <div class="cv-trend-card" style="background:linear-gradient(135deg,#5b7cff,#8b5cff);color:#fff"><span>Fill text with TypeCutout ›</span></div>
+          </div>`;
         const APPS = [
           { name: "Simplebooklet", desc: "Publish and track flipbooks.", c: "#f0932b", emoji: "📖" },
           { name: "GIPHY", desc: "Add GIFs to your designs.", c: "#111111", img: "assets/cv_app_giphy.png" },

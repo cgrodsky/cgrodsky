@@ -3550,6 +3550,14 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-app-name { font-weight: 800; font-size: .9rem; }
 .cv-app-desc { font-size: .78rem; color: #8b8896; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cv-app-more { color: #8b8896; font-weight: 800; }
+.cv-app-collection { background: linear-gradient(135deg, #efeafd, #f6f2ff); border-radius: 14px; padding: 14px; display: flex; gap: 10px; align-items: center; }
+.cv-coll-text { flex: 1; min-width: 0; }
+.cv-coll-text b { font-size: .92rem; display: block; }
+.cv-coll-text span { font-size: .78rem; color: #6b6875; }
+.cv-coll-icons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 0 0 auto; }
+.cv-coll-icons img { width: 30px; height: 30px; border-radius: 7px; background: #fff; padding: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.12); object-fit: contain; }
+.cv-app-trending { display: flex; gap: 10px; overflow-x: auto; }
+.cv-trend-card { flex: 0 0 62%; min-height: 90px; border-radius: 12px; padding: 14px; font-weight: 800; font-size: .92rem; display: flex; align-items: flex-start; }
 /* Contextual toolbar shown when an element is selected */
 /* Floating selection pill above the selected element */
 .cv-pill { position: absolute; z-index: 9; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; background: #fff; border-radius: 9px; box-shadow: 0 4px 16px rgba(0,0,0,.22); padding: 4px; white-space: nowrap; }
@@ -3644,6 +3652,10 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-txt-style[data-role="heading"] { font-size: 1.6rem; font-weight: 800; }
 .cv-txt-style[data-role="subheading"] { font-size: 1.15rem; font-weight: 700; }
 .cv-txt-style[data-role="body"] { font-size: .9rem; }
+.cv-dyn { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e3e0ee; border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 700; color: #1c1c28; text-align: left; }
+.cv-dyn:hover { background: #f7f6fb; }
+.cv-dyn-ic { width: 42px; height: 42px; border-radius: 10px; flex: 0 0 auto; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.cv-dyn-ic img { width: 100%; height: 100%; object-fit: cover; }
 /* Canva Uploads panel */
 .cv-up-search { display: flex; align-items: center; gap: 8px; border: 1px solid #e3e0ee; border-radius: 10px; padding: 9px 12px; color: #8b8896; }
 .cv-up-search svg { width: 18px; height: 18px; flex: 0 0 auto; }

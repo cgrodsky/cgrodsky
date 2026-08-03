@@ -640,7 +640,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   // ---------- Files (a virtual, persistent file manager) ----------
   const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png" };
   const FOLDER_ICON_OPEN = { Music: "assets/musicfolder_open.png", Videos: "assets/videosfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/picturesfolder_open.png", Pictures: "assets/picturesfolder_open.png" };
-  const FICONV = "2";   // bump to force iPad to refetch updated folder icons
+  const FICONV = "3";   // bump to force iPad to refetch updated folder icons
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -750,9 +750,10 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           if (isFolder) { path = path.concat(name); render(); } else openFile(name, node);
         };
         item.querySelector(".files-menu").onclick = (e) => { e.stopPropagation(); itemMenu(e.currentTarget, name, node); };
-        if (isFolder && FOLDER_ICON_OPEN[name]) {
+        const hoverSrc = FOLDER_ICON_OPEN[name] ? FOLDER_ICON_OPEN[name] : (FOLDER_ICON[name] ? null : "assets/folder_open.png");
+        if (isFolder && hoverSrc) {
           const fimg = item.querySelector(".files-is-folder");
-          item.addEventListener("mouseenter", () => { fimg.src = FOLDER_ICON_OPEN[name] + "?v=" + FICONV; });
+          item.addEventListener("mouseenter", () => { fimg.src = hoverSrc + "?v=" + FICONV; });
           item.addEventListener("mouseleave", () => { fimg.src = folderSrc; });
         }
         grid.appendChild(item);
