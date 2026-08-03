@@ -3739,6 +3739,29 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .cv-bb-ic svg { width: 19px; height: 19px; }
 .cv-obj { position: absolute; cursor: move; user-select: none; }
 .cv-text { padding: 2px 4px; white-space: nowrap; outline: none; line-height: 1.1; }
+/* Adobe Acrobat */
+.acro { display: flex; flex-direction: column; height: 100%; background: #e6e6e6; }
+.acro-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #2a2a2a; color: #fff; }
+.acro-logo { width: 24px; height: 24px; object-fit: contain; }
+.acro-name { font-weight: 700; }
+.acro-url { flex: 0 1 340px; border: 0; border-radius: 6px; padding: 7px 10px; font-size: .85rem; outline: none; }
+.acro-open { background: #d5290f; color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
+.acro-stage { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.acro-frame { flex: 1; width: 100%; border: 0; background: #fff; }
+.acro-frame-note { padding: 6px 12px; font-size: .78rem; }
+.acro-welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #555; }
+.acro-welcome img { width: 84px; height: auto; margin-bottom: 14px; }
+.acro-welcome h1 { margin: 0 0 6px; color: #333; }
+/* QR Code generator */
+.qr-app { padding: 22px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
+.qr-h { margin: 0; }
+.qr-in { min-height: 80px; resize: none; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: .95rem; font-family: inherit; outline: none; }
+.qr-gen { background: linear-gradient(90deg, #7d2ae8, #5433ff); color: #fff; border: 0; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; }
+.qr-out { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 6px; }
+.qr-frame { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.qr-img { width: 220px; height: 220px; display: block; }
+.qr-dl { color: #7b2ae8; font-weight: 700; text-decoration: none; }
+.qr-dl:hover { text-decoration: underline; }
 /* Microsoft Edge new tab */
 .edge-home { height: 100%; overflow-y: auto; background: #f3f3f3; }
 .edge-hero { background: linear-gradient(160deg, #3a6ea5, #6a4fb5 60%, #2b8fc4); padding: 18px 24px 34px; color: #fff; }

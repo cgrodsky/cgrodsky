@@ -52,6 +52,8 @@
     { id: "vscode", name: "Visual Studio Code", cat: "Developer", price: 0, builtin: "vscode", desc: "A full code editor: explorer, tabs, syntax highlighting, command palette, and live preview." },
     { id: "achievements", name: "Achievements", cat: "System", price: 0, builtin: "achievements", desc: "Track milestones across Windows 12 apps." },
     { id: "canva", name: "Canva", cat: "Multimedia", price: 0, builtin: "canva", desc: "Canva — design posts, posters, logos and slides with drag-and-drop." },
+    { id: "acrobat", name: "Adobe Acrobat", cat: "Productivity", price: 0, builtin: "acrobat", desc: "Adobe Acrobat — open and read PDF documents." },
+    { id: "qrcode", name: "QR Code", cat: "Utilities", price: 0, builtin: "qrcode", desc: "Generate a scannable QR code from any text or link." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).

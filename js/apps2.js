@@ -738,6 +738,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>`
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
           : node.kind === "system" ? `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#c7cdd6"/><rect x="3" y="4" width="18" height="4.5" rx="2" fill="#8a94a6"/><circle cx="12" cy="14" r="3.4" fill="none" stroke="#5a6472" stroke-width="1.6"/><path d="M12 10.6v-1.4M12 18.8v-1.4M15.4 14h1.4M7.2 14h1.4" stroke="#5a6472" stroke-width="1.6"/></svg>`
+          : (node.kind === "pdf" || /\.pdf$/i.test(name)) ? `<img class="files-folder-img" src="assets/pdf.png?v=1" alt="pdf">`
           : docSvg("#8a94a6");
         const folderSrc = (FOLDER_ICON[name] || "assets/folder.png") + "?v=" + FICONV;
         const glyph = isFolder ? `<img class="files-folder-img files-is-folder" src="${folderSrc}" alt="">` : fileGlyph;
@@ -823,6 +824,52 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
   // File Explorer and Files are the same app now — File Explorer opens the manager.
   AppRegistry.fileexplorer = AppRegistry.files;
+
+  // ---------- Adobe Acrobat (PDF reader) ----------
+  AppRegistry.acrobat = function () {
+    const { body } = cw({ title: "Adobe Acrobat", icon: Icon.mini("acrobat", "Adobe Acrobat"), width: 860, height: 620, appId: "acrobat" });
+    body.innerHTML = `<div class="acro">
+      <div class="acro-bar"><img class="acro-logo" src="assets/acrobat.png?v=1" alt=""><span class="acro-name">Adobe Acrobat</span><span class="grow"></span>
+        <input class="acro-url" placeholder="Paste a PDF link (https://…)"><button class="acro-open">Open</button></div>
+      <div class="acro-stage"></div>
+    </div>`;
+    const stage = body.querySelector(".acro-stage");
+    function showWelcome() {
+      stage.innerHTML = `<div class="acro-welcome"><img src="assets/pdf.png?v=1" alt=""><h1>Open a PDF</h1><p>Paste a PDF link above, or open a .pdf from File Explorer.</p></div>`;
+    }
+    function openUrl(u) {
+      if (!u) return;
+      const final = /^https?:\/\//.test(u) ? u : "https://" + u;
+      stage.innerHTML = `<iframe class="acro-frame" src="${escapeHtml(final)}"></iframe><div class="acro-frame-note muted">If the document is blank, that host blocks embedding. Try another link.</div>`;
+    }
+    body.querySelector(".acro-open").onclick = () => openUrl(body.querySelector(".acro-url").value.trim());
+    body.querySelector(".acro-url").addEventListener("keydown", (e) => { if (e.key === "Enter") openUrl(e.target.value.trim()); });
+    showWelcome();
+  };
+
+  // ---------- QR Code generator ----------
+  AppRegistry.qrcode = function () {
+    const { body } = cw({ title: "QR Code", icon: Icon.mini("qrcode", "QR Code"), width: 420, height: 540, appId: "qrcode" });
+    body.innerHTML = `<div class="qr-app">
+      <h2 class="qr-h">QR Code Generator</h2>
+      <p class="muted">Turn any text or link into a scannable QR code.</p>
+      <textarea class="qr-in" placeholder="https://example.com or any text">Hello World</textarea>
+      <button class="qr-gen">Generate QR code</button>
+      <div class="qr-out"></div>
+    </div>`;
+    const inp = body.querySelector(".qr-in"), out = body.querySelector(".qr-out");
+    const gen = () => {
+      const t = inp.value.trim(); if (!t) { out.innerHTML = `<p class="muted">Enter some text above.</p>`; return; }
+      const url = "https://www.qrcoder.co.uk/api/v4/?key=" + (window.QRCODER_API_KEY || "") + "&text=" + encodeURIComponent(t);
+      out.innerHTML = `<div class="qr-frame"><img class="qr-img" src="${url}" alt="QR code"></div><a class="qr-dl" href="${url}" target="_blank" rel="noopener">Open / download</a>`;
+    };
+    body.querySelector(".qr-gen").onclick = gen;
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) gen(); });
+    gen();
+  };
+  if (window.Icon && Icon.register) {
+    Icon.register("qrcode", `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zM13 3h8v8h-8zm2 2v4h4V5zM13 13h3v3h-3zm5 0h3v3h-3zm-5 5h3v3h-3zm5 0h3v3h-3z"/></svg>`);
+  }
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 })();
