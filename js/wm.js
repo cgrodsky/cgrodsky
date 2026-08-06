@@ -163,7 +163,7 @@
         row.querySelector(".rbin-restore").onclick = () => { restoreFromBin(it.id); render(); };
         list.appendChild(row);
       });
-      body.querySelector("#empty").onclick = () => { S().desktop.bin = []; State.save(); render(); };
+      body.querySelector("#empty").onclick = () => { S().desktop.bin = []; State.save(); render(); renderDesktopIcons(); };
     }
     render();
   };
@@ -328,8 +328,10 @@
     if (sortBy === "name") items.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === "type") items.sort((a, b) => { const ca = (Catalog.storeApps.find((x) => x.id === a.id) || {}).cat || ""; const cb = (Catalog.storeApps.find((x) => x.id === b.id) || {}).cat || ""; return ca.localeCompare(cb) || a.name.localeCompare(b.name); });
 
-    // Recycle Bin is always first and is the drop target.
-    const bin = el(`<div class="dicon dbin" data-bin="1"><div class="glyph">${Icon.big("recyclebin", "Recycle Bin")}</div><div class="label">Recycle Bin</div></div>`);
+    // Recycle Bin is always first and is the drop target. Show the empty-bin art
+    // when nothing's in it, the full bin (paper poking out) when it holds items.
+    const binKey = binItems().length ? "recyclebin" : "recyclebin_empty";
+    const bin = el(`<div class="dicon dbin" data-bin="1"><div class="glyph">${Icon.big(binKey, "Recycle Bin")}</div><div class="label">Recycle Bin</div></div>`);
     bin.onclick = (e) => { e.stopPropagation(); if (bin.classList.contains("selected")) { open("recyclebin"); return; } clearDeskSel(); bin.classList.add("selected"); };
     iconWrap.appendChild(bin);
 
