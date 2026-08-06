@@ -1074,7 +1074,11 @@
     recordRecent(appId);
     if (appId === "store__") { AppRegistry.store(); return; }
     if (appId === "recyclebin") { AppRegistry.recyclebin(); return; }
-    const app = Catalog.storeApps.find((a) => a.id === appId);
+    let app = Catalog.storeApps.find((a) => a.id === appId);
+    // Taskbar buttons and shortcuts may reference an app by its builtin key
+    // (e.g. "photos", "fileexplorer") rather than its generated store id.
+    if (!app) app = Catalog.storeApps.find((a) => a.builtin === appId);
+    if (!app && AppRegistry[appId]) { return AppRegistry[appId](createWindow); }
     if (!app) return;
     if (app.game) { return Games.launch(app, createWindow); }
     if (app.builtin && AppRegistry[app.builtin]) { return AppRegistry[app.builtin](createWindow); }

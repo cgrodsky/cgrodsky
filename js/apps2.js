@@ -540,17 +540,110 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
   // ---------- Photos (image viewer) ----------
   AppRegistry.photos = function () {
-    const { body } = cw({ title: "Photos", icon: Icon.mini("photos", "Photos"), width: 640, height: 500 });
-    body.innerHTML = `<div class="mp"><button class="pill-btn" id="pick">Open images from your device</button><div id="stage" class="grow center-col" style="justify-content:center"><p class="muted">No photos open.</p></div></div>`;
-    const stage = body.querySelector("#stage");
-    body.querySelector("#pick").onclick = () => {
-      const inp = document.getElementById("globalFileInput"); inp.accept = "image/*"; inp.multiple = true; inp.value = "";
-      inp.onchange = () => {
-        stage.innerHTML = ""; [...inp.files].forEach((f) => { const img = document.createElement("img"); img.src = URL.createObjectURL(f); img.style.cssText = "max-width:100%;max-height:60vh;border-radius:8px;margin:8px"; stage.appendChild(img); });
-        inp.multiple = false;
+    const { body } = cw({ title: "Photos", icon: Icon.mini("photos", "Photos"), width: 880, height: 600, appId: "photos" });
+    // Sample library (the desktop wallpapers double as demo shots) plus anything
+    // the user imports from their device this session.
+    const SAMPLES = [
+      { src: "assets/wall1.jpg", name: "Bloom", date: "August 4, 2026" },
+      { src: "assets/wall4.jpg", name: "Sunset Ridge", date: "August 2, 2026" },
+      { src: "assets/wall2.jpg", name: "Waves", date: "July 28, 2026" },
+      { src: "assets/wall5.jpg", name: "Aurora", date: "July 21, 2026" },
+      { src: "assets/wall3.jpg", name: "Windows 12", date: "July 14, 2026" },
+      { src: "assets/wall6.jpg", name: "Dunes", date: "June 30, 2026" },
+    ];
+    const ALBUMS = [
+      { name: "Favorites", cover: "assets/wall4.jpg", items: ["assets/wall4.jpg", "assets/wall2.jpg", "assets/wall1.jpg"] },
+      { name: "Nature", cover: "assets/wall1.jpg", items: ["assets/wall1.jpg", "assets/wall3.jpg", "assets/wall5.jpg"] },
+      { name: "Wallpapers", cover: "assets/wall5.jpg", items: ["assets/wall1.jpg", "assets/wall2.jpg", "assets/wall3.jpg", "assets/wall4.jpg", "assets/wall5.jpg", "assets/wall6.jpg"] },
+      { name: "Screenshots", cover: "assets/wall6.jpg", items: ["assets/wall6.jpg"] },
+    ];
+    let userPhotos = []; // {src,name,date} from device this session
+    const folderSvg = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>`;
+
+    body.innerHTML = `<div class="pho">
+      <div class="pho-side">
+        <button class="pho-nav on" data-view="gallery"><span class="pho-nav-ic">${Icon.mini("photos", "Photos")}</span><span>Gallery</span></button>
+        <button class="pho-nav" data-view="albums"><span class="pho-nav-ic"><img src="assets/albums.png?v=1" alt=""></span><span>Albums</span></button>
+        <button class="pho-nav" data-view="folders"><span class="pho-nav-ic">${folderSvg}</span><span>Folders</span></button>
+      </div>
+      <div class="pho-main"></div>
+    </div>`;
+    const main = body.querySelector(".pho-main");
+
+    function lightbox(list, i) {
+      const ov = el(`<div class="pho-lb"><button class="pho-lb-x" title="Close">&times;</button>
+        <button class="pho-lb-nav pho-lb-prev" title="Previous">&#8249;</button>
+        <img src="${escapeHtml(list[i])}" alt="">
+        <button class="pho-lb-nav pho-lb-next" title="Next">&#8250;</button></div>`);
+      const img = ov.querySelector("img");
+      const go = (d) => { i = (i + d + list.length) % list.length; img.src = list[i]; };
+      ov.querySelector(".pho-lb-prev").onclick = (e) => { e.stopPropagation(); go(-1); };
+      ov.querySelector(".pho-lb-next").onclick = (e) => { e.stopPropagation(); go(1); };
+      ov.querySelector(".pho-lb-x").onclick = () => ov.remove();
+      ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+      body.appendChild(ov);
+    }
+
+    function tile(p, list, idx) {
+      const t = el(`<button class="pho-tile"><img src="${escapeHtml(p.src || p)}" alt="" loading="lazy"><span class="pho-tile-nm">${escapeHtml(p.name || "")}</span></button>`);
+      t.onclick = () => lightbox(list, idx);
+      return t;
+    }
+
+    function importBtn() {
+      const b = el(`<button class="pho-import">${Icon.mini ? "" : ""}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Import</button>`);
+      b.onclick = () => {
+        const inp = document.getElementById("globalFileInput"); inp.accept = "image/*"; inp.multiple = true; inp.value = "";
+        inp.onchange = () => { [...inp.files].forEach((f) => userPhotos.unshift({ src: URL.createObjectURL(f), name: f.name.replace(/\.[a-z0-9]+$/i, ""), date: "Today" })); inp.multiple = false; showGallery(); };
+        inp.click();
       };
-      inp.click();
-    };
+      return b;
+    }
+
+    function showGallery() {
+      setNav("gallery");
+      const all = userPhotos.concat(SAMPLES);
+      const srcs = all.map((p) => p.src);
+      main.innerHTML = `<div class="pho-head"><h2>Gallery</h2><span class="grow"></span></div><div class="pho-grid"></div>`;
+      main.querySelector(".pho-head").appendChild(importBtn());
+      const grid = main.querySelector(".pho-grid");
+      all.forEach((p, i) => grid.appendChild(tile(p, srcs, i)));
+    }
+
+    function showAlbums() {
+      setNav("albums");
+      main.innerHTML = `<div class="pho-head"><h2>Albums</h2></div><div class="pho-albums"></div>`;
+      const wrap = main.querySelector(".pho-albums");
+      ALBUMS.forEach((a) => {
+        const card = el(`<button class="pho-album"><span class="pho-album-cov"><img src="${escapeHtml(a.cover)}?v=1" alt=""></span><span class="pho-album-nm">${escapeHtml(a.name)}</span><span class="pho-album-ct">${a.items.length} item${a.items.length === 1 ? "" : "s"}</span></button>`);
+        card.querySelector("img").src = a.cover; // no query needed for local jpg
+        card.onclick = () => openAlbum(a);
+        wrap.appendChild(card);
+      });
+    }
+
+    function openAlbum(a) {
+      setNav("albums");
+      main.innerHTML = `<div class="pho-head"><button class="pho-back" title="Back">&#8249;</button><h2>${escapeHtml(a.name)}</h2></div><div class="pho-grid"></div>`;
+      main.querySelector(".pho-back").onclick = showAlbums;
+      const grid = main.querySelector(".pho-grid");
+      a.items.forEach((src, i) => grid.appendChild(tile({ src, name: "" }, a.items, i)));
+    }
+
+    function showFolders() {
+      setNav("folders");
+      main.innerHTML = `<div class="pho-head"><h2>Folders</h2></div><div class="pho-albums"></div>`;
+      const wrap = main.querySelector(".pho-albums");
+      [["Pictures", "assets/wall1.jpg", SAMPLES.length], ["Camera Roll", "assets/wall6.jpg", 1], ["Screenshots", "assets/wall3.jpg", 1]].forEach(([nm, cov, ct]) => {
+        const card = el(`<button class="pho-album pho-folder"><span class="pho-album-cov">${folderSvg}<img src="${cov}" alt=""></span><span class="pho-album-nm">${nm}</span><span class="pho-album-ct">${ct} item${ct === 1 ? "" : "s"}</span></button>`);
+        card.onclick = showGallery;
+        wrap.appendChild(card);
+      });
+    }
+
+    function setNav(v) { body.querySelectorAll(".pho-nav").forEach((n) => n.classList.toggle("on", n.dataset.view === v)); }
+    body.querySelectorAll(".pho-nav").forEach((n) => n.onclick = () => { const v = n.dataset.view; if (v === "gallery") showGallery(); else if (v === "albums") showAlbums(); else showFolders(); });
+    showGallery();
   };
 
   // ---------- Camera ----------

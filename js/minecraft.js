@@ -218,9 +218,9 @@
   }
 
   AppRegistry.minecraft = function (opts) {
-    // Opens showing the Java icon (like Minecraft Java launching), then swaps
-    // to the Minecraft icon after 2 seconds.
-    const ref = cw({ title: "Mincraft", icon: Icon.mini("java", "Java"), width: 900, height: 640, appId: "minecraft" });
+    // Minecraft for Windows opens on a generic app-window icon while it loads,
+    // then swaps to the Minecraft icon after 2 seconds.
+    const ref = cw({ title: "Mincraft", icon: Icon.mini("appwindow", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
     setTimeout(() => { if (window.WM && window.WM.setWindowIcon) window.WM.setWindowIcon(ref.win, Icon.mini("minecraft", "Mincraft")); }, 2000);
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
     const toMenu = () => menu(ref.body, ref);
@@ -423,8 +423,9 @@
   function game(body, ref, seedStr, creative) {
     if (typeof THREE === "undefined") {
       body.innerHTML = `<div class="mc-root mc-optscreen">
-        <div class="mc-title">3D engine not loaded</div>
-        <p style="color:#fff;text-shadow:2px 2px #000;margin:0">Three.js failed to load. Check connection and refresh.</p>
+        <img src="assets/appwindow.png?v=5" alt="" style="width:72px;height:72px;image-rendering:auto;margin-bottom:6px" onerror="this.style.display='none'">
+        <div class="mc-title">Mincraft is not responding</div>
+        <p style="color:#fff;text-shadow:2px 2px #000;margin:0">The 3D engine (Three.js) failed to load. Check your connection and refresh.</p>
         <button class="mc-btn" id="back" style="margin-top:18px">Back</button></div>`;
       body.querySelector("#back").onclick = () => menu(body, ref);
       return;
