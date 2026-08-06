@@ -1892,8 +1892,9 @@ body.xp-theme .win-titlebar { background: linear-gradient(#3f8ae8, #245edb); col
 .oobe-illus .il-wide { width: 244px; }
 .fp-anim { display: inline-block; transition: filter .2s; }
 .oobe-cat-ic svg { display: block; }
-/* Files folder hover swap */
-.files-item:hover .files-is-folder { content: url(../assets/folder_hover.png); }
+/* Files folder hover: the open-folder swap is done in JS (per-folder custom art with a
+   generic fallback) — do NOT swap via CSS content:url() here, it overrides the img src
+   for EVERY folder and breaks the custom icons. Keep only the scale effect. */
 .files-item:hover .files-folder-img { transform: scale(1.05); transition: transform .1s; }
 
 /* OOBE motion — makes setup feel alive */
