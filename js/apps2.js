@@ -829,7 +829,16 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       entries.forEach(([name, node]) => {
         const isFolder = node.type === "folder";
         const docSvg = (c) => `<svg viewBox="0 0 24 24" width="34" height="34"><path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" fill="${c}"/><path d="M14 3v4h4" fill="#fff" opacity=".55"/></svg>`;
-        const fileGlyph = node.kind === "image" ? (node.src ? `<img class="files-folder-img" src="${node.src}" alt="">` : `<svg viewBox="0 0 24 24" width="34" height="34"><rect x="3" y="4" width="18" height="16" rx="2" fill="#5a8def"/><circle cx="9" cy="9" r="2" fill="#fff"/><path d="M4 18l5-5 3 3 4-5 5 7Z" fill="#fff"/></svg>`)
+        // File-type icon by kind, then by extension (images, code, video, pdf).
+        const ext = (String(name).match(/\.([a-z0-9]+)$/i) || [, ""])[1].toLowerCase();
+        const IMG_EXT = ["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "heic", "ico", "tiff"];
+        const CODE_EXT = ["js", "mjs", "cjs", "ts", "jsx", "tsx", "css", "scss", "less", "html", "htm", "json", "py", "java", "c", "h", "cpp", "cc", "cs", "go", "rb", "php", "rs", "swift", "kt", "sh", "bat", "xml", "yml", "yaml", "md", "vue", "sql", "lua"];
+        const VID_EXT = ["mp4", "mov", "avi", "mkv", "webm", "m4v", "wmv", "flv", "mpg", "mpeg"];
+        const isImg = node.kind === "image" || IMG_EXT.includes(ext);
+        const fileGlyph =
+            isImg ? (node.src ? `<img class="files-folder-img" src="${node.src}" alt="">` : `<img class="files-folder-img" src="assets/file_image.png?v=1" alt="image">`)
+          : CODE_EXT.includes(ext) ? `<img class="files-folder-img" src="assets/file_code.png?v=1" alt="code">`
+          : VID_EXT.includes(ext) ? `<img class="files-folder-img" src="assets/file_video.png?v=1" alt="video">`
           : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>`
           : node.kind === "pptx" ? `<span class="files-doc-ic">${Icon.mini("powerpoint", "PowerPoint")}</span>`
           : node.kind === "xlsx" ? `<span class="files-doc-ic">${Icon.mini("excel", "Excel")}</span>`
