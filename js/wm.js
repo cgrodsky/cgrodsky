@@ -598,7 +598,7 @@
     sun: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f5b301" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="#ffd75e" stroke="none"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M19.4 4.6l-1.8 1.8M6.4 17.6l-1.8 1.8"/></svg>`,
     cloud: `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A4 4 0 0 1 17 18Z" fill="#cfd8e6"/></svg>`,
     partly: `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="8" cy="8" r="3.5" fill="#ffd75e"/><path d="M9 19a3.5 3.5 0 0 1 0-7 4.4 4.4 0 0 1 8.4-1.1A3.5 3.5 0 0 1 17 19Z" fill="#cfd8e6"/></svg>`,
-    rain: `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M7 15a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3A4 4 0 0 1 17 15Z" fill="#b7c2d4"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" stroke="#4c8dff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    rain: `<img class="wg-wx-img" src="assets/weather_rain.png?v=1" width="22" height="22" alt="Rain" style="object-fit:contain;vertical-align:middle">`,
   };
   const WX_STATES = [
     { icon: "sun", label: "Sunny", temp: 74, hi: 78, lo: 61 },
