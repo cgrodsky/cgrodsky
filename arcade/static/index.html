@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arcade Card Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+</head>
+<body>
+  <!-- ===================== Lock screen ===================== -->
+  <div class="lock-screen" id="lockScreen">
+    <div class="lock-box">
+      <div class="lock-logo">🎟️</div>
+      <h1 id="lockTitle">Arcade Card Manager</h1>
+      <p class="lock-sub" id="lockSub">Enter your password to unlock</p>
+      <form id="lockForm" autocomplete="off">
+        <input type="password" id="lockPass" placeholder="Password" autocomplete="off" />
+        <input type="password" id="lockPass2" class="hidden" placeholder="Confirm password" autocomplete="off" />
+        <button type="submit" class="btn btn-add lock-btn" id="lockBtn">Unlock</button>
+      </form>
+      <p class="lock-error hidden" id="lockError"></p>
+    </div>
+  </div>
+
+  <!-- ===================== Top bar ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-logo">🎟️</span>
+      <div>
+        <h1>Arcade Card Manager</h1>
+        <p class="tagline">Credits · Tickets · Prizes</p>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="conn-pill" id="connPill" title="Backend connection">
+        <span class="dot"></span><span id="connText">Checking…</span>
+      </div>
+      <div class="mode-switch" role="tablist" aria-label="UI mode">
+        <button class="mode-btn active" data-mode="simple" id="modeSimple">Simple</button>
+        <button class="mode-btn" data-mode="advanced" id="modeAdvanced">Advanced</button>
+      </div>
+      <button class="icon-btn" id="settingsBtn" title="Reader settings" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ===================== Left: active card ===================== -->
+    <section class="card-panel" aria-label="Active card">
+      <div class="scan-hint" id="scanHint">
+        <div class="rfid-icon">📡</div>
+        <h2>Tap a card to begin</h2>
+        <p>Present an RFID card to the reader, or enter a card ID below.</p>
+        <div class="manual-scan">
+          <input type="text" id="manualUid" placeholder="Card ID (e.g. 04A1B2C3)" autocomplete="off" />
+          <button class="btn" id="manualScanBtn">Load</button>
+        </div>
+        <button class="btn btn-ghost" id="newCardBtn">+ Register new card</button>
+      </div>
+
+      <div class="active-card hidden" id="activeCard">
+        <div class="card-visual">
+          <div class="card-chip"></div>
+          <div class="card-uid" id="cardUid">—</div>
+          <input class="card-name-input" id="cardName" placeholder="Cardholder name" />
+          <div class="card-balances">
+            <div class="bal">
+              <span class="bal-label">Credits</span>
+              <span class="bal-value" id="balCredits">0</span>
+            </div>
+            <div class="bal">
+              <span class="bal-label">Tickets</span>
+              <span class="bal-value tickets" id="balTickets">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <div class="qa-group">
+            <h3>Credits</h3>
+            <div class="qa-buttons" data-kind="credits">
+              <button class="chip add" data-delta="1">+1</button>
+              <button class="chip add" data-delta="5">+5</button>
+              <button class="chip add" data-delta="10">+10</button>
+              <button class="chip add" data-delta="25">+25</button>
+              <button class="chip sub" data-delta="-1">−1</button>
+              <button class="chip sub" data-delta="-5">−5</button>
+            </div>
+          </div>
+          <div class="qa-group">
+            <h3>Tickets</h3>
+            <div class="qa-buttons" data-kind="tickets">
+              <button class="chip add" data-delta="1">+1</button>
+              <button class="chip add" data-delta="10">+10</button>
+              <button class="chip add" data-delta="50">+50</button>
+              <button class="chip add" data-delta="100">+100</button>
+              <button class="chip sub" data-delta="-1">−1</button>
+              <button class="chip sub" data-delta="-10">−10</button>
+            </div>
+          </div>
+
+          <div class="custom-amount">
+            <select id="customKind">
+              <option value="credits">Credits</option>
+              <option value="tickets">Tickets</option>
+            </select>
+            <input type="number" id="customAmount" placeholder="Amount" />
+            <button class="btn btn-add" id="customAddBtn">Add</button>
+            <button class="btn btn-sub" id="customRemoveBtn">Remove</button>
+          </div>
+
+          <div class="card-tools advanced-only">
+            <button class="btn btn-ghost" id="saveNameBtn">Save name</button>
+            <button class="btn btn-ghost" id="switchCardBtn">Switch card</button>
+            <button class="btn btn-danger" id="deleteCardBtn">Delete card</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Right: prizes + admin ===================== -->
+    <section class="side-panel">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="prizes">🎁 Prizes</button>
+        <button class="tab advanced-only" data-tab="items">🛠️ Items</button>
+        <button class="tab advanced-only" data-tab="cards">💳 Cards</button>
+        <button class="tab advanced-only" data-tab="log">📜 Log</button>
+      </div>
+
+      <!-- Prizes / redeem -->
+      <div class="tab-panel active" id="tab-prizes">
+        <p class="panel-hint">Tap a prize to redeem it against the active card.</p>
+        <div class="prize-grid" id="prizeGrid"></div>
+      </div>
+
+      <!-- Item management (advanced) -->
+      <div class="tab-panel" id="tab-items">
+        <form class="item-form" id="itemForm">
+          <h3>Create / edit item</h3>
+          <input type="hidden" id="itemId" />
+          <label>Emoji <input type="text" id="itemEmoji" value="🎁" maxlength="4" /></label>
+          <label>Name <input type="text" id="itemName" placeholder="Plush Bear" required /></label>
+          <label>Cost <input type="number" id="itemCost" value="100" min="0" /></label>
+          <label>Currency
+            <select id="itemCurrency">
+              <option value="tickets">Tickets</option>
+              <option value="credits">Credits</option>
+            </select>
+          </label>
+          <label>Stock <input type="number" id="itemStock" value="-1" title="-1 = unlimited" /></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-add">Save item</button>
+            <button type="button" class="btn btn-ghost" id="itemResetBtn">Clear</button>
+          </div>
+        </form>
+        <div class="item-list" id="itemList"></div>
+      </div>
+
+      <!-- Cards list (advanced) -->
+      <div class="tab-panel" id="tab-cards">
+        <input type="search" id="cardSearch" placeholder="Search cards…" class="search" />
+        <div class="card-list" id="cardList"></div>
+      </div>
+
+      <!-- Transaction log (advanced) -->
+      <div class="tab-panel" id="tab-log">
+        <div class="log-list" id="logList"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== Settings drawer ===================== -->
+  <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+  <aside class="drawer hidden" id="settingsDrawer" aria-label="Settings">
+    <div class="drawer-head">
+      <h2>⚙️ Reader Settings</h2>
+      <button class="icon-btn" id="closeDrawer" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="setting">
+        <label class="setting-label">Backend URL</label>
+        <input type="text" id="backendUrl" placeholder="http://localhost:5000" />
+        <button class="btn" id="reconnectBtn">Connect</button>
+        <p class="setting-hint">
+          The Python server talks to the RFID reader. Leave blank to run in
+          browser-only (local storage) mode.
+        </p>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">RFID input mode</label>
+        <label class="radio"><input type="radio" name="rfidMode" value="backend" checked /> Backend reader (live tap feed)</label>
+        <label class="radio"><input type="radio" name="rfidMode" value="wedge" /> USB keyboard-wedge reader</label>
+        <label class="radio"><input type="radio" name="rfidMode" value="manual" /> Manual entry only</label>
+        <p class="setting-hint">
+          Keyboard-wedge readers type the card number for you — just tap and the
+          card loads automatically, no backend needed.
+        </p>
+      </div>
+
+      <div class="setting advanced-only">
+        <label class="setting-label">Simulate a tap</label>
+        <div class="manual-scan">
+          <input type="text" id="simUid" placeholder="04A1B2C3" />
+          <button class="btn" id="simBtn">Fire tap</button>
+        </div>
+        <p class="setting-hint">Sends a fake card tap through the live feed for testing.</p>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">Security</label>
+        <button class="btn" id="lockNowBtn">🔒 Lock now</button>
+        <button class="btn btn-ghost" id="changePassBtn">Change password</button>
+        <p class="setting-hint">The password locks this browser's UI. It is stored
+          hashed on this device only (front-end lock).</p>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">Danger zone</label>
+        <button class="btn btn-danger" id="resetLocalBtn">Reset local data</button>
+        <p class="setting-hint">Clears cards/items stored in this browser (local mode only).</p>
+      </div>
+
+      <div class="drawer-footer">
+        <p>Backend reader command:</p>
+        <code>python server.py --reader pcsc</code>
+        <p class="setting-hint">See README.md for MFRC522, serial &amp; hosting.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- New card modal -->
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2>Register new card</h2>
+      <label>Card ID (UID)
+        <div class="manual-scan">
+          <input type="text" id="newUid" placeholder="Tap card or type ID" autocomplete="off" />
+        </div>
+      </label>
+      <p class="setting-hint" id="newCardScanHint">Waiting for a tap… or type the ID manually.</p>
+      <label>Name <input type="text" id="newName" placeholder="Cardholder name (optional)" /></label>
+      <div class="new-card-starters">
+        <label>Starting credits <input type="number" id="newCredits" value="0" /></label>
+        <label>Starting tickets <input type="number" id="newTickets" value="0" /></label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-add" id="createCardBtn">Create card</button>
+        <button class="btn btn-ghost" id="cancelCardBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
