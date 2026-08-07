@@ -4,45 +4,67 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Arcade Card Manager</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='6' width='20' height='13' rx='2' fill='%234f6bed'/><rect x='2' y='9' width='20' height='3' fill='%23223'/></svg>" />
 </head>
 <body>
-  <!-- ===================== Lock screen ===================== -->
+  <!-- ===================== SVG icon library ===================== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-brand" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h5"/></symbol>
+      <symbol id="i-rfid" viewBox="0 0 24 24"><path d="M6.34 6.34a8 8 0 000 11.32"/><path d="M9.17 9.17a4 4 0 000 5.66"/><circle cx="12" cy="12" r="1.4"/><path d="M14.83 9.17a4 4 0 010 5.66"/><path d="M17.66 6.34a8 8 0 010 11.32"/></symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8"/><path d="M12 8v12"/><path d="M12 8S10.5 4 8 4a2 2 0 000 4h4zM12 8s1.5-4 4-4a2 2 0 010 4h-4z"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0l-7.4-7.4a2 2 0 01-.6-1.4V4a1 1 0 011-1h7.4a2 2 0 011.4.6l7.8 7.8a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/></symbol>
+      <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="11" rx="2"/><path d="M7 20h12a2 2 0 002-2V9"/></symbol>
+      <symbol id="i-log" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.6 1.6 0 00-1-1.5 1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H3a2 2 0 110-4h.1a1.6 1.6 0 001.5-1 1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V3a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 118 0v3"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+      <symbol id="i-merge" viewBox="0 0 24 24"><path d="M7 3v6a5 5 0 005 5h5"/><path d="M14 11l3 3-3 3"/><path d="M17 3v.01"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ===================== PIN lock screen ===================== -->
   <div class="lock-screen" id="lockScreen">
     <div class="lock-box">
-      <div class="lock-logo">🎟️</div>
+      <div class="lock-icon"><svg class="ico"><use href="#i-lock"/></svg></div>
       <h1 id="lockTitle">Arcade Card Manager</h1>
-      <p class="lock-sub" id="lockSub">Enter your password to unlock</p>
-      <form id="lockForm" autocomplete="off">
-        <input type="password" id="lockPass" placeholder="Password" autocomplete="off" />
-        <input type="password" id="lockPass2" class="hidden" placeholder="Confirm password" autocomplete="off" />
-        <button type="submit" class="btn btn-add lock-btn" id="lockBtn">Unlock</button>
-      </form>
-      <p class="lock-error hidden" id="lockError"></p>
+      <p class="lock-sub" id="lockSub">Enter your PIN</p>
+      <div class="pin-row" id="pinRow">
+        <input class="pin-box" inputmode="numeric" maxlength="1" data-i="0" />
+        <input class="pin-box" inputmode="numeric" maxlength="1" data-i="1" />
+        <input class="pin-box" inputmode="numeric" maxlength="1" data-i="2" />
+        <input class="pin-box" inputmode="numeric" maxlength="1" data-i="3" />
+      </div>
+      <p class="lock-error" id="lockError">&nbsp;</p>
+      <button class="link-btn" id="pinForgot">Reset PIN</button>
     </div>
   </div>
 
   <!-- ===================== Top bar ===================== -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-logo">🎟️</span>
+      <span class="brand-logo"><svg class="ico"><use href="#i-brand"/></svg></span>
       <div>
         <h1>Arcade Card Manager</h1>
-        <p class="tagline">Credits · Tickets · Prizes</p>
+        <p class="tagline">Credits &middot; Tickets &middot; Prizes</p>
       </div>
     </div>
 
     <div class="topbar-right">
       <div class="conn-pill" id="connPill" title="Backend connection">
-        <span class="dot"></span><span id="connText">Checking…</span>
+        <span class="dot"></span><span id="connText">Checking&hellip;</span>
       </div>
       <div class="mode-switch" role="tablist" aria-label="UI mode">
         <button class="mode-btn active" data-mode="simple" id="modeSimple">Simple</button>
         <button class="mode-btn" data-mode="advanced" id="modeAdvanced">Advanced</button>
       </div>
-      <button class="icon-btn" id="settingsBtn" title="Reader settings" aria-label="Settings">⚙️</button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ico"><use href="#i-settings"/></svg></button>
     </div>
   </header>
 
@@ -50,20 +72,23 @@
     <!-- ===================== Left: active card ===================== -->
     <section class="card-panel" aria-label="Active card">
       <div class="scan-hint" id="scanHint">
-        <div class="rfid-icon">📡</div>
+        <div class="rfid-icon"><svg class="ico"><use href="#i-rfid"/></svg></div>
         <h2>Tap a card to begin</h2>
         <p>Present an RFID card to the reader, or enter a card ID below.</p>
         <div class="manual-scan">
           <input type="text" id="manualUid" placeholder="Card ID (e.g. 04A1B2C3)" autocomplete="off" />
           <button class="btn" id="manualScanBtn">Load</button>
         </div>
-        <button class="btn btn-ghost" id="newCardBtn">+ Register new card</button>
+        <button class="btn btn-ghost full" id="newCardBtn"><svg class="ico"><use href="#i-plus"/></svg> Register new card</button>
       </div>
 
       <div class="active-card hidden" id="activeCard">
         <div class="card-visual">
-          <div class="card-chip"></div>
-          <div class="card-uid" id="cardUid">—</div>
+          <div class="card-visual-top">
+            <span class="card-brand-mark"><svg class="ico"><use href="#i-brand"/></svg></span>
+            <span class="card-tag">MEMBER CARD</span>
+          </div>
+          <div class="card-uid" id="cardUid">&mdash;</div>
           <input class="card-name-input" id="cardName" placeholder="Cardholder name" />
           <div class="card-balances">
             <div class="bal">
@@ -85,8 +110,8 @@
               <button class="chip add" data-delta="5">+5</button>
               <button class="chip add" data-delta="10">+10</button>
               <button class="chip add" data-delta="25">+25</button>
-              <button class="chip sub" data-delta="-1">−1</button>
-              <button class="chip sub" data-delta="-5">−5</button>
+              <button class="chip sub" data-delta="-1">&minus;1</button>
+              <button class="chip sub" data-delta="-5">&minus;5</button>
             </div>
           </div>
           <div class="qa-group">
@@ -96,8 +121,8 @@
               <button class="chip add" data-delta="10">+10</button>
               <button class="chip add" data-delta="50">+50</button>
               <button class="chip add" data-delta="100">+100</button>
-              <button class="chip sub" data-delta="-1">−1</button>
-              <button class="chip sub" data-delta="-10">−10</button>
+              <button class="chip sub" data-delta="-1">&minus;1</button>
+              <button class="chip sub" data-delta="-10">&minus;10</button>
             </div>
           </div>
 
@@ -111,10 +136,11 @@
             <button class="btn btn-sub" id="customRemoveBtn">Remove</button>
           </div>
 
-          <div class="card-tools advanced-only">
-            <button class="btn btn-ghost" id="saveNameBtn">Save name</button>
+          <div class="card-tools">
+            <button class="btn btn-ghost" id="mergeBtn"><svg class="ico"><use href="#i-merge"/></svg> Merge card</button>
+            <button class="btn btn-ghost advanced-only" id="saveNameBtn">Save name</button>
             <button class="btn btn-ghost" id="switchCardBtn">Switch card</button>
-            <button class="btn btn-danger" id="deleteCardBtn">Delete card</button>
+            <button class="btn btn-danger advanced-only" id="deleteCardBtn">Delete</button>
           </div>
         </div>
       </div>
@@ -123,25 +149,22 @@
     <!-- ===================== Right: prizes + admin ===================== -->
     <section class="side-panel">
       <div class="tabs" role="tablist">
-        <button class="tab active" data-tab="prizes">🎁 Prizes</button>
-        <button class="tab advanced-only" data-tab="items">🛠️ Items</button>
-        <button class="tab advanced-only" data-tab="cards">💳 Cards</button>
-        <button class="tab advanced-only" data-tab="log">📜 Log</button>
+        <button class="tab active" data-tab="prizes"><svg class="ico"><use href="#i-gift"/></svg> Prizes</button>
+        <button class="tab advanced-only" data-tab="items"><svg class="ico"><use href="#i-tag"/></svg> Items</button>
+        <button class="tab advanced-only" data-tab="cards"><svg class="ico"><use href="#i-cards"/></svg> Cards</button>
+        <button class="tab advanced-only" data-tab="log"><svg class="ico"><use href="#i-log"/></svg> Log</button>
       </div>
 
-      <!-- Prizes / redeem -->
       <div class="tab-panel active" id="tab-prizes">
-        <p class="panel-hint">Tap a prize to redeem it against the active card.</p>
+        <p class="panel-hint">Select a prize to redeem it against the active card.</p>
         <div class="prize-grid" id="prizeGrid"></div>
       </div>
 
-      <!-- Item management (advanced) -->
       <div class="tab-panel" id="tab-items">
         <form class="item-form" id="itemForm">
           <h3>Create / edit item</h3>
           <input type="hidden" id="itemId" />
-          <label>Emoji <input type="text" id="itemEmoji" value="🎁" maxlength="4" /></label>
-          <label>Name <input type="text" id="itemName" placeholder="Plush Bear" required /></label>
+          <label class="wide">Name <input type="text" id="itemName" placeholder="Plush Bear" required /></label>
           <label>Cost <input type="number" id="itemCost" value="100" min="0" /></label>
           <label>Currency
             <select id="itemCurrency">
@@ -158,13 +181,14 @@
         <div class="item-list" id="itemList"></div>
       </div>
 
-      <!-- Cards list (advanced) -->
       <div class="tab-panel" id="tab-cards">
-        <input type="search" id="cardSearch" placeholder="Search cards…" class="search" />
+        <div class="search-wrap">
+          <svg class="ico search-ico"><use href="#i-search"/></svg>
+          <input type="search" id="cardSearch" placeholder="Search cards&hellip;" class="search" />
+        </div>
         <div class="card-list" id="cardList"></div>
       </div>
 
-      <!-- Transaction log (advanced) -->
       <div class="tab-panel" id="tab-log">
         <div class="log-list" id="logList"></div>
       </div>
@@ -175,18 +199,15 @@
   <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
   <aside class="drawer hidden" id="settingsDrawer" aria-label="Settings">
     <div class="drawer-head">
-      <h2>⚙️ Reader Settings</h2>
-      <button class="icon-btn" id="closeDrawer" aria-label="Close">✕</button>
+      <h2>Settings</h2>
+      <button class="icon-btn" id="closeDrawer" aria-label="Close">&times;</button>
     </div>
     <div class="drawer-body">
       <div class="setting">
         <label class="setting-label">Backend URL</label>
         <input type="text" id="backendUrl" placeholder="http://localhost:5000" />
         <button class="btn" id="reconnectBtn">Connect</button>
-        <p class="setting-hint">
-          The Python server talks to the RFID reader. Leave blank to run in
-          browser-only (local storage) mode.
-        </p>
+        <p class="setting-hint">The Python server talks to the RFID reader. Leave blank to run in browser-only (local storage) mode.</p>
       </div>
 
       <div class="setting">
@@ -194,10 +215,7 @@
         <label class="radio"><input type="radio" name="rfidMode" value="backend" checked /> Backend reader (live tap feed)</label>
         <label class="radio"><input type="radio" name="rfidMode" value="wedge" /> USB keyboard-wedge reader</label>
         <label class="radio"><input type="radio" name="rfidMode" value="manual" /> Manual entry only</label>
-        <p class="setting-hint">
-          Keyboard-wedge readers type the card number for you — just tap and the
-          card loads automatically, no backend needed.
-        </p>
+        <p class="setting-hint">Keyboard-wedge readers type the card number for you &mdash; just tap and the card loads automatically, no backend needed.</p>
       </div>
 
       <div class="setting advanced-only">
@@ -211,10 +229,9 @@
 
       <div class="setting">
         <label class="setting-label">Security</label>
-        <button class="btn" id="lockNowBtn">🔒 Lock now</button>
-        <button class="btn btn-ghost" id="changePassBtn">Change password</button>
-        <p class="setting-hint">The password locks this browser's UI. It is stored
-          hashed on this device only (front-end lock).</p>
+        <button class="btn" id="lockNowBtn"><svg class="ico"><use href="#i-lock"/></svg> Lock now</button>
+        <button class="btn btn-ghost" id="changePassBtn">Change PIN</button>
+        <p class="setting-hint">The 4-digit PIN locks this browser's screen. It is stored hashed on this device (front-end lock).</p>
       </div>
 
       <div class="setting">
@@ -231,7 +248,7 @@
     </div>
   </aside>
 
-  <!-- New card modal -->
+  <!-- ===================== New card modal ===================== -->
   <div class="modal-backdrop hidden" id="modalBackdrop">
     <div class="modal" role="dialog" aria-modal="true">
       <h2>Register new card</h2>
@@ -240,7 +257,7 @@
           <input type="text" id="newUid" placeholder="Tap card or type ID" autocomplete="off" />
         </div>
       </label>
-      <p class="setting-hint" id="newCardScanHint">Waiting for a tap… or type the ID manually.</p>
+      <p class="setting-hint" id="newCardScanHint">Waiting for a tap&hellip; or type the ID manually.</p>
       <label>Name <input type="text" id="newName" placeholder="Cardholder name (optional)" /></label>
       <div class="new-card-starters">
         <label>Starting credits <input type="number" id="newCredits" value="0" /></label>
@@ -249,6 +266,51 @@
       <div class="form-actions">
         <button class="btn btn-add" id="createCardBtn">Create card</button>
         <button class="btn btn-ghost" id="cancelCardBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Merge modal ===================== -->
+  <div class="modal-backdrop hidden" id="mergeBackdrop">
+    <div class="modal modal-wide" role="dialog" aria-modal="true">
+      <h2>Merge cards</h2>
+
+      <div class="merge-step" id="mergeStepTap">
+        <p class="merge-lead">Tap the <strong>second card</strong> to merge with the active card.</p>
+        <div class="merge-waiting">
+          <svg class="ico rfid-wait"><use href="#i-rfid"/></svg>
+          <span id="mergeWaitText">Waiting for a tap&hellip;</span>
+        </div>
+        <div class="manual-scan">
+          <input type="text" id="mergeUid" placeholder="&hellip;or type the second card ID" autocomplete="off" />
+          <button class="btn" id="mergeUidBtn">Use</button>
+        </div>
+      </div>
+
+      <div class="merge-step hidden" id="mergeStepConfig">
+        <div class="merge-cards">
+          <div class="merge-card" id="mergeCardA"></div>
+          <div class="merge-arrow"><svg class="ico"><use href="#i-merge"/></svg></div>
+          <div class="merge-card" id="mergeCardB"></div>
+        </div>
+
+        <div class="merge-field">
+          <span class="merge-field-label">What to merge</span>
+          <label class="check"><input type="checkbox" id="mergeCredits" checked /> Credits</label>
+          <label class="check"><input type="checkbox" id="mergeTickets" checked /> Tickets</label>
+        </div>
+
+        <div class="merge-field">
+          <span class="merge-field-label">Keep the balance on</span>
+          <div class="dest-choice" id="destChoice"></div>
+        </div>
+
+        <p class="merge-preview" id="mergePreview"></p>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-add hidden" id="mergeConfirmBtn">Merge</button>
+        <button class="btn btn-ghost" id="mergeCancelBtn">Cancel</button>
       </div>
     </div>
   </div>

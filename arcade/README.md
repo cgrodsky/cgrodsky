@@ -1,105 +1,113 @@
-# 🎟️ Arcade Card Manager
+# Arcade Card Manager
 
-A professional web app for running an arcade card/ticket system. Load a card,
-**add or remove credits and tickets**, **create prize items**, and **redeem**
-them with a tap. It connects to a real **RFID card reader** through a small
-Python server, and also runs fully in the browser (no backend) when you just
-want to try it out.
+A professional web app for running an arcade card / ticket system. Load a card,
+**add or remove credits and tickets**, **create prize items**, **redeem** them,
+and **merge two cards** together. It connects to a real **RFID card reader**,
+and can store all data in the **cloud** so every device stays in sync.
 
-![modes](https://img.shields.io/badge/UI-Simple%20%26%20Advanced-7c5cff)
+The card itself only carries an ID. All balances live in the database (cloud or
+local), looked up by that ID — so a lost card never means lost value you can't
+trace, and any reader that can read the ID works.
 
 ## Features
 
-- **Add / remove credits and tickets** with quick chips or custom amounts.
-- **Create, edit and delete prize items** (emoji, cost, currency, stock).
-- **Redeem** items against the active card — balances and stock update live.
-- **RFID support** via Python: tap a card and it loads automatically. Unknown
-  cards prompt you to register them.
-- **Simple & Advanced UI modes.** Simple = card + quick actions + prizes.
-  Advanced adds item management, the full card list, a transaction log, and the
-  "danger zone".
-- **Transaction log** of every add / remove / redeem.
-- **Password lock.** The first time you open the app you choose a password;
-  after that it's required to unlock. Change it or lock on demand from
-  **⚙️ Settings → Security**. (Front-end lock: the password is hashed and stored
-  on that device — it guards the screen, not the server API.)
-- **Two data backends:** the Python/SQLite server (shared, persistent, real
-  RFID) or browser `localStorage` (zero-install, works on GitHub Pages).
+- **Add / remove credits and tickets** with quick buttons or custom amounts.
+- **Create, edit and delete prize items** (name, cost, currency, stock).
+- **Redeem** items against the active card — balances and stock update instantly.
+- **Merge cards** — tap a second card, choose credits / tickets / both, and pick
+  which card keeps the combined balance.
+- **RFID support**: tap a card and it loads automatically. Unknown cards prompt
+  you to register them.
+- **4-digit PIN lock** — chosen on first run, required to unlock. Change it or
+  lock on demand from Settings.
+- **Simple & Advanced modes.** Simple = card + quick actions + prizes. Advanced
+  adds item management, the card list, and a transaction log.
+- **Clean, icon-based interface** (no emoji), light on the eyes, works on tablets.
+- **Two data backends:** the Python/SQLite server (shared, persistent, real RFID)
+  or browser storage (zero-install, works on GitHub Pages).
 
 ---
 
-## Quick start (with RFID + Python backend)
+## Three ways to run it
+
+| You want… | Do this | RFID? | Syncs across devices? |
+| --- | --- | --- | --- |
+| Just try it | Open the GitHub Pages link / `static/index.html` | No | No (per-device) |
+| One arcade PC with a reader | Run `python server.py` on that PC | Yes | Yes (on your network) |
+| **No computer — iPad + cloud** | **Deploy to the cloud (below)** | Yes, via a reader on the iPad | **Yes, everywhere** |
+
+---
+
+## Cloud hosting (no computer needed — iPad friendly)
+
+This is the setup for **online syncing** when you don't have a computer: the
+server runs in the cloud, and every device (iPad, phone, etc.) shares one
+database. You deploy entirely from a browser.
+
+**Why cloud, not a home computer?** The arcade UI hosted on GitHub Pages is
+served over HTTPS, and a browser will only let an HTTPS page talk to an HTTPS
+backend. Cloud hosts give you HTTPS automatically; a plain `http://` address on
+a home PC would be blocked.
+
+### Deploy to Render (free, from your iPad browser)
+
+1. Go to **[render.com](https://render.com)** and sign up (free).
+2. **New +  →  Blueprint**, and connect this GitHub repo. Render reads
+   `arcade/render.yaml` and creates the service for you. (Or use **New + →
+   Web Service**, set **Root Directory** to `arcade`, **Build**
+   `pip install -r requirements.txt`, **Start**
+   `gunicorn server:app -k gthread -w 1 --threads 8 -b 0.0.0.0:$PORT`.)
+3. When it finishes you get an HTTPS URL like
+   `https://arcade-card-manager.onrender.com`.
+4. On the iPad, open the arcade UI, go to **Settings**, paste that URL into
+   **Backend URL**, choose **USB keyboard-wedge reader**, and tap **Connect**.
+   The pill turns green: *Cloud · keyboard-wedge*.
+5. Do the same on any other device with the same URL — they now share one
+   database. Add tickets on one, see them on all.
+
+> **Keep your data across restarts.** Render's free disk resets on each redeploy.
+> To make card data permanent, add a **Render Disk** mounted at `/var/data`, then
+> uncomment the `DB_PATH: /var/data/arcade.db` lines in `render.yaml`. Other
+> hosts that work the same way: Replit, Railway, Fly.io, PythonAnywhere.
+
+### Using the RFID reader on the iPad
+
+Your USB RFID reader (via the USB adapter) acts like a keyboard: when you tap a
+card it "types" the card's ID and presses Enter. With **keyboard-wedge** mode
+selected, the app catches that and loads the card — no reader software needed on
+the iPad. The balances come from the cloud. (An Android phone could instead read
+NFC directly; iOS Safari can't, which is why the wedge reader is the way to go on
+iPad.)
+
+---
+
+## Run locally with a real reader (one arcade PC)
 
 ```bash
 cd arcade
-pip install -r requirements.txt      # Flask + flask-cors
-python server.py                     # starts on http://localhost:5000
+pip install -r requirements.txt
+python server.py                 # http://localhost:5000  (simulated reader)
 ```
 
-Open <http://localhost:5000>. By default it runs the **simulated** reader
-(fires a random tap every few seconds) so you can see the live feed working
-immediately. Pick your real reader with `--reader`:
+Pick your reader with `--reader`:
 
 | Reader hardware | Command | Extra install |
 | --- | --- | --- |
-| **Simulator** (demo) | `python server.py` | — |
-| **MFRC522 / RC522** (Raspberry Pi, SPI) | `python server.py --reader mfrc522` | `pip install mfrc522 RPi.GPIO` |
-| **PC/SC NFC** (ACR122U & most USB NFC) | `python server.py --reader pcsc` | `pip install pyscard` |
-| **Serial / Wiegand-to-serial** | `python server.py --reader serial --port /dev/ttyUSB0` | `pip install pyserial` |
-| **USB keyboard-wedge** | no backend reader needed — see below | — |
+| Simulator (demo) | `python server.py` | — |
+| MFRC522 / RC522 (Raspberry Pi, SPI) | `python server.py --reader mfrc522` | `pip install mfrc522 RPi.GPIO` |
+| PC/SC NFC (ACR122U & most USB NFC) | `python server.py --reader pcsc` | `pip install pyscard` |
+| Serial / Wiegand-to-serial | `python server.py --reader serial --port /dev/ttyUSB0` | `pip install pyserial` |
+| USB keyboard-wedge | Settings → keyboard-wedge (no backend reader needed) | — |
 
-### USB keyboard-wedge readers (the cheap ones)
-
-Many USB RFID readers act as a keyboard: they "type" the card number and press
-Enter. For these, open **⚙️ Settings → RFID input mode → USB keyboard-wedge**.
-The page captures the typed number directly — no Python needed for the reader
-(though you can still run the server for shared storage).
+Other computers on the same Wi-Fi can open `http://<that-pc-ip>:5000` and share
+the database.
 
 ---
 
-## Run in the browser only (no install)
+## Browser-only mode (no install, no sync)
 
-Just open `static/index.html`, or host the `static/` folder anywhere static.
-With no backend, everything is stored in your browser's `localStorage`. Use the
-manual card-ID box or keyboard-wedge mode to load cards. Great for a quick trial
-or a single kiosk.
-
----
-
-## Hosting
-
-You have a few options depending on whether you need the RFID hardware:
-
-### 1. GitHub Pages (UI only, browser storage)
-The `static/` folder is a plain static site. This repo already publishes to
-GitHub Pages, so you can also expose the arcade UI at
-`https://<user>.github.io/<repo>/arcade/static/`. No RFID, data lives in the
-browser. Good for demos.
-
-### 2. One machine at the arcade (recommended for real use)
-Run `python server.py --reader <yours>` on the PC that has the reader plugged
-in. Open `http://localhost:5000` on that machine. The SQLite file
-(`arcade.db`) keeps all cards, items and history.
-
-### 3. LAN kiosk / multiple stations
-Run the server on one PC (it binds `0.0.0.0:5000` by default) and open
-`http://<that-pc-ip>:5000` from any tablet or till on the same network. They
-all share one database and see live taps. For a production kiosk, put it behind
-a real WSGI server:
-
-```bash
-pip install gunicorn
-gunicorn -w 1 -b 0.0.0.0:5000 server:app   # keep -w 1 so the RFID thread + SSE stay in one process
-```
-
-> Start the reader thread by running `python server.py` once, or launch under a
-> process manager; `server:app` alone serves the API/UI. For a single-box arcade
-> setup, plain `python server.py` is simplest and reliable.
-
-### 4. Split hosting (UI on Pages, backend at the arcade)
-Host the UI statically and point it at your backend: open **⚙️ Settings →
-Backend URL**, enter `http://<arcade-pc-ip>:5000`, and press **Connect**. CORS
-is already enabled on the server.
+Open `static/index.html` or the GitHub Pages link. With no backend, data is kept
+in that browser only. Good for a quick trial or a single kiosk.
 
 ---
 
@@ -107,17 +115,18 @@ is already enabled on the server.
 
 ```
 arcade/
-├── server.py         Flask API + static hosting + SSE live tap feed
-├── rfid.py           Pluggable reader backends (sim / mfrc522 / pcsc / serial)
+├── server.py         Flask API + static hosting + live tap feed (SSE)
+├── rfid.py           Reader backends (sim / mfrc522 / pcsc / serial)
 ├── requirements.txt
-├── arcade.db         SQLite database (created on first run)
+├── render.yaml       One-click Render cloud deploy
+├── Procfile          Generic cloud start command
 └── static/
-    ├── index.html    UI markup
-    ├── style.css     Dark, professional theme
-    └── app.js        All front-end logic (backend + local modes)
+    ├── index.html    UI markup + SVG icon set
+    ├── style.css     Professional dark theme
+    └── app.js        Front-end logic (cloud + local modes, PIN, merge)
 ```
 
-## REST API (for reference / integration)
+## REST API
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -127,6 +136,7 @@ arcade/
 | GET/POST | `/api/items` | List / create prize items |
 | PATCH/DELETE | `/api/items/<id>` | Edit / delete an item |
 | POST | `/api/redeem` | `{uid, item_id}` — redeem an item |
+| POST | `/api/merge` | `{source, dest, credits, tickets}` — combine two cards |
 | GET | `/api/transactions` | Recent activity (`?uid=` to filter) |
 | GET | `/api/scan/stream` | Server-Sent Events feed of live card taps |
 | POST | `/api/scan/simulate` | `{uid}` — inject a fake tap for testing |

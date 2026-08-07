@@ -46,7 +46,9 @@ from rfid import create_reader
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-DB_PATH = os.path.join(BASE_DIR, "arcade.db")
+# DB_PATH is env-configurable so a cloud host can point it at a persistent disk
+# (e.g. DB_PATH=/var/data/arcade.db on Render with a mounted disk).
+DB_PATH = os.environ.get("DB_PATH") or os.path.join(BASE_DIR, "arcade.db")
 
 app = Flask(__name__, static_folder=None)
 CORS(app)  # allow the UI to be hosted separately (e.g. GitHub Pages)
@@ -90,7 +92,7 @@ CREATE TABLE IF NOT EXISTS items (
     cost        INTEGER NOT NULL DEFAULT 0,
     currency    TEXT NOT NULL DEFAULT 'tickets',   -- 'tickets' or 'credits'
     stock       INTEGER NOT NULL DEFAULT -1,       -- -1 = unlimited
-    emoji       TEXT NOT NULL DEFAULT '🎁'
+    emoji       TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS transactions (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,10 +130,10 @@ def init_db():
                 "INSERT INTO items (name, cost, currency, stock, emoji) "
                 "VALUES (?,?,?,?,?)",
                 [
-                    ("Rubber Duck", 50, "tickets", -1, "🦆"),
-                    ("Plush Bear", 500, "tickets", 10, "🧸"),
-                    ("Candy Bar", 25, "tickets", -1, "🍫"),
-                    ("Game Console", 25000, "tickets", 2, "🎮"),
+                    ("Candy Bar", 25, "tickets", -1, ""),
+                    ("Rubber Duck", 50, "tickets", -1, ""),
+                    ("Plush Bear", 500, "tickets", 10, ""),
+                    ("Game Console", 25000, "tickets", 2, ""),
                 ],
             )
         db.commit()
@@ -338,6 +340,49 @@ def redeem():
     return jsonify(row_to_dict(card))
 
 
+@app.route("/api/merge", methods=["POST"])
+def merge_cards():
+    """Move balances from one card onto another.
+
+    Body: {source, dest, credits: bool, tickets: bool}
+    The selected balances are moved from ``source`` to ``dest`` (source zeroed
+    for those currencies). Both cards are kept.
+    """
+    data = request.get_json(force=True) or {}
+    src_uid = data.get("source")
+    dst_uid = data.get("dest")
+    do_credits = bool(data.get("credits"))
+    do_tickets = bool(data.get("tickets"))
+    if not src_uid or not dst_uid or src_uid == dst_uid:
+        return jsonify({"error": "bad_cards"}), 400
+    if not (do_credits or do_tickets):
+        return jsonify({"error": "nothing_selected"}), 400
+
+    db = get_db()
+    src = db.execute("SELECT * FROM cards WHERE uid=?", (src_uid,)).fetchone()
+    dst = db.execute("SELECT * FROM cards WHERE uid=?", (dst_uid,)).fetchone()
+    if not src or not dst:
+        return jsonify({"error": "card_not_found"}), 404
+
+    move_c = src["credits"] if do_credits else 0
+    move_t = src["tickets"] if do_tickets else 0
+    now = time.time()
+    db.execute(
+        "UPDATE cards SET credits=credits+?, tickets=tickets+?, updated_at=? WHERE uid=?",
+        (move_c, move_t, now, dst_uid),
+    )
+    db.execute(
+        "UPDATE cards SET credits=credits-?, tickets=tickets-?, updated_at=? WHERE uid=?",
+        (move_c, move_t, now, src_uid),
+    )
+    log_tx(db, src_uid, "merge_out", detail=f"to {dst_uid}", credits_d=-move_c, tickets_d=-move_t)
+    log_tx(db, dst_uid, "merge_in", detail=f"from {src_uid}", credits_d=move_c, tickets_d=move_t)
+    db.commit()
+    src = db.execute("SELECT * FROM cards WHERE uid=?", (src_uid,)).fetchone()
+    dst = db.execute("SELECT * FROM cards WHERE uid=?", (dst_uid,)).fetchone()
+    return jsonify({"source": row_to_dict(src), "dest": row_to_dict(dst)})
+
+
 @app.route("/api/transactions", methods=["GET"])
 def list_transactions():
     db = get_db()
@@ -400,6 +445,11 @@ def scan_stream():
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
+# Initialise the schema at import time so `gunicorn server:app` works in the
+# cloud without going through main().
+init_db()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Arcade Card Manager server")
     parser.add_argument(
@@ -411,7 +461,12 @@ def main():
     parser.add_argument("--port", default=None, help="serial port for --reader serial")
     parser.add_argument("--baud", type=int, default=9600, help="serial baud rate")
     parser.add_argument("--host", default="0.0.0.0", help="bind host")
-    parser.add_argument("--http-port", type=int, default=5000, help="HTTP port")
+    parser.add_argument(
+        "--http-port",
+        type=int,
+        default=int(os.environ.get("PORT", 5000)),
+        help="HTTP port (defaults to $PORT, then 5000)",
+    )
     args = parser.parse_args()
 
     init_db()
