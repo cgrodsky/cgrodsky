@@ -16,7 +16,7 @@
   // ---------------------------------------------------------------
   const SETTINGS_KEY = "arcade.settings";
   const settings = Object.assign(
-    { backendUrl: "", rfidMode: "backend", mode: "simple" },
+    { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1 },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -50,7 +50,14 @@
     deleteItem(id) { return this._req(`/api/items/${id}`, { method: "DELETE" }); }
     redeem(uid, itemId) { return this._req("/api/redeem", { method: "POST", body: JSON.stringify({ uid, item_id: itemId }) }); }
     merge(payload) { return this._req("/api/merge", { method: "POST", body: JSON.stringify(payload) }); }
-    listTransactions(uid) { return this._req(`/api/transactions${uid ? `?uid=${encodeURIComponent(uid)}` : ""}`); }
+    listTransactions(uid, limit = 50) {
+      const q = new URLSearchParams();
+      if (uid) q.set("uid", uid);
+      q.set("limit", limit);
+      return this._req(`/api/transactions?${q.toString()}`);
+    }
+    exportData() { return this._req("/api/export"); }
+    importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
   }
 
@@ -131,7 +138,15 @@
       this._log(dest, "merge_in", `from ${source}`, mc, mt);
       this._save(); return { source: s, dest: d };
     }
-    async listTransactions(uid) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, 50); }
+    async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
+    async exportData() { return { version: 1, cards: Object.values(this.data.cards), items: this.data.items, transactions: this.data.tx }; }
+    async importData({ cards = [], items = [] }) {
+      this.data.cards = {};
+      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, created_at: c.created_at || Date.now() / 1000, updated_at: c.updated_at || Date.now() / 1000 }; });
+      this.data.items = []; this.data.nextItemId = 1;
+      items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock }));
+      this._save(); return { ok: true, cards: cards.length, items: items.length };
+    }
     async simulate(uid) { onTap(uid); return { ok: true }; }
   }
 
@@ -324,6 +339,143 @@
   }
 
   // ---------------------------------------------------------------
+  // Dashboard (advanced)
+  // ---------------------------------------------------------------
+  async function renderDashboard() {
+    const [cards, itemList, tx] = await Promise.all([
+      store.listCards(), store.listItems(), store.listTransactions(null, 2000),
+    ]);
+    const creditsCirc = cards.reduce((s, c) => s + c.credits, 0);
+    const ticketsCirc = cards.reduce((s, c) => s + c.tickets, 0);
+    const redeems = tx.filter((t) => t.kind === "redeem");
+    const ticketsSpent = redeems.reduce((s, t) => s + Math.abs(t.tickets_d || 0), 0);
+    const creditsSpent = redeems.reduce((s, t) => s + Math.abs(t.credits_d || 0), 0);
+
+    $("#statGrid").innerHTML = `
+      <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div><div class="stat-sub">${itemList.length} prize items</div></div>
+      <div class="stat"><div class="stat-label">Credits in play</div><div class="stat-value credits">${creditsCirc}</div><div class="stat-sub">${creditsSpent} spent all-time</div></div>
+      <div class="stat"><div class="stat-label">Tickets in play</div><div class="stat-value tickets">${ticketsCirc}</div><div class="stat-sub">${ticketsSpent} spent all-time</div></div>
+      <div class="stat"><div class="stat-label">Redemptions</div><div class="stat-value">${redeems.length}</div><div class="stat-sub">${tx.length} total events</div></div>`;
+
+    // Top prizes by redemption count
+    const counts = {};
+    redeems.forEach((t) => { const n = t.detail || "?"; counts[n] = (counts[n] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxc = top.length ? top[0][1] : 1;
+    const list = $("#topList");
+    if (top.length === 0) { list.innerHTML = `<p class="panel-hint">No redemptions yet.</p>`; }
+    else {
+      list.innerHTML = "";
+      top.forEach(([name, n], i) => {
+        const row = document.createElement("div");
+        row.className = "top-row";
+        row.innerHTML = `<span class="top-rank">${i + 1}</span>
+          <div style="flex:1;min-width:0">
+            <div class="top-name">${escapeHtml(name)}</div>
+            <div class="top-bar" style="width:${Math.round((n / maxc) * 100)}%"></div>
+          </div>
+          <span class="top-count">${n}&times;</span>`;
+        list.appendChild(row);
+      });
+    }
+  }
+
+  async function exportBackup() {
+    const data = await store.exportData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "arcade-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("Backup downloaded", "success");
+  }
+  async function importBackup(file) {
+    if (!file) return;
+    if (!confirm("Import will REPLACE all current cards and items. Continue?")) return;
+    try {
+      const data = JSON.parse(await file.text());
+      const res = await store.importData(data);
+      toast(`Imported ${res.cards} cards, ${res.items} items`, "success");
+      unloadCard(); await refreshAll(); renderDashboard();
+    } catch (e) { toast("Import failed: " + e.message, "error"); }
+  }
+  async function batchCreate() {
+    const prefix = $("#batchPrefix").value || "CARD-";
+    const count = Math.max(1, Math.min(500, parseInt($("#batchCount").value, 10) || 0));
+    const credits = parseInt($("#batchCredits").value, 10) || 0;
+    const tickets = parseInt($("#batchTickets").value, 10) || 0;
+    if (!confirm(`Create ${count} cards named ${prefix}0001…?`)) return;
+    const existing = new Set((await store.listCards()).map((c) => c.uid));
+    let made = 0, n = 1;
+    while (made < count && n < count * 5 + 1000) {
+      const uid = prefix + String(n).padStart(4, "0");
+      n++;
+      if (existing.has(uid)) continue;
+      try { await store.createCard({ uid, credits, tickets }); made++; } catch (_) {}
+    }
+    toast(`Created ${made} cards`, "success");
+    refreshCards(); renderDashboard();
+  }
+  async function zeroAll() {
+    if (!confirm("Set every card's credits and tickets to 0? This cannot be undone.")) return;
+    const cards = await store.listCards();
+    for (const c of cards) {
+      const patch = { reason: "reset all" };
+      if (c.credits) patch.credits_delta = -c.credits;
+      if (c.tickets) patch.tickets_delta = -c.tickets;
+      if (patch.credits_delta || patch.tickets_delta) { try { await store.updateCard(c.uid, patch); } catch (_) {} }
+    }
+    toast("All balances reset", "success");
+    unloadCard(); await refreshAll(); renderDashboard();
+  }
+  async function wipeAll() {
+    if (!confirm("Delete ALL cards permanently? This cannot be undone.")) return;
+    const cards = await store.listCards();
+    for (const c of cards) { try { await store.deleteCard(c.uid); } catch (_) {} }
+    toast("All cards deleted", "success");
+    unloadCard(); await refreshAll(); renderDashboard();
+  }
+
+  // Advanced per-card tools
+  async function setExactBalance() {
+    if (!activeCard) return;
+    const sc = $("#setCredits").value, st = $("#setTickets").value;
+    const patch = { reason: "set exact" };
+    if (sc !== "") patch.credits_delta = (parseInt(sc, 10) || 0) - activeCard.credits;
+    if (st !== "") patch.tickets_delta = (parseInt(st, 10) || 0) - activeCard.tickets;
+    if (patch.credits_delta === undefined && patch.tickets_delta === undefined) { toast("Enter a value", "error"); return; }
+    try {
+      const card = await store.updateCard(activeCard.uid, patch);
+      loadCard(card); $("#setCredits").value = ""; $("#setTickets").value = "";
+      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast("Balance set", "success");
+    } catch (e) { toast(e.message === "insufficient_balance" ? "Value can't be negative" : "Failed", "error"); }
+  }
+  async function convert(dir) {
+    if (!activeCard) return;
+    const rate = parseFloat(settings.exchangeRate) || 1; // credits per 1 ticket
+    const amt = Math.abs(parseInt($("#convertAmount").value, 10) || 0);
+    if (!amt) { toast("Enter an amount", "error"); return; }
+    let patch = { reason: "convert" };
+    if (dir === "c2t") {
+      // spend `amt` credits -> gain amt/rate tickets
+      const gained = Math.floor(amt / rate);
+      if (gained < 1) { toast("Amount too small for the rate", "error"); return; }
+      patch.credits_delta = -amt; patch.tickets_delta = gained;
+    } else {
+      // spend `amt` tickets -> gain amt*rate credits
+      patch.tickets_delta = -amt; patch.credits_delta = Math.floor(amt * rate);
+    }
+    try {
+      const card = await store.updateCard(activeCard.uid, patch);
+      loadCard(card); $("#convertAmount").value = "";
+      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast("Converted", "success");
+    } catch (e) { toast(e.message === "insufficient_balance" ? "Not enough balance" : "Failed", "error"); }
+  }
+
+  // ---------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------
   async function adjust(kind, delta, reason) {
@@ -462,6 +614,7 @@
     $$(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "tab-" + name));
     if (name === "cards") refreshCards();
     if (name === "log") refreshLog();
+    if (name === "dash") renderDashboard();
   }
 
   // ---------------------------------------------------------------
@@ -575,6 +728,24 @@
     $("#manualScanBtn").addEventListener("click", () => onTap($("#manualUid").value));
     $("#manualUid").addEventListener("keydown", (e) => { if (e.key === "Enter") onTap($("#manualUid").value); });
     $("#newCardBtn").addEventListener("click", () => openNewCardModal(""));
+
+    // Advanced card tools
+    $("#setBalanceBtn").addEventListener("click", setExactBalance);
+    $("#convCtoT").addEventListener("click", () => convert("c2t"));
+    $("#convTtoC").addEventListener("click", () => convert("t2c"));
+
+    // Dashboard admin tools
+    $("#exportBtn").addEventListener("click", exportBackup);
+    $("#importBtn").addEventListener("click", () => $("#importFile").click());
+    $("#importFile").addEventListener("change", (e) => { importBackup(e.target.files[0]); e.target.value = ""; });
+    $("#batchBtn").addEventListener("click", batchCreate);
+    $("#zeroAllBtn").addEventListener("click", zeroAll);
+    $("#wipeAllBtn").addEventListener("click", wipeAll);
+
+    // Exchange rate
+    const applyRate = () => { $("#rateLabel").textContent = settings.exchangeRate; $("#rateInput").value = settings.exchangeRate; };
+    applyRate();
+    $("#rateInput").addEventListener("change", () => { settings.exchangeRate = parseFloat($("#rateInput").value) || 1; saveSettings(); applyRate(); });
 
     // Merge
     $("#mergeBtn").addEventListener("click", openMerge);

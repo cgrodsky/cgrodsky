@@ -383,6 +383,42 @@ def merge_cards():
     return jsonify({"source": row_to_dict(src), "dest": row_to_dict(dst)})
 
 
+@app.route("/api/export", methods=["GET"])
+def export_data():
+    """Full backup of cards, items and transactions."""
+    db = get_db()
+    cards = [row_to_dict(r) for r in db.execute("SELECT * FROM cards").fetchall()]
+    items = [row_to_dict(r) for r in db.execute("SELECT * FROM items").fetchall()]
+    txs = [row_to_dict(r) for r in db.execute("SELECT * FROM transactions ORDER BY ts").fetchall()]
+    return jsonify({"version": 1, "cards": cards, "items": items, "transactions": txs})
+
+
+@app.route("/api/import", methods=["POST"])
+def import_data():
+    """Restore a backup. Body: {cards, items}. Replaces existing cards & items."""
+    data = request.get_json(force=True) or {}
+    cards = data.get("cards", [])
+    items = data.get("items", [])
+    db = get_db()
+    db.execute("DELETE FROM cards")
+    db.execute("DELETE FROM items")
+    now = time.time()
+    for c in cards:
+        db.execute(
+            "INSERT INTO cards (uid, name, credits, tickets, created_at, updated_at) VALUES (?,?,?,?,?,?)",
+            (c.get("uid"), c.get("name", ""), int(c.get("credits", 0)), int(c.get("tickets", 0)),
+             c.get("created_at", now), c.get("updated_at", now)),
+        )
+    for it in items:
+        db.execute(
+            "INSERT INTO items (name, cost, currency, stock, emoji) VALUES (?,?,?,?,?)",
+            (it.get("name", "Item"), int(it.get("cost", 0)), it.get("currency", "tickets"),
+             int(it.get("stock", -1)), it.get("emoji", "")),
+        )
+    db.commit()
+    return jsonify({"ok": True, "cards": len(cards), "items": len(items)})
+
+
 @app.route("/api/transactions", methods=["GET"])
 def list_transactions():
     db = get_db()

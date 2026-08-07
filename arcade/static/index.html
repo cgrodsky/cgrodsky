@@ -26,6 +26,10 @@
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
       <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
     </defs>
   </svg>
 
@@ -136,6 +140,25 @@
             <button class="btn btn-sub" id="customRemoveBtn">Remove</button>
           </div>
 
+          <div class="adv-tools advanced-only">
+            <div class="adv-tool">
+              <span class="adv-tool-label">Set exact balance</span>
+              <div class="adv-row">
+                <input type="number" id="setCredits" placeholder="Credits" />
+                <input type="number" id="setTickets" placeholder="Tickets" />
+                <button class="btn" id="setBalanceBtn">Set</button>
+              </div>
+            </div>
+            <div class="adv-tool">
+              <span class="adv-tool-label">Convert (rate: <span id="rateLabel">1</span> credit = 1 ticket)</span>
+              <div class="adv-row">
+                <input type="number" id="convertAmount" placeholder="Amount" />
+                <button class="btn" id="convCtoT">Credits &rarr; Tickets</button>
+                <button class="btn" id="convTtoC">Tickets &rarr; Credits</button>
+              </div>
+            </div>
+          </div>
+
           <div class="card-tools">
             <button class="btn btn-ghost" id="mergeBtn"><svg class="ico"><use href="#i-merge"/></svg> Merge card</button>
             <button class="btn btn-ghost advanced-only" id="saveNameBtn">Save name</button>
@@ -150,6 +173,7 @@
     <section class="side-panel">
       <div class="tabs" role="tablist">
         <button class="tab active" data-tab="prizes"><svg class="ico"><use href="#i-gift"/></svg> Prizes</button>
+        <button class="tab advanced-only" data-tab="dash"><svg class="ico"><use href="#i-chart"/></svg> Dashboard</button>
         <button class="tab advanced-only" data-tab="items"><svg class="ico"><use href="#i-tag"/></svg> Items</button>
         <button class="tab advanced-only" data-tab="cards"><svg class="ico"><use href="#i-cards"/></svg> Cards</button>
         <button class="tab advanced-only" data-tab="log"><svg class="ico"><use href="#i-log"/></svg> Log</button>
@@ -158,6 +182,36 @@
       <div class="tab-panel active" id="tab-prizes">
         <p class="panel-hint">Select a prize to redeem it against the active card.</p>
         <div class="prize-grid" id="prizeGrid"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-dash">
+        <div class="stat-grid" id="statGrid"></div>
+
+        <h3 class="dash-h">Top prizes redeemed</h3>
+        <div class="top-list" id="topList"></div>
+
+        <h3 class="dash-h">Data &amp; backup</h3>
+        <div class="admin-row">
+          <button class="btn" id="exportBtn"><svg class="ico"><use href="#i-download"/></svg> Export backup</button>
+          <button class="btn" id="importBtn"><svg class="ico"><use href="#i-upload"/></svg> Import backup</button>
+          <input type="file" id="importFile" accept="application/json" class="hidden" />
+        </div>
+
+        <h3 class="dash-h">Batch create cards</h3>
+        <div class="batch-form">
+          <label>ID prefix <input type="text" id="batchPrefix" value="CARD-" /></label>
+          <label>How many <input type="number" id="batchCount" value="10" min="1" max="500" /></label>
+          <label>Start credits <input type="number" id="batchCredits" value="0" /></label>
+          <label>Start tickets <input type="number" id="batchTickets" value="0" /></label>
+          <button class="btn btn-add" id="batchBtn">Create cards</button>
+        </div>
+        <p class="setting-hint">IDs are numbered from the next free slot, e.g. CARD-0001, CARD-0002&hellip;</p>
+
+        <h3 class="dash-h">Danger zone</h3>
+        <div class="admin-row">
+          <button class="btn btn-danger" id="zeroAllBtn"><svg class="ico"><use href="#i-refresh"/></svg> Reset all balances</button>
+          <button class="btn btn-danger" id="wipeAllBtn"><svg class="ico"><use href="#i-trash"/></svg> Delete all cards</button>
+        </div>
       </div>
 
       <div class="tab-panel" id="tab-items">
@@ -225,6 +279,15 @@
           <button class="btn" id="simBtn">Fire tap</button>
         </div>
         <p class="setting-hint">Sends a fake card tap through the live feed for testing.</p>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">Exchange rate</label>
+        <div class="rate-row">
+          <input type="number" id="rateInput" value="1" min="0" step="0.1" />
+          <span class="rate-suffix">credits = 1 ticket</span>
+        </div>
+        <p class="setting-hint">Used by the Convert tool on a card (Advanced).</p>
       </div>
 
       <div class="setting">
