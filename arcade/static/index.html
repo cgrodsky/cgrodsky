@@ -37,6 +37,8 @@
       <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></symbol>
       <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 103-7.7L3 8"/></symbol>
       <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 4h12v3a6 6 0 01-12 0z"/><path d="M6 6H3v1a4 4 0 004 4M18 6h3v1a4 4 0 01-4 4"/><path d="M9 15h6M8 20h8M12 15v5"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M8 17h8v4H8z"/></symbol>
     </defs>
   </svg>
 
@@ -192,6 +194,7 @@
           </div>
 
           <div class="card-tools">
+            <button class="btn btn-ghost" id="profileBtn"><svg class="ico"><use href="#i-user"/></svg> Profile &amp; history</button>
             <button class="btn btn-ghost" id="mergeBtn"><svg class="ico"><use href="#i-merge"/></svg> Merge card</button>
             <button class="btn btn-ghost advanced-only" id="saveNameBtn">Save name</button>
             <button class="btn btn-ghost" id="switchCardBtn">Switch card</button>
@@ -452,6 +455,44 @@
         <button class="btn btn-add hidden" id="mergeConfirmBtn">Merge</button>
         <button class="btn btn-ghost" id="mergeCancelBtn">Cancel</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===================== Prize claim receipt ===================== -->
+  <div class="modal-backdrop hidden" id="receiptBackdrop">
+    <div class="modal receipt" id="receiptCard">
+      <div class="receipt-title">PRIZE CLAIM TICKET</div>
+      <div class="receipt-badge" id="rcBadge">P</div>
+      <div class="receipt-prize" id="rcPrize">Prize</div>
+      <div class="receipt-rows">
+        <div><span>Cardholder</span><b id="rcHolder">&mdash;</b></div>
+        <div><span>Card ID</span><b id="rcCard">&mdash;</b></div>
+        <div><span>Cost</span><b id="rcCost">&mdash;</b></div>
+        <div><span>Claim #</span><b id="rcNum">&mdash;</b></div>
+        <div><span>Date</span><b id="rcDate">&mdash;</b></div>
+      </div>
+      <div class="receipt-foot">Hand this prize to the cardholder. Thanks for playing!</div>
+      <div class="form-actions no-print">
+        <button class="btn btn-add" id="rcPrint"><svg class="ico"><use href="#i-print"/></svg> Print</button>
+        <button class="btn btn-ghost" id="rcClose">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Card profile & history ===================== -->
+  <div class="modal-backdrop hidden" id="profileBackdrop">
+    <div class="modal modal-wide profile-modal" role="dialog" aria-modal="true">
+      <div class="profile-head">
+        <div class="profile-avatar" id="pfAvatar">?</div>
+        <div class="profile-id">
+          <h2 id="pfName">Card</h2>
+          <div class="profile-meta" id="pfMeta">&mdash;</div>
+        </div>
+        <button class="icon-btn" id="pfClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="profile-stats" id="pfStats"></div>
+      <h3 class="dash-h">Full history</h3>
+      <div class="log-list profile-history" id="pfHistory"></div>
     </div>
   </div>
 

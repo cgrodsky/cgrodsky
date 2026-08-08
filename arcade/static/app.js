@@ -467,6 +467,54 @@
   }
 
   // ---------------------------------------------------------------
+  // Card profile & full history
+  // ---------------------------------------------------------------
+  async function openProfile() {
+    if (!activeCard) { toast("Load a card first", "error"); return; }
+    const c = await store.getCard(activeCard.uid);
+    const tx = await store.listTransactions(c.uid, 2000);
+    const live = tx.filter((t) => !t.voided);
+    const ticketsEarned = live.filter((t) => t.tickets_d > 0).reduce((s, t) => s + t.tickets_d, 0);
+    const creditsAdded = live.filter((t) => t.credits_d > 0).reduce((s, t) => s + t.credits_d, 0);
+    const prizes = live.filter((t) => t.kind === "redeem").length;
+    const created = c.created_at ? new Date(c.created_at * 1000).toLocaleDateString() : "—";
+
+    $("#pfAvatar").textContent = monogram(c.name || c.uid);
+    $("#pfAvatar").style.cssText = badgeStyle(c.name || c.uid);
+    $("#pfName").textContent = c.name || "(no name)";
+    $("#pfMeta").innerHTML = `${escapeHtml(c.uid)} · ${escapeHtml(c.status || "active")}` +
+      `${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""} · member since ${created}` +
+      `${c.notes ? `<br><em>${escapeHtml(c.notes)}</em>` : ""}`;
+    $("#pfStats").innerHTML = `
+      <div class="stat"><div class="stat-label">Credits now</div><div class="stat-value credits">${c.credits}</div></div>
+      <div class="stat"><div class="stat-label">Tickets now</div><div class="stat-value tickets">${c.tickets}</div></div>
+      <div class="stat"><div class="stat-label">Tickets earned</div><div class="stat-value">${ticketsEarned}</div><div class="stat-sub">all-time</div></div>
+      <div class="stat"><div class="stat-label">Credits added</div><div class="stat-value">${creditsAdded}</div><div class="stat-sub">all-time</div></div>
+      <div class="stat"><div class="stat-label">Prizes claimed</div><div class="stat-value">${prizes}</div></div>
+      <div class="stat"><div class="stat-label">Activity</div><div class="stat-value">${tx.length}</div><div class="stat-sub">events</div></div>`;
+
+    const hist = $("#pfHistory");
+    if (tx.length === 0) { hist.innerHTML = `<p class="panel-hint">No history yet.</p>`; }
+    else {
+      hist.innerHTML = "";
+      tx.forEach((t) => {
+        const label = TX_LABELS[t.kind] || t.kind;
+        const parts = [];
+        if (t.credits_d) parts.push(`${t.credits_d > 0 ? "+" : ""}${t.credits_d} credits`);
+        if (t.tickets_d) parts.push(`${t.tickets_d > 0 ? "+" : ""}${t.tickets_d} tickets`);
+        const row = document.createElement("div");
+        row.className = "log-entry" + (t.voided ? " voided" : "");
+        row.innerHTML = `<span class="log-badge ${txBadge(t)}">${escapeHtml(label)}</span>
+          <div class="log-main"><div>${escapeHtml(t.detail || "")}${parts.length ? " · " + parts.join(", ") : ""}</div>
+          <div class="log-time">${new Date(t.ts * 1000).toLocaleString()}</div></div>`;
+        hist.appendChild(row);
+      });
+    }
+    $("#profileBackdrop").classList.remove("hidden");
+  }
+  function closeProfile() { $("#profileBackdrop").classList.add("hidden"); }
+
+  // ---------------------------------------------------------------
   // Full-screen leaderboard (for a big display)
   // ---------------------------------------------------------------
   let lbTimer = null;
@@ -681,12 +729,29 @@
     if (item.stock === 0) { toast("Out of stock", "error"); return; }
     if (activeCard[item.currency] < item.cost) { toast("Not enough " + item.currency, "error"); return; }
     if (!confirm(`Redeem "${item.name}" for ${item.cost} ${item.currency}?`)) return;
+    const holder = activeCard.name || activeCard.uid;
+    const cardUid = activeCard.uid;
     try {
       const card = await store.redeem(activeCard.uid, item.id);
       loadCard(card); refreshItems(); beep(990);
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
-      toast(`Redeemed ${item.name}`, "success");
+      // Claim number = the id of the redeem transaction we just created.
+      let claim = "C" + Date.now().toString(36).toUpperCase().slice(-6);
+      try { const last = await store.listTransactions(cardUid, 1); if (last[0]) claim = "#" + last[0].id; } catch (_) {}
+      showReceipt(item, holder, cardUid, claim);
     } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Redeem failed: " + e.message, "error"); }
+  }
+
+  function showReceipt(item, holder, cardUid, claim) {
+    $("#rcBadge").textContent = monogram(item.name);
+    $("#rcBadge").style.cssText = badgeStyle(item.name);
+    $("#rcPrize").textContent = item.name;
+    $("#rcHolder").textContent = holder;
+    $("#rcCard").textContent = cardUid;
+    $("#rcCost").textContent = `${item.cost} ${item.currency}`;
+    $("#rcNum").textContent = claim;
+    $("#rcDate").textContent = new Date().toLocaleString();
+    $("#receiptBackdrop").classList.remove("hidden");
   }
 
   // ---------------------------------------------------------------
@@ -932,6 +997,16 @@
     // Leaderboard big screen
     $("#leaderboardBtn").addEventListener("click", openLeaderboard);
     $("#closeLeaderboard").addEventListener("click", closeLeaderboard);
+
+    // Prize claim receipt
+    $("#rcClose").addEventListener("click", () => $("#receiptBackdrop").classList.add("hidden"));
+    $("#rcPrint").addEventListener("click", () => window.print());
+    $("#receiptBackdrop").addEventListener("click", (e) => { if (e.target.id === "receiptBackdrop") $("#receiptBackdrop").classList.add("hidden"); });
+
+    // Card profile & history
+    $("#profileBtn").addEventListener("click", openProfile);
+    $("#pfClose").addEventListener("click", closeProfile);
+    $("#profileBackdrop").addEventListener("click", (e) => { if (e.target.id === "profileBackdrop") closeProfile(); });
 
     // Appearance + kiosk
     $("#themeToggle").addEventListener("click", toggleTheme);

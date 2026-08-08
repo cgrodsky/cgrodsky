@@ -382,6 +382,38 @@ body.locked { overflow: hidden; }
 :root[data-theme="light"] .card-name-input, :root[data-theme="light"] .bal-value { color: #fff; }
 :root[data-theme="light"] .topbar { background: rgba(255,255,255,.85); }
 
+/* ---------------- Prize claim receipt ---------------- */
+.receipt { width: min(360px, 92vw); text-align: center; }
+.receipt-title { font-size: 13px; letter-spacing: 3px; font-weight: 800; color: var(--muted); border-bottom: 2px dashed var(--border-2); padding-bottom: 14px; margin-bottom: 18px; }
+.receipt-badge { width: 70px; height: 70px; margin: 0 auto 12px; border-radius: 18px; display: grid; place-items: center; font-size: 30px; font-weight: 800; color: #fff; background: linear-gradient(150deg, var(--accent), var(--accent-2)); }
+.receipt-prize { font-size: 24px; font-weight: 800; margin-bottom: 18px; }
+.receipt-rows { text-align: left; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 14px; }
+.receipt-rows div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
+.receipt-rows span { color: var(--muted); }
+.receipt-rows b { font-weight: 700; }
+.receipt-foot { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  #receiptBackdrop, #receiptBackdrop * { visibility: visible !important; }
+  #receiptBackdrop { position: absolute; inset: 0; background: #fff; display: block !important; }
+  #receiptCard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    box-shadow: none; border: 1px solid #000; color: #000; background: #fff; }
+  #receiptCard .receipt-title, #receiptCard .receipt-rows span, #receiptCard .receipt-foot { color: #333; }
+  #receiptCard .receipt-badge { background: #eee; color: #000; }
+  .no-print { display: none !important; }
+}
+
+/* ---------------- Card profile & history ---------------- */
+.profile-modal { max-height: 88vh; display: flex; flex-direction: column; }
+.profile-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+.profile-avatar { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-size: 24px; font-weight: 800; color: #fff; background: linear-gradient(150deg, var(--accent), #6d5cf0); flex: none; }
+.profile-id { flex: 1; min-width: 0; }
+.profile-id h2 { font-size: 20px; }
+.profile-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.profile-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 6px; }
+.profile-history { overflow: auto; flex: 1; margin-top: 8px; }
+
 /* ---------------- Leaderboard big screen ---------------- */
 .leaderboard-screen {
   position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column;
