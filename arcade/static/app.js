@@ -449,7 +449,9 @@
   // ---------------------------------------------------------------
   // On-card data (NFC read/write)
   // ---------------------------------------------------------------
-  function cardToNfc(c) { return { u: c.uid, n: c.name || "", c: c.credits, t: c.tickets, s: c.status || "active", tr: c.tier || "Standard", r: c.role || "customer" }; }
+  // Keep this small — an NTAG213 chip only has ~142 usable bytes. The physical
+  // UID is always read separately, so we don't store it in the blob.
+  function cardToNfc(c) { return { n: c.name || "", c: c.credits, t: c.tickets, s: c.status || "active", tr: c.tier || "Standard", r: c.role || "customer" }; }
 
   async function writeToCard(silent) {
     if (!activeCard) { if (!silent) toast("Load a card first", "error"); return; }
