@@ -416,6 +416,24 @@ body.locked { overflow: hidden; }
 .profile-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 6px; }
 .profile-history { overflow: auto; flex: 1; margin-top: 8px; }
 
+/* ---------------- Bulk actions ---------------- */
+.bulk-bar { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.bulk-label { font-size: 13px; color: var(--muted); }
+.bulk-label b { color: var(--text); }
+.bulk-row { display: flex; gap: 8px; margin: 10px 0 6px; flex-wrap: wrap; }
+.bulk-row select, .bulk-row input { flex: 1; min-width: 90px; }
+.bulk-row .btn { flex: none; }
+
+/* ---------------- Live stats big screen ---------------- */
+.stats-screen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 8px; }
+.stats-screen-grid .stat { padding: clamp(16px, 2.4vw, 28px); }
+.stats-screen-grid .stat-value { font-size: clamp(30px, 4.5vw, 56px); }
+.stats-screen-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; min-height: 0; margin-top: 16px; }
+@media (max-width: 760px) { .stats-screen-cols { grid-template-columns: 1fr; } }
+.stats-col-h { font-size: clamp(16px, 2vw, 22px); color: var(--muted); margin-bottom: 12px; font-weight: 700; }
+.stats-ticker { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+.stats-ticker .log-entry { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; border-bottom: 1px solid var(--border); }
+
 /* ---------------- Leaderboard big screen ---------------- */
 .leaderboard-screen {
   position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column;

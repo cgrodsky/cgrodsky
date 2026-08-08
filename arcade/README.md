@@ -28,6 +28,13 @@ arcade/ticket system.
 - **Big-screen leaderboard** — a full-screen, auto-refreshing ranking of who has
   the most tickets (gold/silver/bronze for the top 3). Open it from the trophy
   button or press **B** — great to show on a monitor at the event.
+- **Live stats screen** — a full-screen, auto-refreshing operations display
+  (cards, credits/tickets in play, tickets won today, prizes today, top prizes,
+  and a live activity ticker). Trophy-style big screen; press **S**.
+- **Bulk actions** — in the Cards tab, add or remove credits/tickets for **all
+  shown cards at once** (respects the search filter, skips staff) — e.g. "everyone
+  gets 5 free tickets."
+- **Undo last** — one tap reverses the most recent balance change on a card.
 - **Dashboard** — tickets awarded, credits/tickets in circulation, redemptions, a
   **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
 - **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and

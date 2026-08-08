@@ -357,6 +357,7 @@
     const term = ($("#cardSearch").value || "").toLowerCase();
     const list = $("#cardList"); list.innerHTML = "";
     const filtered = cards.filter((c) => c.uid.toLowerCase().includes(term) || (c.name || "").toLowerCase().includes(term));
+    const bc = $("#bulkCount"); if (bc) bc.textContent = filtered.filter((c) => c.role !== "staff").length + (term ? " matching card(s)" : " card(s)");
     if (filtered.length === 0) { list.innerHTML = `<p class="panel-hint">No cards ${term ? "match" : "registered yet"}.</p>`; return; }
     filtered.forEach((c) => {
       const row = document.createElement("div");
@@ -564,6 +565,100 @@
     $("#profileBackdrop").classList.remove("hidden");
   }
   function closeProfile() { $("#profileBackdrop").classList.add("hidden"); }
+
+  // ---------------------------------------------------------------
+  // Undo last change on the active card
+  // ---------------------------------------------------------------
+  async function undoLast() {
+    if (!activeCard) { toast("Load a card first", "error"); return; }
+    const tx = await store.listTransactions(activeCard.uid, 40);
+    const target = tx.find((t) => !t.voided && (t.credits_d || t.tickets_d) && t.kind !== "void");
+    if (!target) { toast("Nothing to undo", "error"); return; }
+    const desc = [];
+    if (target.credits_d) desc.push(`${target.credits_d > 0 ? "+" : ""}${target.credits_d} credits`);
+    if (target.tickets_d) desc.push(`${target.tickets_d > 0 ? "+" : ""}${target.tickets_d} tickets`);
+    if (!confirm(`Undo last change — ${target.detail || target.kind}: ${desc.join(", ")}?`)) return;
+    try {
+      await store.voidTx(target.id);
+      loadCard(await store.getCard(activeCard.uid)); syncToCard();
+      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast("Undid last change", "success");
+    } catch (e) { toast("Undo failed: " + e.message, "error"); }
+  }
+
+  // ---------------------------------------------------------------
+  // Bulk actions (Cards tab)
+  // ---------------------------------------------------------------
+  function filteredCards(cards) {
+    const term = ($("#cardSearch").value || "").toLowerCase();
+    return cards.filter((c) => c.role !== "staff" && (c.uid.toLowerCase().includes(term) || (c.name || "").toLowerCase().includes(term)));
+  }
+  async function bulkAdjust(sign) {
+    const amt = Math.abs(parseInt($("#bulkAmount").value, 10) || 0);
+    if (!amt) { toast("Enter an amount", "error"); return; }
+    const kind = $("#bulkKind").value;
+    const cards = filteredCards(await store.listCards());
+    if (cards.length === 0) { toast("No cards match", "error"); return; }
+    if (!confirm(`${sign > 0 ? "Add" : "Remove"} ${amt} ${kind} ${sign > 0 ? "to" : "from"} ${cards.length} card(s)?`)) return;
+    let ok = 0, fail = 0;
+    for (const c of cards) {
+      const patch = { reason: "bulk" };
+      patch[kind === "credits" ? "credits_delta" : "tickets_delta"] = sign * amt;
+      try { await store.updateCard(c.uid, patch); ok++; } catch (_) { fail++; }
+    }
+    $("#bulkAmount").value = "";
+    toast(`Updated ${ok} card(s)${fail ? `, ${fail} skipped` : ""}`, "success");
+    refreshCards();
+    if (activeCard) { try { loadCard(await store.getCard(activeCard.uid)); } catch (_) {} }
+  }
+
+  // ---------------------------------------------------------------
+  // Full-screen live stats (for a big display)
+  // ---------------------------------------------------------------
+  let statsTimer = null;
+  async function renderStatsScreen() {
+    const [cards, items, tx] = await Promise.all([store.listCards(), store.listItems(), store.listTransactions(null, 3000)]);
+    const live = tx.filter((t) => !t.voided);
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    const startSec = midnight.getTime() / 1000;
+    const today = live.filter((t) => t.ts >= startSec);
+    const creditsCirc = cards.reduce((s, c) => s + c.credits, 0);
+    const ticketsCirc = cards.reduce((s, c) => s + c.tickets, 0);
+    const redeemsToday = today.filter((t) => t.kind === "redeem").length;
+    const ticketsToday = today.filter((t) => t.tickets_d > 0).reduce((s, t) => s + t.tickets_d, 0);
+    $("#statsScreenGrid").innerHTML = `
+      <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div></div>
+      <div class="stat"><div class="stat-label">Credits in play</div><div class="stat-value credits">${creditsCirc}</div></div>
+      <div class="stat"><div class="stat-label">Tickets in play</div><div class="stat-value tickets">${ticketsCirc}</div></div>
+      <div class="stat"><div class="stat-label">Tickets won today</div><div class="stat-value tickets">${ticketsToday}</div></div>
+      <div class="stat"><div class="stat-label">Prizes today</div><div class="stat-value">${redeemsToday}</div></div>`;
+    // top prizes today
+    const counts = {};
+    today.filter((t) => t.kind === "redeem").forEach((t) => { const n = t.detail || "?"; counts[n] = (counts[n] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    topListInto($("#statsTopPrizes"), top, top[0] ? top[0][1] : 1, (v) => v + "×");
+    // ticker
+    const ticker = $("#statsTicker");
+    const recent = live.slice(0, 10);
+    if (recent.length === 0) { ticker.innerHTML = `<p class="panel-hint">No activity yet.</p>`; }
+    else {
+      ticker.innerHTML = "";
+      recent.forEach((t) => {
+        const label = TX_LABELS[t.kind] || t.kind;
+        const parts = [];
+        if (t.credits_d) parts.push(`${t.credits_d > 0 ? "+" : ""}${t.credits_d}c`);
+        if (t.tickets_d) parts.push(`${t.tickets_d > 0 ? "+" : ""}${t.tickets_d}t`);
+        const row = document.createElement("div");
+        row.className = "log-entry";
+        row.innerHTML = `<span class="log-badge ${txBadge(t)}">${escapeHtml(label)}</span>
+          <div class="log-main"><div>${escapeHtml(t.detail || t.uid)}${parts.length ? " · " + parts.join(", ") : ""}</div>
+          <div class="log-time">${new Date(t.ts * 1000).toLocaleTimeString()}</div></div>`;
+        ticker.appendChild(row);
+      });
+    }
+  }
+  function openStats() { $("#statsScreen").classList.remove("hidden"); renderStatsScreen(); clearInterval(statsTimer); statsTimer = setInterval(renderStatsScreen, 4000); }
+  function closeStats() { $("#statsScreen").classList.add("hidden"); clearInterval(statsTimer); statsTimer = null; }
 
   // ---------------------------------------------------------------
   // Full-screen leaderboard (for a big display)
@@ -1045,9 +1140,16 @@
     // CSV export
     $("#csvBtn").addEventListener("click", exportCsv);
 
-    // Leaderboard big screen
+    // Undo last + bulk actions
+    $("#undoLastBtn").addEventListener("click", undoLast);
+    $("#bulkAddBtn").addEventListener("click", () => bulkAdjust(1));
+    $("#bulkRemoveBtn").addEventListener("click", () => bulkAdjust(-1));
+
+    // Leaderboard + live stats big screens
     $("#leaderboardBtn").addEventListener("click", openLeaderboard);
     $("#closeLeaderboard").addEventListener("click", closeLeaderboard);
+    $("#statsBtn").addEventListener("click", openStats);
+    $("#closeStats").addEventListener("click", closeStats);
 
     // Prize claim receipt
     $("#rcClose").addEventListener("click", () => $("#receiptBackdrop").classList.add("hidden"));
@@ -1161,7 +1263,11 @@
       else if (k === "a") { e.preventDefault(); setMode(bodyIsAdvanced() ? "simple" : "advanced"); }
       else if (k === "/") { e.preventDefault(); const s = $("#prizeSearch"); if (s) { switchTab("prizes"); s.focus(); } }
       else if (k === "b") { e.preventDefault(); if ($("#leaderboardScreen").classList.contains("hidden")) openLeaderboard(); else closeLeaderboard(); }
-      else if (e.key === "Escape" && !$("#leaderboardScreen").classList.contains("hidden")) closeLeaderboard();
+      else if (k === "s" && bodyIsAdvanced()) { e.preventDefault(); if ($("#statsScreen").classList.contains("hidden")) openStats(); else closeStats(); }
+      else if (e.key === "Escape") {
+        if (!$("#leaderboardScreen").classList.contains("hidden")) closeLeaderboard();
+        if (!$("#statsScreen").classList.contains("hidden")) closeStats();
+      }
     });
 
     // Auto-lock idle tracking
