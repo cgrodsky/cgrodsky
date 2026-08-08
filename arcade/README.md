@@ -32,6 +32,16 @@ arcade/ticket system.
   **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
 - **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and
   **freeze/unfreeze** (frozen cards can't spend or earn).
+- **Staff cards** — mark a card as staff when creating it. Staff cards are kept
+  off the leaderboard, and **tapping a staff card unlocks the terminal** (no PIN
+  needed).
+- **Store data on the card (NFC)** — write a card's name and balances **onto the
+  chip itself**, and read it back, so each card carries its own data. A central
+  copy is still kept for the leaderboard/dashboard (a leaderboard needs to see
+  every card). Turn on "auto-save every change onto the card" in Settings. This
+  needs a **write-capable reader** (ACR122U over USB, or an MFRC522 on a
+  Raspberry Pi) — a keyboard-wedge reader can only read the card ID, and the
+  simulator fully emulates it for testing.
 - **Transaction tools** — **void/undo** any balance change, **CSV export**, and a
   filterable activity log.
 - **Bulk & data** — **batch-create cards**, **backup/restore** (JSON), reset all
@@ -161,5 +171,7 @@ arcade/
 | GET | `/api/transactions` | Recent activity (`?uid=` to filter) |
 | GET | `/api/scan/stream` | Server-Sent Events feed of live card taps |
 | POST | `/api/scan/simulate` | `{uid}` — inject a fake tap for testing |
+| POST | `/api/nfc/read` | read the data stored on the physical card |
+| POST | `/api/nfc/write` | `{data}` — write data onto the physical card |
 
 `PATCH /api/cards/<uid>` body: `{ "credits_delta": 10, "tickets_delta": -5, "name": "...", "reason": "..." }`.

@@ -176,6 +176,14 @@
               <button class="btn btn-ghost" id="saveMetaBtn">Save membership &amp; notes</button>
             </div>
             <div class="adv-tool">
+              <span class="adv-tool-label">Store data on the card (NFC)</span>
+              <div class="adv-row">
+                <button class="btn" id="writeCardBtn"><svg class="ico"><use href="#i-upload"/></svg> Write to card</button>
+                <button class="btn" id="readCardBtn"><svg class="ico"><use href="#i-download"/></svg> Read from card</button>
+              </div>
+              <p class="setting-hint">Saves this card's name &amp; balances onto the chip itself. Needs a write-capable reader (ACR122U / MFRC522) or the simulator.</p>
+            </div>
+            <div class="adv-tool">
               <span class="adv-tool-label">Set exact balance</span>
               <div class="adv-row">
                 <input type="number" id="setCredits" placeholder="Credits" />
@@ -327,6 +335,12 @@
         <p class="setting-hint">Keyboard-wedge readers type the card number for you &mdash; just tap and the card loads automatically, no backend needed.</p>
       </div>
 
+      <div class="setting">
+        <label class="setting-label">On-card data (NFC)</label>
+        <label class="check"><input type="checkbox" id="nfcAutoWrite" /> Auto-save every change onto the card</label>
+        <p class="setting-hint">When on, balance changes are also written to the chip so the card carries its own data. A central copy is still kept for the leaderboard. Needs a write-capable reader (ACR122U / MFRC522).</p>
+      </div>
+
       <div class="setting advanced-only">
         <label class="setting-label">Simulate a tap</label>
         <div class="manual-scan">
@@ -406,6 +420,7 @@
         <label>Starting credits <input type="number" id="newCredits" value="0" /></label>
         <label>Starting tickets <input type="number" id="newTickets" value="0" /></label>
       </div>
+      <label class="check staff-check"><input type="checkbox" id="newStaff" /> Make this a <b>staff card</b> (unlocks the terminal on tap)</label>
       <div class="form-actions">
         <button class="btn btn-add" id="createCardBtn">Create card</button>
         <button class="btn btn-ghost" id="cancelCardBtn">Cancel</button>

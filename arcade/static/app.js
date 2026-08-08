@@ -17,7 +17,7 @@
   const SETTINGS_KEY = "arcade.settings";
   const settings = Object.assign(
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
-      theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0 },
+      theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -60,6 +60,8 @@
     exportData() { return this._req("/api/export"); }
     importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
     voidTx(id) { return this._req(`/api/transactions/${id}/void`, { method: "POST" }); }
+    nfcRead(_uid) { return this._req("/api/nfc/read", { method: "POST", body: JSON.stringify({}) }); }
+    nfcWrite(_uid, data) { return this._req("/api/nfc/write", { method: "POST", body: JSON.stringify({ data }) }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
   }
 
@@ -90,8 +92,8 @@
       if (!uid) throw new Error("uid_required");
       if (this.data.cards[uid]) throw new Error("exists");
       const now = Date.now() / 1000;
-      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: "active", tier: "Standard", notes: "", created_at: now, updated_at: now };
-      this.data.cards[uid] = card; this._log(uid, "create_card", c.name); this._save(); return card;
+      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: "active", tier: "Standard", notes: "", role: c.role === "staff" ? "staff" : "customer", created_at: now, updated_at: now };
+      this.data.cards[uid] = card; this._log(uid, "create_card", (c.name || "") + (card.role === "staff" ? " (staff)" : "")); this._save(); return card;
     }
     async updateCard(uid, patch) {
       const c = this.data.cards[uid];
@@ -105,6 +107,7 @@
       if (patch.status !== undefined) c.status = patch.status;
       if (patch.tier !== undefined) c.tier = patch.tier;
       if (patch.notes !== undefined) c.notes = patch.notes;
+      if (patch.role !== undefined) c.role = patch.role;
       c.updated_at = Date.now() / 1000;
       if (cd || td) this._log(uid, cd > 0 || td > 0 ? "add" : "remove", patch.reason, cd, td);
       if (patch.status !== undefined && patch.status !== prevStatus) this._log(uid, "status", patch.status);
@@ -162,11 +165,13 @@
       this._save(); return { source: s, dest: d };
     }
     async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
+    async nfcRead(uid) { this.data.nfcmem = this.data.nfcmem || {}; return { uid, data: this.data.nfcmem[uid] || null }; }
+    async nfcWrite(uid, data) { this.data.nfcmem = this.data.nfcmem || {}; this.data.nfcmem[uid] = data; this._save(); return { ok: true, uid }; }
     async exportData() { return { version: 3, cards: Object.values(this.data.cards), items: this.data.items, transactions: this.data.tx }; }
     async importData({ cards = [], items = [] }) {
       const now = Date.now() / 1000;
       this.data.cards = {};
-      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
+      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", role: c.role || "customer", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
       this.data.items = []; this.data.nextItemId = 1;
       items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock, category: it.category || "" }));
       this._save(); return { ok: true, cards: cards.length, items: items.length };
@@ -220,6 +225,13 @@
   async function onTap(uid) {
     uid = (uid || "").trim();
     if (!uid) return;
+    // Locked? A staff card unlocks the terminal; other cards are ignored.
+    if (document.body.classList.contains("locked")) {
+      if (appStarted && store) {
+        try { const c = await store.getCard(uid); if (c.role === "staff") { hideLock(); toast(`Unlocked by ${c.name || c.uid}`, "success"); beep(880); } } catch (_) {}
+      }
+      return;
+    }
     // Merge flow is waiting for the second card?
     if (mergeAwaiting) { mergeSecondCard(uid); return; }
     // New-card modal open? fill its UID.
@@ -263,8 +275,9 @@
     $("#balTickets").textContent = card.tickets;
     const status = card.status || "active";
     const badge = $("#cardStatusBadge");
-    badge.textContent = (card.tier && card.tier !== "Standard" ? card.tier + " · " : "") + status;
-    badge.className = "card-status-badge " + status;
+    const isStaff = card.role === "staff";
+    badge.textContent = (isStaff ? "STAFF · " : "") + (card.tier && card.tier !== "Standard" ? card.tier + " · " : "") + status;
+    badge.className = "card-status-badge " + (isStaff ? "staff" : status);
     if ($("#tierSelect")) $("#tierSelect").value = card.tier || "Standard";
     if ($("#cardNotes")) $("#cardNotes").value = card.notes || "";
     if ($("#freezeBtn")) $("#freezeBtn").innerHTML = status === "frozen"
@@ -351,7 +364,7 @@
       row.innerHTML = `
         <span class="ri-badge card">${svgUse("cards")}</span>
         <div class="ri-main">
-          <div class="ri-title">${escapeHtml(c.name || "(no name)")}${c.status === "frozen" ? " · FROZEN" : ""}${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""}</div>
+          <div class="ri-title">${escapeHtml(c.name || "(no name)")}${c.role === "staff" ? " · STAFF" : ""}${c.status === "frozen" ? " · FROZEN" : ""}${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""}</div>
           <div class="ri-sub">${escapeHtml(c.uid)} · ${c.credits} credits · ${c.tickets} tickets</div>
         </div>
         <div class="ri-actions"><button class="mini-btn" data-load="${escapeAttr(c.uid)}">Open</button></div>`;
@@ -420,7 +433,7 @@
     if (!activeCard) return;
     try {
       const card = await store.updateCard(activeCard.uid, { tier: $("#tierSelect").value, notes: $("#cardNotes").value });
-      loadCard(card); refreshCards(); toast("Membership saved", "success");
+      loadCard(card); syncToCard(); refreshCards(); toast("Membership saved", "success");
     } catch (e) { toast("Save failed", "error"); }
   }
   async function toggleFreeze() {
@@ -431,6 +444,42 @@
       loadCard(card); refreshCards(); if (bodyIsAdvanced()) refreshLog();
       toast(next === "frozen" ? "Card frozen" : "Card unfrozen", "success");
     } catch (e) { toast("Failed", "error"); }
+  }
+
+  // ---------------------------------------------------------------
+  // On-card data (NFC read/write)
+  // ---------------------------------------------------------------
+  function cardToNfc(c) { return { u: c.uid, n: c.name || "", c: c.credits, t: c.tickets, s: c.status || "active", tr: c.tier || "Standard", r: c.role || "customer" }; }
+
+  async function writeToCard(silent) {
+    if (!activeCard) { if (!silent) toast("Load a card first", "error"); return; }
+    if (!store.nfcWrite) { if (!silent) toast("This mode can't write cards", "error"); return; }
+    try { await store.nfcWrite(activeCard.uid, cardToNfc(activeCard)); if (!silent) toast("Saved onto the card", "success"); }
+    catch (e) { if (!silent) toast("Write failed: " + (e.message === "no_card_present" ? "no card on the reader" : e.message), "error"); }
+  }
+  // Best-effort auto-write after a change, when the setting is on.
+  function syncToCard() { if (settings.nfcWrite && store && store.nfcWrite) writeToCard(true); }
+
+  async function readFromCard() {
+    if (!store.nfcRead) { toast("This mode can't read card data", "error"); return; }
+    try {
+      const res = await store.nfcRead(activeCard ? activeCard.uid : null);
+      if (!res || !res.data) { toast("Card is blank (no data stored on it)", "error"); return; }
+      const d = res.data;
+      const summary = `On card: ${d.n || "(no name)"} — ${d.c} credits, ${d.t} tickets`;
+      if (!confirm(summary + "\n\nApply this to the record and load it?")) { toast(summary); return; }
+      const uid = res.uid || d.u;
+      let card;
+      try { card = await store.getCard(uid); }
+      catch (_) { card = await store.createCard({ uid, name: d.n, credits: 0, tickets: 0, role: d.r }); }
+      // Set exact balances + meta to match the card's stored data.
+      card = await store.updateCard(uid, {
+        name: d.n, role: d.r, tier: d.tr, status: d.s,
+        credits_delta: (+d.c || 0) - card.credits, tickets_delta: (+d.t || 0) - card.tickets, reason: "read from card",
+      });
+      loadCard(card); if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast("Loaded from card", "success");
+    } catch (e) { toast("Read failed: " + (e.message === "no_card_present" ? "no card on the reader" : e.message), "error"); }
   }
 
   // ---------------------------------------------------------------
@@ -519,7 +568,7 @@
   // ---------------------------------------------------------------
   let lbTimer = null;
   async function renderLeaderboard() {
-    const cards = (await store.listCards()).filter((c) => c.tickets > 0)
+    const cards = (await store.listCards()).filter((c) => c.tickets > 0 && c.role !== "staff")
       .sort((a, b) => b.tickets - a.tickets).slice(0, 10);
     const list = $("#lbList");
     if (cards.length === 0) { list.innerHTML = `<p class="lb-empty">No tickets yet — tap a card and add some!</p>`; return; }
@@ -604,7 +653,7 @@
     topListInto($("#topList"), top, top[0] ? top[0][1] : 1, (v) => v + "×");
 
     // Leaderboard — most tickets
-    const lead = cards.filter((c) => c.tickets > 0).sort((a, b) => b.tickets - a.tickets).slice(0, 5)
+    const lead = cards.filter((c) => c.tickets > 0 && c.role !== "staff").sort((a, b) => b.tickets - a.tickets).slice(0, 5)
       .map((c) => [c.name || c.uid, c.tickets]);
     topListInto($("#leaderList"), lead, lead[0] ? lead[0][1] : 1, (v) => v + " tix");
 
@@ -681,7 +730,7 @@
     if (patch.credits_delta === undefined && patch.tickets_delta === undefined) { toast("Enter a value", "error"); return; }
     try {
       const card = await store.updateCard(activeCard.uid, patch);
-      loadCard(card); $("#setCredits").value = ""; $("#setTickets").value = "";
+      loadCard(card); syncToCard(); $("#setCredits").value = ""; $("#setTickets").value = "";
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast("Balance set", "success");
     } catch (e) { toast(e.message === "insufficient_balance" ? "Value can't be negative" : "Failed", "error"); }
@@ -703,7 +752,7 @@
     }
     try {
       const card = await store.updateCard(activeCard.uid, patch);
-      loadCard(card); $("#convertAmount").value = "";
+      loadCard(card); syncToCard(); $("#convertAmount").value = "";
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast("Converted", "success");
     } catch (e) { toast(e.message === "insufficient_balance" ? "Not enough balance" : "Failed", "error"); }
@@ -718,10 +767,10 @@
     patch[kind === "credits" ? "credits_delta" : "tickets_delta"] = delta;
     try {
       const card = await store.updateCard(activeCard.uid, patch);
-      loadCard(card);
+      loadCard(card); syncToCard();
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast(`${delta > 0 ? "Added" : "Removed"} ${Math.abs(delta)} ${kind}`, "success");
-    } catch (e) { toast(e.message === "insufficient_balance" ? "Not enough balance" : "Update failed", "error"); }
+    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : e.message === "insufficient_balance" ? "Not enough balance" : "Update failed", "error"); }
   }
 
   async function redeemItem(item) {
@@ -733,7 +782,7 @@
     const cardUid = activeCard.uid;
     try {
       const card = await store.redeem(activeCard.uid, item.id);
-      loadCard(card); refreshItems(); beep(990);
+      loadCard(card); refreshItems(); beep(990); syncToCard();
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       // Claim number = the id of the redeem transaction we just created.
       let claim = "C" + Date.now().toString(36).toUpperCase().slice(-6);
@@ -843,7 +892,7 @@
   function resetItemForm() { $("#itemId").value = ""; $("#itemName").value = ""; $("#itemCost").value = 100; $("#itemCurrency").value = "tickets"; $("#itemStock").value = -1; $("#itemCategory").value = ""; }
 
   function openNewCardModal(uid) {
-    $("#newUid").value = uid || ""; $("#newName").value = ""; $("#newCredits").value = 0; $("#newTickets").value = 0;
+    $("#newUid").value = uid || ""; $("#newName").value = ""; $("#newCredits").value = 0; $("#newTickets").value = 0; $("#newStaff").checked = false;
     $("#newCardScanHint").textContent = uid ? `Card ${uid} detected.` : "Waiting for a tap… or type the ID manually.";
     $("#modalBackdrop").classList.remove("hidden"); $("#newName").focus();
   }
@@ -1008,6 +1057,12 @@
     $("#pfClose").addEventListener("click", closeProfile);
     $("#profileBackdrop").addEventListener("click", (e) => { if (e.target.id === "profileBackdrop") closeProfile(); });
 
+    // On-card data (NFC)
+    $("#writeCardBtn").addEventListener("click", () => writeToCard(false));
+    $("#readCardBtn").addEventListener("click", readFromCard);
+    $("#nfcAutoWrite").checked = !!settings.nfcWrite;
+    $("#nfcAutoWrite").addEventListener("change", () => { settings.nfcWrite = $("#nfcAutoWrite").checked; saveSettings(); });
+
     // Appearance + kiosk
     $("#themeToggle").addEventListener("click", toggleTheme);
     $("#accentColor").addEventListener("input", () => { settings.accent = $("#accentColor").value; saveSettings(); applyTheme(); });
@@ -1054,8 +1109,10 @@
     // New-card modal
     $("#createCardBtn").addEventListener("click", async () => {
       try {
-        const card = await store.createCard({ uid: $("#newUid").value, name: $("#newName").value, credits: parseInt($("#newCredits").value, 10) || 0, tickets: parseInt($("#newTickets").value, 10) || 0 });
-        closeNewCardModal(); loadCard(card); refreshCards(); toast("Card created", "success");
+        const role = $("#newStaff").checked ? "staff" : "customer";
+        const card = await store.createCard({ uid: $("#newUid").value, name: $("#newName").value, credits: parseInt($("#newCredits").value, 10) || 0, tickets: parseInt($("#newTickets").value, 10) || 0, role });
+        closeNewCardModal(); loadCard(card); syncToCard(); refreshCards();
+        toast(role === "staff" ? "Staff card created" : "Card created", "success");
       } catch (err) { toast(err.message === "exists" ? "Card already exists" : err.message === "uid_required" ? "Enter a card ID" : "Create failed", "error"); }
     });
     $("#cancelCardBtn").addEventListener("click", closeNewCardModal);

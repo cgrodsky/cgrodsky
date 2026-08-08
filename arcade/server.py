@@ -112,6 +112,7 @@ MIGRATIONS = {
         ("status", "TEXT NOT NULL DEFAULT 'active'"),
         ("tier", "TEXT NOT NULL DEFAULT 'Standard'"),
         ("notes", "TEXT NOT NULL DEFAULT ''"),
+        ("role", "TEXT NOT NULL DEFAULT 'customer'"),   # 'customer' or 'staff'
     ],
     "items": [("category", "TEXT NOT NULL DEFAULT ''")],
     "transactions": [("voided", "INTEGER NOT NULL DEFAULT 0")],
@@ -221,13 +222,14 @@ def create_card():
     if existing:
         return jsonify({"error": "exists"}), 409
     now = time.time()
+    role = "staff" if data.get("role") == "staff" else "customer"
     db.execute(
-        "INSERT INTO cards (uid, name, credits, tickets, created_at, updated_at) "
-        "VALUES (?,?,?,?,?,?)",
+        "INSERT INTO cards (uid, name, credits, tickets, role, created_at, updated_at) "
+        "VALUES (?,?,?,?,?,?,?)",
         (uid, data.get("name", ""), int(data.get("credits", 0)),
-         int(data.get("tickets", 0)), now, now),
+         int(data.get("tickets", 0)), role, now, now),
     )
-    log_tx(db, uid, "create_card", detail=data.get("name", ""))
+    log_tx(db, uid, "create_card", detail=data.get("name", "") + (" (staff)" if role == "staff" else ""))
     db.commit()
     row = db.execute("SELECT * FROM cards WHERE uid=?", (uid,)).fetchone()
     return jsonify(row_to_dict(row)), 201
@@ -260,9 +262,10 @@ def update_card(uid):
     status = data.get("status", row["status"])
     tier = data.get("tier", row["tier"])
     notes = data.get("notes", row["notes"])
+    role = data.get("role", row["role"])
     db.execute(
-        "UPDATE cards SET credits=?, tickets=?, name=?, status=?, tier=?, notes=?, updated_at=? WHERE uid=?",
-        (new_credits, new_tickets, name, status, tier, notes, time.time(), uid),
+        "UPDATE cards SET credits=?, tickets=?, name=?, status=?, tier=?, notes=?, role=?, updated_at=? WHERE uid=?",
+        (new_credits, new_tickets, name, status, tier, notes, role, time.time(), uid),
     )
     if cd or td:
         kind = "add" if (cd > 0 or td > 0) else "remove"
@@ -460,11 +463,11 @@ def import_data():
     now = time.time()
     for c in cards:
         db.execute(
-            "INSERT INTO cards (uid, name, credits, tickets, status, tier, notes, created_at, updated_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO cards (uid, name, credits, tickets, status, tier, notes, role, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
             (c.get("uid"), c.get("name", ""), int(c.get("credits", 0)), int(c.get("tickets", 0)),
              c.get("status", "active"), c.get("tier", "Standard"), c.get("notes", ""),
-             c.get("created_at", now), c.get("updated_at", now)),
+             c.get("role", "customer"), c.get("created_at", now), c.get("updated_at", now)),
         )
     for it in items:
         db.execute(
@@ -508,7 +511,51 @@ def simulate_scan():
     uid = (data.get("uid") or "").strip()
     if not uid:
         return jsonify({"error": "uid_required"}), 400
+    # If the reader models a physical card (the simulator), "place" this card on
+    # it so the NFC read/write endpoints act on it.
+    reader = app.config.get("READER")
+    if reader is not None and hasattr(reader, "place"):
+        reader.place(uid)
     _broadcast_tap(uid)
+    return jsonify({"ok": True, "uid": uid})
+
+
+@app.route("/api/nfc/read", methods=["POST"])
+def nfc_read():
+    """Read data stored ON the physical NFC card via the reader.
+
+    Returns {uid, data} where data is the JSON object written to the card's
+    memory (or null if the card is blank / unformatted). Requires a reader that
+    supports reading card memory (ACR122U/PC-SC, MFRC522, or the simulator).
+    """
+    reader = app.config.get("READER")
+    if not reader or not hasattr(reader, "read_card"):
+        return jsonify({"error": "reader_cannot_read_data"}), 400
+    try:
+        uid, data = reader.read_card()
+    except Exception as exc:  # pragma: no cover - hardware dependent
+        return jsonify({"error": f"read_failed: {exc}"}), 500
+    if not uid:
+        return jsonify({"error": "no_card_present"}), 404
+    return jsonify({"uid": uid, "data": data})
+
+
+@app.route("/api/nfc/write", methods=["POST"])
+def nfc_write():
+    """Write data ONTO the physical NFC card. Body: {data: {...}}."""
+    reader = app.config.get("READER")
+    if not reader or not hasattr(reader, "write_card"):
+        return jsonify({"error": "reader_cannot_write_data"}), 400
+    payload = request.get_json(force=True) or {}
+    data = payload.get("data")
+    if data is None:
+        return jsonify({"error": "data_required"}), 400
+    try:
+        uid = reader.write_card(data)
+    except Exception as exc:  # pragma: no cover - hardware dependent
+        return jsonify({"error": f"write_failed: {exc}"}), 500
+    if not uid:
+        return jsonify({"error": "no_card_present"}), 404
     return jsonify({"ok": True, "uid": uid})
 
 
@@ -570,6 +617,7 @@ def main():
             args.reader, on_tap=_broadcast_tap, port=args.port, baud=args.baud
         )
         if reader:
+            app.config["READER"] = reader
             t = threading.Thread(target=reader.run, daemon=True)
             t.start()
             print(f"[rfid] started '{args.reader}' reader")
