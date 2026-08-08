@@ -11,18 +11,34 @@ trace, and any reader that can read the ID works.
 
 ## Features
 
+**Everyday use**
 - **Add / remove credits and tickets** with quick buttons or custom amounts.
-- **Create, edit and delete prize items** (name, cost, currency, stock).
-- **Redeem** items against the active card — balances and stock update instantly.
+- **Create, edit and delete prize items** with **categories**; redeem with a tap.
+- **Prize search & category filter**, with low-stock warnings.
 - **Merge cards** — tap a second card, choose credits / tickets / both, and pick
   which card keeps the combined balance.
 - **RFID support**: tap a card and it loads automatically. Unknown cards prompt
   you to register them.
-- **4-digit PIN lock** — chosen on first run, required to unlock. Change it or
-  lock on demand from Settings.
-- **Simple & Advanced modes.** Simple = card + quick actions + prizes. Advanced
-  adds item management, the card list, and a transaction log.
-- **Clean, icon-based interface** (no emoji), light on the eyes, works on tablets.
+
+**Advanced mode (a full back office)**
+- **Dashboard** — revenue, credits/tickets in circulation, redemptions, a
+  **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
+- **Point of sale** — define **top-up packages** ($ → credits/tickets) and sell
+  them to a card; revenue is tracked automatically.
+- **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and
+  **freeze/unfreeze** (frozen cards can't spend or earn).
+- **Transaction tools** — **void/undo** any balance change, **CSV export**, and a
+  filterable activity log.
+- **Bulk & data** — **batch-create cards**, **backup/restore** (JSON), reset all
+  balances, delete all cards.
+- **Per-card operations** — set an exact balance, convert credits ⇄ tickets at a
+  configurable rate.
+
+**Kiosk & polish**
+- **4-digit PIN lock** with **auto-lock on idle**.
+- **Light / dark themes** + custom **accent colour**, **fullscreen** kiosk mode,
+  **beep on tap/redeem**, and **keyboard shortcuts**.
+- **Clean, icon-based interface** (no emoji), works well on tablets.
 - **Two data backends:** the Python/SQLite server (shared, persistent, real RFID)
   or browser storage (zero-install, works on GitHub Pages).
 

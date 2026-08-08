@@ -30,6 +30,13 @@
       <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
       <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></symbol>
       <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+      <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/></symbol>
+      <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.8 7 6.9c0 4.6 10 2.6 10 7.2 0 2.1-2.2 3.4-5 3.4s-5-1.3-5-3.2"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.9 5.9 6.1.9-4.4 4.3 1 6.1L12 17.8 6.4 20.2l1-6.1L3 9.8l6.1-.9z"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 103-7.7L3 8"/></symbol>
+      <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.4a1.5 1.5 0 001.5 1.2h8.7a1.5 1.5 0 001.5-1.2L22 7H6"/></symbol>
     </defs>
   </svg>
 
@@ -90,7 +97,7 @@
         <div class="card-visual">
           <div class="card-visual-top">
             <span class="card-brand-mark"><svg class="ico"><use href="#i-brand"/></svg></span>
-            <span class="card-tag">MEMBER CARD</span>
+            <span class="card-status-badge" id="cardStatusBadge"></span>
           </div>
           <div class="card-uid" id="cardUid">&mdash;</div>
           <input class="card-name-input" id="cardName" placeholder="Cardholder name" />
@@ -142,6 +149,24 @@
 
           <div class="adv-tools advanced-only">
             <div class="adv-tool">
+              <span class="adv-tool-label">Sell top-up (point of sale)</span>
+              <div class="pos-buttons" id="posButtons"></div>
+            </div>
+            <div class="adv-tool">
+              <span class="adv-tool-label">Membership</span>
+              <div class="adv-row">
+                <select id="tierSelect">
+                  <option value="Standard">Standard</option>
+                  <option value="Silver">Silver</option>
+                  <option value="Gold">Gold</option>
+                  <option value="VIP">VIP</option>
+                </select>
+                <button class="btn" id="freezeBtn"><svg class="ico"><use href="#i-snow"/></svg> Freeze</button>
+              </div>
+              <textarea id="cardNotes" class="notes-area" placeholder="Notes about this cardholder&hellip;" rows="2"></textarea>
+              <button class="btn btn-ghost" id="saveMetaBtn">Save membership &amp; notes</button>
+            </div>
+            <div class="adv-tool">
               <span class="adv-tool-label">Set exact balance</span>
               <div class="adv-row">
                 <input type="number" id="setCredits" placeholder="Credits" />
@@ -175,20 +200,36 @@
         <button class="tab active" data-tab="prizes"><svg class="ico"><use href="#i-gift"/></svg> Prizes</button>
         <button class="tab advanced-only" data-tab="dash"><svg class="ico"><use href="#i-chart"/></svg> Dashboard</button>
         <button class="tab advanced-only" data-tab="items"><svg class="ico"><use href="#i-tag"/></svg> Items</button>
+        <button class="tab advanced-only" data-tab="pos"><svg class="ico"><use href="#i-cart"/></svg> POS</button>
         <button class="tab advanced-only" data-tab="cards"><svg class="ico"><use href="#i-cards"/></svg> Cards</button>
         <button class="tab advanced-only" data-tab="log"><svg class="ico"><use href="#i-log"/></svg> Log</button>
       </div>
 
       <div class="tab-panel active" id="tab-prizes">
-        <p class="panel-hint">Select a prize to redeem it against the active card.</p>
+        <div class="prize-controls">
+          <div class="search-wrap">
+            <svg class="ico search-ico"><use href="#i-search"/></svg>
+            <input type="search" id="prizeSearch" placeholder="Search prizes&hellip;" class="search" />
+          </div>
+          <select id="prizeCategory"><option value="">All categories</option></select>
+        </div>
         <div class="prize-grid" id="prizeGrid"></div>
       </div>
 
       <div class="tab-panel" id="tab-dash">
         <div class="stat-grid" id="statGrid"></div>
 
+        <h3 class="dash-h">Activity — last 7 days</h3>
+        <div class="chart" id="activityChart"></div>
+
         <h3 class="dash-h">Top prizes redeemed</h3>
         <div class="top-list" id="topList"></div>
+
+        <h3 class="dash-h">Leaderboard — most tickets</h3>
+        <div class="top-list" id="leaderList"></div>
+
+        <h3 class="dash-h">Low stock</h3>
+        <div class="top-list" id="lowStockList"></div>
 
         <h3 class="dash-h">Data &amp; backup</h3>
         <div class="admin-row">
@@ -227,12 +268,29 @@
             </select>
           </label>
           <label>Stock <input type="number" id="itemStock" value="-1" title="-1 = unlimited" /></label>
+          <label>Category <input type="text" id="itemCategory" placeholder="e.g. Plush" /></label>
           <div class="form-actions">
             <button type="submit" class="btn btn-add">Save item</button>
             <button type="button" class="btn btn-ghost" id="itemResetBtn">Clear</button>
           </div>
         </form>
         <div class="item-list" id="itemList"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-pos">
+        <form class="item-form" id="pkgForm">
+          <h3>Create / edit top-up package</h3>
+          <input type="hidden" id="pkgId" />
+          <label class="wide">Name <input type="text" id="pkgName" placeholder="Value — $10" required /></label>
+          <label>Price ($) <input type="number" id="pkgPrice" value="10" min="0" step="0.01" /></label>
+          <label>Credits <input type="number" id="pkgCredits" value="120" min="0" /></label>
+          <label>Tickets <input type="number" id="pkgTickets" value="0" min="0" /></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-add">Save package</button>
+            <button type="button" class="btn btn-ghost" id="pkgResetBtn">Clear</button>
+          </div>
+        </form>
+        <div class="item-list" id="pkgList"></div>
       </div>
 
       <div class="tab-panel" id="tab-cards">
@@ -244,6 +302,10 @@
       </div>
 
       <div class="tab-panel" id="tab-log">
+        <div class="log-toolbar">
+          <span class="panel-hint" id="logScope">Recent activity</span>
+          <button class="btn btn-ghost" id="csvBtn"><svg class="ico"><use href="#i-download"/></svg> Export CSV</button>
+        </div>
         <div class="log-list" id="logList"></div>
       </div>
     </section>
@@ -279,6 +341,31 @@
           <button class="btn" id="simBtn">Fire tap</button>
         </div>
         <p class="setting-hint">Sends a fake card tap through the live feed for testing.</p>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">Appearance</label>
+        <div class="appearance-row">
+          <button class="btn btn-ghost" id="themeToggle"><svg class="ico"><use href="#i-sun"/></svg> Light / Dark</button>
+          <label class="accent-pick">Accent
+            <input type="color" id="accentColor" value="#4f6bed" />
+          </label>
+        </div>
+      </div>
+
+      <div class="setting">
+        <label class="setting-label">Kiosk</label>
+        <button class="btn" id="fullscreenBtn"><svg class="ico"><use href="#i-expand"/></svg> Fullscreen</button>
+        <label class="check"><input type="checkbox" id="soundToggle" /> Beep on tap / redeem</label>
+        <label class="setting-sub">Auto-lock after
+          <select id="autolockSelect">
+            <option value="0">Never</option>
+            <option value="60">1 minute</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
+        </label>
+        <p class="setting-hint">Hotkeys: <b>L</b> lock &middot; <b>F</b> fullscreen &middot; <b>N</b> new card &middot; <b>/</b> search &middot; <b>A</b> advanced.</p>
       </div>
 
       <div class="setting">

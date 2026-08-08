@@ -16,7 +16,8 @@
   // ---------------------------------------------------------------
   const SETTINGS_KEY = "arcade.settings";
   const settings = Object.assign(
-    { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1 },
+    { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
+      theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0 },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -58,6 +59,12 @@
     }
     exportData() { return this._req("/api/export"); }
     importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
+    listPackages() { return this._req("/api/packages"); }
+    createPackage(p) { return this._req("/api/packages", { method: "POST", body: JSON.stringify(p) }); }
+    updatePackage(id, p) { return this._req(`/api/packages/${id}`, { method: "PATCH", body: JSON.stringify(p) }); }
+    deletePackage(id) { return this._req(`/api/packages/${id}`, { method: "DELETE" }); }
+    sell(uid, packageId) { return this._req("/api/sell", { method: "POST", body: JSON.stringify({ uid, package_id: packageId }) }); }
+    voidTx(id) { return this._req(`/api/transactions/${id}/void`, { method: "POST" }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
   }
 
@@ -65,19 +72,26 @@
     constructor() {
       this.name = "local";
       this.KEY = "arcade.data";
-      this.data = JSON.parse(localStorage.getItem(this.KEY) || "null") || { cards: {}, items: [], tx: [], nextItemId: 1 };
+      this.data = JSON.parse(localStorage.getItem(this.KEY) || "null") || { cards: {}, items: [], tx: [], packages: [], nextItemId: 1, nextPkgId: 1, nextTxId: 1 };
+      this.data.packages = this.data.packages || [];
+      this.data.nextPkgId = this.data.nextPkgId || 1;
+      this.data.nextTxId = this.data.nextTxId || 1;
       if (this.data.items.length === 0) {
-        [["Candy Bar", 25, "tickets", -1], ["Rubber Duck", 50, "tickets", -1],
-         ["Plush Bear", 500, "tickets", 10], ["Game Console", 25000, "tickets", 2]]
-          .forEach(([name, cost, currency, stock]) =>
-            this.data.items.push({ id: this.data.nextItemId++, name, cost, currency, stock }));
-        this._save();
+        [["Candy Bar", 25, "tickets", -1, "Snacks"], ["Rubber Duck", 50, "tickets", -1, "Small"],
+         ["Plush Bear", 500, "tickets", 10, "Plush"], ["Game Console", 25000, "tickets", 2, "Big"]]
+          .forEach(([name, cost, currency, stock, category]) =>
+            this.data.items.push({ id: this.data.nextItemId++, name, cost, currency, stock, category }));
       }
+      if (this.data.packages.length === 0) {
+        [["Starter — $5", 5, 50, 0], ["Value — $10", 10, 120, 0], ["Mega — $20", 20, 300, 0], ["Party Pack — $50", 50, 800, 0]]
+          .forEach(([name, price, credits, tickets]) => this.data.packages.push({ id: this.data.nextPkgId++, name, price, credits, tickets }));
+      }
+      this._save();
     }
     _save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); }
-    _log(uid, kind, detail, cd = 0, td = 0) {
-      this.data.tx.unshift({ id: Date.now() + Math.random(), uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, ts: Date.now() / 1000 });
-      this.data.tx = this.data.tx.slice(0, 300);
+    _log(uid, kind, detail, cd = 0, td = 0, amount = 0) {
+      this.data.tx.unshift({ id: this.data.nextTxId++, uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, amount, voided: 0, ts: Date.now() / 1000 });
+      this.data.tx = this.data.tx.slice(0, 2000);
     }
     async health() { return { ok: true, reader: "local" }; }
     async listCards() { return Object.values(this.data.cards).sort((a, b) => b.updated_at - a.updated_at); }
@@ -87,39 +101,81 @@
       if (!uid) throw new Error("uid_required");
       if (this.data.cards[uid]) throw new Error("exists");
       const now = Date.now() / 1000;
-      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, created_at: now, updated_at: now };
+      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: "active", tier: "Standard", notes: "", created_at: now, updated_at: now };
       this.data.cards[uid] = card; this._log(uid, "create_card", c.name); this._save(); return card;
     }
     async updateCard(uid, patch) {
       const c = this.data.cards[uid];
       if (!c) throw new Error("not_found");
       const cd = +patch.credits_delta || 0, td = +patch.tickets_delta || 0;
+      if ((cd || td) && c.status === "frozen") throw new Error("card_frozen");
       if (c.credits + cd < 0 || c.tickets + td < 0) throw new Error("insufficient_balance");
       c.credits += cd; c.tickets += td;
       if (patch.name !== undefined) c.name = patch.name;
+      const prevStatus = c.status;
+      if (patch.status !== undefined) c.status = patch.status;
+      if (patch.tier !== undefined) c.tier = patch.tier;
+      if (patch.notes !== undefined) c.notes = patch.notes;
       c.updated_at = Date.now() / 1000;
       if (cd || td) this._log(uid, cd > 0 || td > 0 ? "add" : "remove", patch.reason, cd, td);
+      if (patch.status !== undefined && patch.status !== prevStatus) this._log(uid, "status", patch.status);
       this._save(); return c;
     }
     async deleteCard(uid) { delete this.data.cards[uid]; this._log(uid, "delete_card"); this._save(); return { ok: true }; }
     async listItems() { return [...this.data.items].sort((a, b) => a.cost - b.cost); }
     async createItem(i) {
       if (!(i.name || "").trim()) throw new Error("name_required");
-      const item = { id: this.data.nextItemId++, name: i.name, cost: +i.cost || 0, currency: i.currency || "tickets", stock: i.stock === undefined ? -1 : +i.stock };
+      const item = { id: this.data.nextItemId++, name: i.name, cost: +i.cost || 0, currency: i.currency || "tickets", stock: i.stock === undefined ? -1 : +i.stock, category: i.category || "" };
       this.data.items.push(item); this._save(); return item;
     }
     async updateItem(id, patch) {
       const item = this.data.items.find((x) => x.id === id);
       if (!item) throw new Error("not_found");
       Object.assign(item, { name: patch.name ?? item.name, cost: patch.cost === undefined ? item.cost : +patch.cost,
-        currency: patch.currency ?? item.currency, stock: patch.stock === undefined ? item.stock : +patch.stock });
+        currency: patch.currency ?? item.currency, stock: patch.stock === undefined ? item.stock : +patch.stock,
+        category: patch.category ?? item.category });
       this._save(); return item;
     }
     async deleteItem(id) { this.data.items = this.data.items.filter((x) => x.id !== id); this._save(); return { ok: true }; }
+    async listPackages() { return [...this.data.packages].sort((a, b) => a.price - b.price); }
+    async createPackage(p) {
+      if (!(p.name || "").trim()) throw new Error("name_required");
+      const pkg = { id: this.data.nextPkgId++, name: p.name, price: +p.price || 0, credits: +p.credits || 0, tickets: +p.tickets || 0 };
+      this.data.packages.push(pkg); this._save(); return pkg;
+    }
+    async updatePackage(id, p) {
+      const pkg = this.data.packages.find((x) => x.id === id);
+      if (!pkg) throw new Error("not_found");
+      Object.assign(pkg, { name: p.name ?? pkg.name, price: p.price === undefined ? pkg.price : +p.price, credits: p.credits === undefined ? pkg.credits : +p.credits, tickets: p.tickets === undefined ? pkg.tickets : +p.tickets });
+      this._save(); return pkg;
+    }
+    async deletePackage(id) { this.data.packages = this.data.packages.filter((x) => x.id !== id); this._save(); return { ok: true }; }
+    async sell(uid, packageId) {
+      const c = this.data.cards[uid], pkg = this.data.packages.find((x) => x.id === packageId);
+      if (!c) throw new Error("card_not_found");
+      if (!pkg) throw new Error("package_not_found");
+      if (c.status === "frozen") throw new Error("card_frozen");
+      c.credits += pkg.credits; c.tickets += pkg.tickets; c.updated_at = Date.now() / 1000;
+      this._log(uid, "sale", pkg.name, pkg.credits, pkg.tickets, pkg.price);
+      this._save(); return c;
+    }
+    async voidTx(id) {
+      const tx = this.data.tx.find((t) => t.id === id);
+      if (!tx) throw new Error("not_found");
+      if (tx.voided) throw new Error("already_voided");
+      const c = this.data.cards[tx.uid];
+      if (!c) throw new Error("card_not_found");
+      if (c.credits - tx.credits_d < 0 || c.tickets - tx.tickets_d < 0) throw new Error("would_go_negative");
+      c.credits -= tx.credits_d; c.tickets -= tx.tickets_d; c.updated_at = Date.now() / 1000;
+      tx.voided = 1;
+      this._log(tx.uid, "void", `${tx.kind}: ${tx.detail}`, -tx.credits_d, -tx.tickets_d, -(tx.amount || 0));
+      this._save(); return c;
+    }
     async redeem(uid, itemId) {
       const c = this.data.cards[uid], item = this.data.items.find((x) => x.id === itemId);
       if (!c) throw new Error("card_not_found");
       if (!item) throw new Error("item_not_found");
+      if (c.status === "frozen") throw new Error("card_frozen");
       if (item.stock === 0) throw new Error("out_of_stock");
       if (c[item.currency] < item.cost) throw new Error("insufficient_balance");
       const cd = item.currency === "credits" ? -item.cost : 0, td = item.currency === "tickets" ? -item.cost : 0;
@@ -139,19 +195,22 @@
       this._save(); return { source: s, dest: d };
     }
     async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
-    async exportData() { return { version: 1, cards: Object.values(this.data.cards), items: this.data.items, transactions: this.data.tx }; }
-    async importData({ cards = [], items = [] }) {
+    async exportData() { return { version: 2, cards: Object.values(this.data.cards), items: this.data.items, packages: this.data.packages, transactions: this.data.tx }; }
+    async importData({ cards = [], items = [], packages = [] }) {
+      const now = Date.now() / 1000;
       this.data.cards = {};
-      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, created_at: c.created_at || Date.now() / 1000, updated_at: c.updated_at || Date.now() / 1000 }; });
+      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
       this.data.items = []; this.data.nextItemId = 1;
-      items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock }));
-      this._save(); return { ok: true, cards: cards.length, items: items.length };
+      items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock, category: it.category || "" }));
+      this.data.packages = []; this.data.nextPkgId = 1;
+      packages.forEach((p) => this.data.packages.push({ id: this.data.nextPkgId++, name: p.name || "Package", price: +p.price || 0, credits: +p.credits || 0, tickets: +p.tickets || 0 }));
+      this._save(); return { ok: true, cards: cards.length, items: items.length, packages: packages.length };
     }
     async simulate(uid) { onTap(uid); return { ok: true }; }
   }
 
-  let store = null, activeCard = null, items = [], sse = null, appStarted = false;
-  function startApp() { appStarted = true; connect(); }
+  let store = null, activeCard = null, items = [], packages = [], sse = null, appStarted = false;
+  function startApp() { appStarted = true; connect(); resetIdle(); }
 
   // ---------------------------------------------------------------
   // Connection
@@ -204,7 +263,7 @@
       $("#newCardScanHint").textContent = `Card ${uid} detected — press Create.`;
       return;
     }
-    try { const card = await store.getCard(uid); loadCard(card); toast(`Card ${uid} loaded`, "success"); }
+    try { const card = await store.getCard(uid); loadCard(card); beep(660); toast(`Card ${uid} loaded`, "success"); }
     catch (e) { openNewCardModal(uid); toast(`Unknown card ${uid} — register it?`, "error"); }
   }
 
@@ -237,6 +296,15 @@
     $("#cardName").value = card.name || "";
     $("#balCredits").textContent = card.credits;
     $("#balTickets").textContent = card.tickets;
+    const status = card.status || "active";
+    const badge = $("#cardStatusBadge");
+    badge.textContent = (card.tier && card.tier !== "Standard" ? card.tier + " · " : "") + status;
+    badge.className = "card-status-badge " + status;
+    if ($("#tierSelect")) $("#tierSelect").value = card.tier || "Standard";
+    if ($("#cardNotes")) $("#cardNotes").value = card.notes || "";
+    if ($("#freezeBtn")) $("#freezeBtn").innerHTML = status === "frozen"
+      ? svgUse("snow") + " Unfreeze" : svgUse("snow") + " Freeze";
+    renderPosButtons();
     renderPrizes();
     if (bodyIsAdvanced()) refreshLog();
   }
@@ -247,23 +315,92 @@
     if (activeCard) { try { loadCard(await store.getCard(activeCard.uid)); } catch (_) { unloadCard(); } }
     if (bodyIsAdvanced()) refreshLog();
   }
-  async function refreshItems() { items = await store.listItems(); renderPrizes(); renderItemList(); }
+  async function refreshItems() {
+    [items, packages] = await Promise.all([store.listItems(), store.listPackages()]);
+    populateCategories();
+    renderPrizes(); renderItemList(); renderPkgList(); renderPosButtons();
+  }
+
+  function populateCategories() {
+    const sel = $("#prizeCategory");
+    const cur = sel.value;
+    const cats = [...new Set(items.map((i) => i.category).filter(Boolean))].sort();
+    sel.innerHTML = `<option value="">All categories</option>` + cats.map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
+    sel.value = cur;
+  }
 
   function renderPrizes() {
     const grid = $("#prizeGrid"); grid.innerHTML = "";
-    if (items.length === 0) { grid.innerHTML = `<p class="panel-hint">No items yet. Add some in the Items tab.</p>`; return; }
-    items.forEach((item) => {
+    const term = ($("#prizeSearch") ? $("#prizeSearch").value : "").toLowerCase();
+    const cat = $("#prizeCategory") ? $("#prizeCategory").value : "";
+    const shown = items.filter((i) =>
+      (!term || i.name.toLowerCase().includes(term)) && (!cat || i.category === cat));
+    if (shown.length === 0) { grid.innerHTML = `<p class="panel-hint">No matching prizes.</p>`; return; }
+    shown.forEach((item) => {
       const affordable = activeCard && item.stock !== 0 && activeCard[item.currency] >= item.cost;
+      const low = item.stock > 0 && item.stock <= 3;
       const div = document.createElement("div");
       div.className = "prize" + (activeCard && !affordable ? " disabled" : "");
       div.innerHTML = `
         <div class="prize-badge" style="${badgeStyle(item.name)}">${escapeHtml(monogram(item.name))}</div>
         <div class="prize-name">${escapeHtml(item.name)}</div>
         <div class="prize-cost ${item.currency}">${item.cost} ${item.currency}</div>
-        <div class="prize-stock">${item.stock < 0 ? "In stock" : item.stock + " left"}</div>`;
+        <div class="prize-stock">${item.stock < 0 ? "In stock" : (low ? "⚠ " : "") + item.stock + " left"}</div>`;
       div.addEventListener("click", () => redeemItem(item));
       grid.appendChild(div);
     });
+  }
+
+  function renderPosButtons() {
+    const box = $("#posButtons"); if (!box) return;
+    if (packages.length === 0) { box.innerHTML = `<span class="setting-hint">No packages. Add them in the POS tab.</span>`; return; }
+    box.innerHTML = "";
+    packages.forEach((pk) => {
+      const give = [pk.credits ? pk.credits + " credits" : "", pk.tickets ? pk.tickets + " tickets" : ""].filter(Boolean).join(" + ");
+      const b = document.createElement("button");
+      b.className = "pos-btn";
+      b.innerHTML = `<span class="pos-price">$${pk.price}</span> ${escapeHtml(pk.name.replace(/—.*\$[\d.]+/, "").trim() || pk.name)}<span class="pos-give">${give}</span>`;
+      b.addEventListener("click", () => sellPackage(pk));
+      box.appendChild(b);
+    });
+  }
+
+  function renderPkgList() {
+    const list = $("#pkgList"); if (!list) return;
+    list.innerHTML = "";
+    packages.forEach((pk) => {
+      const give = [pk.credits ? pk.credits + " credits" : "", pk.tickets ? pk.tickets + " tickets" : ""].filter(Boolean).join(", ") || "nothing";
+      const row = document.createElement("div");
+      row.className = "row-item";
+      row.innerHTML = `
+        <span class="ri-badge" style="${badgeStyle(pk.name)}">$</span>
+        <div class="ri-main"><div class="ri-title">${escapeHtml(pk.name)}</div>
+          <div class="ri-sub">$${pk.price} → ${give}</div></div>
+        <div class="ri-actions">
+          <button class="mini-btn" data-edit="${pk.id}">${svgUse("edit")} Edit</button>
+          <button class="mini-btn danger" data-del="${pk.id}">${svgUse("trash")}</button>
+        </div>`;
+      row.querySelector("[data-edit]").addEventListener("click", () => {
+        $("#pkgId").value = pk.id; $("#pkgName").value = pk.name; $("#pkgPrice").value = pk.price;
+        $("#pkgCredits").value = pk.credits; $("#pkgTickets").value = pk.tickets; $("#pkgName").focus();
+      });
+      row.querySelector("[data-del]").addEventListener("click", async () => {
+        if (!confirm(`Delete package "${pk.name}"?`)) return;
+        await store.deletePackage(pk.id); toast("Package deleted"); refreshItems();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  async function sellPackage(pk) {
+    if (!activeCard) { toast("Load a card first", "error"); return; }
+    if (!confirm(`Sell "${pk.name}" for $${pk.price}?`)) return;
+    try {
+      const card = await store.sell(activeCard.uid, pk.id);
+      loadCard(card); beep(880);
+      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast(`Sold ${pk.name}`, "success");
+    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Sale failed", "error"); }
   }
 
   function renderItemList() {
@@ -302,7 +439,7 @@
       row.innerHTML = `
         <span class="ri-badge card">${svgUse("cards")}</span>
         <div class="ri-main">
-          <div class="ri-title">${escapeHtml(c.name || "(no name)")}</div>
+          <div class="ri-title">${escapeHtml(c.name || "(no name)")}${c.status === "frozen" ? " · FROZEN" : ""}${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""}</div>
           <div class="ri-sub">${escapeHtml(c.uid)} · ${c.credits} credits · ${c.tickets} tickets</div>
         </div>
         <div class="ri-actions"><button class="mini-btn" data-load="${escapeAttr(c.uid)}">Open</button></div>`;
@@ -311,73 +448,178 @@
     });
   }
 
+  function txBadge(t) {
+    if (t.kind === "redeem") return "redeem";
+    if (t.kind === "sale") return "add";
+    if (t.kind === "void") return "remove";
+    if (t.kind.startsWith("merge")) return "merge";
+    if (t.credits_d > 0 || t.tickets_d > 0) return "add";
+    if (t.credits_d < 0 || t.tickets_d < 0) return "remove";
+    return "other";
+  }
+  const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", sale: "sale", void: "void", status: "status" };
+
   async function refreshLog() {
     const list = $("#logList");
-    const tx = await store.listTransactions(activeCard ? activeCard.uid : null);
+    $("#logScope").textContent = activeCard ? `Activity for ${activeCard.uid}` : "Recent activity (all cards)";
+    const tx = await store.listTransactions(activeCard ? activeCard.uid : null, 200);
     list.innerHTML = "";
     if (tx.length === 0) { list.innerHTML = `<p class="panel-hint">No activity yet.</p>`; return; }
     tx.forEach((t) => {
-      let badge = "other";
-      if (t.kind === "redeem") badge = "redeem";
-      else if (t.kind.startsWith("merge")) badge = "merge";
-      else if (t.credits_d > 0 || t.tickets_d > 0) badge = "add";
-      else if (t.credits_d < 0 || t.tickets_d < 0) badge = "remove";
+      const label = TX_LABELS[t.kind] || t.kind;
       const parts = [];
       if (t.credits_d) parts.push(`${t.credits_d > 0 ? "+" : ""}${t.credits_d} credits`);
       if (t.tickets_d) parts.push(`${t.tickets_d > 0 ? "+" : ""}${t.tickets_d} tickets`);
-      const label = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out" }[t.kind] || t.kind;
+      if (t.amount) parts.push(`$${(+t.amount).toFixed(2)}`);
+      const canVoid = !t.voided && (t.credits_d || t.tickets_d) && t.kind !== "void";
       const row = document.createElement("div");
-      row.className = "log-entry";
+      row.className = "log-entry" + (t.voided ? " voided" : "");
       row.innerHTML = `
-        <span class="log-badge ${badge}">${escapeHtml(label)}</span>
+        <span class="log-badge ${txBadge(t)}">${escapeHtml(label)}</span>
         <div class="log-main">
           <div>${escapeHtml(t.detail || t.uid)}${parts.length ? " · " + parts.join(", ") : ""}</div>
-          <div class="log-time">${new Date(t.ts * 1000).toLocaleString()}</div>
-        </div>`;
+          <div class="log-time">${escapeHtml(t.uid)} · ${new Date(t.ts * 1000).toLocaleString()}</div>
+        </div>
+        ${canVoid ? `<button class="log-void" data-void="${t.id}">${svgUse("undo")} Void</button>` : ""}`;
+      if (canVoid) row.querySelector("[data-void]").addEventListener("click", async () => {
+        if (!confirm("Void this transaction? It reverses the balance change.")) return;
+        try { await store.voidTx(t.id); toast("Transaction voided", "success"); if (activeCard) { try { loadCard(await store.getCard(activeCard.uid)); } catch (_) {} } refreshLog(); refreshCards(); }
+        catch (e) { toast("Void failed: " + e.message, "error"); }
+      });
       list.appendChild(row);
     });
+  }
+
+  async function exportCsv() {
+    const tx = await store.listTransactions(activeCard ? activeCard.uid : null, 5000);
+    const head = ["id", "uid", "kind", "detail", "credits_d", "tickets_d", "amount", "voided", "datetime"];
+    const rows = tx.map((t) => [t.id, t.uid, t.kind, (t.detail || "").replace(/"/g, '""'),
+      t.credits_d, t.tickets_d, t.amount || 0, t.voided || 0, new Date(t.ts * 1000).toISOString()]);
+    const csv = [head.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "arcade-transactions.csv"; a.click();
+    URL.revokeObjectURL(a.href);
+    toast("CSV downloaded", "success");
+  }
+
+  // ---------------------------------------------------------------
+  // Membership / freeze
+  // ---------------------------------------------------------------
+  async function saveMeta() {
+    if (!activeCard) return;
+    try {
+      const card = await store.updateCard(activeCard.uid, { tier: $("#tierSelect").value, notes: $("#cardNotes").value });
+      loadCard(card); refreshCards(); toast("Membership saved", "success");
+    } catch (e) { toast("Save failed", "error"); }
+  }
+  async function toggleFreeze() {
+    if (!activeCard) return;
+    const next = (activeCard.status === "frozen") ? "active" : "frozen";
+    try {
+      const card = await store.updateCard(activeCard.uid, { status: next });
+      loadCard(card); refreshCards(); if (bodyIsAdvanced()) refreshLog();
+      toast(next === "frozen" ? "Card frozen" : "Card unfrozen", "success");
+    } catch (e) { toast("Failed", "error"); }
+  }
+
+  // ---------------------------------------------------------------
+  // Sound / theme / kiosk
+  // ---------------------------------------------------------------
+  let audioCtx = null;
+  function beep(freq = 660) {
+    if (!settings.sound) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = freq; o.type = "sine"; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+      o.start(); o.stop(audioCtx.currentTime + 0.18);
+    } catch (_) {}
+  }
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", settings.theme);
+    document.documentElement.style.setProperty("--accent", settings.accent);
+  }
+  function toggleTheme() { settings.theme = settings.theme === "dark" ? "light" : "dark"; saveSettings(); applyTheme(); }
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) (document.documentElement.requestFullscreen || (() => {})).call(document.documentElement);
+    else document.exitFullscreen && document.exitFullscreen();
+  }
+
+  // Auto-lock on inactivity
+  let idleTimer = null;
+  function resetIdle() {
+    clearTimeout(idleTimer);
+    const secs = parseInt(settings.autolockSec, 10) || 0;
+    if (secs > 0 && appStarted) idleTimer = setTimeout(() => { if (!document.body.classList.contains("locked")) showLock("unlock"); }, secs * 1000);
   }
 
   // ---------------------------------------------------------------
   // Dashboard (advanced)
   // ---------------------------------------------------------------
+  function topListInto(el, rows, maxv, fmt) {
+    if (rows.length === 0) { el.innerHTML = `<p class="panel-hint">Nothing yet.</p>`; return; }
+    el.innerHTML = "";
+    rows.forEach(([name, val], i) => {
+      const row = document.createElement("div");
+      row.className = "top-row";
+      row.innerHTML = `<span class="top-rank">${i + 1}</span>
+        <div style="flex:1;min-width:0"><div class="top-name">${escapeHtml(name)}</div>
+          <div class="top-bar" style="width:${Math.round((val / (maxv || 1)) * 100)}%"></div></div>
+        <span class="top-count">${fmt(val)}</span>`;
+      el.appendChild(row);
+    });
+  }
+
   async function renderDashboard() {
     const [cards, itemList, tx] = await Promise.all([
-      store.listCards(), store.listItems(), store.listTransactions(null, 2000),
+      store.listCards(), store.listItems(), store.listTransactions(null, 5000),
     ]);
+    const live = tx.filter((t) => !t.voided);
     const creditsCirc = cards.reduce((s, c) => s + c.credits, 0);
     const ticketsCirc = cards.reduce((s, c) => s + c.tickets, 0);
-    const redeems = tx.filter((t) => t.kind === "redeem");
-    const ticketsSpent = redeems.reduce((s, t) => s + Math.abs(t.tickets_d || 0), 0);
-    const creditsSpent = redeems.reduce((s, t) => s + Math.abs(t.credits_d || 0), 0);
+    const redeems = live.filter((t) => t.kind === "redeem");
+    const revenue = live.reduce((s, t) => s + (+t.amount || 0), 0);
+    const frozen = cards.filter((c) => c.status === "frozen").length;
 
     $("#statGrid").innerHTML = `
-      <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div><div class="stat-sub">${itemList.length} prize items</div></div>
-      <div class="stat"><div class="stat-label">Credits in play</div><div class="stat-value credits">${creditsCirc}</div><div class="stat-sub">${creditsSpent} spent all-time</div></div>
-      <div class="stat"><div class="stat-label">Tickets in play</div><div class="stat-value tickets">${ticketsCirc}</div><div class="stat-sub">${ticketsSpent} spent all-time</div></div>
-      <div class="stat"><div class="stat-label">Redemptions</div><div class="stat-value">${redeems.length}</div><div class="stat-sub">${tx.length} total events</div></div>`;
+      <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div><div class="stat-sub">${frozen} frozen · ${itemList.length} prizes</div></div>
+      <div class="stat"><div class="stat-label">Revenue</div><div class="stat-value credits">$${revenue.toFixed(2)}</div><div class="stat-sub">from ${live.filter((t) => t.kind === "sale").length} sales</div></div>
+      <div class="stat"><div class="stat-label">Credits in play</div><div class="stat-value credits">${creditsCirc}</div><div class="stat-sub">across all cards</div></div>
+      <div class="stat"><div class="stat-label">Tickets in play</div><div class="stat-value tickets">${ticketsCirc}</div><div class="stat-sub">${redeems.length} redemptions</div></div>`;
 
-    // Top prizes by redemption count
+    // 7-day activity chart (transaction count per day)
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      days.push({ key: d.toDateString(), label: d.toLocaleDateString(undefined, { weekday: "short" }), n: 0 });
+    }
+    const idx = {}; days.forEach((d, i) => (idx[d.key] = i));
+    live.forEach((t) => { const k = new Date(t.ts * 1000).toDateString(); if (k in idx) days[idx[k]].n++; });
+    const maxn = Math.max(1, ...days.map((d) => d.n));
+    $("#activityChart").innerHTML = days.map((d) =>
+      `<div class="chart-col"><span class="chart-val">${d.n || ""}</span>
+        <div class="chart-bar" style="height:${Math.round((d.n / maxn) * 100)}%"></div>
+        <span class="chart-label">${d.label}</span></div>`).join("");
+
+    // Top prizes
     const counts = {};
     redeems.forEach((t) => { const n = t.detail || "?"; counts[n] = (counts[n] || 0) + 1; });
     const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const maxc = top.length ? top[0][1] : 1;
-    const list = $("#topList");
-    if (top.length === 0) { list.innerHTML = `<p class="panel-hint">No redemptions yet.</p>`; }
-    else {
-      list.innerHTML = "";
-      top.forEach(([name, n], i) => {
-        const row = document.createElement("div");
-        row.className = "top-row";
-        row.innerHTML = `<span class="top-rank">${i + 1}</span>
-          <div style="flex:1;min-width:0">
-            <div class="top-name">${escapeHtml(name)}</div>
-            <div class="top-bar" style="width:${Math.round((n / maxc) * 100)}%"></div>
-          </div>
-          <span class="top-count">${n}&times;</span>`;
-        list.appendChild(row);
-      });
-    }
+    topListInto($("#topList"), top, top[0] ? top[0][1] : 1, (v) => v + "×");
+
+    // Leaderboard — most tickets
+    const lead = cards.filter((c) => c.tickets > 0).sort((a, b) => b.tickets - a.tickets).slice(0, 5)
+      .map((c) => [c.name || c.uid, c.tickets]);
+    topListInto($("#leaderList"), lead, lead[0] ? lead[0][1] : 1, (v) => v + " tix");
+
+    // Low stock
+    const low = itemList.filter((i) => i.stock >= 0 && i.stock <= 3).sort((a, b) => a.stock - b.stock).slice(0, 6)
+      .map((i) => [i.name, i.stock]);
+    topListInto($("#lowStockList"), low, low[0] ? Math.max(...low.map((x) => x[1]), 3) : 3, (v) => v + " left");
   }
 
   async function exportBackup() {
@@ -497,10 +739,10 @@
     if (!confirm(`Redeem "${item.name}" for ${item.cost} ${item.currency}?`)) return;
     try {
       const card = await store.redeem(activeCard.uid, item.id);
-      loadCard(card); refreshItems();
+      loadCard(card); refreshItems(); beep(990);
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast(`Redeemed ${item.name}`, "success");
-    } catch (e) { toast("Redeem failed: " + e.message, "error"); }
+    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Redeem failed: " + e.message, "error"); }
   }
 
   // ---------------------------------------------------------------
@@ -586,10 +828,10 @@
   // ---------------------------------------------------------------
   function editItem(item) {
     $("#itemId").value = item.id; $("#itemName").value = item.name; $("#itemCost").value = item.cost;
-    $("#itemCurrency").value = item.currency; $("#itemStock").value = item.stock;
+    $("#itemCurrency").value = item.currency; $("#itemStock").value = item.stock; $("#itemCategory").value = item.category || "";
     switchTab("items"); $("#itemName").focus();
   }
-  function resetItemForm() { $("#itemId").value = ""; $("#itemName").value = ""; $("#itemCost").value = 100; $("#itemCurrency").value = "tickets"; $("#itemStock").value = -1; }
+  function resetItemForm() { $("#itemId").value = ""; $("#itemName").value = ""; $("#itemCost").value = 100; $("#itemCurrency").value = "tickets"; $("#itemStock").value = -1; $("#itemCategory").value = ""; }
 
   function openNewCardModal(uid) {
     $("#newUid").value = uid || ""; $("#newName").value = ""; $("#newCredits").value = 0; $("#newTickets").value = 0;
@@ -733,6 +975,34 @@
     $("#setBalanceBtn").addEventListener("click", setExactBalance);
     $("#convCtoT").addEventListener("click", () => convert("c2t"));
     $("#convTtoC").addEventListener("click", () => convert("t2c"));
+    $("#freezeBtn").addEventListener("click", toggleFreeze);
+    $("#saveMetaBtn").addEventListener("click", saveMeta);
+
+    // Prize search + category
+    $("#prizeSearch").addEventListener("input", renderPrizes);
+    $("#prizeCategory").addEventListener("change", renderPrizes);
+
+    // Packages (POS)
+    $("#pkgForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = { name: $("#pkgName").value, price: parseFloat($("#pkgPrice").value) || 0, credits: parseInt($("#pkgCredits").value, 10) || 0, tickets: parseInt($("#pkgTickets").value, 10) || 0 };
+      try {
+        const id = $("#pkgId").value;
+        if (id) await store.updatePackage(parseInt(id, 10), payload); else await store.createPackage(payload);
+        $("#pkgId").value = ""; $("#pkgForm").reset(); refreshItems(); toast("Package saved", "success");
+      } catch (err) { toast("Save failed: " + err.message, "error"); }
+    });
+    $("#pkgResetBtn").addEventListener("click", () => { $("#pkgId").value = ""; $("#pkgForm").reset(); });
+
+    // CSV export
+    $("#csvBtn").addEventListener("click", exportCsv);
+
+    // Appearance + kiosk
+    $("#themeToggle").addEventListener("click", toggleTheme);
+    $("#accentColor").addEventListener("input", () => { settings.accent = $("#accentColor").value; saveSettings(); applyTheme(); });
+    $("#fullscreenBtn").addEventListener("click", toggleFullscreen);
+    $("#soundToggle").addEventListener("change", () => { settings.sound = $("#soundToggle").checked; saveSettings(); if (settings.sound) beep(720); });
+    $("#autolockSelect").addEventListener("change", () => { settings.autolockSec = parseInt($("#autolockSelect").value, 10) || 0; saveSettings(); resetIdle(); });
 
     // Dashboard admin tools
     $("#exportBtn").addEventListener("click", exportBackup);
@@ -760,7 +1030,7 @@
     // Item form
     $("#itemForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const payload = { name: $("#itemName").value, cost: parseInt($("#itemCost").value, 10) || 0, currency: $("#itemCurrency").value, stock: parseInt($("#itemStock").value, 10) };
+      const payload = { name: $("#itemName").value, cost: parseInt($("#itemCost").value, 10) || 0, currency: $("#itemCurrency").value, stock: parseInt($("#itemStock").value, 10), category: $("#itemCategory").value };
       try {
         const id = $("#itemId").value;
         if (id) await store.updateItem(parseInt(id, 10), payload); else await store.createItem(payload);
@@ -801,6 +1071,30 @@
     $("#lockNowBtn").addEventListener("click", () => { closeDrawer(); showLock("unlock"); });
     $("#changePassBtn").addEventListener("click", () => { closeDrawer(); pinChanging = true; showLock("create"); });
     $("#pinForgot").addEventListener("click", () => { if (!confirm("Reset the PIN? You'll choose a new one now.")) return; localStorage.removeItem(PIN_KEY); pinChanging = false; showLock("create"); });
+
+    // Apply saved appearance + kiosk settings to controls
+    applyTheme();
+    $("#accentColor").value = settings.accent;
+    $("#soundToggle").checked = !!settings.sound;
+    $("#autolockSelect").value = String(settings.autolockSec || 0);
+
+    // Global hotkeys (ignored while typing or locked)
+    document.addEventListener("keydown", (e) => {
+      if (document.body.classList.contains("locked")) return;
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "select" || tag === "textarea") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "l") { e.preventDefault(); showLock("unlock"); }
+      else if (k === "f") { e.preventDefault(); toggleFullscreen(); }
+      else if (k === "n") { e.preventDefault(); openNewCardModal(""); }
+      else if (k === "a") { e.preventDefault(); setMode(bodyIsAdvanced() ? "simple" : "advanced"); }
+      else if (k === "/") { e.preventDefault(); const s = $("#prizeSearch"); if (s) { switchTab("prizes"); s.focus(); } }
+    });
+
+    // Auto-lock idle tracking
+    ["mousemove", "keydown", "touchstart", "click"].forEach((ev) =>
+      document.addEventListener(ev, resetIdle, { passive: true }));
 
     // Show lock; app starts once unlocked / PIN created.
     showLock(hasPin() ? "unlock" : "create");

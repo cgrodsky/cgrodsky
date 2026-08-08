@@ -335,6 +335,58 @@ input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 .link-btn:hover { color: var(--text); }
 body.locked { overflow: hidden; }
 
+/* ---------------- Card status / membership ---------------- */
+.card-status-badge { font-size: 10px; letter-spacing: 1.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; }
+.card-status-badge.active { background: rgba(47,185,123,.2); color: #7fe0b4; }
+.card-status-badge.frozen { background: rgba(56,189,248,.22); color: #8fd6ff; }
+.card-tier-pill { position: absolute; top: 14px; right: 92px; }
+.notes-area { width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; margin-bottom: 8px; }
+.pos-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.pos-btn { border: 1px solid var(--border-2); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; text-align: left; }
+.pos-btn:hover { background: var(--panel-3); border-color: var(--accent); }
+.pos-btn .pos-price { color: var(--add); font-weight: 800; }
+.pos-btn .pos-give { color: var(--muted); font-size: 12px; display: block; }
+
+/* ---------------- Prize controls ---------------- */
+.prize-controls { display: flex; gap: 10px; margin-bottom: 16px; }
+.prize-controls .search-wrap { flex: 1; margin: 0; }
+.prize-controls select { width: auto; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 0 12px; }
+
+/* ---------------- Log toolbar ---------------- */
+.log-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.log-toolbar .panel-hint { margin: 0; }
+.log-entry.voided { opacity: .5; text-decoration: line-through; }
+.log-void { border: 1px solid var(--border-2); background: var(--panel-2); color: var(--muted); border-radius: 7px; padding: 5px 9px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.log-void:hover { color: var(--danger); border-color: var(--danger); }
+.log-void .ico { width: 13px; height: 13px; }
+
+/* ---------------- Chart ---------------- */
+.chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding: 10px 4px 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; }
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 70%; min-height: 2px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--accent), var(--accent-2)); transition: height .3s; }
+.chart-label { font-size: 10px; color: var(--muted); }
+.chart-val { font-size: 11px; color: var(--text); font-weight: 700; }
+
+/* ---------------- Settings appearance/kiosk ---------------- */
+.appearance-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.accent-pick { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.accent-pick input[type=color] { width: 40px; height: 34px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.setting-sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.setting-sub select { width: auto; }
+
+/* ---------------- Light theme ---------------- */
+:root[data-theme="light"] {
+  --bg: #f4f6fb; --bg-2: #ffffff; --panel: #ffffff; --panel-2: #eef1f7; --panel-3: #e3e8f2;
+  --border: #dbe1ec; --border-2: #c7d0e0; --text: #1a2236; --muted: #5b6780; --muted-2: #8a94ab;
+  --shadow-sm: 0 1px 2px rgba(20,30,60,.08); --shadow: 0 12px 34px rgba(30,45,90,.14);
+}
+:root[data-theme="light"] body { background:
+  radial-gradient(1100px 520px at 82% -12%, rgba(79,107,237,.12), transparent),
+  radial-gradient(760px 420px at -5% 108%, rgba(56,189,248,.08), transparent), var(--bg); }
+:root[data-theme="light"] .card-visual { background: linear-gradient(140deg, #4356a8 0%, #2f3a63 55%, #26507a 100%); }
+:root[data-theme="light"] .card-name-input, :root[data-theme="light"] .bal-value { color: #fff; }
+:root[data-theme="light"] .topbar { background: rgba(255,255,255,.85); }
+
 /* ---------------- Utility ---------------- */
 .hidden { display: none !important; }
 body:not(.advanced) .advanced-only { display: none !important; }
