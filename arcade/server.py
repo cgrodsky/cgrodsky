@@ -101,16 +101,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     detail      TEXT NOT NULL DEFAULT '',
     credits_d   INTEGER NOT NULL DEFAULT 0,
     tickets_d   INTEGER NOT NULL DEFAULT 0,
-    amount      REAL NOT NULL DEFAULT 0,   -- money ($) for POS sales
     voided      INTEGER NOT NULL DEFAULT 0,
     ts          REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS packages (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT NOT NULL,
-    price       REAL NOT NULL DEFAULT 0,   -- dollars charged
-    credits     INTEGER NOT NULL DEFAULT 0,
-    tickets     INTEGER NOT NULL DEFAULT 0
 );
 """
 
@@ -122,10 +114,7 @@ MIGRATIONS = {
         ("notes", "TEXT NOT NULL DEFAULT ''"),
     ],
     "items": [("category", "TEXT NOT NULL DEFAULT ''")],
-    "transactions": [
-        ("amount", "REAL NOT NULL DEFAULT 0"),
-        ("voided", "INTEGER NOT NULL DEFAULT 0"),
-    ],
+    "transactions": [("voided", "INTEGER NOT NULL DEFAULT 0")],
 }
 
 
@@ -169,16 +158,6 @@ def init_db():
                     ("Game Console", 25000, "tickets", 2, "", "Big"),
                 ],
             )
-        if db.execute("SELECT COUNT(*) AS n FROM packages").fetchone()[0] == 0:
-            db.executemany(
-                "INSERT INTO packages (name, price, credits, tickets) VALUES (?,?,?,?)",
-                [
-                    ("Starter — $5", 5, 50, 0),
-                    ("Value — $10", 10, 120, 0),
-                    ("Mega — $20", 20, 300, 0),
-                    ("Party Pack — $50", 50, 800, 0),
-                ],
-            )
         db.commit()
 
 
@@ -186,11 +165,11 @@ def row_to_dict(row):
     return {k: row[k] for k in row.keys()}
 
 
-def log_tx(db, uid, kind, detail="", credits_d=0, tickets_d=0, amount=0):
+def log_tx(db, uid, kind, detail="", credits_d=0, tickets_d=0):
     db.execute(
-        "INSERT INTO transactions (uid, kind, detail, credits_d, tickets_d, amount, ts) "
-        "VALUES (?,?,?,?,?,?,?)",
-        (uid, kind, detail, credits_d, tickets_d, amount, time.time()),
+        "INSERT INTO transactions (uid, kind, detail, credits_d, tickets_d, ts) "
+        "VALUES (?,?,?,?,?,?)",
+        (uid, kind, detail, credits_d, tickets_d, time.time()),
     )
 
 
@@ -390,78 +369,6 @@ def redeem():
     return jsonify(row_to_dict(card))
 
 
-@app.route("/api/packages", methods=["GET"])
-def list_packages():
-    db = get_db()
-    rows = db.execute("SELECT * FROM packages ORDER BY price ASC").fetchall()
-    return jsonify([row_to_dict(r) for r in rows])
-
-
-@app.route("/api/packages", methods=["POST"])
-def create_package():
-    data = request.get_json(force=True) or {}
-    name = (data.get("name") or "").strip()
-    if not name:
-        return jsonify({"error": "name_required"}), 400
-    db = get_db()
-    cur = db.execute(
-        "INSERT INTO packages (name, price, credits, tickets) VALUES (?,?,?,?)",
-        (name, float(data.get("price", 0)), int(data.get("credits", 0)), int(data.get("tickets", 0))),
-    )
-    db.commit()
-    row = db.execute("SELECT * FROM packages WHERE id=?", (cur.lastrowid,)).fetchone()
-    return jsonify(row_to_dict(row)), 201
-
-
-@app.route("/api/packages/<int:pkg_id>", methods=["PATCH"])
-def update_package(pkg_id):
-    data = request.get_json(force=True) or {}
-    db = get_db()
-    row = db.execute("SELECT * FROM packages WHERE id=?", (pkg_id,)).fetchone()
-    if not row:
-        return jsonify({"error": "not_found"}), 404
-    db.execute(
-        "UPDATE packages SET name=?, price=?, credits=?, tickets=? WHERE id=?",
-        (data.get("name", row["name"]), float(data.get("price", row["price"])),
-         int(data.get("credits", row["credits"])), int(data.get("tickets", row["tickets"])), pkg_id),
-    )
-    db.commit()
-    row = db.execute("SELECT * FROM packages WHERE id=?", (pkg_id,)).fetchone()
-    return jsonify(row_to_dict(row))
-
-
-@app.route("/api/packages/<int:pkg_id>", methods=["DELETE"])
-def delete_package(pkg_id):
-    db = get_db()
-    db.execute("DELETE FROM packages WHERE id=?", (pkg_id,))
-    db.commit()
-    return jsonify({"ok": True})
-
-
-@app.route("/api/sell", methods=["POST"])
-def sell_package():
-    """Sell a top-up package to a card. Body: {uid, package_id}."""
-    data = request.get_json(force=True) or {}
-    db = get_db()
-    card = db.execute("SELECT * FROM cards WHERE uid=?", (data.get("uid"),)).fetchone()
-    pkg = db.execute("SELECT * FROM packages WHERE id=?", (data.get("package_id"),)).fetchone()
-    if not card:
-        return jsonify({"error": "card_not_found"}), 404
-    if not pkg:
-        return jsonify({"error": "package_not_found"}), 404
-    if card["status"] == "frozen":
-        return jsonify({"error": "card_frozen"}), 400
-    db.execute(
-        "UPDATE cards SET credits=credits+?, tickets=tickets+?, updated_at=? WHERE uid=?",
-        (pkg["credits"], pkg["tickets"], time.time(), card["uid"]),
-    )
-    log_tx(db, card["uid"], "sale", detail=pkg["name"],
-           credits_d=pkg["credits"], tickets_d=pkg["tickets"], amount=pkg["price"])
-    db.commit()
-    card = db.execute("SELECT * FROM cards WHERE uid=?", (card["uid"],)).fetchone()
-    return jsonify(row_to_dict(card))
-
-
 @app.route("/api/transactions/<int:tx_id>/void", methods=["POST"])
 def void_transaction(tx_id):
     """Reverse a balance-affecting transaction."""
@@ -482,7 +389,7 @@ def void_transaction(tx_id):
                (new_c, new_t, time.time(), card["uid"]))
     db.execute("UPDATE transactions SET voided=1 WHERE id=?", (tx_id,))
     log_tx(db, tx["uid"], "void", detail=f"{tx['kind']}: {tx['detail']}",
-           credits_d=-tx["credits_d"], tickets_d=-tx["tickets_d"], amount=-tx["amount"])
+           credits_d=-tx["credits_d"], tickets_d=-tx["tickets_d"])
     db.commit()
     card = db.execute("SELECT * FROM cards WHERE uid=?", (card["uid"],)).fetchone()
     return jsonify(row_to_dict(card))
@@ -537,9 +444,8 @@ def export_data():
     db = get_db()
     cards = [row_to_dict(r) for r in db.execute("SELECT * FROM cards").fetchall()]
     items = [row_to_dict(r) for r in db.execute("SELECT * FROM items").fetchall()]
-    packages = [row_to_dict(r) for r in db.execute("SELECT * FROM packages").fetchall()]
     txs = [row_to_dict(r) for r in db.execute("SELECT * FROM transactions ORDER BY ts").fetchall()]
-    return jsonify({"version": 2, "cards": cards, "items": items, "packages": packages, "transactions": txs})
+    return jsonify({"version": 3, "cards": cards, "items": items, "transactions": txs})
 
 
 @app.route("/api/import", methods=["POST"])
@@ -548,11 +454,9 @@ def import_data():
     data = request.get_json(force=True) or {}
     cards = data.get("cards", [])
     items = data.get("items", [])
-    packages = data.get("packages", [])
     db = get_db()
     db.execute("DELETE FROM cards")
     db.execute("DELETE FROM items")
-    db.execute("DELETE FROM packages")
     now = time.time()
     for c in cards:
         db.execute(
@@ -568,14 +472,8 @@ def import_data():
             (it.get("name", "Item"), int(it.get("cost", 0)), it.get("currency", "tickets"),
              int(it.get("stock", -1)), it.get("emoji", ""), it.get("category", "")),
         )
-    for pk in packages:
-        db.execute(
-            "INSERT INTO packages (name, price, credits, tickets) VALUES (?,?,?,?)",
-            (pk.get("name", "Package"), float(pk.get("price", 0)),
-             int(pk.get("credits", 0)), int(pk.get("tickets", 0))),
-        )
     db.commit()
-    return jsonify({"ok": True, "cards": len(cards), "items": len(items), "packages": len(packages)})
+    return jsonify({"ok": True, "cards": len(cards), "items": len(items)})
 
 
 @app.route("/api/transactions", methods=["GET"])

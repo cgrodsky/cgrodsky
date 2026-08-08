@@ -20,11 +20,16 @@ trace, and any reader that can read the ID works.
 - **RFID support**: tap a card and it loads automatically. Unknown cards prompt
   you to register them.
 
+Credits and tickets are only ever added **manually** by staff (or when a card is
+tapped) — there is **no way to buy credits with money**. It's a pure
+arcade/ticket system.
+
 **Advanced mode (a full back office)**
-- **Dashboard** — revenue, credits/tickets in circulation, redemptions, a
+- **Big-screen leaderboard** — a full-screen, auto-refreshing ranking of who has
+  the most tickets (gold/silver/bronze for the top 3). Open it from the trophy
+  button or press **B** — great to show on a monitor at the event.
+- **Dashboard** — tickets awarded, credits/tickets in circulation, redemptions, a
   **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
-- **Point of sale** — define **top-up packages** ($ → credits/tickets) and sell
-  them to a card; revenue is tracked automatically.
 - **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and
   **freeze/unfreeze** (frozen cards can't spend or earn).
 - **Transaction tools** — **void/undo** any balance change, **CSV export**, and a

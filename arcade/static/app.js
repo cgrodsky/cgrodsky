@@ -59,11 +59,6 @@
     }
     exportData() { return this._req("/api/export"); }
     importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
-    listPackages() { return this._req("/api/packages"); }
-    createPackage(p) { return this._req("/api/packages", { method: "POST", body: JSON.stringify(p) }); }
-    updatePackage(id, p) { return this._req(`/api/packages/${id}`, { method: "PATCH", body: JSON.stringify(p) }); }
-    deletePackage(id) { return this._req(`/api/packages/${id}`, { method: "DELETE" }); }
-    sell(uid, packageId) { return this._req("/api/sell", { method: "POST", body: JSON.stringify({ uid, package_id: packageId }) }); }
     voidTx(id) { return this._req(`/api/transactions/${id}/void`, { method: "POST" }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
   }
@@ -72,9 +67,7 @@
     constructor() {
       this.name = "local";
       this.KEY = "arcade.data";
-      this.data = JSON.parse(localStorage.getItem(this.KEY) || "null") || { cards: {}, items: [], tx: [], packages: [], nextItemId: 1, nextPkgId: 1, nextTxId: 1 };
-      this.data.packages = this.data.packages || [];
-      this.data.nextPkgId = this.data.nextPkgId || 1;
+      this.data = JSON.parse(localStorage.getItem(this.KEY) || "null") || { cards: {}, items: [], tx: [], nextItemId: 1, nextTxId: 1 };
       this.data.nextTxId = this.data.nextTxId || 1;
       if (this.data.items.length === 0) {
         [["Candy Bar", 25, "tickets", -1, "Snacks"], ["Rubber Duck", 50, "tickets", -1, "Small"],
@@ -82,15 +75,11 @@
           .forEach(([name, cost, currency, stock, category]) =>
             this.data.items.push({ id: this.data.nextItemId++, name, cost, currency, stock, category }));
       }
-      if (this.data.packages.length === 0) {
-        [["Starter — $5", 5, 50, 0], ["Value — $10", 10, 120, 0], ["Mega — $20", 20, 300, 0], ["Party Pack — $50", 50, 800, 0]]
-          .forEach(([name, price, credits, tickets]) => this.data.packages.push({ id: this.data.nextPkgId++, name, price, credits, tickets }));
-      }
       this._save();
     }
     _save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); }
-    _log(uid, kind, detail, cd = 0, td = 0, amount = 0) {
-      this.data.tx.unshift({ id: this.data.nextTxId++, uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, amount, voided: 0, ts: Date.now() / 1000 });
+    _log(uid, kind, detail, cd = 0, td = 0) {
+      this.data.tx.unshift({ id: this.data.nextTxId++, uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, voided: 0, ts: Date.now() / 1000 });
       this.data.tx = this.data.tx.slice(0, 2000);
     }
     async health() { return { ok: true, reader: "local" }; }
@@ -137,28 +126,6 @@
       this._save(); return item;
     }
     async deleteItem(id) { this.data.items = this.data.items.filter((x) => x.id !== id); this._save(); return { ok: true }; }
-    async listPackages() { return [...this.data.packages].sort((a, b) => a.price - b.price); }
-    async createPackage(p) {
-      if (!(p.name || "").trim()) throw new Error("name_required");
-      const pkg = { id: this.data.nextPkgId++, name: p.name, price: +p.price || 0, credits: +p.credits || 0, tickets: +p.tickets || 0 };
-      this.data.packages.push(pkg); this._save(); return pkg;
-    }
-    async updatePackage(id, p) {
-      const pkg = this.data.packages.find((x) => x.id === id);
-      if (!pkg) throw new Error("not_found");
-      Object.assign(pkg, { name: p.name ?? pkg.name, price: p.price === undefined ? pkg.price : +p.price, credits: p.credits === undefined ? pkg.credits : +p.credits, tickets: p.tickets === undefined ? pkg.tickets : +p.tickets });
-      this._save(); return pkg;
-    }
-    async deletePackage(id) { this.data.packages = this.data.packages.filter((x) => x.id !== id); this._save(); return { ok: true }; }
-    async sell(uid, packageId) {
-      const c = this.data.cards[uid], pkg = this.data.packages.find((x) => x.id === packageId);
-      if (!c) throw new Error("card_not_found");
-      if (!pkg) throw new Error("package_not_found");
-      if (c.status === "frozen") throw new Error("card_frozen");
-      c.credits += pkg.credits; c.tickets += pkg.tickets; c.updated_at = Date.now() / 1000;
-      this._log(uid, "sale", pkg.name, pkg.credits, pkg.tickets, pkg.price);
-      this._save(); return c;
-    }
     async voidTx(id) {
       const tx = this.data.tx.find((t) => t.id === id);
       if (!tx) throw new Error("not_found");
@@ -168,7 +135,7 @@
       if (c.credits - tx.credits_d < 0 || c.tickets - tx.tickets_d < 0) throw new Error("would_go_negative");
       c.credits -= tx.credits_d; c.tickets -= tx.tickets_d; c.updated_at = Date.now() / 1000;
       tx.voided = 1;
-      this._log(tx.uid, "void", `${tx.kind}: ${tx.detail}`, -tx.credits_d, -tx.tickets_d, -(tx.amount || 0));
+      this._log(tx.uid, "void", `${tx.kind}: ${tx.detail}`, -tx.credits_d, -tx.tickets_d);
       this._save(); return c;
     }
     async redeem(uid, itemId) {
@@ -195,21 +162,19 @@
       this._save(); return { source: s, dest: d };
     }
     async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
-    async exportData() { return { version: 2, cards: Object.values(this.data.cards), items: this.data.items, packages: this.data.packages, transactions: this.data.tx }; }
-    async importData({ cards = [], items = [], packages = [] }) {
+    async exportData() { return { version: 3, cards: Object.values(this.data.cards), items: this.data.items, transactions: this.data.tx }; }
+    async importData({ cards = [], items = [] }) {
       const now = Date.now() / 1000;
       this.data.cards = {};
       cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
       this.data.items = []; this.data.nextItemId = 1;
       items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock, category: it.category || "" }));
-      this.data.packages = []; this.data.nextPkgId = 1;
-      packages.forEach((p) => this.data.packages.push({ id: this.data.nextPkgId++, name: p.name || "Package", price: +p.price || 0, credits: +p.credits || 0, tickets: +p.tickets || 0 }));
-      this._save(); return { ok: true, cards: cards.length, items: items.length, packages: packages.length };
+      this._save(); return { ok: true, cards: cards.length, items: items.length };
     }
     async simulate(uid) { onTap(uid); return { ok: true }; }
   }
 
-  let store = null, activeCard = null, items = [], packages = [], sse = null, appStarted = false;
+  let store = null, activeCard = null, items = [], sse = null, appStarted = false;
   function startApp() { appStarted = true; connect(); resetIdle(); }
 
   // ---------------------------------------------------------------
@@ -304,7 +269,6 @@
     if ($("#cardNotes")) $("#cardNotes").value = card.notes || "";
     if ($("#freezeBtn")) $("#freezeBtn").innerHTML = status === "frozen"
       ? svgUse("snow") + " Unfreeze" : svgUse("snow") + " Freeze";
-    renderPosButtons();
     renderPrizes();
     if (bodyIsAdvanced()) refreshLog();
   }
@@ -316,9 +280,9 @@
     if (bodyIsAdvanced()) refreshLog();
   }
   async function refreshItems() {
-    [items, packages] = await Promise.all([store.listItems(), store.listPackages()]);
+    items = await store.listItems();
     populateCategories();
-    renderPrizes(); renderItemList(); renderPkgList(); renderPosButtons();
+    renderPrizes(); renderItemList();
   }
 
   function populateCategories() {
@@ -349,58 +313,6 @@
       div.addEventListener("click", () => redeemItem(item));
       grid.appendChild(div);
     });
-  }
-
-  function renderPosButtons() {
-    const box = $("#posButtons"); if (!box) return;
-    if (packages.length === 0) { box.innerHTML = `<span class="setting-hint">No packages. Add them in the POS tab.</span>`; return; }
-    box.innerHTML = "";
-    packages.forEach((pk) => {
-      const give = [pk.credits ? pk.credits + " credits" : "", pk.tickets ? pk.tickets + " tickets" : ""].filter(Boolean).join(" + ");
-      const b = document.createElement("button");
-      b.className = "pos-btn";
-      b.innerHTML = `<span class="pos-price">$${pk.price}</span> ${escapeHtml(pk.name.replace(/—.*\$[\d.]+/, "").trim() || pk.name)}<span class="pos-give">${give}</span>`;
-      b.addEventListener("click", () => sellPackage(pk));
-      box.appendChild(b);
-    });
-  }
-
-  function renderPkgList() {
-    const list = $("#pkgList"); if (!list) return;
-    list.innerHTML = "";
-    packages.forEach((pk) => {
-      const give = [pk.credits ? pk.credits + " credits" : "", pk.tickets ? pk.tickets + " tickets" : ""].filter(Boolean).join(", ") || "nothing";
-      const row = document.createElement("div");
-      row.className = "row-item";
-      row.innerHTML = `
-        <span class="ri-badge" style="${badgeStyle(pk.name)}">$</span>
-        <div class="ri-main"><div class="ri-title">${escapeHtml(pk.name)}</div>
-          <div class="ri-sub">$${pk.price} → ${give}</div></div>
-        <div class="ri-actions">
-          <button class="mini-btn" data-edit="${pk.id}">${svgUse("edit")} Edit</button>
-          <button class="mini-btn danger" data-del="${pk.id}">${svgUse("trash")}</button>
-        </div>`;
-      row.querySelector("[data-edit]").addEventListener("click", () => {
-        $("#pkgId").value = pk.id; $("#pkgName").value = pk.name; $("#pkgPrice").value = pk.price;
-        $("#pkgCredits").value = pk.credits; $("#pkgTickets").value = pk.tickets; $("#pkgName").focus();
-      });
-      row.querySelector("[data-del]").addEventListener("click", async () => {
-        if (!confirm(`Delete package "${pk.name}"?`)) return;
-        await store.deletePackage(pk.id); toast("Package deleted"); refreshItems();
-      });
-      list.appendChild(row);
-    });
-  }
-
-  async function sellPackage(pk) {
-    if (!activeCard) { toast("Load a card first", "error"); return; }
-    if (!confirm(`Sell "${pk.name}" for $${pk.price}?`)) return;
-    try {
-      const card = await store.sell(activeCard.uid, pk.id);
-      loadCard(card); beep(880);
-      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
-      toast(`Sold ${pk.name}`, "success");
-    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Sale failed", "error"); }
   }
 
   function renderItemList() {
@@ -450,14 +362,13 @@
 
   function txBadge(t) {
     if (t.kind === "redeem") return "redeem";
-    if (t.kind === "sale") return "add";
     if (t.kind === "void") return "remove";
     if (t.kind.startsWith("merge")) return "merge";
     if (t.credits_d > 0 || t.tickets_d > 0) return "add";
     if (t.credits_d < 0 || t.tickets_d < 0) return "remove";
     return "other";
   }
-  const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", sale: "sale", void: "void", status: "status" };
+  const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", void: "void", status: "status" };
 
   async function refreshLog() {
     const list = $("#logList");
@@ -470,7 +381,6 @@
       const parts = [];
       if (t.credits_d) parts.push(`${t.credits_d > 0 ? "+" : ""}${t.credits_d} credits`);
       if (t.tickets_d) parts.push(`${t.tickets_d > 0 ? "+" : ""}${t.tickets_d} tickets`);
-      if (t.amount) parts.push(`$${(+t.amount).toFixed(2)}`);
       const canVoid = !t.voided && (t.credits_d || t.tickets_d) && t.kind !== "void";
       const row = document.createElement("div");
       row.className = "log-entry" + (t.voided ? " voided" : "");
@@ -492,9 +402,9 @@
 
   async function exportCsv() {
     const tx = await store.listTransactions(activeCard ? activeCard.uid : null, 5000);
-    const head = ["id", "uid", "kind", "detail", "credits_d", "tickets_d", "amount", "voided", "datetime"];
+    const head = ["id", "uid", "kind", "detail", "credits_d", "tickets_d", "voided", "datetime"];
     const rows = tx.map((t) => [t.id, t.uid, t.kind, (t.detail || "").replace(/"/g, '""'),
-      t.credits_d, t.tickets_d, t.amount || 0, t.voided || 0, new Date(t.ts * 1000).toISOString()]);
+      t.credits_d, t.tickets_d, t.voided || 0, new Date(t.ts * 1000).toISOString()]);
     const csv = [head.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
@@ -557,6 +467,40 @@
   }
 
   // ---------------------------------------------------------------
+  // Full-screen leaderboard (for a big display)
+  // ---------------------------------------------------------------
+  let lbTimer = null;
+  async function renderLeaderboard() {
+    const cards = (await store.listCards()).filter((c) => c.tickets > 0)
+      .sort((a, b) => b.tickets - a.tickets).slice(0, 10);
+    const list = $("#lbList");
+    if (cards.length === 0) { list.innerHTML = `<p class="lb-empty">No tickets yet — tap a card and add some!</p>`; return; }
+    list.innerHTML = "";
+    cards.forEach((c, i) => {
+      const row = document.createElement("div");
+      row.className = "lb-row" + (i < 3 ? " top" + (i + 1) : "");
+      row.style.animationDelay = (i * 0.04) + "s";
+      row.innerHTML = `
+        <div class="lb-rank">${i + 1}</div>
+        <div class="lb-name">${escapeHtml(c.name || c.uid)}
+          <div class="lb-sub">${escapeHtml(c.uid)}${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""}</div>
+        </div>
+        <div class="lb-tickets">${c.tickets}<small>tickets</small></div>`;
+      list.appendChild(row);
+    });
+  }
+  function openLeaderboard() {
+    $("#leaderboardScreen").classList.remove("hidden");
+    renderLeaderboard();
+    clearInterval(lbTimer);
+    lbTimer = setInterval(renderLeaderboard, 4000); // live-ish for a big screen
+  }
+  function closeLeaderboard() {
+    $("#leaderboardScreen").classList.add("hidden");
+    clearInterval(lbTimer); lbTimer = null;
+  }
+
+  // ---------------------------------------------------------------
   // Dashboard (advanced)
   // ---------------------------------------------------------------
   function topListInto(el, rows, maxv, fmt) {
@@ -581,12 +525,12 @@
     const creditsCirc = cards.reduce((s, c) => s + c.credits, 0);
     const ticketsCirc = cards.reduce((s, c) => s + c.tickets, 0);
     const redeems = live.filter((t) => t.kind === "redeem");
-    const revenue = live.reduce((s, t) => s + (+t.amount || 0), 0);
+    const ticketsAwarded = live.filter((t) => t.tickets_d > 0).reduce((s, t) => s + t.tickets_d, 0);
     const frozen = cards.filter((c) => c.status === "frozen").length;
 
     $("#statGrid").innerHTML = `
       <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div><div class="stat-sub">${frozen} frozen · ${itemList.length} prizes</div></div>
-      <div class="stat"><div class="stat-label">Revenue</div><div class="stat-value credits">$${revenue.toFixed(2)}</div><div class="stat-sub">from ${live.filter((t) => t.kind === "sale").length} sales</div></div>
+      <div class="stat"><div class="stat-label">Tickets awarded</div><div class="stat-value tickets">${ticketsAwarded}</div><div class="stat-sub">all-time</div></div>
       <div class="stat"><div class="stat-label">Credits in play</div><div class="stat-value credits">${creditsCirc}</div><div class="stat-sub">across all cards</div></div>
       <div class="stat"><div class="stat-label">Tickets in play</div><div class="stat-value tickets">${ticketsCirc}</div><div class="stat-sub">${redeems.length} redemptions</div></div>`;
 
@@ -982,20 +926,12 @@
     $("#prizeSearch").addEventListener("input", renderPrizes);
     $("#prizeCategory").addEventListener("change", renderPrizes);
 
-    // Packages (POS)
-    $("#pkgForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const payload = { name: $("#pkgName").value, price: parseFloat($("#pkgPrice").value) || 0, credits: parseInt($("#pkgCredits").value, 10) || 0, tickets: parseInt($("#pkgTickets").value, 10) || 0 };
-      try {
-        const id = $("#pkgId").value;
-        if (id) await store.updatePackage(parseInt(id, 10), payload); else await store.createPackage(payload);
-        $("#pkgId").value = ""; $("#pkgForm").reset(); refreshItems(); toast("Package saved", "success");
-      } catch (err) { toast("Save failed: " + err.message, "error"); }
-    });
-    $("#pkgResetBtn").addEventListener("click", () => { $("#pkgId").value = ""; $("#pkgForm").reset(); });
-
     // CSV export
     $("#csvBtn").addEventListener("click", exportCsv);
+
+    // Leaderboard big screen
+    $("#leaderboardBtn").addEventListener("click", openLeaderboard);
+    $("#closeLeaderboard").addEventListener("click", closeLeaderboard);
 
     // Appearance + kiosk
     $("#themeToggle").addEventListener("click", toggleTheme);
@@ -1090,6 +1026,8 @@
       else if (k === "n") { e.preventDefault(); openNewCardModal(""); }
       else if (k === "a") { e.preventDefault(); setMode(bodyIsAdvanced() ? "simple" : "advanced"); }
       else if (k === "/") { e.preventDefault(); const s = $("#prizeSearch"); if (s) { switchTab("prizes"); s.focus(); } }
+      else if (k === "b") { e.preventDefault(); if ($("#leaderboardScreen").classList.contains("hidden")) openLeaderboard(); else closeLeaderboard(); }
+      else if (e.key === "Escape" && !$("#leaderboardScreen").classList.contains("hidden")) closeLeaderboard();
     });
 
     // Auto-lock idle tracking
