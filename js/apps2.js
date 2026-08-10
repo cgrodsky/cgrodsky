@@ -879,6 +879,10 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     if (!root["Local Disk (C:)"]) { Object.assign(root, WIN_FS()); State.save(); }   // migrate existing users
     if (!root["Videos"]) { root["Videos"] = { type: "folder", children: {} }; State.save(); }
     if (!root["OneDrive"]) { root["OneDrive"] = { type: "folder", children: {} }; State.save(); }
+    // A "3D Models" folder appears once Blender or Blockbench is installed (or at
+    // setup if Creativity was chosen — flagged via appData.creativity).
+    const wants3D = (S().installedApps || []).some((id) => id === "blender" || id === "blockbench") || (S().appData && S().appData.creativity);
+    if (wants3D && !root["3D Models"]) { root["3D Models"] = { type: "folder", children: {} }; State.save(); }
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
