@@ -171,19 +171,26 @@
         const q = qsState();
         sb.appendChild(el(`<h2>Network &amp; internet</h2>`));
         const on = !!q.wifi;
+        const poor = q.signal === "poor";
+        const wifiIc = !on ? "wifi_disabled" : (poor ? "wifi_poor" : "wifi");
         const row = el(`<div class="net-wifi">
-          <img class="net-wifi-ic" src="assets/${on ? "wifi" : "wifi_disabled"}.png?v=9" alt="">
-          <div class="net-wifi-txt"><b>Wi-Fi</b><span class="muted">${on ? "Connected, secured — HomeNetwork_5G" : "Wi-Fi is turned off"}</span></div>
+          <img class="net-wifi-ic" src="assets/${wifiIc}.png?v=9" alt="">
+          <div class="net-wifi-txt"><b>Wi-Fi</b><span class="muted">${on ? ("Connected, " + (poor ? "weak signal" : "secured") + " — HomeNetwork_5G") : "Wi-Fi is turned off"}</span></div>
           <label class="sw"><input type="checkbox" ${on ? "checked" : ""}><span class="sw-track"></span></label>
         </div>`);
         row.querySelector("input").onchange = (e) => {
           q.wifi = e.target.checked; if (q.wifi) q.plane = false; State.save();
-          const ti = document.querySelector(".tb-wifi"); if (ti) ti.style.opacity = q.wifi ? "0.9" : "0.3";
+          if (window.WM && window.WM.refreshWifi) window.WM.refreshWifi();
           render("network");
         };
         sb.appendChild(row);
+        if (on) {
+          const sig = el(`<div class="net-signal"><span>Signal strength</span><div class="toggle-row" id="sigRow"><button data-v="good" class="${poor ? "" : "sel"}">Strong</button><button data-v="poor" class="${poor ? "sel" : ""}">Weak</button></div></div>`);
+          sig.querySelectorAll("button").forEach((b) => b.onclick = () => { q.signal = b.dataset.v; State.save(); if (window.WM && window.WM.refreshWifi) window.WM.refreshWifi(); render("network"); });
+          sb.appendChild(sig);
+        }
         const plane = el(`<div class="net-wifi" style="margin-top:10px"><div class="net-wifi-txt" style="margin-left:0"><b>Airplane mode</b><span class="muted">${q.plane ? "On — radios off" : "Off"}</span></div><label class="sw"><input type="checkbox" ${q.plane ? "checked" : ""}><span class="sw-track"></span></label></div>`);
-        plane.querySelector("input").onchange = (e) => { q.plane = e.target.checked; if (q.plane) q.wifi = false; State.save(); const ti = document.querySelector(".tb-wifi"); if (ti) ti.style.opacity = q.wifi ? "0.9" : "0.3"; render("network"); };
+        plane.querySelector("input").onchange = (e) => { q.plane = e.target.checked; if (q.plane) q.wifi = false; State.save(); if (window.WM && window.WM.refreshWifi) window.WM.refreshWifi(); render("network"); };
         sb.appendChild(plane);
       } else if (p === "devices") {
         sb.appendChild(el(`<h2>Bluetooth &amp; devices</h2>`));

@@ -686,7 +686,8 @@
     access: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M4 8h16M12 8v6M12 14l-3 6M12 14l3 6"/></svg>`,
   };
 
-  function qs() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55 }; return S().appData.quickSettings; }
+  function qs() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55, signal: "good" }; return S().appData.quickSettings; }
+  function wifiIconKey() { const q = qs(); return (q.wifi && q.signal === "poor") ? "wifi_poor" : "wifi"; }
   function notifLog() { if (!S().appData) S().appData = {}; if (!S().appData.notifLog) S().appData.notifLog = []; return S().appData.notifLog; }
 
   // Warm overlay for Night light + dimming for Brightness.
@@ -799,7 +800,7 @@
       <button class="tb-copilot" data-open="copilot" title="Copilot">${Icon.mini("copilot", "Copilot")}</button>
       <div class="tb-tray">
         <button class="tb-qs" title="Quick settings">
-          <span class="tb-wifi">${Icon.mini("wifi", "Wi-Fi")}</span>
+          <span class="tb-wifi">${Icon.mini(wifiIconKey(), "Wi-Fi")}</span>
           <span class="tb-sysic tb-vol">${Icon.mini(qs().volume > 0 ? "sound_on" : "sound_off", "Volume")}</span>
           <span class="tb-sysic">${SYS_SVG.battery}</span>
         </button>
@@ -1179,5 +1180,6 @@
     createWindow, open, buildDesktop, setWindowIcon,
     refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
     refreshTaskbar: refreshTaskbarIcons,
+    refreshWifi: () => { const t = taskbar && taskbar.querySelector(".tb-wifi"); if (!t) return; t.innerHTML = Icon.mini(wifiIconKey(), "Wi-Fi"); t.style.opacity = qs().wifi ? "0.9" : "0.3"; },
   };
 })();

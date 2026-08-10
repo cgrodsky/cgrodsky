@@ -191,6 +191,7 @@
         <p>This is a <b>pretend computer</b> made for fun. It is <b>not real</b> and is <b>not affiliated with Microsoft</b>.</p>
         <p class="safety-strong">Never type real passwords, real card numbers, or real personal information anywhere in here.</p>
         <p>All money, accounts, and purchases are fake.</p>
+        <div class="safety-tos"><img src="assets/tos.png?v=9" alt=""><span>By continuing you accept the pretend <b>Terms of Service</b>.</span></div>
         <button class="safety-btn">I understand</button>
       </div>`);
       layer.appendChild(card);
