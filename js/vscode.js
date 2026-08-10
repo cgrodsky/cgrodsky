@@ -23,8 +23,17 @@
   }
   function proj() { if (!S().appData) S().appData = {}; if (!S().appData.vscode) S().appData.vscode = seedProject(); return S().appData.vscode; }
 
-  const LANG = { html: "HTML", css: "CSS", js: "JavaScript", json: "JSON", md: "Markdown", py: "Python", txt: "Plain Text" };
-  function langOf(name) { const e = (name.split(".").pop() || "").toLowerCase(); if (e === "htm") return "html"; if (LANG[e]) return e; return "txt"; }
+  const LANG = { html: "HTML", css: "CSS", js: "JavaScript", json: "JSON", md: "Markdown", py: "Python", txt: "Plain Text", ts: "TypeScript", react: "React", cpp: "C++", nextjs: "Next.js" };
+  function langOf(name) {
+    const n = name.toLowerCase(); const e = (n.split(".").pop() || "");
+    if (/^next\.config\.(js|ts|mjs|cjs)$/.test(n)) return "nextjs";
+    if (e === "htm") return "html";
+    if (e === "ts") return "ts";
+    if (e === "tsx" || e === "jsx") return "react";
+    if (e === "cpp" || e === "cc" || e === "cxx" || e === "c" || e === "h" || e === "hpp") return "cpp";
+    if (LANG[e]) return e;
+    return "txt";
+  }
   const FILE_ICON = {
     html: `<span class="vs-fic" style="color:#e44d26">&#60;&#62;</span>`,
     css: `<img class="vs-fic vs-fic-img" src="assets/vscode_css.png?v=1" alt="css">`,
@@ -32,6 +41,10 @@
     json: `<span class="vs-fic" style="color:#cbcb41">{}</span>`,
     md: `<span class="vs-fic" style="color:#42a5f5">M&#8595;</span>`,
     py: `<span class="vs-fic" style="color:#4b8bbe">Py</span>`,
+    ts: `<img class="vs-fic vs-fic-img" src="assets/file_ts.png?v=1" alt="ts">`,
+    react: `<img class="vs-fic vs-fic-img" src="assets/file_react.png?v=1" alt="react">`,
+    cpp: `<img class="vs-fic vs-fic-img" src="assets/file_cpp.png?v=1" alt="c++">`,
+    nextjs: `<img class="vs-fic vs-fic-img" src="assets/file_nextjs.png?v=1" alt="next.js">`,
     txt: `<span class="vs-fic" style="color:#9aa0a6">&#9776;</span>`,
   };
 

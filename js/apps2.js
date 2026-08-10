@@ -831,7 +831,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   // Hover (opened) icons — matched to each folder's colour. The music/videos _open art was
   // authored swapped (music_open is purple, videos_open is salmon), so cross-map them here.
   const FOLDER_ICON_OPEN = { Music: "assets/videosfolder_open.png", Videos: "assets/musicfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png", Pictures: "assets/picturesfolder_open.png" };
-  const FICONV = "5";   // bump to force iPad to refetch updated folder icons
+  const FICONV = "6";   // bump to force iPad to refetch updated folder icons
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
@@ -929,9 +929,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
         const IMG_EXT = ["png", "jpg", "jpeg", "svg", "gif", "webp", "bmp", "heic", "ico", "tiff"];
         const CODE_EXT = ["js", "mjs", "cjs", "ts", "jsx", "tsx", "css", "scss", "less", "html", "htm", "json", "py", "java", "c", "h", "cpp", "cc", "cs", "go", "rb", "php", "rs", "swift", "kt", "sh", "bat", "xml", "yml", "yaml", "md", "vue", "sql", "lua"];
         const VID_EXT = ["mp4", "mov", "avi", "mkv", "webm", "m4v", "wmv", "flv", "mpg", "mpeg"];
+        const ARC_EXT = ["rar", "zip", "7z", "tar", "gz", "bz2", "xz", "cab"];
         const isImg = node.kind === "image" || IMG_EXT.includes(ext);
         const fileGlyph =
             isImg ? (node.src ? `<img class="files-folder-img" src="${node.src}" alt="">` : `<img class="files-folder-img" src="assets/file_image.png?v=1" alt="image">`)
+          : ARC_EXT.includes(ext) ? `<img class="files-folder-img" src="assets/file_rar.png?v=1" alt="archive">`
           : CODE_EXT.includes(ext) ? `<img class="files-folder-img" src="assets/file_code.png?v=1" alt="code">`
           : VID_EXT.includes(ext) ? `<img class="files-folder-img" src="assets/file_video.png?v=1" alt="video">`
           : node.kind === "word" ? `<span class="files-doc-ic">${Icon.mini("word", "Word")}</span>`
@@ -951,7 +953,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
           if (isFolder) { path = path.concat(name); render(); } else openFile(name, node);
         };
         item.querySelector(".files-menu").onclick = (e) => { e.stopPropagation(); itemMenu(e.currentTarget, name, node); };
-        const hoverSrc = FOLDER_ICON_OPEN[name] ? FOLDER_ICON_OPEN[name] : (FOLDER_ICON[name] ? null : "assets/folder_open.png");
+        // Generic (non-custom) folders open to the "full" folder art when they hold
+        // something, and to the empty open folder when they don't.
+        const hasContents = isFolder && node.children && Object.keys(node.children).length > 0;
+        const genericOpen = hasContents ? "assets/folder_open_full.png" : "assets/folder_open.png";
+        const hoverSrc = FOLDER_ICON_OPEN[name] ? FOLDER_ICON_OPEN[name] : (FOLDER_ICON[name] ? null : genericOpen);
         if (isFolder && hoverSrc) {
           const fimg = item.querySelector(".files-is-folder");
           item.addEventListener("mouseenter", () => { fimg.src = hoverSrc + "?v=" + FICONV; });
