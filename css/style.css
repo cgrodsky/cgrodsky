@@ -1295,6 +1295,29 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 .cop-hero h2 { margin: 0; background: linear-gradient(90deg, #19c2ff, #7b5cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .cop-msgs { flex: 1; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 .cop-msg { display: flex; gap: 10px; max-width: 85%; animation: msgIn .3s ease; }
+
+/* ---- Ruixen-style empty state ---- */
+.cop.cop-empty-mode { background: #060608; }
+.cop.cop-empty-mode .cop-topbar { background: transparent; border: 0; }
+.cop.cop-empty-mode .cop-msgs { padding: 0; }
+.cop-hero-ruixen { position: relative; flex: 1; width: 100%; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #060608; min-height: 0; }
+.cop-orb { position: absolute; left: 50%; bottom: -58%; width: 150%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle at 50% 50%, rgba(120,90,255,.0) 40%, rgba(108,80,255,.85) 61%, rgba(70,50,200,.35) 68%, transparent 76%); filter: blur(6px); pointer-events: none; animation: orbGlow 7s ease-in-out infinite; }
+@keyframes orbGlow { 0%,100% { opacity: .82; } 50% { opacity: 1; } }
+.cop-hero-inner { position: relative; z-index: 1; width: min(760px, 90%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 24px 0; }
+.cop-hero-title { margin: 0; font-size: 2.6rem; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+.cop-hero-sub { margin: 0 0 18px; color: #b9bcd0; font-size: 1.02rem; }
+.cop-hero-input { width: 100%; }
+/* The real prompt bar, restyled as a big glass box inside the hero */
+.cop-hero-input .cop-prompt { margin: 0; width: 100%; box-sizing: border-box; min-height: 128px; padding: 16px 18px; border-radius: 18px; background: rgba(24,22,44,.6); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(8px); box-shadow: 0 20px 60px rgba(40,20,120,.35); justify-content: space-between; }
+.cop-hero-input .cop-usage { color: #9a9ec2; }
+.cop-hero-input .cop-prompt:focus-within { border-color: rgba(150,120,255,.6); box-shadow: 0 0 0 3px rgba(120,90,255,.22), 0 20px 60px rgba(40,20,120,.4); }
+.cop-hero-input .cop-ta { color: #eef; font-size: 1.05rem; min-height: 56px; }
+.cop-hero-input .cop-ta::placeholder { color: #8b8fa8; }
+.cop-hero-input .cop-send { background: rgba(255,255,255,.1); border-radius: 10px; }
+.cop-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 22px; }
+.cop-pill { display: inline-flex; align-items: center; gap: 9px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.03); color: #e6e8f2; font-size: .9rem; cursor: pointer; transition: background .15s, border-color .15s; }
+.cop-pill:hover { background: rgba(255,255,255,.09); border-color: rgba(160,140,255,.5); }
+.cop-pill svg { color: #cfd2e6; }
 .cop-msg.user { align-self: flex-end; flex-direction: row-reverse; }
 .cop-bubble { padding: 10px 14px; border-radius: 14px; line-height: 1.45; white-space: pre-wrap; }
 .cop-msg.user .cop-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }

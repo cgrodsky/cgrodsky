@@ -36,6 +36,28 @@
     { title: "Summarize the key points of a document", sub: "Get an overview", prompt: "Summarize the key points I should know from a long quarterly report." },
   ];
 
+  // Ruixen-style empty-state suggestion pills.
+  const PILL_ICON = {
+    code: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg>`,
+    rocket: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15c-1 1-1.5 4-1.5 4s3-.5 4-1.5a2.1 2.1 0 0 0-2.5-2.5z"/><path d="M9 11a12 12 0 0 1 8-8c2 0 3 1 3 3a12 12 0 0 1-8 8z"/><path d="M9 11l-3 1 5 5 1-3"/></svg>`,
+    layers: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>`,
+    palette: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1.2-1-1.5-1-2.5s.8-1.5 2-1.5H16a5 5 0 0 0 5-5c0-4-4-7-9-7z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg>`,
+    user: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18a5.5 5.5 0 0 1 11 0"/></svg>`,
+    monitor: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>`,
+    upload: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M12 16v-5M9.5 13l2.5-2.5 2.5 2.5"/></svg>`,
+    image: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>`,
+  };
+  const PILLS = [
+    { label: "Generate Code", ic: "code", prompt: "Generate a clean, well-commented example function and explain how it works." },
+    { label: "Launch App", ic: "rocket", prompt: "Give me a step-by-step plan to launch a new app, from idea to release." },
+    { label: "UI Components", ic: "layers", prompt: "Suggest a set of reusable UI components for a modern web app, with a short description of each." },
+    { label: "Theme Ideas", ic: "palette", prompt: "Suggest 5 color theme ideas for a sleek dark-mode app, each with hex codes." },
+    { label: "User Dashboard", ic: "user", prompt: "Design a user dashboard layout — what sections and widgets should it include?" },
+    { label: "Landing Page", ic: "monitor", prompt: "Outline a high-converting landing page structure for a SaaS product." },
+    { label: "Upload Docs", ic: "upload", action: "attach" },
+    { label: "Image Assets", ic: "image", prefill: "Create an image of " },
+  ];
+
   // ---- Plans & usage limits (fake money) ----
   const PLANS = {
     basic: { id: "basic", name: "Basic", price: 0, msgs: 15, attach: 1, images: 0, blurb: "Everyday help" },
@@ -271,23 +293,38 @@
 
     function paint() {
       updateUsage();
+      const main = body.querySelector(".cop");
+      // Detach the prompt bar from any prior hero before clearing, so it survives.
+      main.appendChild(promptEl);
       msgs.innerHTML = "";
       if (!activeConv().history.length) {
-        const hero = el(`<div class="cop-hero cop-hero-m365">
-          ${LOGO("cop-logo big-logo")}
-          <h2>Message Copilot</h2>
-          <p class="muted">Chat, draft, summarize, or create an image — with your Microsoft 365 apps.</p>
-          <div class="cop-cards"></div>
+        main.classList.add("cop-empty-mode");
+        const hero = el(`<div class="cop-hero cop-hero-ruixen">
+          <div class="cop-orb"></div>
+          <div class="cop-hero-inner">
+            <h1 class="cop-hero-title">Copilot</h1>
+            <p class="cop-hero-sub">Build something amazing — just start typing below.</p>
+            <div class="cop-hero-input"></div>
+            <div class="cop-pills"></div>
+          </div>
         </div>`);
-        const cards = hero.querySelector(".cop-cards");
-        SUGGEST.forEach((s) => {
-          const card = el(`<button class="cop-card">${DOC_SVG}<span class="cop-card-t">${escapeHtml(s.title)}</span><span class="cop-card-s">${escapeHtml(s.sub)}</span></button>`);
-          card.onclick = () => { ta.value = s.prompt; ta.dispatchEvent(new Event("input")); send(); };
-          cards.appendChild(card);
+        hero.querySelector(".cop-hero-input").appendChild(promptEl);
+        ta.placeholder = "Type your request...";
+        const pills = hero.querySelector(".cop-pills");
+        PILLS.forEach((pl) => {
+          const b = el(`<button class="cop-pill">${PILL_ICON[pl.ic] || ""}<span>${escapeHtml(pl.label)}</span></button>`);
+          b.onclick = () => {
+            if (pl.action === "attach") { body.querySelector(".cop-file-input").click(); return; }
+            if (pl.prefill) { ta.value = pl.prefill; ta.dispatchEvent(new Event("input")); ta.focus(); return; }
+            ta.value = pl.prompt; ta.dispatchEvent(new Event("input")); send();
+          };
+          pills.appendChild(b);
         });
         msgs.appendChild(hero);
         return;
       }
+      main.classList.remove("cop-empty-mode");
+      ta.placeholder = "Message Copilot";
       activeConv().history.forEach((m) => addBubble(m));
     }
     function viewImage(src) {
@@ -322,7 +359,11 @@
       const content = [note, text].filter(Boolean).join("\n").trim();
       ta.value = ""; ta.style.height = "auto";
       pendingFiles = []; renderFiles(); refreshPromptState();
-      if (msgs.querySelector(".cop-hero")) msgs.innerHTML = "";
+      if (msgs.querySelector(".cop-hero")) {
+        const main = body.querySelector(".cop");
+        main.appendChild(promptEl); main.classList.remove("cop-empty-mode"); ta.placeholder = "Message Copilot";
+        msgs.innerHTML = "";
+      }
       const userMsg = { role: "user", content };
       if (images.length) userMsg.images = images;
       const conv = activeConv();
