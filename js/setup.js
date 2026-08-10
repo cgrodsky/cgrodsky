@@ -269,10 +269,41 @@
       oskRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel");
       if (b.dataset.v === "on") OSK.show(); else OSK.hide();
     });
-    const go = () => { State.save(); oobeAccount(); };
+    const go = () => { State.save(); oobeUsage(); };
     node.querySelector("#later").onclick = go;
     node.querySelector("#setup").onclick = go;
     oobe(node, { illustration: ILLUS.gear, back: oobeRegion });
+  }
+
+  // ---- How will you use this device? (adds apps/folders to match) ----
+  function oobeUsage() {
+    if (!S().appData) S().appData = {};
+    const cur = S().appData.usage || "personal";
+    const OPTS = [
+      ["personal", "Personal", "💻", "Everyday browsing, media, and games."],
+      ["school", "School", "🎓", "Adds Google Classroom plus Education & Math folders."],
+      ["creativity", "Creativity", "🎨", "Adds a 3D Models folder for Blender & Blockbench."],
+    ];
+    const node = el(`<div>
+      <h1>How will you use this device?</h1>
+      <p class="sub">We'll set up a few apps and folders to match. You can change this later.</p>
+      <div class="use-opts">${OPTS.map(([v, t, e, d]) => `<button class="use-opt ${v === cur ? "sel" : ""}" data-v="${v}"><span class="use-ic">${e}</span><span class="use-txt"><b>${t}</b><span class="use-d">${d}</span></span></button>`).join("")}</div>
+      <div class="oobe-actions spread"><button class="btn-text" id="later">Skip</button><button class="btn-primary" id="next">Next</button></div>
+    </div>`);
+    let choice = cur;
+    node.querySelectorAll(".use-opt").forEach((b) => b.onclick = () => { node.querySelectorAll(".use-opt").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); choice = b.dataset.v; });
+    const go = (apply) => {
+      if (apply) {
+        S().appData.usage = choice;
+        S().appData.creativity = choice === "creativity";
+        S().appData.schoolFolders = choice === "school";
+        if (choice === "school") { if (!S().installedApps) S().installedApps = []; if (!S().installedApps.includes("classroom")) S().installedApps.push("classroom"); }
+      }
+      State.save(); oobeAccount();
+    };
+    node.querySelector("#later").onclick = () => go(false);
+    node.querySelector("#next").onclick = () => go(true);
+    oobe(node, { illustration: ILLUS.apps, back: oobeAccessibility });
   }
 
   // ---- Microsoft account ----

@@ -359,6 +359,12 @@ body.dark .setup-step-pip { background: rgba(255,255,255,0.12); }
 .btn-primary:hover { background: var(--accent-light); }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.use-opts { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.use-opt { display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.04); color: var(--text); cursor: pointer; }
+.use-opt:hover { border-color: var(--accent, #0067c0); }
+.use-opt.sel { border-color: var(--accent, #0067c0); background: rgba(0,103,192,.12); }
+.use-ic { font-size: 26px; flex: 0 0 auto; }
+.use-txt { display: flex; flex-direction: column; } .use-txt b { font-size: 15px; } .use-d { font-size: 12px; opacity: .8; }
 .btn-text {
   background: none; border: none; color: var(--text); cursor: pointer; font-size: 1rem;
   padding: 10px 14px; text-decoration: none;

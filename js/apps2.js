@@ -883,6 +883,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     // setup if Creativity was chosen — flagged via appData.creativity).
     const wants3D = (S().installedApps || []).some((id) => id === "blender" || id === "blockbench") || (S().appData && S().appData.creativity);
     if (wants3D && !root["3D Models"]) { root["3D Models"] = { type: "folder", children: {} }; State.save(); }
+    // School setup adds Education & Math folders.
+    if (S().appData && S().appData.schoolFolders) {
+      if (!root["Education"]) { root["Education"] = { type: "folder", children: {} }; State.save(); }
+      if (!root["Math"]) { root["Math"] = { type: "folder", children: {} }; State.save(); }
+    }
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
