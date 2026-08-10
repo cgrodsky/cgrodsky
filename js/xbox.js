@@ -27,7 +27,7 @@
     { id: "halo", name: "Halo Infinite", price: 59.99, gp: true, tag: "Shooter", c1: "#3b82f6", c2: "#0a1f3d" },
     { id: "seaofthieves", name: "Sea of Thieves", price: 39.99, gp: true, tag: "Adventure", c1: "#0891b2", c2: "#04303d" },
     { id: "starfield", name: "Starfield", price: 69.99, gp: true, tag: "RPG", c1: "#c026d3", c2: "#3b0764" },
-    { id: "flightsim", name: "Microsoft Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#0ea5e9", c2: "#0c4a6e", art: "assets/game_flightsim.jpg" },
+    { id: "flightsim", name: "Microsoft Flight Simulator", price: 59.99, gp: true, tag: "Simulation", c1: "#e8eef5", c2: "#b8c6d8", icon: "assets/msfs.png" },
     { id: "gears5", name: "Gears 5", price: 39.99, gp: true, tag: "Shooter", c1: "#dc2626", c2: "#3f0d0d" },
     { id: "fallout4", name: "Fallout 4", price: 29.99, gp: true, tag: "RPG", c1: "#65a30d", c2: "#1a2e05" },
     { id: "doometernal", name: "Doom Eternal", price: 39.99, gp: true, tag: "Shooter", c1: "#ea580c", c2: "#431407" },
@@ -36,7 +36,8 @@
     { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
     { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d", art: "assets/game_stardew.jpg" },
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
-    { id: "gta5", name: "Grand Theft Auto V", price: 29.99, gp: true, tag: "Adventure", c1: "#1b5e20", c2: "#0a2410" },
+    { id: "gta5", name: "Grand Theft Auto V", price: 29.99, gp: true, tag: "Adventure", c1: "#1b5e20", c2: "#0a2410", icon: "assets/gta5.png" },
+    { id: "gta6", name: "Grand Theft Auto VI", price: 69.99, gp: false, tag: "Adventure", c1: "#ff5ca8", c2: "#5b2be0", icon: "assets/gta6.png" },
     { id: "fortnite", name: "Fortnite", price: 0, gp: false, tag: "Shooter", c1: "#7c3aed", c2: "#2563eb" },
     { id: "bluey", name: "Bluey: The Videogame", price: 39.99, gp: true, tag: "Casual", c1: "#3a7bd5", c2: "#0a2540", art: "assets/game_bluey.jpg" },
     { id: "fallout4", name: "Fallout 4: Anniversary Edition", price: 19.99, gp: true, tag: "RPG", c1: "#caa23a", c2: "#3a2a12", art: "assets/game_fallout.jpg" },
@@ -46,7 +47,7 @@
   const RATINGS = {
     minecraft: "E", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
     gears5: "M", fallout4: "M", doometernal: "M", aoe4: "T", hades: "T", hollowknight: "E10+",
-    stardew: "E10+", cuphead: "E10+", gta5: "AO", fortnite: "T", bluey: "EC",
+    stardew: "E10+", cuphead: "E10+", gta5: "AO", gta6: "M", fortnite: "T", bluey: "EC",
   };
   const RATING_COLOR = { "E": "#4b7f2f", "E10+": "#3a7bd5", "T": "#c98a1a", "M": "#c0392b" };
   // Official ESRB badge images (others fall back to a colored text badge).
@@ -224,6 +225,7 @@
   function charge(item, amount) { try { if (State.addTransaction) State.addTransaction({ vendor: "Xbox", item, amount, refundable: false }); } catch (_) {} }
 
   function gameArt(g, cls) {
+    if (g.icon) return `<div class="xb-art xb-art-logo-wrap ${cls || ""}" style="background:linear-gradient(135deg,${g.c1},${g.c2})"><img class="xb-art-logo" src="${g.icon}?v=1" alt=""><div class="xb-art-shade"></div><span class="xb-art-name">${esc(g.name)}</span></div>`;
     if (g.art) return `<div class="xb-art xb-art-photo ${cls || ""}" style="background:${g.c1}"><img class="xb-art-img" src="${g.art}" alt=""><div class="xb-art-shade"></div><span class="xb-art-name">${esc(g.name)}</span></div>`;
     return `<div class="xb-art ${cls || ""}" style="background:linear-gradient(135deg,${g.c1},${g.c2})">
       <svg viewBox="0 0 100 60" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;opacity:.35"><circle cx="80" cy="12" r="22" fill="rgba(255,255,255,.15)"/><circle cx="15" cy="50" r="16" fill="rgba(0,0,0,.15)"/></svg>

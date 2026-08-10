@@ -826,12 +826,12 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png", "Local Disk (C:)": "assets/thispc.png" };
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png", "Local Disk (C:)": "assets/thispc.png", Fonts: "assets/fonts_folder.png", Desktop: "assets/desktop_folder.png", Education: "assets/edu_folder.png", Math: "assets/math_folder.png", "3D Models": "assets/models_folder.png", "3D Objects": "assets/models_folder.png" };
   // Hover (opened) icons — matched to each folder's colour (Music≈salmon, Videos≈purple, etc.).
   // Hover (opened) icons — matched to each folder's colour. The music/videos _open art was
   // authored swapped (music_open is purple, videos_open is salmon), so cross-map them here.
   const FOLDER_ICON_OPEN = { Music: "assets/videosfolder_open.png", Videos: "assets/musicfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png", Pictures: "assets/picturesfolder_open.png" };
-  const FICONV = "6";   // bump to force iPad to refetch updated folder icons
+  const FICONV = "7";   // bump to force iPad to refetch updated folder icons
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {

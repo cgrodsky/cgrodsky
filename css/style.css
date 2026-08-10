@@ -2489,6 +2489,9 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-art { position: relative; aspect-ratio: 16/10; display: flex; align-items: flex-end; padding: 12px; overflow: hidden; }
 .xb-art-name { position: relative; font-weight: 800; font-size: 1.15rem; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
 .xb-art-photo .xb-art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.xb-art-logo-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+.xb-art-logo { position: relative; z-index: 1; max-width: 58%; max-height: 58%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+.xb-art-logo-wrap .xb-art-name { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: .95rem; padding: 0 6px; }
 .xb-art-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.72), transparent 55%); }
 .xb-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .xb-card-top { display: flex; align-items: center; gap: 8px; }
