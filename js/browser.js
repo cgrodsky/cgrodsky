@@ -39,7 +39,7 @@
         <div class="edge-hero-top"><span class="edge-weather">🌤 72°F</span><span class="grow"></span><button class="edge-gear" title="Page settings">⚙</button></div>
         <form class="edge-search-form">
           <div class="edge-search">
-            <svg class="edge-bing" viewBox="0 0 24 24"><path d="M6 3l4 1.4v11l6-2.8-2.9-1-1.4-3.6L16 10l3 1.3v3.3L9 20V4.8z" fill="#008373"/></svg>
+            <img class="edge-bing" src="assets/bing.png?v=1" alt="Bing">
             <input class="edge-q" placeholder="Search the web" autofocus>
             <button type="submit" class="edge-go" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
           </div>
