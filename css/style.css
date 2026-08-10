@@ -2850,6 +2850,36 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .sol-slot { width: 74px; height: 104px; border-radius: 7px; border: 1.5px dashed rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: 26px; color: rgba(255,255,255,.45); cursor: pointer; }
 .sol-fslot, .sol-empty { font-weight: 700; }
 .sol-card.sel { outline: 3px solid #ffd23f; box-shadow: 0 0 0 3px #ffd23f, 0 4px 10px rgba(0,0,0,.4); }
+
+/* ---------------- Blender & Blockbench (3D) ---------------- */
+.m3-noengine { color: #ddd; padding: 30px; text-align: center; font-size: 14px; }
+.bl, .bb { display: flex; flex-direction: column; height: 100%; color: #d8d8d8; font-size: 13px; }
+.bl { background: #1d1d1d; } .bb { background: #21252b; }
+.bl-menubar, .bb-menubar { display: flex; align-items: center; gap: 14px; padding: 6px 12px; background: #303030; border-bottom: 1px solid #000; }
+.bb-menubar { background: #2b2f36; }
+.bl-menubar span, .bb-menubar span { cursor: default; } .bl-menubar .grow, .bb-menubar .grow { flex: 1; }
+.bl-logo, .bb-logo { display: inline-flex; } .bl-logo .ico-wrap, .bb-logo .ico-wrap { width: 18px; height: 18px; box-shadow: none; }
+.bl-scene, .bb-title2 { opacity: .6; font-size: 12px; }
+.bl-main, .bb-main { flex: 1; display: flex; min-height: 0; }
+.bl-tools { display: flex; flex-direction: column; gap: 4px; padding: 8px 4px; background: #262626; }
+.bl-tool { width: 30px; height: 30px; border: 0; border-radius: 5px; background: #383838; color: #ccc; cursor: pointer; font-size: 15px; }
+.bl-tool:hover { background: #4a4a4a; }
+.bl-viewport, .bb-viewport { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+.bl-side, .bb-side { width: 250px; flex: 0 0 250px; background: #2a2a2a; border-left: 1px solid #000; display: flex; flex-direction: column; overflow-y: auto; }
+.bb-side { background: #262a31; }
+.bl-panel-h, .bb-panel-h { background: #333; padding: 6px 12px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #aaa; }
+.bb-panel-h { background: #2f343c; }
+.bl-tree { padding: 8px 12px; line-height: 1.9; } .bl-tree .on { color: #fff; } .bl-tree b { color: #f90; }
+.bl-props { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.bl-props label, .bb-el label { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bl-props select, .bl-props input[type=color], .bb-el input[type=color] { background: #383838; border: 1px solid #4a4a4a; color: #eee; border-radius: 4px; padding: 3px; }
+.bl-check { justify-content: flex-start !important; gap: 8px !important; }
+.bl-stats { margin-top: 6px; color: #8a8; font-size: 12px; line-height: 1.6; }
+.bb-list { padding: 6px; min-height: 90px; } .bb-li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; cursor: pointer; } .bb-li:hover { background: #313742; } .bb-li.on { background: #2f6fdb; color: #fff; }
+.bb-sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.4); }
+.bb-empty { color: #667; padding: 10px; font-size: 12px; }
+.bb-row { display: flex; gap: 8px; padding: 8px 10px; } .bb-row button { flex: 1; background: #333a44; border: 1px solid #454d59; color: #ddd; border-radius: 6px; padding: 7px; cursor: pointer; } .bb-row button:hover { background: #3d4550; }
+.bb-el { padding: 12px; display: flex; flex-direction: column; gap: 10px; } .bb-el input[type=range] { width: 130px; }
 .clk-timer { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 20px; }
 .clk-dial { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
 .clk-ring { position: absolute; inset: 0; }
