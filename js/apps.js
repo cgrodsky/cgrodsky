@@ -93,9 +93,9 @@
   AppRegistry.mediaplayer = function () {
     const { body } = cw({ title: "Media Player", icon: Icon.mini("mediaplayer", "Media"), width: 640, height: 480, appId: "mediaplayer" });
     body.innerHTML = `<div class="mp"><button class="pill-btn" id="pick">Open a file from your device</button>
-      <div id="stage" class="center-col grow" style="justify-content:center"><p class="muted">No media loaded.</p></div></div>`;
+      <div id="stage" class="center-col grow" style="justify-content:center"><button class="mp-bigplay" id="bigplay" title="Open a file"><img src="assets/wmp_play.png?v=9" alt="Play"></button><p class="muted">No media loaded — tap play to open a file.</p></div></div>`;
     const stage = body.querySelector("#stage");
-    body.querySelector("#pick").onclick = () => {
+    body.querySelector("#pick").onclick = body.querySelector("#bigplay").onclick = () => {
       const inp = document.getElementById("globalFileInput");
       inp.accept = "video/*,audio/*,image/*"; inp.value = "";
       inp.onchange = () => {

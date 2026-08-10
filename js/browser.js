@@ -137,7 +137,7 @@
         <button class="bb-nav home-btn" title="Home"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></button>
         <div class="addr"><span class="lock muted" style="font-size:.72rem"></span><input class="url" placeholder="Search or enter address"></div>
         <button class="bb-ic bb-read" title="Read aloud"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg></button>
-        <button class="bb-ic bb-fav" title="Add to favorites"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 4l2.5 5 5.5.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9L9.5 9z"/></svg></button>
+        <button class="bb-ic bb-fav" title="Add to favorites"><img src="assets/bookmark_add.png?v=9" width="17" height="17" alt="Add bookmark" style="object-fit:contain;vertical-align:middle"></button>
         <button class="bb-ic bb-collections" title="Collections"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
         <button class="bb-ic bb-menu" title="Settings and more">&#8943;</button>
       </div>

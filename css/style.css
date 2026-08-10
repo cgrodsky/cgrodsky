@@ -2492,6 +2492,7 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-art-logo-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
 .xb-art-logo { position: relative; z-index: 1; max-width: 58%; max-height: 58%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
 .xb-art-logo-wrap .xb-art-name { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: .95rem; padding: 0 6px; }
+.mp-bigplay { border: 0; background: none; cursor: pointer; padding: 0; transition: transform .12s; } .mp-bigplay:hover { transform: scale(1.08); } .mp-bigplay img { width: 96px; height: 96px; display: block; filter: drop-shadow(0 6px 16px rgba(0,0,0,.3)); }
 .xb-art-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.72), transparent 55%); }
 .xb-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .xb-card-top { display: flex; align-items: center; gap: 8px; }
