@@ -43,7 +43,11 @@
             Notify.show({ icon: "", title: "Installed", body: a.name + " is now on your home screen.", onClick: () => window.WM.open(a.id) });
             renderApps();
           };
-          if (a.price) Pay.ensureCard(doInstall); else doInstall();
+          // Some apps run a fake installer (terminal -> installer) or a UAC prompt first.
+          if (window.Installer && window.Installer.hasFlow(a.id)) {
+            const go = () => window.Installer.install(a, doInstall);
+            if (a.price) Pay.ensureCard(go); else go();
+          } else if (a.price) Pay.ensureCard(doInstall); else doInstall();
         };
         grid.appendChild(card);
       });
@@ -53,7 +57,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "canva", "acrobat", "qrcode", "achievements", "powershell", "security", "solitaire", "blender", "blockbench", "colorpicker", "run", "store__"];
+    const defaults = ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "canva", "acrobat", "qrcode", "achievements", "powershell", "security", "solitaire", "colorpicker", "run", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 
@@ -146,6 +150,7 @@
       <div class="settings-nav">
         <div class="nav active" data-p="personal">Personalization</div>
         <div class="nav" data-p="network">Network &amp; internet</div>
+        <div class="nav" data-p="devices">Bluetooth &amp; devices</div>
         <div class="nav" data-p="access">Accessibility</div>
         <div class="nav" data-p="account">Account</div>
         <div class="nav" data-p="time">Time & language</div>
@@ -180,6 +185,19 @@
         const plane = el(`<div class="net-wifi" style="margin-top:10px"><div class="net-wifi-txt" style="margin-left:0"><b>Airplane mode</b><span class="muted">${q.plane ? "On — radios off" : "Off"}</span></div><label class="sw"><input type="checkbox" ${q.plane ? "checked" : ""}><span class="sw-track"></span></label></div>`);
         plane.querySelector("input").onchange = (e) => { q.plane = e.target.checked; if (q.plane) q.wifi = false; State.save(); const ti = document.querySelector(".tb-wifi"); if (ti) ti.style.opacity = q.wifi ? "0.9" : "0.3"; render("network"); };
         sb.appendChild(plane);
+      } else if (p === "devices") {
+        sb.appendChild(el(`<h2>Bluetooth &amp; devices</h2>`));
+        const d = S().appData.mouse || (S().appData.mouse = { speed: 6, primary: "left", scroll: 3 });
+        const card = el(`<div class="mouse-set">
+          <div class="mouse-head"><img src="assets/mouse.png?v=9" alt=""><b>Mouse</b></div>
+          <label>Primary mouse button<select class="ms-primary"><option value="left" ${d.primary === "left" ? "selected" : ""}>Left</option><option value="right" ${d.primary === "right" ? "selected" : ""}>Right</option></select></label>
+          <label>Pointer speed<input type="range" class="ms-speed" min="1" max="11" value="${d.speed}"></label>
+          <label>Scrolling speed<input type="range" class="ms-scroll" min="1" max="10" value="${d.scroll}"></label>
+        </div>`);
+        card.querySelector(".ms-primary").onchange = (e) => { d.primary = e.target.value; State.save(); };
+        card.querySelector(".ms-speed").oninput = (e) => { d.speed = +e.target.value; State.save(); };
+        card.querySelector(".ms-scroll").oninput = (e) => { d.scroll = +e.target.value; State.save(); };
+        sb.appendChild(card);
       } else if (p === "personal") {
         sb.appendChild(el(`<h2>Background</h2>`));
         // Windows 12 default wallpapers (wall3 = default) then a color palette.

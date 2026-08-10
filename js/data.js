@@ -26,6 +26,7 @@
     { id: "blockbench", name: "Blockbench", cat: "Multimedia", price: 0, builtin: "blockbench", desc: "A boxy 3D model editor — add cubes, recolor, and pose them." },
     { id: "colorpicker", name: "Color Picker", cat: "Utilities", price: 0, builtin: "colorpicker", desc: "Pick colors with an HSV area and hue slider — copy HEX, RGB, or HSL." },
     { id: "run", name: "Run", cat: "Utilities", price: 0, builtin: "run", desc: "The Run dialog (Win+R) — open a program by name." },
+    { id: "itunes", name: "iTunes", cat: "Multimedia", price: 0, builtin: "itunes", desc: "Apple iTunes — your music library, player, and store. (Downloads with an installer.)" },
     { id: "mediaplayer", name: "Media Player", cat: "Multimedia", price: 0, builtin: "mediaplayer", desc: "Play video & audio files from your device." },
     { id: "browser", name: "Edge", cat: "Productivity", price: 0, builtin: "browser", desc: "Browse the web." },
     { id: "settings", name: "Settings", cat: "System", price: 0, builtin: "settings", desc: "Personalize your PC." },
