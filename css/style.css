@@ -2822,6 +2822,12 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .clk-tab:hover { background: rgba(255,255,255,.06); color: #fff; }
 .clk-tab.on { background: rgba(255,255,255,.1); color: #fff; font-weight: 600; }
 .clk-stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; }
+.clk-world { align-self: stretch; width: 100%; padding: 8px 0; }
+.clk-world-list { display: flex; flex-direction: column; }
+.clk-wc-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.clk-wc-city b { display: block; color: #fff; font-size: 1rem; }
+.clk-wc-city span { color: #9aa3b2; font-size: .78rem; }
+.clk-wc-time { color: #fff; font-size: 1.5rem; font-variant-numeric: tabular-nums; font-weight: 300; }
 .clk-timer { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 20px; }
 .clk-dial { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
 .clk-ring { position: absolute; inset: 0; }

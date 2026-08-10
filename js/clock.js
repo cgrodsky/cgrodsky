@@ -25,13 +25,14 @@
       body.innerHTML = `<div class="clk">
         <div class="clk-tabs">
           <button class="clk-tab ${tab === "timer" ? "on" : ""}" data-t="timer">Timer</button>
+          <button class="clk-tab ${tab === "world" ? "on" : ""}" data-t="world">World clock</button>
           <button class="clk-tab ${tab === "stopwatch" ? "on" : ""}" data-t="stopwatch">Stopwatch</button>
         </div>
         <div class="clk-stage"></div>
       </div>`;
       body.querySelectorAll(".clk-tab").forEach((b) => b.onclick = () => { tab = b.dataset.t; render(); });
       const stage = body.querySelector(".clk-stage");
-      if (tab === "timer") renderTimer(stage); else renderStopwatch(stage);
+      if (tab === "timer") renderTimer(stage); else if (tab === "world") renderWorldClock(stage); else renderStopwatch(stage);
     }
 
     function ringSvg(color) {
@@ -139,6 +140,37 @@
       stage.querySelector(".clk-reset").onclick = () => { clearInterval(tick); running = false; elapsed = 0; laps = []; playBtn.innerHTML = playIcon(); paint(); renderLaps(); };
       function renderLaps() { lapsEl.innerHTML = laps.map((l, i) => `<div class="clk-lap-row"><span>Lap ${laps.length - i}</span><span>${fmt(l)}</span></div>`).join(""); }
       paint();
+    }
+
+    // ---------------- World clock ----------------
+    function renderWorldClock(stage) {
+      const CITIES = [
+        { city: "Honolulu", tz: "Pacific/Honolulu" }, { city: "Los Angeles", tz: "America/Los_Angeles" },
+        { city: "Denver", tz: "America/Denver" }, { city: "New York", tz: "America/New_York" },
+        { city: "London", tz: "Europe/London" }, { city: "Paris", tz: "Europe/Paris" },
+        { city: "Dubai", tz: "Asia/Dubai" }, { city: "Mumbai", tz: "Asia/Kolkata" },
+        { city: "Tokyo", tz: "Asia/Tokyo" }, { city: "Sydney", tz: "Australia/Sydney" },
+      ];
+      const h24 = !!(window.State && State.data.clock && State.data.clock.format24);
+      function offsetHours(tz) {
+        const now = new Date();
+        const local = new Date(now.toLocaleString("en-US"));
+        const other = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+        return Math.round((other - local) / 3600000);
+      }
+      stage.innerHTML = `<div class="clk-world"><div class="clk-world-list"></div></div>`;
+      const list = stage.querySelector(".clk-world-list");
+      function paint() {
+        list.innerHTML = CITIES.map((c) => {
+          const d = new Date();
+          const time = d.toLocaleTimeString("en-US", { timeZone: c.tz, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: !h24 });
+          const day = d.toLocaleDateString("en-US", { timeZone: c.tz, weekday: "short", month: "short", day: "numeric" });
+          const off = offsetHours(c.tz);
+          const offStr = off === 0 ? "Local time" : (off > 0 ? "+" + off : String(off)) + " hr";
+          return `<div class="clk-wc-row"><div class="clk-wc-city"><b>${c.city}</b><span>${day} · ${offStr}</span></div><div class="clk-wc-time">${time}</div></div>`;
+        }).join("");
+      }
+      paint(); const iv = setInterval(paint, 1000); timers.push(iv);
     }
 
     function playIcon() { return `<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`; }
