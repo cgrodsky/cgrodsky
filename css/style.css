@@ -2880,6 +2880,35 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .bb-empty { color: #667; padding: 10px; font-size: 12px; }
 .bb-row { display: flex; gap: 8px; padding: 8px 10px; } .bb-row button { flex: 1; background: #333a44; border: 1px solid #454d59; color: #ddd; border-radius: 6px; padding: 7px; cursor: pointer; } .bb-row button:hover { background: #3d4550; }
 .bb-el { padding: 12px; display: flex; flex-direction: column; gap: 10px; } .bb-el input[type=range] { width: 130px; }
+
+/* ---------------- Color Picker ---------------- */
+.cpick { padding: 16px; display: flex; flex-direction: column; gap: 14px; height: 100%; box-sizing: border-box; color: var(--text); }
+.cpick-area { position: relative; width: 100%; height: 190px; border-radius: 10px; cursor: crosshair; touch-action: none; }
+.cpick-area-thumb { position: absolute; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(0,0,0,.4); pointer-events: none; }
+.cpick-hue { position: relative; height: 16px; border-radius: 8px; cursor: pointer; touch-action: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.cpick-hue-thumb { position: absolute; top: 50%; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(0,0,0,.4); pointer-events: none; }
+.cpick-preview { display: flex; align-items: center; gap: 12px; }
+.cpick-swatch { width: 54px; height: 54px; border-radius: 10px; border: 1px solid var(--border); flex: 0 0 auto; }
+.cpick-vals { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.cpick-row { display: flex; align-items: center; gap: 8px; font-size: 13px; } .cpick-row label { width: 34px; color: var(--muted, #8a94a6); }
+.cpick-hex { flex: 1; background: var(--bg-elev, rgba(127,127,127,.1)); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 4px 8px; font-family: Consolas, monospace; }
+.cpick-copy { align-self: stretch; background: var(--accent, #0067c0); color: #fff; border: 0; border-radius: 6px; padding: 0 14px; cursor: pointer; font-weight: 600; }
+.cpick-presets, .cpick-recent { display: flex; flex-wrap: wrap; gap: 6px; }
+.cpick-chip { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(0,0,0,.2); cursor: pointer; }
+.cpick-recent-h { font-size: 12px; color: var(--muted, #8a94a6); text-transform: uppercase; letter-spacing: .04em; }
+
+/* ---------------- Run dialog ---------------- */
+.run { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; height: 100%; box-sizing: border-box; }
+.run-top { display: flex; gap: 12px; align-items: flex-start; }
+.run-ic { width: 34px; height: 34px; flex: 0 0 auto; }
+.run-top p { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text); }
+.run-field { display: flex; align-items: center; gap: 10px; }
+.run-field label { font-size: 13px; }
+.run-in { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-elev, var(--window-bg)); color: var(--text); }
+.run-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.run-btns button { min-width: 78px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--window-bg); color: var(--text); cursor: pointer; }
+.run-btns .run-ok { background: var(--accent, #0067c0); color: #fff; border-color: transparent; font-weight: 600; }
+.run-btns button:hover { filter: brightness(1.05); }
 .clk-timer { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 20px; }
 .clk-dial { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
 .clk-ring { position: absolute; inset: 0; }

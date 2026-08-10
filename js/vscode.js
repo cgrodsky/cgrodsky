@@ -43,7 +43,7 @@
     py: `<span class="vs-fic" style="color:#4b8bbe">Py</span>`,
     ts: `<img class="vs-fic vs-fic-img" src="assets/file_ts.png?v=1" alt="ts">`,
     react: `<img class="vs-fic vs-fic-img" src="assets/file_react.png?v=1" alt="react">`,
-    cpp: `<img class="vs-fic vs-fic-img" src="assets/file_cpp.png?v=1" alt="c++">`,
+    cpp: `<img class="vs-fic vs-fic-img" src="assets/file_cpp.png?v=2" alt="c++">`,
     nextjs: `<img class="vs-fic vs-fic-img" src="assets/file_nextjs.png?v=1" alt="next.js">`,
     txt: `<span class="vs-fic" style="color:#9aa0a6">&#9776;</span>`,
   };
