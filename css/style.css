@@ -719,6 +719,10 @@ input[type=range] { width: 100%; }
 .ctl-close::before, .ctl-close::after { width: 13px; height: 0; border-top: 1.5px solid currentColor; }
 .ctl-close::before { transform: translate(-50%, -50%) rotate(45deg); }
 .ctl-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+/* When maximized, the Maximize button becomes "Restore down": two overlapping
+   squares — a full front square plus the top+right edges of one behind it. */
+.win.maximized .ctl-max::before { width: 8px; height: 8px; transform: translate(-50%, -50%) translate(-1.5px, 1.5px); }
+.win.maximized .ctl-max::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: 1.5px solid currentColor; border-bottom: 0; border-left: 0; border-radius: 1px; transform: translate(-50%, -50%) translate(1.5px, -1.5px); }
 .win-body { flex: 1; overflow: auto; position: relative; }
 .modal-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 700; }
 
@@ -1897,6 +1901,37 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 .pho-lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 68px; border: 0; border-radius: 10px; background: rgba(255,255,255,.13); color: #fff; font-size: 34px; cursor: pointer; line-height: 1; }
 .pho-lb-nav:hover { background: rgba(255,255,255,.26); }
 .pho-lb-prev { left: 16px; } .pho-lb-next { right: 16px; }
+
+/* ---------------- Windows PowerShell ---------------- */
+.psh { height: 100%; display: flex; flex-direction: column; background: #012456; }
+.psh-admin { background: #001a3d; }
+.psh-bar { padding: 6px 10px; background: rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.08); }
+.psh-admin-btn { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.psh-admin-btn:hover { background: rgba(255,255,255,.2); }
+.psh-admin-btn .ico-wrap { width: 16px; height: 16px; box-shadow: none; }
+.psh-screen { flex: 1; overflow-y: auto; padding: 10px 12px; color: #f2f2f2; font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.psh-screen .psh-prompt { color: #f2f2f2; }
+.psh-line { display: flex; align-items: baseline; }
+.psh-in { flex: 1; background: none; border: 0; outline: none; color: #fff; font-family: inherit; font-size: 13px; caret-color: #fff; }
+
+/* ---------------- Windows Security (Defender) ---------------- */
+.wsec { height: 100%; overflow-y: auto; padding: 20px 26px; background: var(--window-bg); color: var(--text); }
+.wsec-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.wsec-hero img { width: 46px; height: 46px; }
+.wsec-hero h1 { margin: 0; font-size: 22px; }
+.wsec-hero p { margin: 2px 0 0; font-size: 13px; }
+.wsec-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px; background: rgba(15,157,88,.08); }
+.wsec-banner b { display: block; font-size: 14px; }
+.wsec-banner span.muted { font-size: 12px; }
+.wsec-banner .grow, .wsec-banner > div { flex: 1; }
+.wsec-scan { flex: 0 0 auto; }
+.wsec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.wsec-card { display: flex; align-items: flex-start; gap: 14px; text-align: left; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--window-bg); color: var(--text); cursor: pointer; }
+.wsec-card:hover { background: var(--hover, rgba(127,127,127,.08)); }
+.wsec-card-ic { flex: 0 0 auto; }
+.wsec-card-body b { display: block; font-size: 14px; margin-bottom: 6px; }
+.wsec-card-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted, #8a94a6); }
+.wsec-card-status svg { flex: 0 0 auto; }
 
 /* Windows XP retro theme accent */
 body.xp-theme { --accent: #2a5bd7; --accent-light: #3b6fe0; }

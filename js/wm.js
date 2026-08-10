@@ -81,6 +81,7 @@
     controls.querySelector(".max").onclick = () => {
       if (opts.noMax) return;
       maximized = !maximized;
+      controls.querySelector(".max").title = maximized ? "Restore down" : "Maximize";
       if (maximized) {
         prev = { l: win.style.left, t: win.style.top, w: win.style.width, h: win.style.height };
         win.classList.add("maximized");
@@ -710,7 +711,7 @@
     const panel = el(`<div id="qsPanel" class="qs-panel">
       <div class="qs-tiles"></div>
       <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.sun}</span><input type="range" min="10" max="100" value="${st.brightness}" class="qs-brightness"></div>
-      <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.volume}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
+      <div class="qs-slider"><span class="qs-sl-ic qs-vol-ic">${Icon.mini(st.volume > 0 ? "sound_on" : "sound_off", "Volume")}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
       <div class="qs-foot"><span class="qs-batt">${SYS_SVG.battery} 100%</span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
     </div>`);
     const tilesWrap = panel.querySelector(".qs-tiles");
@@ -730,7 +731,12 @@
       tilesWrap.appendChild(b);
     });
     panel.querySelector(".qs-brightness").oninput = (e) => { st.brightness = +e.target.value; State.save(); applyDisplayFx(); };
-    panel.querySelector(".qs-volume").oninput = (e) => { st.volume = +e.target.value; State.save(); };
+    panel.querySelector(".qs-volume").oninput = (e) => {
+      st.volume = +e.target.value; State.save();
+      const ic = Icon.mini(st.volume > 0 ? "sound_on" : "sound_off", "Volume");
+      const slIc = panel.querySelector(".qs-vol-ic"); if (slIc) slIc.innerHTML = ic;
+      const trayIc = taskbar && taskbar.querySelector(".tb-vol"); if (trayIc) trayIc.innerHTML = ic;
+    };
     panel.querySelector(".qs-settings").onclick = () => { panel.remove(); open("settings"); };
     screen().appendChild(panel);
     setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!panel.contains(ev.target) && !ev.target.closest(".tb-qs")) { panel.remove(); document.removeEventListener("mousedown", h); } }), 0);
@@ -785,7 +791,7 @@
       <div class="tb-tray">
         <button class="tb-qs" title="Quick settings">
           <span class="tb-wifi">${Icon.mini("wifi", "Wi-Fi")}</span>
-          <span class="tb-sysic">${SYS_SVG.volume}</span>
+          <span class="tb-sysic tb-vol">${Icon.mini(qs().volume > 0 ? "sound_on" : "sound_off", "Volume")}</span>
           <span class="tb-sysic">${SYS_SVG.battery}</span>
         </button>
         <button class="tb-clock" id="tbClock"></button>

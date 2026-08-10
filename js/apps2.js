@@ -646,6 +646,101 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     showGallery();
   };
 
+  // ---------- Windows PowerShell ----------
+  AppRegistry.powershell = function (opts) {
+    const admin = !!(opts && opts.admin);
+    const title = (admin ? "Administrator: " : "") + "Windows PowerShell";
+    const winRef = cw({ title, icon: Icon.mini(admin ? "administrator" : "powershell", "PowerShell"), width: 720, height: 470, appId: "powershell" });
+    const body = winRef.body;
+    const user = ((S().profile && S().profile.username) || "User").replace(/\s+/g, "");
+    const host = "WINDOWS12";
+    let cwd = "C:\\Users\\" + user;
+    body.innerHTML = `<div class="psh${admin ? " psh-admin" : ""}">
+      ${admin ? "" : `<div class="psh-bar"><button class="psh-admin-btn">${Icon.mini("administrator", "Admin")}<span>Run as administrator</span></button></div>`}
+      <div class="psh-screen" id="pshscr">
+        <div id="pshout"><div>Windows PowerShell</div><div>Copyright (C) Microsoft Corporation. All rights reserved.</div><div>&nbsp;</div><div>Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows</div><div>&nbsp;</div></div>
+        <div class="psh-line"><span class="psh-prompt"></span>&nbsp;<input class="psh-in" spellcheck="false" autocomplete="off"></div>
+      </div>
+    </div>`;
+    const scr = body.querySelector("#pshscr"), out = body.querySelector("#pshout"), input = body.querySelector(".psh-in"), promptEl = body.querySelector(".psh-prompt");
+    const setPrompt = () => { promptEl.textContent = "PS " + cwd + ">"; };
+    setPrompt();
+    const print = (s) => { const d = document.createElement("div"); if (s === "") d.innerHTML = "&nbsp;"; else d.textContent = s; out.appendChild(d); };
+    const echoCmd = () => { const d = document.createElement("div"); d.innerHTML = `<span class="psh-prompt">${escapeHtml("PS " + cwd + ">")}</span>&nbsp;${escapeHtml(input.value)}`; out.appendChild(d); };
+    const dirs = ["Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"];
+    const now = () => new Date(State.now ? State.now() : Date.now());
+    function run(raw) {
+      const line = raw.trim(); const parts = line.split(/\s+/); const cmd = (parts[0] || "").toLowerCase(); const arg = parts.slice(1).join(" ");
+      if (!line) return;
+      switch (cmd) {
+        case "get-help": case "help": case "man":
+          print("Common commands: Get-Date, Get-Location (pwd), Set-Location (cd), Get-ChildItem (dir/ls),"); print("  Write-Output (echo), Get-Process (ps), Get-Host, $PSVersionTable, whoami, Clear-Host (cls), exit"); break;
+        case "get-date": case "date": print(now().toString()); break;
+        case "get-location": case "pwd": case "gl": print(""); print("Path"); print("----"); print(cwd); break;
+        case "set-location": case "cd": case "sl": {
+          if (!arg || arg === "~") { cwd = "C:\\Users\\" + user; }
+          else if (arg === "..") { const p = cwd.split("\\").filter(Boolean); if (p.length > 1) p.pop(); cwd = p.join("\\") + (p.length === 1 ? "\\" : ""); }
+          else if (/^[a-z]:\\/i.test(arg)) { cwd = arg; }
+          else { cwd = cwd.replace(/\\+$/, "") + "\\" + arg; }
+          setPrompt(); break;
+        }
+        case "get-childitem": case "dir": case "ls": case "gci":
+          print(""); print("    Directory: " + cwd); print(""); print("Mode                 LastWriteTime         Length Name"); print("----                 -------------         ------ ----");
+          dirs.forEach((d) => print("d-----         " + (now().toLocaleDateString()) + "   8:00 AM                " + d)); break;
+        case "write-output": case "write-host": case "echo": print(arg.replace(/^["']|["']$/g, "")); break;
+        case "get-process": case "ps": case "gps":
+          print(""); print("Handles  NPM(K)    PM(K)      WS(K)   CPU(s)     Id  ProcessName"); print("-------  ------    -----      -----   ------     --  -----------");
+          [["explorer", 342, 12], ["pwsh", 210, 6], ["msedge", 890, 44], ["dwm", 512, 18]].forEach(([n, w, id]) => print(String(w).padStart(7) + "      24    " + String(w).padStart(5) + "     " + String(w * 3).padStart(6) + "     0.75  " + String(id).padStart(5) + "  " + n)); break;
+        case "get-host": print(""); print("Name             : ConsoleHost"); print("Version          : 5.1.26100.2026"); print("InstanceId       : " + host.toLowerCase() + "-0001"); break;
+        case "$psversiontable": print(""); print("Name                           Value"); print("----                           -----"); print("PSVersion                      5.1.26100.2026"); print("PSEdition                      Desktop"); print("CLRVersion                     4.0.30319"); break;
+        case "whoami": print((admin ? host.toLowerCase() + "\\" + user + " (Administrator)" : host.toLowerCase() + "\\" + user.toLowerCase())); break;
+        case "hostname": print(host); break;
+        case "clear-host": case "cls": case "clear": out.innerHTML = ""; break;
+        case "exit": winRef.close && winRef.close(); return;
+        default: print(line.split(" ")[0] + " : The term '" + line.split(" ")[0] + "' is not recognized as the name of a cmdlet. Try 'help'.");
+      }
+    }
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      echoCmd(); const v = input.value; input.value = ""; run(v); print(""); setPrompt(); scr.scrollTop = scr.scrollHeight;
+    });
+    scr.addEventListener("click", () => input.focus());
+    setTimeout(() => input.focus(), 60);
+    const adminBtn = body.querySelector(".psh-admin-btn");
+    if (adminBtn) adminBtn.onclick = () => { winRef.close && winRef.close(); AppRegistry.powershell({ admin: true }); };
+  };
+
+  // ---------- Windows Security (Defender) ----------
+  AppRegistry.security = function () {
+    const { body } = cw({ title: "Windows Security", icon: Icon.mini("defender", "Windows Security"), width: 780, height: 580, appId: "security" });
+    const check = `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" fill="#0f9d58"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const CARDS = [
+      { key: "virus", name: "Virus & threat protection", desc: "No action needed.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="#0b63ce"><path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z"/></svg>` },
+      { key: "account", name: "Account protection", desc: "No action needed.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="#0b63ce"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>` },
+      { key: "firewall", name: "Firewall & network protection", desc: "No action needed.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0b63ce" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 10h18M9 5v5M15 10v9M9 14h12"/></svg>` },
+      { key: "app", name: "App & browser control", desc: "No action needed.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="#0b63ce"><path d="M12 2l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V5l7-3z" opacity=".25"/><path d="M12 6l4 1.7v3.4C16 14 14.3 15.9 12 16.5 9.7 15.9 8 14 8 11.1V7.7L12 6z"/></svg>` },
+      { key: "device", name: "Device security", desc: "Your device meets the requirements for standard hardware security.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0b63ce" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>` },
+      { key: "health", name: "Device performance & health", desc: "No action needed.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0b63ce" stroke-width="1.8"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>` },
+      { key: "family", name: "Family options", desc: "Manage how your family uses this device.", ico: `<svg viewBox="0 0 24 24" width="26" height="26" fill="#0b63ce"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M12 20c.6-2.6 3-4 6-4s5.4 1.4 6 4" opacity=".8"/></svg>` },
+    ];
+    body.innerHTML = `<div class="wsec">
+      <div class="wsec-hero"><img src="assets/defender.png?v=6" alt=""><div><h1>Windows Security</h1><p class="muted">At a glance — see the security and health of your device and take actions.</p></div></div>
+      <div class="wsec-banner">${check}<div><b>Your device is being protected.</b><span class="muted">Last scan: today. No threats found.</span></div><button class="pill-btn wsec-scan">Quick scan</button></div>
+      <div class="wsec-grid"></div>
+    </div>`;
+    const grid = body.querySelector(".wsec-grid");
+    CARDS.forEach((c) => {
+      const card = el(`<button class="wsec-card"><span class="wsec-card-ic">${c.ico}</span><span class="wsec-card-body"><b>${escapeHtml(c.name)}</b><span class="wsec-card-status">${check}<span>${escapeHtml(c.desc)}</span></span></span></button>`);
+      grid.appendChild(card);
+    });
+    body.querySelector(".wsec-scan").onclick = (e) => {
+      const b = e.currentTarget; b.disabled = true; b.textContent = "Scanning…";
+      const banner = body.querySelector(".wsec-banner span.muted"); let n = 0; const total = 218413;
+      const iv = setInterval(() => { n += Math.round(total / 12); if (banner) banner.textContent = "Scanning… " + Math.min(n, total).toLocaleString() + " items"; }, 90);
+      setTimeout(() => { clearInterval(iv); b.disabled = false; b.textContent = "Quick scan"; if (banner) banner.textContent = "Last scan: just now. No threats found. (" + total.toLocaleString() + " items)"; }, 1200);
+    };
+  };
+
   // ---------- Camera ----------
   AppRegistry.camera = function () {
     const { body } = cw({ title: "Camera", icon: Icon.mini("camera", "Camera"), width: 560, height: 460 });
@@ -731,12 +826,12 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png" };
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png", "Local Disk (C:)": "assets/thispc.png" };
   // Hover (opened) icons — matched to each folder's colour (Music≈salmon, Videos≈purple, etc.).
   // Hover (opened) icons — matched to each folder's colour. The music/videos _open art was
   // authored swapped (music_open is purple, videos_open is salmon), so cross-map them here.
   const FOLDER_ICON_OPEN = { Music: "assets/videosfolder_open.png", Videos: "assets/musicfolder_open.png", Downloads: "assets/downloadsfolder_open.png", OneDrive: "assets/onedrivefolder_open.png", Pictures: "assets/picturesfolder_open.png" };
-  const FICONV = "4";   // bump to force iPad to refetch updated folder icons
+  const FICONV = "5";   // bump to force iPad to refetch updated folder icons
   const sysFile = () => ({ type: "file", kind: "system", content: "", ts: 0 });
   // A realistic (but harmless) Windows drive: C:\ with Windows\System32, Program Files, Users, etc.
   function WIN_FS() {
