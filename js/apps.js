@@ -145,6 +145,7 @@
     body.innerHTML = `<div class="settings">
       <div class="settings-nav">
         <div class="nav active" data-p="personal">Personalization</div>
+        <div class="nav" data-p="network">Network &amp; internet</div>
         <div class="nav" data-p="access">Accessibility</div>
         <div class="nav" data-p="account">Account</div>
         <div class="nav" data-p="time">Time & language</div>
@@ -157,9 +158,29 @@
     const navs = body.querySelectorAll(".nav");
     navs.forEach((n) => n.onclick = () => { navs.forEach((x) => x.classList.remove("active")); n.classList.add("active"); render(n.dataset.p); });
 
+    function qsState() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55 }; return S().appData.quickSettings; }
+
     function render(p) {
       sb.innerHTML = "";
-      if (p === "personal") {
+      if (p === "network") {
+        const q = qsState();
+        sb.appendChild(el(`<h2>Network &amp; internet</h2>`));
+        const on = !!q.wifi;
+        const row = el(`<div class="net-wifi">
+          <img class="net-wifi-ic" src="assets/${on ? "wifi" : "wifi_disabled"}.png?v=9" alt="">
+          <div class="net-wifi-txt"><b>Wi-Fi</b><span class="muted">${on ? "Connected, secured — HomeNetwork_5G" : "Wi-Fi is turned off"}</span></div>
+          <label class="sw"><input type="checkbox" ${on ? "checked" : ""}><span class="sw-track"></span></label>
+        </div>`);
+        row.querySelector("input").onchange = (e) => {
+          q.wifi = e.target.checked; if (q.wifi) q.plane = false; State.save();
+          const ti = document.querySelector(".tb-wifi"); if (ti) ti.style.opacity = q.wifi ? "0.9" : "0.3";
+          render("network");
+        };
+        sb.appendChild(row);
+        const plane = el(`<div class="net-wifi" style="margin-top:10px"><div class="net-wifi-txt" style="margin-left:0"><b>Airplane mode</b><span class="muted">${q.plane ? "On — radios off" : "Off"}</span></div><label class="sw"><input type="checkbox" ${q.plane ? "checked" : ""}><span class="sw-track"></span></label></div>`);
+        plane.querySelector("input").onchange = (e) => { q.plane = e.target.checked; if (q.plane) q.wifi = false; State.save(); const ti = document.querySelector(".tb-wifi"); if (ti) ti.style.opacity = q.wifi ? "0.9" : "0.3"; render("network"); };
+        sb.appendChild(plane);
+      } else if (p === "personal") {
         sb.appendChild(el(`<h2>Background</h2>`));
         // Windows 12 default wallpapers (wall3 = default) then a color palette.
         const walls = [

@@ -2493,6 +2493,16 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 .xb-art-logo { position: relative; z-index: 1; max-width: 58%; max-height: 58%; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
 .xb-art-logo-wrap .xb-art-name { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: .95rem; padding: 0 6px; }
 .mp-bigplay { border: 0; background: none; cursor: pointer; padding: 0; transition: transform .12s; } .mp-bigplay:hover { transform: scale(1.08); } .mp-bigplay img { width: 96px; height: 96px; display: block; filter: drop-shadow(0 6px 16px rgba(0,0,0,.3)); }
+/* Settings — Network & internet */
+.net-wifi { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--window-bg); }
+.net-wifi-ic { width: 34px; height: 34px; object-fit: contain; flex: 0 0 auto; }
+.net-wifi-txt { flex: 1; display: flex; flex-direction: column; margin-left: 4px; } .net-wifi-txt b { font-size: 14px; } .net-wifi-txt span { font-size: 12px; }
+.sw { position: relative; display: inline-block; width: 44px; height: 24px; flex: 0 0 auto; }
+.sw input { opacity: 0; width: 0; height: 0; }
+.sw-track { position: absolute; inset: 0; background: var(--muted, #8a94a6); border-radius: 999px; transition: background .15s; }
+.sw-track::before { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform .15s; }
+.sw input:checked ~ .sw-track { background: var(--accent, #0067c0); }
+.sw input:checked ~ .sw-track::before { transform: translateX(20px); }
 .xb-art-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.72), transparent 55%); }
 .xb-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .xb-card-top { display: flex; align-items: center; gap: 8px; }
