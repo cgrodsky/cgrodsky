@@ -52,6 +52,43 @@
     txt: `<span class="vs-fic" style="color:#9aa0a6">&#9776;</span>`,
   };
 
+  // Full language list for the "Select Language Mode" picker (id, display name, and
+  // which internal highlighter to use). Mirrors the real VS Code list.
+  const LANGUAGES = [
+    { id: "plaintext", name: "Plain Text", hl: "txt" }, { id: "bat", name: "Batch", hl: "js" },
+    { id: "bibtex", name: "BibTeX", hl: "txt" }, { id: "c", name: "C", hl: "cpp" },
+    { id: "cpp", name: "C++", hl: "cpp" }, { id: "csharp", name: "C#", hl: "cs" },
+    { id: "clojure", name: "Clojure", hl: "js" }, { id: "coffeescript", name: "CoffeeScript", hl: "js" },
+    { id: "css", name: "CSS", hl: "css" }, { id: "dart", name: "Dart", hl: "js" },
+    { id: "diff", name: "Diff", hl: "txt" }, { id: "dockerfile", name: "Docker", hl: "js" },
+    { id: "fsharp", name: "F#", hl: "js" }, { id: "go", name: "Go", hl: "js" },
+    { id: "groovy", name: "Groovy", hl: "js" }, { id: "handlebars", name: "Handlebars", hl: "html" },
+    { id: "html", name: "HTML", hl: "html" }, { id: "ignore", name: "Ignore", hl: "txt" },
+    { id: "ini", name: "Ini", hl: "txt" }, { id: "java", name: "Java", hl: "js" },
+    { id: "javascript", name: "JavaScript", hl: "js" }, { id: "javascriptreact", name: "JavaScript JSX", hl: "js" },
+    { id: "json", name: "JSON", hl: "json" }, { id: "jsonl", name: "JSON Lines", hl: "json" },
+    { id: "jsonc", name: "JSON with Comments", hl: "json" }, { id: "julia", name: "Julia", hl: "js" },
+    { id: "kotlin", name: "Kotlin", hl: "js" }, { id: "latex", name: "LaTeX", hl: "txt" },
+    { id: "less", name: "Less", hl: "css" }, { id: "log", name: "Log", hl: "txt" },
+    { id: "lua", name: "Lua", hl: "js" }, { id: "makefile", name: "Makefile", hl: "txt" },
+    { id: "markdown", name: "Markdown", hl: "md" }, { id: "sql", name: "MS SQL", hl: "js" },
+    { id: "objective-c", name: "Objective-C", hl: "cpp" }, { id: "objective-cpp", name: "Objective-C++", hl: "cpp" },
+    { id: "perl", name: "Perl", hl: "js" }, { id: "php", name: "PHP", hl: "js" },
+    { id: "powershell", name: "PowerShell", hl: "js" }, { id: "properties", name: "Properties", hl: "txt" },
+    { id: "jade", name: "Pug", hl: "html" }, { id: "python", name: "Python", hl: "py" },
+    { id: "r", name: "R", hl: "js" }, { id: "raku", name: "Raku", hl: "js" },
+    { id: "razor", name: "Razor", hl: "html" }, { id: "restructuredtext", name: "reStructuredText", hl: "txt" },
+    { id: "ruby", name: "Ruby", hl: "js" }, { id: "rust", name: "Rust", hl: "js" },
+    { id: "scss", name: "SCSS", hl: "css" }, { id: "shaderlab", name: "ShaderLab", hl: "js" },
+    { id: "shellscript", name: "Shell Script", hl: "js" }, { id: "swift", name: "Swift", hl: "js" },
+    { id: "tex", name: "TeX", hl: "txt" }, { id: "typescript", name: "TypeScript", hl: "js" },
+    { id: "typescriptreact", name: "TypeScript JSX", hl: "js" }, { id: "vb", name: "Visual Basic", hl: "js" },
+    { id: "vue", name: "Vue", hl: "html" }, { id: "xml", name: "XML", hl: "html" },
+    { id: "xsl", name: "XSL", hl: "html" }, { id: "yaml", name: "YAML", hl: "txt" },
+  ];
+  const LANG_GL = { javascript: ["JS", "#f7df1e"], javascriptreact: ["JS", "#61dafb"], typescript: ["TS", "#3178c6"], typescriptreact: ["TS", "#61dafb"], json: ["{}", "#cbcb41"], jsonc: ["{}", "#cbcb41"], jsonl: ["{}", "#cbcb41"], python: ["Py", "#4b8bbe"], html: ["<>", "#e44d26"], handlebars: ["<>", "#e37933"], razor: ["<>", "#512bd4"], markdown: ["M↓", "#42a5f5"], csharp: ["C#", "#9b4f96"], cpp: ["C++", "#00599c"], c: ["C", "#5c6bc0"], "objective-c": ["C", "#438eff"], "objective-cpp": ["C+", "#438eff"], css: ["#", "#563d7c"], scss: ["#", "#c6538c"], less: ["#", "#1d365d"], java: ["J", "#e76f00"], ruby: ["R", "#d91404"], rust: ["R", "#dea584"], go: ["Go", "#00add8"], php: ["php", "#8892bf"], swift: ["Sw", "#f05138"], kotlin: ["K", "#a97bff"], lua: ["Lua", "#000080"], perl: ["Pl", "#0298c3"], dart: ["D", "#0175c2"], yaml: ["!", "#cb171e"], sql: ["Sql", "#e38c00"], powershell: [">_", "#5391fe"], shellscript: ["$", "#89e051"], vue: ["V", "#41b883"] };
+  function langGlyph(l) { const g = LANG_GL[l.id]; if (g) return `<span class="vs-lang-gl" style="color:${g[1]}">${g[0]}</span>`; return `<span class="vs-lang-gl vs-lang-lines">&#9776;</span>`; }
+
   // ---------- syntax highlighting ----------
   const KW = { js: ["const", "let", "var", "function", "return", "if", "else", "for", "while", "new", "class", "extends", "import", "export", "from", "async", "await", "try", "catch", "finally", "throw", "typeof", "instanceof", "this", "true", "false", "null", "undefined", "of", "in", "do", "switch", "case", "break", "continue", "default"], py: ["def", "return", "if", "elif", "else", "for", "while", "import", "from", "class", "try", "except", "finally", "with", "as", "lambda", "None", "True", "False", "and", "or", "not", "in", "is", "pass", "break", "continue", "print"] };
   function highlight(code, lang) {
@@ -193,22 +230,46 @@
       });
     }
 
+    // "Select Language Mode" quick-pick — searchable, like real VS Code.
+    function langPicker(onPick) {
+      const ov = el(`<div class="vs-qp-mask"><div class="vs-qp"><input class="vs-qp-in" placeholder="Select Language Mode" spellcheck="false"><div class="vs-qp-list"></div></div></div>`);
+      body.appendChild(ov);
+      const input = ov.querySelector(".vs-qp-in"), list = ov.querySelector(".vs-qp-list");
+      function draw(q) {
+        q = (q || "").toLowerCase().trim(); list.innerHTML = "";
+        LANGUAGES.filter((l) => !q || l.name.toLowerCase().includes(q) || l.id.includes(q)).forEach((l) => {
+          const r = el(`<button class="vs-qp-item">${langGlyph(l)}<span class="vs-qp-name">${esc(l.name)}</span><span class="vs-qp-id">(${esc(l.id)})</span></button>`);
+          r.onclick = () => { ov.remove(); onPick(l); };
+          list.appendChild(r);
+        });
+      }
+      draw("");
+      input.oninput = () => draw(input.value);
+      input.onkeydown = (e) => { if (e.key === "Escape") ov.remove(); if (e.key === "Enter") { const f = list.querySelector(".vs-qp-item"); if (f) f.click(); } };
+      ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+      setTimeout(() => input.focus(), 40);
+    }
+
     let statusEl;
     function renderEditor() {
       if (!active) { stageEl.innerHTML = `<div class="vs-welcome"><div class="vs-welcome-logo">${window.Icon ? Icon.big("vscode", "VS Code") : ""}</div><h1>Visual Studio Code</h1><p>Editing evolved</p><div class="vs-welcome-tips"><div>Open a file from the Explorer</div><div>Ctrl+Shift+P — Command Palette</div><div>Run index.html to preview</div></div></div>`; return; }
       const f = p.tree[active], lang = langOf(active);
+      const override = f.langId ? LANGUAGES.find((x) => x.id === f.langId) : null;
+      const dispLang = override ? override.name : (LANG[lang] || "Plain Text");
+      const hlLang = override ? override.hl : lang;
       stageEl.innerHTML = `<div class="vs-editor">
         <div class="vs-gutter"></div>
         <div class="vs-code-wrap"><pre class="vs-hl"></pre><textarea class="vs-ta" spellcheck="false" wrap="off"></textarea></div>
       </div>
-      <div class="vs-status"><span class="vs-st-left"><span class="vs-st-branch">&#9095; main</span></span><span class="grow"></span><span class="vs-st-pos">Ln 1, Col 1</span><span>${LANG[lang]}</span><span>UTF-8</span></div>`;
+      <div class="vs-status"><span class="vs-st-left"><span class="vs-st-branch">&#9095; main</span></span><span class="grow"></span><span class="vs-st-pos">Ln 1, Col 1</span><button class="vs-st-lang" title="Select Language Mode">${esc(dispLang)}</button><span>UTF-8</span></div>`;
+      stageEl.querySelector(".vs-st-lang").onclick = () => langPicker((l) => { f.langId = l.id; State.save(); renderEditor(); });
       const gutter = stageEl.querySelector(".vs-gutter");
       const hl = stageEl.querySelector(".vs-hl");
       const ta = stageEl.querySelector(".vs-ta");
       const pos = stageEl.querySelector(".vs-st-pos");
       ta.value = f.content;
       function paint() {
-        hl.innerHTML = highlight(ta.value, lang) + "\n";
+        hl.innerHTML = (hlLang === "txt" ? esc(ta.value) : highlight(ta.value, hlLang)) + "\n";
         const lines = ta.value.split("\n").length;
         gutter.innerHTML = Array.from({ length: lines }, (_, i) => `<div>${i + 1}</div>`).join("");
       }
