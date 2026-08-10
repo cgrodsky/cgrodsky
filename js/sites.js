@@ -290,11 +290,13 @@
     const h = el(`<div class="yt-header">
       <span class="yt-logo" style="display:flex;align-items:center;gap:8px">${Icon.mini("youtubeApp", "YouTube")} YouTube</span>
       <span class="grow"></span>
+      <button class="pill-btn" id="ytShorts" style="padding:6px 12px;display:inline-flex;align-items:center;gap:6px"><img src="assets/shorts.png?v=1" style="width:16px;height:16px">Shorts</button>
       <button class="pill-btn" id="ytUpload" style="padding:6px 12px">Post</button>
       <button class="pill-btn" id="ytPlaylists" style="padding:6px 12px">Playlists</button>
       <button class="pill-btn" id="ytPremium" style="padding:6px 12px;background:${yt.premium ? "#888" : "#ff0000"}">${yt.premium ? "Premium active" : "Get Premium $3.99"}</button>
     </div>`);
     h.querySelector(".yt-logo").onclick = () => ytHome(ctx);
+    h.querySelector("#ytShorts").onclick = () => ytShorts(ctx);
     h.querySelector("#ytUpload").onclick = () => ytUpload(ctx);
     h.querySelector("#ytPlaylists").onclick = () => ytPlaylists(ctx);
     h.querySelector("#ytPremium").onclick = () => {
@@ -338,6 +340,40 @@
       grid.appendChild(card);
     });
     wrap.appendChild(grid);
+    ctx.page.appendChild(wrap);
+  }
+
+  function ytShorts(ctx) {
+    ctx.page.innerHTML = "";
+    const wrap = el(`<div class="yt"></div>`);
+    wrap.appendChild(ytHeader(ctx));
+    const pool = allVideos();
+    let idx = 0;
+    const stage = el(`<div class="yt-shorts"></div>`);
+    function paint() {
+      const v = pool[((idx % pool.length) + pool.length) % pool.length];
+      const yt = S().youtube; const liked = yt.likes.includes(v.id);
+      const subbed = yt.subscriptions.includes(v.channel.id);
+      stage.innerHTML = `<button class="yt-sh-nav up" title="Previous">&#9650;</button>
+        <div class="yt-short" style="background:linear-gradient(160deg, ${v.channel.color}, #0b0b0b)">
+          <div class="yt-sh-badge"><img src="assets/shorts.png?v=1" alt="">Shorts</div>
+          <div class="yt-sh-center">${Icon.box(v.channel.id, v.channel.name, 72)}<div class="yt-sh-play">&#9658;</div></div>
+          <div class="yt-sh-actions">
+            <button class="yt-sh-btn yt-sh-like ${liked ? "on" : ""}">&#128077;<span>${liked ? "Liked" : "Like"}</span></button>
+            <button class="yt-sh-btn yt-sh-sub ${subbed ? "on" : ""}">${subbed ? "Subscribed" : "Subscribe"}</button>
+            <button class="yt-sh-btn yt-sh-next">Next &#9662;</button>
+          </div>
+          <div class="yt-sh-info"><b>@${v.channel.name.replace(/\s+/g, "")}</b><span>${v.title}</span></div>
+        </div>
+        <button class="yt-sh-nav down" title="Next">&#9660;</button>`;
+      const go = (d) => { idx += d; paint(); };
+      stage.querySelector(".up").onclick = () => go(-1);
+      stage.querySelector(".down").onclick = stage.querySelector(".yt-sh-next").onclick = () => go(1);
+      stage.querySelector(".yt-sh-like").onclick = () => { const i = yt.likes.indexOf(v.id); if (i >= 0) yt.likes.splice(i, 1); else yt.likes.push(v.id); State.save(); paint(); };
+      stage.querySelector(".yt-sh-sub").onclick = () => { const i = yt.subscriptions.indexOf(v.channel.id); if (i >= 0) yt.subscriptions.splice(i, 1); else yt.subscriptions.push(v.channel.id); State.save(); paint(); };
+    }
+    paint();
+    wrap.appendChild(stage);
     ctx.page.appendChild(wrap);
   }
 

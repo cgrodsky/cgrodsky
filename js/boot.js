@@ -111,6 +111,13 @@
   }
 
   async function logoMorph(layer) {
+    // Boot through history: show the classic Windows 95 logo first, then morph.
+    const win95 = el(`<img class="boot-win95" src="assets/boot_win95.png" alt="">`);
+    layer.appendChild(win95);
+    await wait(1200);
+    win95.style.transition = "opacity 0.45s"; win95.style.opacity = "0";
+    await wait(450); win95.remove();
+
     const wrap = el(`<div class="boot-logo-wrap">
       <div class="win-logo">
         <div class="pane"></div><div class="pane"></div>

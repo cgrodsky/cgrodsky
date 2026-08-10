@@ -1081,6 +1081,26 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 .yt-meta { display: flex; gap: 10px; margin-top: 8px; }
 .yt-avatar { width: 36px; height: 36px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; }
 .yt-player { padding: 16px; }
+/* YouTube Shorts (vertical) */
+.yt-shorts { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; }
+.yt-sh-nav { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(127,127,127,.18); color: var(--text); font-size: 16px; cursor: pointer; }
+.yt-sh-nav:hover { background: rgba(127,127,127,.32); }
+.yt-short { position: relative; width: 300px; height: 520px; max-height: 62vh; border-radius: 16px; overflow: hidden; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.yt-sh-badge { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; }
+.yt-sh-badge img { width: 20px; height: 20px; }
+.yt-sh-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+.yt-sh-center .ico-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.yt-sh-play { width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; font-size: 26px; }
+.yt-sh-info { position: absolute; left: 14px; bottom: 14px; right: 90px; }
+.yt-sh-info b { display: block; font-size: 15px; } .yt-sh-info span { font-size: 13px; opacity: .92; }
+.yt-sh-actions { position: absolute; right: 10px; bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+.yt-sh-btn { background: rgba(0,0,0,.4); color: #fff; border: 0; border-radius: 18px; padding: 8px 10px; font-size: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 60px; }
+.yt-sh-btn:hover { background: rgba(0,0,0,.6); }
+.yt-sh-btn.on { background: #ff0000; }
+
+/* Windows 95 boot logo */
+.boot-win95 { width: 220px; max-width: 62%; height: auto; filter: drop-shadow(0 8px 24px rgba(0,0,0,.55)); animation: bootLogoIn .5s ease; }
+@keyframes bootLogoIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
 .yt-video { background: #000; border-radius: 12px; height: 340px; display: flex; align-items: center; justify-content: center; color: #fff; position: relative; overflow: hidden; }
 .vp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.75)); z-index: 4; }
 .vp-bar button { background: none; border: none; color: #fff; cursor: pointer; font-size: .95rem; display: flex; align-items: center; }
