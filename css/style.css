@@ -2828,6 +2828,28 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .clk-wc-city b { display: block; color: #fff; font-size: 1rem; }
 .clk-wc-city span { color: #9aa3b2; font-size: .78rem; }
 .clk-wc-time { color: #fff; font-size: 1.5rem; font-variant-numeric: tabular-nums; font-weight: 300; }
+
+/* ---------------- Solitaire ---------------- */
+.sol-host .win-body, .sol { height: 100%; }
+.sol { display: flex; flex-direction: column; background: radial-gradient(circle at 50% 0, #2f8f52, #14713a 70%); color: #fff; padding: 10px 14px; overflow: auto; }
+.sol-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sol-new { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28); color: #fff; padding: 6px 14px; border-radius: 7px; cursor: pointer; font-weight: 600; }
+.sol-new:hover { background: rgba(255,255,255,.28); }
+.sol-moves, .sol-msg { font-size: 13px; opacity: .9; } .sol-msg { font-weight: 700; }
+.sol-top { display: flex; gap: 12px; margin-bottom: 16px; }
+.sol-gap { flex: 1; }
+.sol-pile { width: 74px; height: 104px; flex: 0 0 auto; }
+.sol-tableau { display: flex; gap: 12px; }
+.sol-col { position: relative; width: 74px; min-height: 104px; }
+.sol-slot-wrap { position: absolute; left: 0; width: 74px; }
+.sol-card { width: 74px; height: 104px; border-radius: 7px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.35); position: relative; cursor: pointer; user-select: none; border: 1px solid rgba(0,0,0,.15); }
+.sol-black { color: #1a1a1a; } .sol-red { color: #d21f2b; }
+.sol-corner { position: absolute; font-size: 13px; font-weight: 700; line-height: 1; } .sol-corner.tl { top: 5px; left: 6px; } .sol-corner.br { bottom: 5px; right: 6px; transform: rotate(180deg); }
+.sol-pip { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.sol-back { background: repeating-linear-gradient(45deg, #2b5ea8, #2b5ea8 6px, #3f78c8 6px, #3f78c8 12px); border: 2px solid #fff; }
+.sol-slot { width: 74px; height: 104px; border-radius: 7px; border: 1.5px dashed rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: 26px; color: rgba(255,255,255,.45); cursor: pointer; }
+.sol-fslot, .sol-empty { font-weight: 700; }
+.sol-card.sel { outline: 3px solid #ffd23f; box-shadow: 0 0 0 3px #ffd23f, 0 4px 10px rgba(0,0,0,.4); }
 .clk-timer { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 20px; }
 .clk-dial { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
 .clk-ring { position: absolute; inset: 0; }

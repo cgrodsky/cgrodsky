@@ -21,6 +21,7 @@
     { id: "calculator", name: "Calculator", cat: "Productivity", price: 0, builtin: "calculator", desc: "A realistic calculator with smooth animations." },
     { id: "powershell", name: "Windows PowerShell", cat: "Utilities", price: 0, builtin: "powershell", desc: "A command-line shell and scripting console. Run cmdlets — including as administrator." },
     { id: "security", name: "Windows Security", cat: "Utilities", price: 0, builtin: "security", desc: "Windows Defender — check virus & threat protection, firewall, and device health." },
+    { id: "solitaire", name: "Microsoft Solitaire", cat: "Games", price: 0, builtin: "solitaire", desc: "The classic Klondike Solitaire card game." },
     { id: "mediaplayer", name: "Media Player", cat: "Multimedia", price: 0, builtin: "mediaplayer", desc: "Play video & audio files from your device." },
     { id: "browser", name: "Edge", cat: "Productivity", price: 0, builtin: "browser", desc: "Browse the web." },
     { id: "settings", name: "Settings", cat: "System", price: 0, builtin: "settings", desc: "Personalize your PC." },
