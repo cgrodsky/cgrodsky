@@ -250,8 +250,10 @@ def update_card(uid):
 
     cd = int(data.get("credits_delta", 0))
     td = int(data.get("tickets_delta", 0))
-    if (cd or td) and row["status"] == "frozen":
-        return jsonify({"error": "card_frozen"}), 400
+    if (cd or td) and row["status"] in ("frozen", "lost"):
+        return jsonify({"error": "card_blocked"}), 400
+    if td > 0 and row["role"] == "staff":
+        return jsonify({"error": "staff_no_tickets"}), 400
 
     new_credits = row["credits"] + cd
     new_tickets = row["tickets"] + td
@@ -349,8 +351,10 @@ def redeem():
         return jsonify({"error": "card_not_found"}), 404
     if not item:
         return jsonify({"error": "item_not_found"}), 404
-    if card["status"] == "frozen":
-        return jsonify({"error": "card_frozen"}), 400
+    if card["status"] in ("frozen", "lost"):
+        return jsonify({"error": "card_blocked"}), 400
+    if card["role"] == "staff":
+        return jsonify({"error": "staff_no_redeem"}), 400
     if item["stock"] == 0:
         return jsonify({"error": "out_of_stock"}), 400
 

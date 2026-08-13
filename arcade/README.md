@@ -43,11 +43,16 @@ arcade/ticket system.
   thermal printer (Star / Epson).
 - **Dashboard** — tickets awarded, credits/tickets in circulation, redemptions, a
   **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
-- **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and
-  **freeze/unfreeze** (frozen cards can't spend or earn).
-- **Staff cards** — mark a card as staff when creating it. Staff cards are kept
-  off the leaderboard, and **tapping a staff card unlocks the terminal** (no PIN
-  needed).
+- **Card status** — **Active / Frozen / Lost**. Frozen and Lost cards can't earn
+  or spend; mark a card Lost if it goes missing, then move its balance to a new
+  card with Merge. Plus **bulk freeze/unfreeze** for all shown cards.
+- **Membership** — card **tiers** (Standard/Silver/Gold/VIP) and **notes**.
+- **Staff cards** — an **infinite free-play** card: shows **∞ credits** and can
+  play forever, but **can't earn tickets or redeem prizes**, and never appears on
+  the leaderboard. Good for helpers/teachers.
+- **Manager PIN** — an optional second 4-digit PIN that's required for the
+  dangerous actions (delete a card, reset all balances, delete all cards), so a
+  helper can add tickets but can't wipe anything.
 - **Store data on the card (NFC)** — write a card's name and balances **onto the
   chip itself**, and read it back, so each card carries its own data. A central
   copy is still kept for the leaderboard/dashboard (a leaderboard needs to see

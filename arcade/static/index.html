@@ -185,6 +185,15 @@
 
           <div class="adv-tools advanced-only">
             <div class="adv-tool">
+              <span class="adv-tool-label">Card status</span>
+              <div class="status-seg" id="statusSeg">
+                <button class="seg-btn" data-status="active">Active</button>
+                <button class="seg-btn" data-status="frozen"><svg class="ico"><use href="#i-snow"/></svg> Frozen</button>
+                <button class="seg-btn" data-status="lost">Lost</button>
+              </div>
+              <p class="setting-hint">Frozen &amp; Lost cards can't earn or spend. Mark a card Lost if it's missing, then move its balance to a new one with Merge.</p>
+            </div>
+            <div class="adv-tool">
               <span class="adv-tool-label">Membership</span>
               <div class="adv-row">
                 <select id="tierSelect">
@@ -193,7 +202,6 @@
                   <option value="Gold">Gold</option>
                   <option value="VIP">VIP</option>
                 </select>
-                <button class="btn" id="freezeBtn"><svg class="ico"><use href="#i-snow"/></svg> Freeze</button>
               </div>
               <textarea id="cardNotes" class="notes-area" placeholder="Notes about this cardholder&hellip;" rows="2"></textarea>
               <button class="btn btn-ghost" id="saveMetaBtn">Save membership &amp; notes</button>
@@ -331,6 +339,10 @@
             <button class="btn btn-add" id="bulkAddBtn">Add to all</button>
             <button class="btn btn-sub" id="bulkRemoveBtn">Remove</button>
           </div>
+          <div class="bulk-row">
+            <button class="btn" id="bulkFreezeBtn"><svg class="ico"><use href="#i-snow"/></svg> Freeze all shown</button>
+            <button class="btn" id="bulkUnfreezeBtn">Unfreeze all shown</button>
+          </div>
           <p class="setting-hint">Great for "everyone gets 5 free tickets." Uses the search filter above (staff cards are skipped).</p>
         </div>
         <div class="card-list" id="cardList"></div>
@@ -440,6 +452,10 @@
         <button class="btn" id="lockNowBtn"><svg class="ico"><use href="#i-lock"/></svg> Lock now</button>
         <button class="btn btn-ghost" id="changePassBtn">Change PIN</button>
         <p class="setting-hint">The 4-digit PIN locks this browser's screen. It is stored hashed on this device (front-end lock).</p>
+        <label class="setting-label" style="margin-top:12px">Manager PIN</label>
+        <button class="btn" id="setManagerBtn">Set / change manager PIN</button>
+        <button class="btn btn-ghost" id="clearManagerBtn">Remove manager PIN</button>
+        <p class="setting-hint">When set, a 4-digit manager PIN is required for the dangerous actions: delete a card, reset all balances, and delete all cards. Great so a helper can add tickets but can't wipe anything.</p>
       </div>
 
       <div class="setting">
@@ -471,7 +487,7 @@
         <label>Starting credits <input type="number" id="newCredits" value="0" /></label>
         <label>Starting tickets <input type="number" id="newTickets" value="0" /></label>
       </div>
-      <label class="check staff-check"><input type="checkbox" id="newStaff" /> Make this a <b>staff card</b> (unlocks the terminal on tap)</label>
+      <label class="check staff-check"><input type="checkbox" id="newStaff" /> Make this a <b>staff card</b> — infinite free play (∞ credits), can't earn tickets or prizes</label>
       <div class="form-actions">
         <button class="btn btn-add" id="createCardBtn">Create card</button>
         <button class="btn btn-ghost" id="cancelCardBtn">Cancel</button>

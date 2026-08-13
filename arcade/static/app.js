@@ -100,7 +100,8 @@
       const c = this.data.cards[uid];
       if (!c) throw new Error("not_found");
       const cd = +patch.credits_delta || 0, td = +patch.tickets_delta || 0;
-      if ((cd || td) && c.status === "frozen") throw new Error("card_frozen");
+      if ((cd || td) && (c.status === "frozen" || c.status === "lost")) throw new Error("card_blocked");
+      if (td > 0 && c.role === "staff") throw new Error("staff_no_tickets");
       if (c.credits + cd < 0 || c.tickets + td < 0) throw new Error("insufficient_balance");
       c.credits += cd; c.tickets += td;
       if (patch.name !== undefined) c.name = patch.name;
@@ -146,7 +147,8 @@
       const c = this.data.cards[uid], item = this.data.items.find((x) => x.id === itemId);
       if (!c) throw new Error("card_not_found");
       if (!item) throw new Error("item_not_found");
-      if (c.status === "frozen") throw new Error("card_frozen");
+      if (c.status === "frozen" || c.status === "lost") throw new Error("card_blocked");
+      if (c.role === "staff") throw new Error("staff_no_redeem");
       if (item.stock === 0) throw new Error("out_of_stock");
       if (c[item.currency] < item.cost) throw new Error("insufficient_balance");
       const cd = item.currency === "credits" ? -item.cost : 0, td = item.currency === "tickets" ? -item.cost : 0;
@@ -226,13 +228,8 @@
   async function onTap(uid) {
     uid = (uid || "").trim();
     if (!uid) return;
-    // Locked? A staff card unlocks the terminal; other cards are ignored.
-    if (document.body.classList.contains("locked")) {
-      if (appStarted && store) {
-        try { const c = await store.getCard(uid); if (c.role === "staff") { hideLock(); toast(`Unlocked by ${c.name || c.uid}`, "success"); beep(880); } } catch (_) {}
-      }
-      return;
-    }
+    // Ignore taps while the screen is locked.
+    if (document.body.classList.contains("locked")) return;
     // Merge flow is waiting for the second card?
     if (mergeAwaiting) { mergeSecondCard(uid); return; }
     // New-card modal open? fill its UID.
@@ -272,8 +269,10 @@
     $("#activeCard").classList.remove("hidden");
     $("#cardUid").textContent = card.uid;
     $("#cardName").value = card.name || "";
-    $("#balCredits").textContent = card.credits;
+    const isStaffCard = card.role === "staff";
+    $("#balCredits").textContent = isStaffCard ? "∞" : card.credits;
     $("#balTickets").textContent = card.tickets;
+    document.getElementById("activeCard").classList.toggle("staff-card", isStaffCard);
     const status = card.status || "active";
     const badge = $("#cardStatusBadge");
     const isStaff = card.role === "staff";
@@ -281,8 +280,7 @@
     badge.className = "card-status-badge " + (isStaff ? "staff" : status);
     if ($("#tierSelect")) $("#tierSelect").value = card.tier || "Standard";
     if ($("#cardNotes")) $("#cardNotes").value = card.notes || "";
-    if ($("#freezeBtn")) $("#freezeBtn").innerHTML = status === "frozen"
-      ? svgUse("snow") + " Unfreeze" : svgUse("snow") + " Freeze";
+    $$("#statusSeg .seg-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.status === status));
     renderPrizes();
     if (bodyIsAdvanced()) refreshLog();
   }
@@ -441,14 +439,24 @@
       loadCard(card); syncToCard(); refreshCards(); toast("Membership saved", "success");
     } catch (e) { toast("Save failed", "error"); }
   }
-  async function toggleFreeze() {
-    if (!activeCard) return;
-    const next = (activeCard.status === "frozen") ? "active" : "frozen";
+  async function setStatus(next) {
+    if (!activeCard || activeCard.status === next) return;
     try {
       const card = await store.updateCard(activeCard.uid, { status: next });
       loadCard(card); refreshCards(); if (bodyIsAdvanced()) refreshLog();
-      toast(next === "frozen" ? "Card frozen" : "Card unfrozen", "success");
+      const label = { active: "Card active", frozen: "Card frozen", lost: "Card marked lost" }[next] || "Status updated";
+      toast(label, "success");
     } catch (e) { toast("Failed", "error"); }
+  }
+  async function bulkFreeze(freeze) {
+    const cards = filteredCards(await store.listCards());
+    if (cards.length === 0) { toast("No cards match", "error"); return; }
+    if (!confirm(`${freeze ? "Freeze" : "Unfreeze"} ${cards.length} card(s)?`)) return;
+    let ok = 0;
+    for (const c of cards) { try { await store.updateCard(c.uid, { status: freeze ? "frozen" : "active" }); ok++; } catch (_) {} }
+    toast(`${freeze ? "Froze" : "Unfroze"} ${ok} card(s)`, "success");
+    refreshCards();
+    if (activeCard) { try { loadCard(await store.getCard(activeCard.uid)); } catch (_) {} }
   }
 
   // ---------------------------------------------------------------
@@ -733,7 +741,7 @@
     const ticketsCirc = cards.reduce((s, c) => s + c.tickets, 0);
     const redeems = live.filter((t) => t.kind === "redeem");
     const ticketsAwarded = live.filter((t) => t.tickets_d > 0).reduce((s, t) => s + t.tickets_d, 0);
-    const frozen = cards.filter((c) => c.status === "frozen").length;
+    const frozen = cards.filter((c) => c.status === "frozen" || c.status === "lost").length;
 
     $("#statGrid").innerHTML = `
       <div class="stat"><div class="stat-label">Cards</div><div class="stat-value">${cards.length}</div><div class="stat-sub">${frozen} frozen · ${itemList.length} prizes</div></div>
@@ -811,6 +819,7 @@
     refreshCards(); renderDashboard();
   }
   async function zeroAll() {
+    if (!(await requireManager())) { toast("Manager PIN required", "error"); return; }
     if (!confirm("Set every card's credits and tickets to 0? This cannot be undone.")) return;
     const cards = await store.listCards();
     for (const c of cards) {
@@ -823,6 +832,7 @@
     unloadCard(); await refreshAll(); renderDashboard();
   }
   async function wipeAll() {
+    if (!(await requireManager())) { toast("Manager PIN required", "error"); return; }
     if (!confirm("Delete ALL cards permanently? This cannot be undone.")) return;
     const cards = await store.listCards();
     for (const c of cards) { try { await store.deleteCard(c.uid); } catch (_) {} }
@@ -880,7 +890,10 @@
       loadCard(card); syncToCard();
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast(`${delta > 0 ? "Added" : "Removed"} ${Math.abs(delta)} ${kind}`, "success");
-    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : e.message === "insufficient_balance" ? "Not enough balance" : "Update failed", "error"); }
+    } catch (e) {
+      const m = { card_blocked: "Card is frozen / lost", staff_no_tickets: "Staff cards can't earn tickets", insufficient_balance: "Not enough balance" }[e.message] || "Update failed";
+      toast(m, "error");
+    }
   }
 
   async function redeemItem(item) {
@@ -898,7 +911,10 @@
       let claim = "C" + Date.now().toString(36).toUpperCase().slice(-6);
       try { const last = await store.listTransactions(cardUid, 1); if (last[0]) claim = "#" + last[0].id; } catch (_) {}
       showReceipt(item, holder, cardUid, claim);
-    } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Redeem failed: " + e.message, "error"); }
+    } catch (e) {
+      const m = { card_blocked: "Card is frozen / lost", staff_no_redeem: "Staff cards can't redeem prizes", out_of_stock: "Out of stock" }[e.message] || ("Redeem failed: " + e.message);
+      toast(m, "error");
+    }
   }
 
   // --- Real Code 39 barcode (scannable) ---
@@ -1090,6 +1106,28 @@
   }
   const hasPin = () => !!localStorage.getItem(PIN_KEY);
 
+  // Manager PIN — gates the destructive admin actions.
+  const MANAGER_KEY = "arcade.manager";
+  async function requireManager() {
+    const stored = localStorage.getItem(MANAGER_KEY);
+    if (!stored) return true; // no manager PIN configured
+    const pin = window.prompt("Manager PIN required for this action:");
+    if (pin === null) return false;
+    return (await hashPin(pin)) === stored;
+  }
+  async function setManagerPin() {
+    const a = window.prompt("Enter a new 4-digit manager PIN:");
+    if (a === null) return;
+    if (!/^\d{4}$/.test(a)) { toast("Manager PIN must be 4 digits", "error"); return; }
+    if (window.prompt("Confirm the manager PIN:") !== a) { toast("PINs didn't match", "error"); return; }
+    localStorage.setItem(MANAGER_KEY, await hashPin(a)); toast("Manager PIN set", "success");
+  }
+  async function clearManagerPin() {
+    if (!localStorage.getItem(MANAGER_KEY)) { toast("No manager PIN set"); return; }
+    if (!(await requireManager())) { toast("Wrong manager PIN", "error"); return; }
+    localStorage.removeItem(MANAGER_KEY); toast("Manager PIN removed", "success");
+  }
+
   function clearPinBoxes() { pinBoxes().forEach((b) => { b.value = ""; b.classList.remove("filled", "err"); }); }
   function focusFirstPin() { setTimeout(() => { const b = pinBoxes()[0]; if (b) b.focus(); }, 60); }
   function readPin() { return pinBoxes().map((b) => b.value).join(""); }
@@ -1177,7 +1215,12 @@
 
     $("#saveNameBtn").addEventListener("click", async () => { if (!activeCard) return; const c = await store.updateCard(activeCard.uid, { name: $("#cardName").value }); loadCard(c); refreshCards(); toast("Name saved", "success"); });
     $("#switchCardBtn").addEventListener("click", unloadCard);
-    $("#deleteCardBtn").addEventListener("click", async () => { if (!activeCard || !confirm(`Delete card ${activeCard.uid}?`)) return; await store.deleteCard(activeCard.uid); unloadCard(); refreshCards(); toast("Card deleted"); });
+    $("#deleteCardBtn").addEventListener("click", async () => {
+      if (!activeCard) return;
+      if (!(await requireManager())) { toast("Manager PIN required", "error"); return; }
+      if (!confirm(`Delete card ${activeCard.uid}?`)) return;
+      await store.deleteCard(activeCard.uid); unloadCard(); refreshCards(); toast("Card deleted");
+    });
 
     $("#manualScanBtn").addEventListener("click", () => onTap($("#manualUid").value));
     $("#manualUid").addEventListener("keydown", (e) => { if (e.key === "Enter") onTap($("#manualUid").value); });
@@ -1187,8 +1230,14 @@
     $("#setBalanceBtn").addEventListener("click", setExactBalance);
     $("#convCtoT").addEventListener("click", () => convert("c2t"));
     $("#convTtoC").addEventListener("click", () => convert("t2c"));
-    $("#freezeBtn").addEventListener("click", toggleFreeze);
+    $$("#statusSeg .seg-btn").forEach((btn) => btn.addEventListener("click", () => setStatus(btn.dataset.status)));
     $("#saveMetaBtn").addEventListener("click", saveMeta);
+
+    // Bulk freeze + manager PIN
+    $("#bulkFreezeBtn").addEventListener("click", () => bulkFreeze(true));
+    $("#bulkUnfreezeBtn").addEventListener("click", () => bulkFreeze(false));
+    $("#setManagerBtn").addEventListener("click", setManagerPin);
+    $("#clearManagerBtn").addEventListener("click", clearManagerPin);
 
     // Prize search + category
     $("#prizeSearch").addEventListener("input", renderPrizes);

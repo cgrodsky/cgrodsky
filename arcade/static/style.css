@@ -339,8 +339,18 @@ body.locked { overflow: hidden; }
 .card-status-badge { font-size: 10px; letter-spacing: 1.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; }
 .card-status-badge.active { background: rgba(47,185,123,.2); color: #7fe0b4; }
 .card-status-badge.frozen { background: rgba(56,189,248,.22); color: #8fd6ff; }
+.card-status-badge.lost { background: rgba(232,82,77,.25); color: #f4a19d; }
 .card-status-badge.staff { background: rgba(124,92,255,.28); color: #c3b5ff; }
 .staff-check { margin-top: 4px; font-size: 13px; }
+.status-seg { display: flex; gap: 6px; }
+.seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border: 1px solid var(--border-2); background: var(--panel-2); color: var(--muted);
+  border-radius: 10px; padding: 9px 8px; font-size: 13px; font-weight: 600; }
+.seg-btn .ico { width: 15px; height: 15px; }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active[data-status="active"] { background: var(--add); border-color: transparent; color: #04160c; }
+.seg-btn.active[data-status="frozen"] { background: var(--accent-2); border-color: transparent; color: #04222b; }
+.seg-btn.active[data-status="lost"] { background: var(--danger); border-color: transparent; color: #fff; }
 .card-tier-pill { position: absolute; top: 14px; right: 92px; }
 .notes-area { width: 100%; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; resize: vertical; margin-bottom: 8px; }
 
