@@ -17,7 +17,8 @@
   const SETTINGS_KEY = "arcade.settings";
   const settings = Object.assign(
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
-      theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false },
+      theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false,
+      receiptWidth: "80", receiptName: "ARCADE" },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -293,6 +294,7 @@
     if (bodyIsAdvanced()) refreshLog();
   }
   async function refreshItems() {
+    if (!store) return;
     items = await store.listItems();
     populateCategories();
     renderPrizes(); renderItemList();
@@ -353,6 +355,7 @@
   }
 
   async function refreshCards() {
+    if (!store) return;
     const cards = await store.listCards();
     const term = ($("#cardSearch").value || "").toLowerCase();
     const list = $("#cardList"); list.innerHTML = "";
@@ -385,6 +388,7 @@
   const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", void: "void", status: "status" };
 
   async function refreshLog() {
+    if (!store) return;
     const list = $("#logList");
     $("#logScope").textContent = activeCard ? `Activity for ${activeCard.uid}` : "Recent activity (all cards)";
     const tx = await store.listTransactions(activeCard ? activeCard.uid : null, 200);
@@ -503,6 +507,14 @@
   function applyTheme() {
     document.documentElement.setAttribute("data-theme", settings.theme);
     document.documentElement.style.setProperty("--accent", settings.accent);
+  }
+  function applyReceiptWidth() {
+    const w = settings.receiptWidth;
+    const rule = w === "58" ? "@page { size: 58mm auto; margin: 3mm; }"
+      : w === "full" ? "@page { size: auto; margin: 12mm; }"
+      : "@page { size: 80mm auto; margin: 4mm; }";
+    const el = document.getElementById("printSize");
+    if (el) el.textContent = rule;
   }
   function toggleTheme() { settings.theme = settings.theme === "dark" ? "light" : "dark"; saveSettings(); applyTheme(); }
   function toggleFullscreen() {
@@ -712,6 +724,7 @@
   }
 
   async function renderDashboard() {
+    if (!store) return;
     const [cards, itemList, tx] = await Promise.all([
       store.listCards(), store.listItems(), store.listTransactions(null, 5000),
     ]);
@@ -889,8 +902,7 @@
   }
 
   function showReceipt(item, holder, cardUid, claim) {
-    $("#rcBadge").textContent = monogram(item.name);
-    $("#rcBadge").style.cssText = badgeStyle(item.name);
+    $("#rcStore").textContent = settings.receiptName || "ARCADE";
     $("#rcPrize").textContent = item.name;
     $("#rcHolder").textContent = holder;
     $("#rcCard").textContent = cardUid;
@@ -1167,6 +1179,12 @@
     $("#nfcAutoWrite").checked = !!settings.nfcWrite;
     $("#nfcAutoWrite").addEventListener("change", () => { settings.nfcWrite = $("#nfcAutoWrite").checked; saveSettings(); });
 
+    // Receipt printing
+    $("#receiptName").value = settings.receiptName || "ARCADE";
+    $("#receiptWidth").value = settings.receiptWidth || "80";
+    $("#receiptName").addEventListener("input", () => { settings.receiptName = $("#receiptName").value; saveSettings(); });
+    $("#receiptWidth").addEventListener("change", () => { settings.receiptWidth = $("#receiptWidth").value; saveSettings(); applyReceiptWidth(); });
+
     // Appearance + kiosk
     $("#themeToggle").addEventListener("click", toggleTheme);
     $("#accentColor").addEventListener("input", () => { settings.accent = $("#accentColor").value; saveSettings(); applyTheme(); });
@@ -1246,6 +1264,7 @@
 
     // Apply saved appearance + kiosk settings to controls
     applyTheme();
+    applyReceiptWidth();
     $("#accentColor").value = settings.accent;
     $("#soundToggle").checked = !!settings.sound;
     $("#autolockSelect").value = String(settings.autolockSec || 0);

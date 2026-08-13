@@ -6,6 +6,8 @@
   <title>Arcade Card Manager</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='2' y='6' width='20' height='13' rx='2' fill='%234f6bed'/><rect x='2' y='9' width='20' height='3' fill='%23223'/></svg>" />
+  <!-- Print paper size is written here at runtime from the receipt-width setting. -->
+  <style id="printSize">@page { size: 80mm auto; margin: 4mm; }</style>
 </head>
 <body>
   <!-- ===================== SVG icon library ===================== -->
@@ -383,6 +385,21 @@
       </div>
 
       <div class="setting">
+        <label class="setting-label">Receipt printing</label>
+        <label class="setting-sub">Header name
+          <input type="text" id="receiptName" placeholder="SPRING CARNIVAL" />
+        </label>
+        <label class="setting-sub">Paper size
+          <select id="receiptWidth">
+            <option value="58">Thermal 58mm</option>
+            <option value="80">Thermal 80mm</option>
+            <option value="full">Full page (A4/Letter)</option>
+          </select>
+        </label>
+        <p class="setting-hint">Prints via AirPrint. Use a thermal receipt printer that lists AirPrint (Star / Epson) for real roll receipts; any AirPrint printer works on paper.</p>
+      </div>
+
+      <div class="setting">
         <label class="setting-label">Appearance</label>
         <div class="appearance-row">
           <button class="btn btn-ghost" id="themeToggle"><svg class="ico"><use href="#i-sun"/></svg> Light / Dark</button>
@@ -508,17 +525,22 @@
   <!-- ===================== Prize claim receipt ===================== -->
   <div class="modal-backdrop hidden" id="receiptBackdrop">
     <div class="modal receipt" id="receiptCard">
-      <div class="receipt-title">PRIZE CLAIM TICKET</div>
-      <div class="receipt-badge" id="rcBadge">P</div>
-      <div class="receipt-prize" id="rcPrize">Prize</div>
-      <div class="receipt-rows">
-        <div><span>Cardholder</span><b id="rcHolder">&mdash;</b></div>
-        <div><span>Card ID</span><b id="rcCard">&mdash;</b></div>
-        <div><span>Cost</span><b id="rcCost">&mdash;</b></div>
-        <div><span>Claim #</span><b id="rcNum">&mdash;</b></div>
-        <div><span>Date</span><b id="rcDate">&mdash;</b></div>
+      <div class="rc-paper">
+        <div class="rc-store" id="rcStore">ARCADE</div>
+        <div class="rc-sub">PRIZE CLAIM TICKET</div>
+        <div class="rc-divider"></div>
+        <div class="rc-prize" id="rcPrize">Prize</div>
+        <div class="receipt-rows">
+          <div><span>Cardholder</span><b id="rcHolder">&mdash;</b></div>
+          <div><span>Card ID</span><b id="rcCard">&mdash;</b></div>
+          <div><span>Cost</span><b id="rcCost">&mdash;</b></div>
+          <div><span>Claim #</span><b id="rcNum">&mdash;</b></div>
+          <div><span>Date</span><b id="rcDate">&mdash;</b></div>
+        </div>
+        <div class="rc-divider"></div>
+        <div class="receipt-foot">Hand this prize to<br>the cardholder.<br>Thanks for playing!</div>
+        <div class="rc-barcode" id="rcBarcode"></div>
       </div>
-      <div class="receipt-foot">Hand this prize to the cardholder. Thanks for playing!</div>
       <div class="form-actions no-print">
         <button class="btn btn-add" id="rcPrint"><svg class="ico"><use href="#i-print"/></svg> Print</button>
         <button class="btn btn-ghost" id="rcClose">Done</button>

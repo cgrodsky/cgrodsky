@@ -384,25 +384,33 @@ body.locked { overflow: hidden; }
 :root[data-theme="light"] .card-name-input, :root[data-theme="light"] .bal-value { color: #fff; }
 :root[data-theme="light"] .topbar { background: rgba(255,255,255,.85); }
 
-/* ---------------- Prize claim receipt ---------------- */
-.receipt { width: min(360px, 92vw); text-align: center; }
-.receipt-title { font-size: 13px; letter-spacing: 3px; font-weight: 800; color: var(--muted); border-bottom: 2px dashed var(--border-2); padding-bottom: 14px; margin-bottom: 18px; }
-.receipt-badge { width: 70px; height: 70px; margin: 0 auto 12px; border-radius: 18px; display: grid; place-items: center; font-size: 30px; font-weight: 800; color: #fff; background: linear-gradient(150deg, var(--accent), var(--accent-2)); }
-.receipt-prize { font-size: 24px; font-weight: 800; margin-bottom: 18px; }
-.receipt-rows { text-align: left; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 14px; }
-.receipt-rows div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
-.receipt-rows span { color: var(--muted); }
+/* ---------------- Prize claim receipt (thermal style) ---------------- */
+.receipt { width: min(340px, 92vw); }
+.rc-paper {
+  background: #fff; color: #111; border-radius: 6px; padding: 18px 20px;
+  font-family: "Courier New", ui-monospace, monospace; text-align: center;
+  box-shadow: inset 0 0 0 1px #e3e3e3;
+}
+.rc-store { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+.rc-sub { font-size: 12px; letter-spacing: 2px; margin-top: 4px; }
+.rc-divider { border-top: 1px dashed #999; margin: 12px 0; }
+.rc-prize { font-size: 22px; font-weight: 800; margin: 6px 0 12px; }
+.receipt-rows { text-align: left; font-size: 13px; }
+.receipt-rows div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
+.receipt-rows span { color: #555; }
 .receipt-rows b { font-weight: 700; }
-.receipt-foot { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.receipt-foot { font-size: 12px; line-height: 1.5; margin: 4px 0; }
+.rc-barcode { height: 34px; margin-top: 12px;
+  background-image: repeating-linear-gradient(90deg, #111 0 2px, #fff 2px 4px, #111 4px 5px, #fff 5px 9px);
+  background-size: 100% 100%; }
 
 @media print {
   body * { visibility: hidden !important; }
   #receiptBackdrop, #receiptBackdrop * { visibility: visible !important; }
-  #receiptBackdrop { position: absolute; inset: 0; background: #fff; display: block !important; }
-  #receiptCard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-    box-shadow: none; border: 1px solid #000; color: #000; background: #fff; }
-  #receiptCard .receipt-title, #receiptCard .receipt-rows span, #receiptCard .receipt-foot { color: #333; }
-  #receiptCard .receipt-badge { background: #eee; color: #000; }
+  #receiptBackdrop { position: absolute; inset: 0; background: #fff; display: block !important; backdrop-filter: none; }
+  #receiptCard { position: absolute; top: 0; left: 0; right: 0; margin: 0; padding: 0; width: 100%;
+    box-shadow: none; border: 0; background: #fff; }
+  #receiptCard .rc-paper { box-shadow: none; padding: 4px 6px; width: 100%; }
   .no-print { display: none !important; }
 }
 

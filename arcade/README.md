@@ -35,6 +35,10 @@ arcade/ticket system.
   shown cards at once** (respects the search filter, skips staff) — e.g. "everyone
   gets 5 free tickets."
 - **Undo last** — one tap reverses the most recent balance change on a card.
+- **Receipt printing** — redeeming a prize prints a real thermal-style claim
+  receipt (monospace, dashed rules, barcode). Set the **header name** and
+  **paper size** (58mm / 80mm / full page) in Settings. Prints via **AirPrint**;
+  for true roll receipts use an AirPrint thermal printer (Star / Epson).
 - **Dashboard** — tickets awarded, credits/tickets in circulation, redemptions, a
   **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
 - **Membership** — card **tiers** (Standard/Silver/Gold/VIP), **notes**, and
