@@ -396,7 +396,9 @@
             <option value="full">Full page (A4/Letter)</option>
           </select>
         </label>
-        <p class="setting-hint">Prints via AirPrint. Use a thermal receipt printer that lists AirPrint (Star / Epson) for real roll receipts; any AirPrint printer works on paper.</p>
+        <label class="check"><input type="checkbox" id="autoPrint" /> Auto-print receipt when a prize is redeemed</label>
+        <button class="btn" id="reprintBtn"><svg class="ico"><use href="#i-print"/></svg> Reprint last receipt</button>
+        <p class="setting-hint">Prints via AirPrint. Use a thermal receipt printer that lists AirPrint (Star / Epson) for real roll receipts; any AirPrint printer works on paper. The barcode is a real, scannable Code&nbsp;39 code of the claim number.</p>
       </div>
 
       <div class="setting">

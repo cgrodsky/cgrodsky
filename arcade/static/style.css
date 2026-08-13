@@ -400,9 +400,9 @@ body.locked { overflow: hidden; }
 .receipt-rows span { color: #555; }
 .receipt-rows b { font-weight: 700; }
 .receipt-foot { font-size: 12px; line-height: 1.5; margin: 4px 0; }
-.rc-barcode { height: 34px; margin-top: 12px;
-  background-image: repeating-linear-gradient(90deg, #111 0 2px, #fff 2px 4px, #111 4px 5px, #fff 5px 9px);
-  background-size: 100% 100%; }
+.rc-barcode { margin-top: 12px; text-align: center; }
+.rc-barcode svg { display: inline-block; }
+.rc-barcode-num { font-size: 11px; letter-spacing: 2px; margin-top: 3px; }
 
 @media print {
   body * { visibility: hidden !important; }

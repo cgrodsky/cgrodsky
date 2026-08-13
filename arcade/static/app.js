@@ -18,7 +18,7 @@
   const settings = Object.assign(
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
       theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false,
-      receiptWidth: "80", receiptName: "ARCADE" },
+      receiptWidth: "80", receiptName: "ARCADE", autoPrint: false },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -901,15 +901,60 @@
     } catch (e) { toast(e.message === "card_frozen" ? "Card is frozen" : "Redeem failed: " + e.message, "error"); }
   }
 
-  function showReceipt(item, holder, cardUid, claim) {
+  // --- Real Code 39 barcode (scannable) ---
+  const CODE39 = {
+    "0": "nnnwwnwnn", "1": "wnnwnnnnw", "2": "nnwwnnnnw", "3": "wnwwnnnnn", "4": "nnnwwnnnw",
+    "5": "wnnwwnnnn", "6": "nnwwwnnnn", "7": "nnnwnnwnw", "8": "wnnwnnwnn", "9": "nnwwnnwnn",
+    "A": "wnnnnwnnw", "B": "nnwnnwnnw", "C": "wnwnnwnnn", "D": "nnnnwwnnw", "E": "wnnnwwnnn",
+    "F": "nnwnwwnnn", "G": "nnnnnwwnw", "H": "wnnnnwwnn", "I": "nnwnnwwnn", "J": "nnnnwwwnn",
+    "K": "wnnnnnnww", "L": "nnwnnnnww", "M": "wnwnnnnwn", "N": "nnnnwnnww", "O": "wnnnwnnwn",
+    "P": "nnwnwnnwn", "Q": "nnnnnnwww", "R": "wnnnnnwwn", "S": "nnwnnnwwn", "T": "nnnnwnwwn",
+    "U": "wwnnnnnnw", "V": "nwwnnnnnw", "W": "wwwnnnnnn", "X": "nwnnwnnnw", "Y": "wwnnwnnnn",
+    "Z": "nwwnwnnnn", "-": "nwnnnnwnw", ".": "wwnnnnwnn", " ": "nwwnnnwnn", "$": "nwnwnwnnn",
+    "/": "nwnwnnnwn", "+": "nwnnnwnwn", "%": "nnnwnwnwn", "*": "nwnnwnwnn",
+  };
+  function makeBarcodeSVG(text) {
+    const data = ("" + (text || "")).toUpperCase().replace(/[^0-9A-Z\-. $/+%]/g, "") || "0";
+    const seq = "*" + data + "*";
+    const N = 2, W = 5, H = 42, gap = 2;
+    let x = 0; const rects = [];
+    for (const ch of seq) {
+      const pat = CODE39[ch]; if (!pat) continue;
+      for (let i = 0; i < 9; i++) {
+        const w = pat[i] === "w" ? W : N;
+        if (i % 2 === 0) rects.push(`<rect x="${x}" y="0" width="${w}" height="${H}"/>`);
+        x += w;
+      }
+      x += gap;
+    }
+    return `<svg viewBox="0 0 ${x} ${H}" width="${x}" height="${H}" fill="#111" style="max-width:100%;height:44px" xmlns="http://www.w3.org/2000/svg">${rects.join("")}</svg>`
+      + `<div class="rc-barcode-num">${escapeHtml(data)}</div>`;
+  }
+
+  let lastReceipt = JSON.parse(localStorage.getItem("arcade.lastReceipt") || "null");
+  function populateReceipt(r) {
     $("#rcStore").textContent = settings.receiptName || "ARCADE";
-    $("#rcPrize").textContent = item.name;
-    $("#rcHolder").textContent = holder;
-    $("#rcCard").textContent = cardUid;
-    $("#rcCost").textContent = `${item.cost} ${item.currency}`;
-    $("#rcNum").textContent = claim;
-    $("#rcDate").textContent = new Date().toLocaleString();
+    $("#rcPrize").textContent = r.prize;
+    $("#rcHolder").textContent = r.holder;
+    $("#rcCard").textContent = r.cardUid;
+    $("#rcCost").textContent = r.cost;
+    $("#rcNum").textContent = r.claim;
+    $("#rcDate").textContent = r.date;
+    $("#rcBarcode").innerHTML = makeBarcodeSVG(r.claim);
+  }
+  function showReceipt(item, holder, cardUid, claim) {
+    const r = { prize: item.name, holder, cardUid, cost: `${item.cost} ${item.currency}`, claim, date: new Date().toLocaleString() };
+    lastReceipt = r;
+    try { localStorage.setItem("arcade.lastReceipt", JSON.stringify(r)); } catch (_) {}
+    populateReceipt(r);
     $("#receiptBackdrop").classList.remove("hidden");
+    if (settings.autoPrint) setTimeout(() => window.print(), 300);
+  }
+  function reprintLast() {
+    if (!lastReceipt) { toast("No receipt yet", "error"); return; }
+    populateReceipt(lastReceipt);
+    $("#receiptBackdrop").classList.remove("hidden");
+    setTimeout(() => window.print(), 300);
   }
 
   // ---------------------------------------------------------------
@@ -1184,6 +1229,9 @@
     $("#receiptWidth").value = settings.receiptWidth || "80";
     $("#receiptName").addEventListener("input", () => { settings.receiptName = $("#receiptName").value; saveSettings(); });
     $("#receiptWidth").addEventListener("change", () => { settings.receiptWidth = $("#receiptWidth").value; saveSettings(); applyReceiptWidth(); });
+    $("#autoPrint").checked = !!settings.autoPrint;
+    $("#autoPrint").addEventListener("change", () => { settings.autoPrint = $("#autoPrint").checked; saveSettings(); });
+    $("#reprintBtn").addEventListener("click", reprintLast);
 
     // Appearance + kiosk
     $("#themeToggle").addEventListener("click", toggleTheme);
