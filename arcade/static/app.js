@@ -721,12 +721,16 @@
   let stationTimer = null;
   function stationOpen() { return !$("#stationScreen").classList.contains("hidden"); }
   function countUp(el, to) {
-    to = +to || 0; const dur = 550, t0 = performance.now();
-    (function step(t) {
-      const p = Math.min(1, (t - t0) / dur);
-      el.textContent = Math.round(to * (p * (2 - p))); // easeOut
+    to = +to || 0;
+    const from = el.dataset.v !== undefined ? +el.dataset.v : 0;
+    el.dataset.v = to;
+    if (from === to) { el.textContent = to; return; }   // no change -> don't re-animate
+    const dur = 550, t0 = performance.now();
+    requestAnimationFrame(function step(t) {
+      const p = Math.min(1, (t - t0) / dur), e = p * (2 - p); // easeOut
+      el.textContent = Math.round(from + (to - from) * e);
       if (p < 1) requestAnimationFrame(step);
-    })(t0);
+    });
   }
   function stationIdle() {
     $("#stGame").textContent = settings.stationName || "Game";
@@ -792,8 +796,16 @@
     $("#custActive").classList.remove("hidden");
     const staff = activeCard.role === "staff";
     $("#custName").textContent = activeCard.name || "there";
-    $("#custTickets").textContent = activeCard.tickets;
+    countUp($("#custTickets"), activeCard.tickets);
     $("#custCredits").textContent = staff ? "∞ free play" : `${activeCard.credits} credits to play`;
+    // Affordable prizes: what they can grab right now with their tickets
+    const canGet = items.filter((i) => i.currency === "tickets" && i.stock !== 0 && i.cost <= activeCard.tickets)
+      .sort((a, b) => b.cost - a.cost).slice(0, 6);
+    const pz = $("#custPrizes");
+    pz.innerHTML = canGet.length
+      ? `<div class="cust-prizes-label">You can get</div>` +
+        canGet.map((i) => `<span class="cust-prize-chip">${escapeHtml(i.name)} <b>${i.cost}</b></span>`).join("")
+      : "";
     const lines = $("#custLines");
     try {
       const tx = (await store.listTransactions(activeCard.uid, 12))
@@ -830,15 +842,20 @@
   // Full-screen leaderboard (for a big display)
   // ---------------------------------------------------------------
   let lbTimer = null;
+  let lbSig = "", lbLeader = null;
   async function renderLeaderboard() {
     const cards = (await store.listCards()).filter((c) => c.tickets > 0 && c.role !== "staff")
       .sort((a, b) => b.tickets - a.tickets).slice(0, 10);
     const list = $("#lbList");
+    const sig = cards.map((c) => c.uid + ":" + c.tickets).join(",");
+    if (sig === lbSig) return;            // nothing changed — don't churn/re-animate
+    const leaderChanged = lbLeader !== null && cards[0] && cards[0].uid !== lbLeader;
+    lbSig = sig; lbLeader = cards[0] ? cards[0].uid : null;
     if (cards.length === 0) { list.innerHTML = `<p class="lb-empty">No tickets yet — tap a card and add some!</p>`; return; }
     list.innerHTML = "";
     cards.forEach((c, i) => {
       const row = document.createElement("div");
-      row.className = "lb-row" + (i < 3 ? " top" + (i + 1) : "");
+      row.className = "lb-row" + (i < 3 ? " top" + (i + 1) : "") + (i === 0 && leaderChanged ? " crowned" : "");
       row.style.animationDelay = (i * 0.04) + "s";
       row.innerHTML = `
         <div class="lb-rank">${i + 1}</div>
@@ -848,6 +865,13 @@
         <div class="lb-tickets">${c.tickets}<small>tickets</small></div>`;
       list.appendChild(row);
     });
+    if (leaderChanged) {
+      const banner = $("#lbBanner");
+      banner.textContent = `New leader: ${cards[0].name || cards[0].uid}!`;
+      banner.classList.add("show");
+      clearTimeout(renderLeaderboard._bt);
+      renderLeaderboard._bt = setTimeout(() => banner.classList.remove("show"), 4000);
+    }
   }
   function openLeaderboard() {
     $("#leaderboardScreen").classList.remove("hidden");
