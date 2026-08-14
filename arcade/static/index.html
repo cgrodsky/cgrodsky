@@ -203,6 +203,7 @@
                   <option value="VIP">VIP</option>
                 </select>
               </div>
+              <label class="setting-sub">Expires <input type="date" id="cardExpires" /></label>
               <textarea id="cardNotes" class="notes-area" placeholder="Notes about this cardholder&hellip;" rows="2"></textarea>
               <button class="btn btn-ghost" id="saveMetaBtn">Save membership &amp; notes</button>
             </div>
@@ -457,6 +458,9 @@
         <button class="btn" id="setManagerBtn">Set / change manager PIN</button>
         <button class="btn btn-ghost" id="clearManagerBtn">Remove manager PIN</button>
         <p class="setting-hint">When set, a 4-digit manager PIN is required for the dangerous actions: delete a card, reset all balances, and delete all cards. Great so a helper can add tickets but can't wipe anything.</p>
+        <label class="setting-label" style="margin-top:12px">Operator name (audit)</label>
+        <input type="text" id="operatorName" placeholder="e.g. Jaime, Front Desk" />
+        <p class="setting-hint">Put a name here on each device/helper. Every change they make is stamped with it in the log &mdash; so you can see who did what.</p>
       </div>
 
       <div class="setting">

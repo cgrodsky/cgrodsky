@@ -10,6 +10,9 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const svgUse = (name) => `<svg class="ico"><use href="#i-${name}"/></svg>`;
+  const todayISO = () => new Date().toISOString().slice(0, 10);
+  const isExpired = (c) => !!(c && c.expires && todayISO() > c.expires);
+  const cardBlocked = (c) => c && (c.status === "frozen" || c.status === "lost" || isExpired(c));
 
   // ---------------------------------------------------------------
   // Settings
@@ -18,7 +21,7 @@
   const settings = Object.assign(
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
       theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false,
-      receiptWidth: "80", receiptName: "ARCADE", autoPrint: false },
+      receiptWidth: "80", receiptName: "ARCADE", autoPrint: false, operator: "" },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -32,7 +35,9 @@
   class BackendStore {
     constructor(base) { this.base = base.replace(/\/$/, ""); this.name = "backend"; }
     async _req(path, opts) {
-      const res = await fetch(this.base + path, { headers: { "Content-Type": "application/json" }, ...opts });
+      const headers = { "Content-Type": "application/json" };
+      if (settings.operator) headers["X-Operator"] = settings.operator;
+      const res = await fetch(this.base + path, { headers, ...opts });
       if (!res.ok) {
         let msg = "request_failed";
         try { msg = (await res.json()).error || msg; } catch (_) {}
@@ -82,7 +87,7 @@
     }
     _save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); }
     _log(uid, kind, detail, cd = 0, td = 0) {
-      this.data.tx.unshift({ id: this.data.nextTxId++, uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, voided: 0, ts: Date.now() / 1000 });
+      this.data.tx.unshift({ id: this.data.nextTxId++, uid, kind, detail: detail || "", credits_d: cd, tickets_d: td, voided: 0, operator: settings.operator || "", ts: Date.now() / 1000 });
       this.data.tx = this.data.tx.slice(0, 2000);
     }
     async health() { return { ok: true, reader: "local" }; }
@@ -93,14 +98,14 @@
       if (!uid) throw new Error("uid_required");
       if (this.data.cards[uid]) throw new Error("exists");
       const now = Date.now() / 1000;
-      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: "active", tier: "Standard", notes: "", role: c.role === "staff" ? "staff" : "customer", created_at: now, updated_at: now };
+      const card = { uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: "active", tier: "Standard", notes: "", role: c.role === "staff" ? "staff" : "customer", expires: "", created_at: now, updated_at: now };
       this.data.cards[uid] = card; this._log(uid, "create_card", (c.name || "") + (card.role === "staff" ? " (staff)" : "")); this._save(); return card;
     }
     async updateCard(uid, patch) {
       const c = this.data.cards[uid];
       if (!c) throw new Error("not_found");
       const cd = +patch.credits_delta || 0, td = +patch.tickets_delta || 0;
-      if ((cd || td) && (c.status === "frozen" || c.status === "lost")) throw new Error("card_blocked");
+      if ((cd || td) && cardBlocked(c)) throw new Error("card_blocked");
       if (td > 0 && c.role === "staff") throw new Error("staff_no_tickets");
       if (c.credits + cd < 0 || c.tickets + td < 0) throw new Error("insufficient_balance");
       c.credits += cd; c.tickets += td;
@@ -110,6 +115,7 @@
       if (patch.tier !== undefined) c.tier = patch.tier;
       if (patch.notes !== undefined) c.notes = patch.notes;
       if (patch.role !== undefined) c.role = patch.role;
+      if (patch.expires !== undefined) c.expires = patch.expires;
       c.updated_at = Date.now() / 1000;
       if (cd || td) this._log(uid, cd > 0 || td > 0 ? "add" : "remove", patch.reason, cd, td);
       if (patch.status !== undefined && patch.status !== prevStatus) this._log(uid, "status", patch.status);
@@ -147,7 +153,7 @@
       const c = this.data.cards[uid], item = this.data.items.find((x) => x.id === itemId);
       if (!c) throw new Error("card_not_found");
       if (!item) throw new Error("item_not_found");
-      if (c.status === "frozen" || c.status === "lost") throw new Error("card_blocked");
+      if (cardBlocked(c)) throw new Error("card_blocked");
       if (c.role === "staff") throw new Error("staff_no_redeem");
       if (item.stock === 0) throw new Error("out_of_stock");
       if (c[item.currency] < item.cost) throw new Error("insufficient_balance");
@@ -174,7 +180,7 @@
     async importData({ cards = [], items = [] }) {
       const now = Date.now() / 1000;
       this.data.cards = {};
-      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", role: c.role || "customer", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
+      cards.forEach((c) => { if (c.uid) this.data.cards[c.uid] = { uid: c.uid, name: c.name || "", credits: +c.credits || 0, tickets: +c.tickets || 0, status: c.status || "active", tier: c.tier || "Standard", notes: c.notes || "", role: c.role || "customer", expires: c.expires || "", created_at: c.created_at || now, updated_at: c.updated_at || now }; });
       this.data.items = []; this.data.nextItemId = 1;
       items.forEach((it) => this.data.items.push({ id: this.data.nextItemId++, name: it.name || "Item", cost: +it.cost || 0, currency: it.currency || "tickets", stock: it.stock === undefined ? -1 : +it.stock, category: it.category || "" }));
       this._save(); return { ok: true, cards: cards.length, items: items.length };
@@ -274,13 +280,16 @@
     $("#balCredits").textContent = isStaffCard ? "∞" : card.credits;
     $("#balTickets").textContent = card.tickets;
     document.getElementById("activeCard").classList.toggle("staff-card", isStaffCard);
-    const status = card.status || "active";
+    const expired = isExpired(card);
+    const status = expired ? "lost" : (card.status || "active");
     const badge = $("#cardStatusBadge");
     const isStaff = card.role === "staff";
-    badge.textContent = (isStaff ? "STAFF · " : "") + (card.tier && card.tier !== "Standard" ? card.tier + " · " : "") + status;
+    const statusText = expired ? "EXPIRED" : status;
+    badge.textContent = (isStaff ? "STAFF · " : "") + (card.tier && card.tier !== "Standard" ? card.tier + " · " : "") + statusText;
     badge.className = "card-status-badge " + (isStaff ? "staff" : status);
     if ($("#tierSelect")) $("#tierSelect").value = card.tier || "Standard";
     if ($("#cardNotes")) $("#cardNotes").value = card.notes || "";
+    if ($("#cardExpires")) $("#cardExpires").value = card.expires || "";
     $$("#statusSeg .seg-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.status === status));
     renderPrizes();
     if (bodyIsAdvanced()) refreshLog();
@@ -375,8 +384,12 @@
           <div class="ri-title">${escapeHtml(c.name || "(no name)")}${c.role === "staff" ? " · STAFF" : ""}${c.status === "frozen" ? " · FROZEN" : ""}${c.tier && c.tier !== "Standard" ? " · " + escapeHtml(c.tier) : ""}</div>
           <div class="ri-sub">${escapeHtml(c.uid)} · ${c.credits} credits · ${c.tickets} tickets</div>
         </div>
-        <div class="ri-actions"><button class="mini-btn" data-load="${escapeAttr(c.uid)}">Open</button></div>`;
+        <div class="ri-actions">
+          <button class="mini-btn" data-send="${escapeAttr(c.uid)}">Send</button>
+          <button class="mini-btn" data-load="${escapeAttr(c.uid)}">Open</button>
+        </div>`;
       row.querySelector("[data-load]").addEventListener("click", () => onTap(c.uid));
+      row.querySelector("[data-send]").addEventListener("click", () => openTransfer(c));
       list.appendChild(row);
     });
   }
@@ -410,7 +423,7 @@
         <span class="log-badge ${txBadge(t)}">${escapeHtml(label)}</span>
         <div class="log-main">
           <div>${escapeHtml(t.detail || t.uid)}${parts.length ? " · " + parts.join(", ") : ""}</div>
-          <div class="log-time">${escapeHtml(t.uid)} · ${new Date(t.ts * 1000).toLocaleString()}</div>
+          <div class="log-time">${escapeHtml(t.uid)} · ${new Date(t.ts * 1000).toLocaleString()}${t.operator ? " · by " + escapeHtml(t.operator) : ""}</div>
         </div>
         ${canVoid ? `<button class="log-void" data-void="${t.id}">${svgUse("undo")} Void</button>` : ""}`;
       if (canVoid) row.querySelector("[data-void]").addEventListener("click", async () => {
@@ -441,7 +454,7 @@
   async function saveMeta() {
     if (!activeCard) return;
     try {
-      const card = await store.updateCard(activeCard.uid, { tier: $("#tierSelect").value, notes: $("#cardNotes").value });
+      const card = await store.updateCard(activeCard.uid, { tier: $("#tierSelect").value, notes: $("#cardNotes").value, expires: $("#cardExpires").value });
       loadCard(card); syncToCard(); refreshCards(); toast("Membership saved", "success");
     } catch (e) { toast("Save failed", "error"); }
   }
@@ -897,7 +910,7 @@
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast(`${delta > 0 ? "Added" : "Removed"} ${Math.abs(delta)} ${kind}`, "success");
     } catch (e) {
-      const m = { card_blocked: "Card is frozen / lost", staff_no_tickets: "Staff cards can't earn tickets", insufficient_balance: "Not enough balance" }[e.message] || "Update failed";
+      const m = { card_blocked: "Card is frozen, lost, or expired", staff_no_tickets: "Staff cards can't earn tickets", insufficient_balance: "Not enough balance" }[e.message] || "Update failed";
       toast(m, "error");
     }
   }
@@ -918,7 +931,7 @@
       try { const last = await store.listTransactions(cardUid, 1); if (last[0]) claim = "#" + last[0].id; } catch (_) {}
       showReceipt(item, holder, cardUid, claim);
     } catch (e) {
-      const m = { card_blocked: "Card is frozen / lost", staff_no_redeem: "Staff cards can't redeem prizes", out_of_stock: "Out of stock" }[e.message] || ("Redeem failed: " + e.message);
+      const m = { card_blocked: "Card is frozen, lost, or expired", staff_no_redeem: "Staff cards can't redeem prizes", out_of_stock: "Out of stock" }[e.message] || ("Redeem failed: " + e.message);
       toast(m, "error");
     }
   }
@@ -1061,9 +1074,10 @@
   // Transfer flow (move a specific amount to another card)
   // ---------------------------------------------------------------
   let transferAwaiting = false, transferFrom = null, transferTo = null;
-  function openTransfer() {
-    if (!activeCard) { toast("Load a card first", "error"); return; }
-    transferFrom = activeCard; transferTo = null; transferAwaiting = true;
+  function openTransfer(source) {
+    const src = source || activeCard;
+    if (!src) { toast("Load a card first", "error"); return; }
+    transferFrom = src; transferTo = null; transferAwaiting = true;
     $("#transferStepTap").classList.remove("hidden");
     $("#transferStepConfig").classList.add("hidden");
     $("#transferConfirmBtn").classList.add("hidden");
@@ -1116,7 +1130,7 @@
       if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
       toast(`Sent ${amt} ${kind}`, "success");
     } catch (e) {
-      const m = { staff_no_tickets: "Staff cards can't receive tickets", card_blocked: "That card is frozen / lost" }[e.message] || "Transfer failed";
+      const m = { staff_no_tickets: "Staff cards can't receive tickets", card_blocked: "That card is frozen, lost, or expired" }[e.message] || "Transfer failed";
       toast(m, "error");
     }
   }
@@ -1308,6 +1322,8 @@
     $("#bulkUnfreezeBtn").addEventListener("click", () => bulkFreeze(false));
     $("#setManagerBtn").addEventListener("click", setManagerPin);
     $("#clearManagerBtn").addEventListener("click", clearManagerPin);
+    $("#operatorName").value = settings.operator || "";
+    $("#operatorName").addEventListener("input", () => { settings.operator = $("#operatorName").value; saveSettings(); });
 
     // Prize search + category
     $("#prizeSearch").addEventListener("input", renderPrizes);

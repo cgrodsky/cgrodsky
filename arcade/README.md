@@ -53,9 +53,15 @@ arcade/ticket system.
 - **Staff cards** — an **infinite free-play** card: shows **∞ credits** and can
   play forever, but **can't earn tickets or redeem prizes**, and never appears on
   the leaderboard. Good for helpers/teachers.
+- **Card expiry** — give a card an expiry date; after it passes, the card is
+  automatically blocked (can't earn or spend) and shows **EXPIRED**.
 - **Manager PIN** — an optional second 4-digit PIN that's required for the
   dangerous actions (delete a card, reset all balances, delete all cards), so a
   helper can add tickets but can't wipe anything.
+- **Operator audit** — set an **operator name** per device/helper; every change
+  is stamped with it in the log ("… by Jaime"), so you can see who did what.
+- **Transfer from the Cards tab** — hit **Send** on any card row to move
+  credits/tickets from it to another card (not just the active card).
 - **Store data on the card (NFC)** — write a card's name and balances **onto the
   chip itself**, and read it back, so each card carries its own data. A central
   copy is still kept for the leaderboard/dashboard (a leaderboard needs to see

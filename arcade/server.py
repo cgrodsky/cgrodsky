@@ -18,6 +18,7 @@ See README.md for the full list of reader backends and hosting notes.
 """
 
 import argparse
+import datetime
 import json
 import os
 import queue
@@ -113,9 +114,13 @@ MIGRATIONS = {
         ("tier", "TEXT NOT NULL DEFAULT 'Standard'"),
         ("notes", "TEXT NOT NULL DEFAULT ''"),
         ("role", "TEXT NOT NULL DEFAULT 'customer'"),   # 'customer' or 'staff'
+        ("expires", "TEXT NOT NULL DEFAULT ''"),        # 'YYYY-MM-DD', '' = never
     ],
     "items": [("category", "TEXT NOT NULL DEFAULT ''")],
-    "transactions": [("voided", "INTEGER NOT NULL DEFAULT 0")],
+    "transactions": [
+        ("voided", "INTEGER NOT NULL DEFAULT 0"),
+        ("operator", "TEXT NOT NULL DEFAULT ''"),       # who made the change (audit)
+    ],
 }
 
 
@@ -166,11 +171,27 @@ def row_to_dict(row):
     return {k: row[k] for k in row.keys()}
 
 
+def card_blocked(row):
+    """A card is blocked (can't earn/spend) if frozen, lost, or past expiry."""
+    if row["status"] in ("frozen", "lost"):
+        return True
+    exp = row["expires"] if "expires" in row.keys() else ""
+    if exp and datetime.date.today().isoformat() > exp:
+        return True
+    return False
+
+
 def log_tx(db, uid, kind, detail="", credits_d=0, tickets_d=0):
+    # The operator name rides along on every request as a header, so we can
+    # record "who did what" without changing each endpoint's body.
+    try:
+        operator = (request.headers.get("X-Operator") or "")[:40]
+    except Exception:
+        operator = ""
     db.execute(
-        "INSERT INTO transactions (uid, kind, detail, credits_d, tickets_d, ts) "
-        "VALUES (?,?,?,?,?,?)",
-        (uid, kind, detail, credits_d, tickets_d, time.time()),
+        "INSERT INTO transactions (uid, kind, detail, credits_d, tickets_d, operator, ts) "
+        "VALUES (?,?,?,?,?,?,?)",
+        (uid, kind, detail, credits_d, tickets_d, operator, time.time()),
     )
 
 
@@ -250,7 +271,7 @@ def update_card(uid):
 
     cd = int(data.get("credits_delta", 0))
     td = int(data.get("tickets_delta", 0))
-    if (cd or td) and row["status"] in ("frozen", "lost"):
+    if (cd or td) and card_blocked(row):
         return jsonify({"error": "card_blocked"}), 400
     if td > 0 and row["role"] == "staff":
         return jsonify({"error": "staff_no_tickets"}), 400
@@ -265,9 +286,10 @@ def update_card(uid):
     tier = data.get("tier", row["tier"])
     notes = data.get("notes", row["notes"])
     role = data.get("role", row["role"])
+    expires = data.get("expires", row["expires"])
     db.execute(
-        "UPDATE cards SET credits=?, tickets=?, name=?, status=?, tier=?, notes=?, role=?, updated_at=? WHERE uid=?",
-        (new_credits, new_tickets, name, status, tier, notes, role, time.time(), uid),
+        "UPDATE cards SET credits=?, tickets=?, name=?, status=?, tier=?, notes=?, role=?, expires=?, updated_at=? WHERE uid=?",
+        (new_credits, new_tickets, name, status, tier, notes, role, expires, time.time(), uid),
     )
     if cd or td:
         kind = "add" if (cd > 0 or td > 0) else "remove"
@@ -351,7 +373,7 @@ def redeem():
         return jsonify({"error": "card_not_found"}), 404
     if not item:
         return jsonify({"error": "item_not_found"}), 404
-    if card["status"] in ("frozen", "lost"):
+    if card_blocked(card):
         return jsonify({"error": "card_blocked"}), 400
     if card["role"] == "staff":
         return jsonify({"error": "staff_no_redeem"}), 400
@@ -467,11 +489,11 @@ def import_data():
     now = time.time()
     for c in cards:
         db.execute(
-            "INSERT INTO cards (uid, name, credits, tickets, status, tier, notes, role, created_at, updated_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO cards (uid, name, credits, tickets, status, tier, notes, role, expires, created_at, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (c.get("uid"), c.get("name", ""), int(c.get("credits", 0)), int(c.get("tickets", 0)),
              c.get("status", "active"), c.get("tier", "Standard"), c.get("notes", ""),
-             c.get("role", "customer"), c.get("created_at", now), c.get("updated_at", now)),
+             c.get("role", "customer"), c.get("expires", ""), c.get("created_at", now), c.get("updated_at", now)),
         )
     for it in items:
         db.execute(
