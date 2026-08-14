@@ -398,6 +398,39 @@ def redeem():
     return jsonify(row_to_dict(card))
 
 
+@app.route("/api/play", methods=["POST"])
+def play_game():
+    """Charge a card to play a game at a station.
+
+    Body: {uid, cost, game}. Deducts ``cost`` credits (staff cards play free).
+    Returns {card, paid, free} or an error the station screen can show.
+    """
+    data = request.get_json(force=True) or {}
+    uid = data.get("uid")
+    cost = max(0, int(data.get("cost", 1)))
+    game = data.get("game", "Game")
+    db = get_db()
+    card = db.execute("SELECT * FROM cards WHERE uid=?", (uid,)).fetchone()
+    if not card:
+        return jsonify({"error": "card_not_found"}), 404
+    if card_blocked(card):
+        return jsonify({"error": "card_blocked"}), 400
+    if card["role"] == "staff":
+        log_tx(db, uid, "play", detail=f"{game} (free)")
+        db.commit()
+        return jsonify({"card": row_to_dict(card), "paid": 0, "free": True})
+    if card["credits"] < cost:
+        return jsonify({"error": "insufficient_credits", "have": card["credits"], "need": cost}), 400
+    db.execute(
+        "UPDATE cards SET credits=credits-?, updated_at=? WHERE uid=?",
+        (cost, time.time(), uid),
+    )
+    log_tx(db, uid, "play", detail=game, credits_d=-cost)
+    db.commit()
+    card = db.execute("SELECT * FROM cards WHERE uid=?", (uid,)).fetchone()
+    return jsonify({"card": row_to_dict(card), "paid": cost, "free": False})
+
+
 @app.route("/api/transactions/<int:tx_id>/void", methods=["POST"])
 def void_transaction(tx_id):
     """Reverse a balance-affecting transaction."""

@@ -72,6 +72,24 @@
     <p class="lb-foot">Updates live &middot; most tickets wins</p>
   </div>
 
+  <!-- ===================== Game station display ===================== -->
+  <div class="station-screen hidden" id="stationScreen">
+    <button class="icon-btn cust-close" id="closeStation" aria-label="Close">&times;</button>
+    <div class="st-idle" id="stIdle">
+      <div class="st-game" id="stGame">Ring Toss</div>
+      <div class="st-tap"><span class="st-tap-dot"></span> TAP TO PLAY</div>
+      <div class="st-cost"><span id="stCost">1</span> <small>credits</small></div>
+    </div>
+    <div class="st-result hidden" id="stResult">
+      <div class="st-hello" id="stHello">Hi!</div>
+      <div class="st-paid" id="stPaid"></div>
+      <div class="st-stats" id="stStats">
+        <div class="st-stat"><span class="st-stat-num" id="stLeft">0</span><small>credits left</small></div>
+        <div class="st-stat"><span class="st-stat-num tickets" id="stTickets">0</span><small>tickets</small></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== Customer display (Square-style) ===================== -->
   <div class="cust-screen hidden" id="customerScreen">
     <button class="icon-btn cust-close" id="closeCustomer" aria-label="Close">&times;</button>
@@ -405,6 +423,14 @@
       </div>
 
       <div class="setting">
+        <label class="setting-label">Game station display</label>
+        <label class="setting-sub">Game name <input type="text" id="stationName" placeholder="Ring Toss" /></label>
+        <label class="setting-sub">Credits to play <input type="number" id="stationCost" value="1" min="0" /></label>
+        <button class="btn btn-add" id="openStationBtn"><svg class="ico"><use href="#i-monitor"/></svg> Open station display</button>
+        <p class="setting-hint">Turns this screen into a game booth: it shows the cost to play, and when a card taps it charges the credits and shows their balance. One per game/reader. Press <b>G</b> to toggle.</p>
+      </div>
+
+      <div class="setting">
         <label class="setting-label">On-card data (NFC)</label>
         <label class="check"><input type="checkbox" id="nfcAutoWrite" /> Auto-save every change onto the card</label>
         <p class="setting-hint">When on, balance changes are also written to the chip so the card carries its own data. A central copy is still kept for the leaderboard. Needs a write-capable reader (ACR122U / MFRC522).</p>
@@ -458,7 +484,7 @@
             <option value="600">10 minutes</option>
           </select>
         </label>
-        <p class="setting-hint">Hotkeys: <b>L</b> lock &middot; <b>F</b> fullscreen &middot; <b>N</b> new card &middot; <b>/</b> search &middot; <b>A</b> advanced &middot; <b>B</b> leaderboard &middot; <b>S</b> live stats &middot; <b>C</b> customer display.</p>
+        <p class="setting-hint">Hotkeys: <b>L</b> lock &middot; <b>F</b> fullscreen &middot; <b>N</b> new card &middot; <b>/</b> search &middot; <b>A</b> advanced &middot; <b>B</b> leaderboard &middot; <b>S</b> live stats &middot; <b>C</b> customer &middot; <b>G</b> game station.</p>
       </div>
 
       <div class="setting">

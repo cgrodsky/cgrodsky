@@ -21,7 +21,8 @@
   const settings = Object.assign(
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
       theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false,
-      receiptWidth: "80", receiptName: "ARCADE", autoPrint: false, operator: "" },
+      receiptWidth: "80", receiptName: "ARCADE", autoPrint: false, operator: "",
+      stationName: "Ring Toss", stationCost: 1 },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -66,6 +67,7 @@
     exportData() { return this._req("/api/export"); }
     importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
     voidTx(id) { return this._req(`/api/transactions/${id}/void`, { method: "POST" }); }
+    play(uid, cost, game) { return this._req("/api/play", { method: "POST", body: JSON.stringify({ uid, cost, game }) }); }
     nfcRead(_uid) { return this._req("/api/nfc/read", { method: "POST", body: JSON.stringify({}) }); }
     nfcWrite(_uid, data) { return this._req("/api/nfc/write", { method: "POST", body: JSON.stringify({ data }) }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
@@ -174,6 +176,17 @@
       this._save(); return { source: s, dest: d };
     }
     async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
+    async play(uid, cost, game) {
+      const c = this.data.cards[uid];
+      if (!c) throw new Error("card_not_found");
+      if (cardBlocked(c)) throw new Error("card_blocked");
+      if (c.role === "staff") { this._log(uid, "play", `${game} (free)`); this._save(); return { card: c, paid: 0, free: true }; }
+      cost = Math.max(0, +cost || 0);
+      if (c.credits < cost) { const e = new Error("insufficient_credits"); e.have = c.credits; e.need = cost; throw e; }
+      c.credits -= cost; c.updated_at = Date.now() / 1000;
+      this._log(uid, "play", game, -cost);
+      this._save(); return { card: c, paid: cost, free: false };
+    }
     async nfcRead(uid) { this.data.nfcmem = this.data.nfcmem || {}; return { uid, data: this.data.nfcmem[uid] || null }; }
     async nfcWrite(uid, data) { this.data.nfcmem = this.data.nfcmem || {}; this.data.nfcmem[uid] = data; this._save(); return { ok: true, uid }; }
     async exportData() { return { version: 3, cards: Object.values(this.data.cards), items: this.data.items, transactions: this.data.tx }; }
@@ -236,6 +249,8 @@
     if (!uid) return;
     // Ignore taps while the screen is locked.
     if (document.body.classList.contains("locked")) return;
+    // Station kiosk open? every tap is a "play".
+    if (stationOpen()) { playAtStation(uid); return; }
     // Merge / transfer flows waiting for the second card?
     if (mergeAwaiting) { mergeSecondCard(uid); return; }
     if (transferAwaiting) { transferSecondCard(uid); return; }
@@ -403,7 +418,7 @@
     if (t.credits_d < 0 || t.tickets_d < 0) return "remove";
     return "other";
   }
-  const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", void: "void", status: "status" };
+  const TX_LABELS = { create_card: "created", delete_card: "deleted", merge_in: "merge in", merge_out: "merge out", void: "void", status: "status", play: "play" };
 
   async function refreshLog() {
     if (!store) return;
@@ -699,6 +714,68 @@
   }
   function openStats() { $("#statsScreen").classList.remove("hidden"); renderStatsScreen(); clearInterval(statsTimer); statsTimer = setInterval(renderStatsScreen, 4000); }
   function closeStats() { $("#statsScreen").classList.add("hidden"); clearInterval(statsTimer); statsTimer = null; }
+
+  // ---------------------------------------------------------------
+  // Game station display (charges credits to play, one per booth)
+  // ---------------------------------------------------------------
+  let stationTimer = null;
+  function stationOpen() { return !$("#stationScreen").classList.contains("hidden"); }
+  function countUp(el, to) {
+    to = +to || 0; const dur = 550, t0 = performance.now();
+    (function step(t) {
+      const p = Math.min(1, (t - t0) / dur);
+      el.textContent = Math.round(to * (p * (2 - p))); // easeOut
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function stationIdle() {
+    $("#stGame").textContent = settings.stationName || "Game";
+    $("#stCost").textContent = parseInt(settings.stationCost, 10) || 0;
+    $("#stIdle").classList.remove("hidden");
+    $("#stResult").classList.add("hidden");
+  }
+  function stationMessage(big, sub, warn) {
+    $("#stHello").textContent = big;
+    $("#stHello").className = "st-hello" + (warn ? " warn" : "");
+    $("#stPaid").textContent = sub || "";
+    $("#stPaid").className = "st-paid";
+    $("#stStats").classList.add("hidden");
+    $("#stIdle").classList.add("hidden");
+    $("#stResult").classList.remove("hidden");
+  }
+  function stationResult(res, cost) {
+    const c = res.card;
+    $("#stHello").textContent = `Hi ${c.name || "player"}!`;
+    $("#stHello").className = "st-hello";
+    if (res.free) { $("#stPaid").textContent = "FREE PLAY"; $("#stPaid").className = "st-paid free"; }
+    else { $("#stPaid").textContent = `−${cost} credits`; $("#stPaid").className = "st-paid"; }
+    $("#stStats").classList.remove("hidden");
+    if (res.free) $("#stLeft").textContent = "∞"; else countUp($("#stLeft"), c.credits);
+    countUp($("#stTickets"), c.tickets);
+    $("#stIdle").classList.add("hidden");
+    $("#stResult").classList.remove("hidden");
+  }
+  async function playAtStation(uid) {
+    uid = (uid || "").trim(); if (!uid) return;
+    const cost = parseInt(settings.stationCost, 10) || 0;
+    const game = settings.stationName || "Game";
+    clearTimeout(stationTimer);
+    try {
+      const res = await store.play(uid, cost, game);
+      stationResult(res, cost); beep(880);
+    } catch (e) {
+      if (e.message === "card_not_found") stationMessage("Card not registered", "Ask a helper to set it up", true);
+      else if (e.message === "card_blocked") stationMessage("Card not active", "Frozen, lost, or expired", true);
+      else if (e.message === "insufficient_credits") {
+        let have = e.have; if (have === undefined) { try { have = (await store.getCard(uid)).credits; } catch (_) { have = "?"; } }
+        stationMessage("Not enough credits", `You have ${have}, need ${cost}`, true);
+      } else stationMessage("Please try again", "", true);
+      beep(300);
+    }
+    stationTimer = setTimeout(stationIdle, 5000);
+  }
+  function openStation() { $("#stationScreen").classList.remove("hidden"); stationIdle(); }
+  function closeStation() { $("#stationScreen").classList.add("hidden"); clearTimeout(stationTimer); }
 
   // ---------------------------------------------------------------
   // Customer display (Square-style, shows the player their tickets)
@@ -1395,6 +1472,14 @@
     $("#customerBtn").addEventListener("click", openCustomer);
     $("#closeCustomer").addEventListener("click", closeCustomer);
 
+    // Game station
+    $("#stationName").value = settings.stationName || "";
+    $("#stationCost").value = settings.stationCost;
+    $("#stationName").addEventListener("input", () => { settings.stationName = $("#stationName").value; saveSettings(); if (stationOpen()) stationIdle(); });
+    $("#stationCost").addEventListener("input", () => { settings.stationCost = parseInt($("#stationCost").value, 10) || 0; saveSettings(); if (stationOpen()) stationIdle(); });
+    $("#openStationBtn").addEventListener("click", () => { $("#settingsDrawer").classList.add("hidden"); $("#drawerBackdrop").classList.add("hidden"); openStation(); });
+    $("#closeStation").addEventListener("click", closeStation);
+
     // Prize claim receipt
     $("#rcClose").addEventListener("click", () => $("#receiptBackdrop").classList.add("hidden"));
     $("#rcPrint").addEventListener("click", () => window.print());
@@ -1529,10 +1614,12 @@
       else if (k === "b") { e.preventDefault(); if ($("#leaderboardScreen").classList.contains("hidden")) openLeaderboard(); else closeLeaderboard(); }
       else if (k === "s" && bodyIsAdvanced()) { e.preventDefault(); if ($("#statsScreen").classList.contains("hidden")) openStats(); else closeStats(); }
       else if (k === "c") { e.preventDefault(); if (customerOpen()) closeCustomer(); else openCustomer(); }
+      else if (k === "g") { e.preventDefault(); if (stationOpen()) closeStation(); else openStation(); }
       else if (e.key === "Escape") {
         if (!$("#leaderboardScreen").classList.contains("hidden")) closeLeaderboard();
         if (!$("#statsScreen").classList.contains("hidden")) closeStats();
         if (customerOpen()) closeCustomer();
+        if (stationOpen()) closeStation();
       }
     });
 
