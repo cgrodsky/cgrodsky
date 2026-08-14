@@ -17,6 +17,9 @@ trace, and any reader that can read the ID works.
 - **Prize search & category filter**, with low-stock warnings.
 - **Merge cards** — tap a second card, choose credits / tickets / both, and pick
   which card keeps the combined balance.
+- **Transfer** — send a specific number of credits or tickets from one card to
+  another (rolls back safely if the target can't receive them).
+- **Restock** — a one-tap "+10 stock" button on limited-stock prize items.
 - **RFID support**: tap a card and it loads automatically. Unknown cards prompt
   you to register them.
 

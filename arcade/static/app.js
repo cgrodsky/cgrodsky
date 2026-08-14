@@ -230,8 +230,9 @@
     if (!uid) return;
     // Ignore taps while the screen is locked.
     if (document.body.classList.contains("locked")) return;
-    // Merge flow is waiting for the second card?
+    // Merge / transfer flows waiting for the second card?
     if (mergeAwaiting) { mergeSecondCard(uid); return; }
+    if (transferAwaiting) { transferSecondCard(uid); return; }
     // New-card modal open? fill its UID.
     if (!$("#modalBackdrop").classList.contains("hidden")) {
       $("#newUid").value = uid;
@@ -340,10 +341,15 @@
           <div class="ri-sub">${item.cost} ${item.currency} · ${item.stock < 0 ? "unlimited" : item.stock + " in stock"}</div>
         </div>
         <div class="ri-actions">
+          ${item.stock >= 0 ? `<button class="mini-btn" data-restock="${item.id}">+10 stock</button>` : ""}
           <button class="mini-btn" data-edit="${item.id}">${svgUse("edit")} Edit</button>
           <button class="mini-btn danger" data-del="${item.id}">${svgUse("trash")}</button>
         </div>`;
       row.querySelector("[data-edit]").addEventListener("click", () => editItem(item));
+      const restock = row.querySelector("[data-restock]");
+      if (restock) restock.addEventListener("click", async () => {
+        await store.updateItem(item.id, { stock: item.stock + 10 }); toast(`Restocked ${item.name} (+10)`, "success"); refreshItems();
+      });
       row.querySelector("[data-del]").addEventListener("click", async () => {
         if (!confirm(`Delete "${item.name}"?`)) return;
         await store.deleteItem(item.id); toast("Item deleted"); refreshItems();
@@ -1052,6 +1058,70 @@
   }
 
   // ---------------------------------------------------------------
+  // Transfer flow (move a specific amount to another card)
+  // ---------------------------------------------------------------
+  let transferAwaiting = false, transferFrom = null, transferTo = null;
+  function openTransfer() {
+    if (!activeCard) { toast("Load a card first", "error"); return; }
+    transferFrom = activeCard; transferTo = null; transferAwaiting = true;
+    $("#transferStepTap").classList.remove("hidden");
+    $("#transferStepConfig").classList.add("hidden");
+    $("#transferConfirmBtn").classList.add("hidden");
+    $("#transferWaitText").textContent = "Waiting for a tap…";
+    $("#transferUid").value = "";
+    $("#transferBackdrop").classList.remove("hidden");
+  }
+  function closeTransfer() { transferAwaiting = false; $("#transferBackdrop").classList.add("hidden"); }
+  async function transferSecondCard(uid) {
+    uid = (uid || "").trim();
+    if (!uid) return;
+    if (uid === transferFrom.uid) { toast("That's the same card", "error"); return; }
+    let card;
+    try { card = await store.getCard(uid); }
+    catch (_) { $("#transferWaitText").textContent = `Card ${uid} not found — try another.`; toast(`Card ${uid} isn't registered`, "error"); return; }
+    transferAwaiting = false; transferTo = card;
+    $("#transferStepTap").classList.add("hidden");
+    $("#transferStepConfig").classList.remove("hidden");
+    $("#transferConfirmBtn").classList.remove("hidden");
+    $("#transferFrom").innerHTML = mergeCardHtml(transferFrom);
+    $("#transferTo").innerHTML = mergeCardHtml(transferTo);
+    updateTransferPreview();
+  }
+  function updateTransferPreview() {
+    const kind = $("#transferKind").value;
+    const amt = Math.abs(parseInt($("#transferAmount").value, 10) || 0);
+    const have = transferFrom[kind];
+    $("#transferPreview").innerHTML = amt
+      ? `Send <strong>${amt} ${kind}</strong> from <strong>${escapeHtml(transferFrom.name || transferFrom.uid)}</strong> ` +
+        `(has ${have}) to <strong>${escapeHtml(transferTo.name || transferTo.uid)}</strong>.`
+      : "Enter an amount to send.";
+  }
+  async function doTransfer() {
+    const kind = $("#transferKind").value;
+    const amt = Math.abs(parseInt($("#transferAmount").value, 10) || 0);
+    if (!amt) { toast("Enter an amount", "error"); return; }
+    if (transferFrom[kind] < amt) { toast(`Not enough ${kind} to send`, "error"); return; }
+    const dk = kind === "credits" ? "credits_delta" : "tickets_delta";
+    try {
+      await store.updateCard(transferFrom.uid, { [dk]: -amt, reason: `transfer to ${transferTo.uid}` });
+      try {
+        await store.updateCard(transferTo.uid, { [dk]: amt, reason: `transfer from ${transferFrom.uid}` });
+      } catch (e2) {
+        // roll back the source if the destination couldn't receive it
+        await store.updateCard(transferFrom.uid, { [dk]: amt, reason: "transfer rollback" });
+        throw e2;
+      }
+      closeTransfer();
+      loadCard(await store.getCard(transferFrom.uid)); syncToCard();
+      if (bodyIsAdvanced()) { refreshCards(); refreshLog(); }
+      toast(`Sent ${amt} ${kind}`, "success");
+    } catch (e) {
+      const m = { staff_no_tickets: "Staff cards can't receive tickets", card_blocked: "That card is frozen / lost" }[e.message] || "Transfer failed";
+      toast(m, "error");
+    }
+  }
+
+  // ---------------------------------------------------------------
   // Item form / new card modal
   // ---------------------------------------------------------------
   function editItem(item) {
@@ -1311,6 +1381,16 @@
     $("#mergeCredits").addEventListener("change", updateMergePreview);
     $("#mergeTickets").addEventListener("change", updateMergePreview);
     $("#mergeBackdrop").addEventListener("click", (e) => { if (e.target.id === "mergeBackdrop") closeMerge(); });
+
+    // Transfer
+    $("#transferBtn").addEventListener("click", openTransfer);
+    $("#transferCancelBtn").addEventListener("click", closeTransfer);
+    $("#transferConfirmBtn").addEventListener("click", doTransfer);
+    $("#transferUidBtn").addEventListener("click", () => transferSecondCard($("#transferUid").value));
+    $("#transferUid").addEventListener("keydown", (e) => { if (e.key === "Enter") transferSecondCard($("#transferUid").value); });
+    $("#transferKind").addEventListener("change", updateTransferPreview);
+    $("#transferAmount").addEventListener("input", updateTransferPreview);
+    $("#transferBackdrop").addEventListener("click", (e) => { if (e.target.id === "transferBackdrop") closeTransfer(); });
 
     // Item form
     $("#itemForm").addEventListener("submit", async (e) => {

@@ -235,6 +235,7 @@
           <div class="card-tools">
             <button class="btn btn-ghost" id="undoLastBtn"><svg class="ico"><use href="#i-undo"/></svg> Undo last</button>
             <button class="btn btn-ghost" id="profileBtn"><svg class="ico"><use href="#i-user"/></svg> Profile &amp; history</button>
+            <button class="btn btn-ghost" id="transferBtn"><svg class="ico"><use href="#i-merge"/></svg> Transfer</button>
             <button class="btn btn-ghost" id="mergeBtn"><svg class="ico"><use href="#i-merge"/></svg> Merge card</button>
             <button class="btn btn-ghost advanced-only" id="saveNameBtn">Save name</button>
             <button class="btn btn-ghost" id="switchCardBtn">Switch card</button>
@@ -580,6 +581,46 @@
       <div class="profile-stats" id="pfStats"></div>
       <h3 class="dash-h">Full history</h3>
       <div class="log-list profile-history" id="pfHistory"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Transfer modal ===================== -->
+  <div class="modal-backdrop hidden" id="transferBackdrop">
+    <div class="modal modal-wide" role="dialog" aria-modal="true">
+      <h2>Transfer credits / tickets</h2>
+
+      <div class="merge-step" id="transferStepTap">
+        <p class="merge-lead">Tap the <strong>card to send to</strong> (or type its ID).</p>
+        <div class="merge-waiting">
+          <svg class="ico rfid-wait"><use href="#i-rfid"/></svg>
+          <span id="transferWaitText">Waiting for a tap&hellip;</span>
+        </div>
+        <div class="manual-scan">
+          <input type="text" id="transferUid" placeholder="&hellip;or type the target card ID" autocomplete="off" />
+          <button class="btn" id="transferUidBtn">Use</button>
+        </div>
+      </div>
+
+      <div class="merge-step hidden" id="transferStepConfig">
+        <div class="merge-cards">
+          <div class="merge-card" id="transferFrom"></div>
+          <div class="merge-arrow"><svg class="ico"><use href="#i-merge"/></svg></div>
+          <div class="merge-card dest" id="transferTo"></div>
+        </div>
+        <div class="merge-field">
+          <span class="merge-field-label">Send</span>
+          <div class="adv-row">
+            <select id="transferKind"><option value="tickets">Tickets</option><option value="credits">Credits</option></select>
+            <input type="number" id="transferAmount" placeholder="Amount" min="1" />
+          </div>
+        </div>
+        <p class="merge-preview" id="transferPreview"></p>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-add hidden" id="transferConfirmBtn">Send</button>
+        <button class="btn btn-ghost" id="transferCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 
