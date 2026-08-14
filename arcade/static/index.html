@@ -41,6 +41,7 @@
       <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 4h12v3a6 6 0 01-12 0z"/><path d="M6 6H3v1a4 4 0 004 4M18 6h3v1a4 4 0 01-4 4"/><path d="M9 15h6M8 20h8M12 15v5"/></symbol>
       <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
       <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M8 17h8v4H8z"/></symbol>
+      <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
     </defs>
   </svg>
 
@@ -69,6 +70,25 @@
     </div>
     <div class="lb-list" id="lbList"></div>
     <p class="lb-foot">Updates live &middot; most tickets wins</p>
+  </div>
+
+  <!-- ===================== Customer display (Square-style) ===================== -->
+  <div class="cust-screen hidden" id="customerScreen">
+    <button class="icon-btn cust-close" id="closeCustomer" aria-label="Close">&times;</button>
+    <div class="cust-idle" id="custIdle">
+      <div class="cust-idle-icon"><svg class="ico"><use href="#i-rfid"/></svg></div>
+      <h1>Tap your card</h1>
+      <p id="custIdleName">to see your tickets</p>
+    </div>
+    <div class="cust-active hidden" id="custActive">
+      <div class="cust-hello">Hi <span id="custName">there</span></div>
+      <div class="cust-total">
+        <span class="cust-total-num" id="custTickets">0</span>
+        <span class="cust-total-label">TICKETS</span>
+      </div>
+      <div class="cust-credits" id="custCredits"></div>
+      <div class="cust-lines" id="custLines"></div>
+    </div>
   </div>
 
   <!-- ===================== Live stats big screen ===================== -->
@@ -109,6 +129,7 @@
         <button class="mode-btn active" data-mode="simple" id="modeSimple">Simple</button>
         <button class="mode-btn" data-mode="advanced" id="modeAdvanced">Advanced</button>
       </div>
+      <button class="icon-btn" id="customerBtn" title="Customer display" aria-label="Customer display"><svg class="ico"><use href="#i-monitor"/></svg></button>
       <button class="icon-btn advanced-only" id="statsBtn" title="Live stats (big screen)" aria-label="Live stats"><svg class="ico"><use href="#i-chart"/></svg></button>
       <button class="icon-btn" id="leaderboardBtn" title="Leaderboard (big screen)" aria-label="Leaderboard"><svg class="ico"><use href="#i-trophy"/></svg></button>
       <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings"><svg class="ico"><use href="#i-settings"/></svg></button>
@@ -437,7 +458,7 @@
             <option value="600">10 minutes</option>
           </select>
         </label>
-        <p class="setting-hint">Hotkeys: <b>L</b> lock &middot; <b>F</b> fullscreen &middot; <b>N</b> new card &middot; <b>/</b> search &middot; <b>A</b> advanced &middot; <b>B</b> leaderboard &middot; <b>S</b> live stats.</p>
+        <p class="setting-hint">Hotkeys: <b>L</b> lock &middot; <b>F</b> fullscreen &middot; <b>N</b> new card &middot; <b>/</b> search &middot; <b>A</b> advanced &middot; <b>B</b> leaderboard &middot; <b>S</b> live stats &middot; <b>C</b> customer display.</p>
       </div>
 
       <div class="setting">

@@ -292,9 +292,10 @@
     if ($("#cardExpires")) $("#cardExpires").value = card.expires || "";
     $$("#statusSeg .seg-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.status === status));
     renderPrizes();
+    renderCustomer();
     if (bodyIsAdvanced()) refreshLog();
   }
-  function unloadCard() { activeCard = null; $("#activeCard").classList.add("hidden"); $("#scanHint").classList.remove("hidden"); renderPrizes(); }
+  function unloadCard() { activeCard = null; $("#activeCard").classList.add("hidden"); $("#scanHint").classList.remove("hidden"); renderPrizes(); renderCustomer(); }
 
   async function refreshAll() {
     await Promise.all([refreshItems(), refreshCards()]);
@@ -332,7 +333,7 @@
         <div class="prize-badge" style="${badgeStyle(item.name)}">${escapeHtml(monogram(item.name))}</div>
         <div class="prize-name">${escapeHtml(item.name)}</div>
         <div class="prize-cost ${item.currency}">${item.cost} ${item.currency}</div>
-        <div class="prize-stock">${item.stock < 0 ? "In stock" : (low ? "⚠ " : "") + item.stock + " left"}</div>`;
+        <div class="prize-stock">${item.stock < 0 ? "In stock" : (low ? "Low: " : "") + item.stock + " left"}</div>`;
       div.addEventListener("click", () => redeemItem(item));
       grid.appendChild(div);
     });
@@ -698,6 +699,55 @@
   }
   function openStats() { $("#statsScreen").classList.remove("hidden"); renderStatsScreen(); clearInterval(statsTimer); statsTimer = setInterval(renderStatsScreen, 4000); }
   function closeStats() { $("#statsScreen").classList.add("hidden"); clearInterval(statsTimer); statsTimer = null; }
+
+  // ---------------------------------------------------------------
+  // Customer display (Square-style, shows the player their tickets)
+  // ---------------------------------------------------------------
+  function customerOpen() { return !$("#customerScreen").classList.contains("hidden"); }
+  async function renderCustomer() {
+    if (!customerOpen()) return;
+    if (!activeCard) {
+      $("#custIdle").classList.remove("hidden");
+      $("#custActive").classList.add("hidden");
+      return;
+    }
+    $("#custIdle").classList.add("hidden");
+    $("#custActive").classList.remove("hidden");
+    const staff = activeCard.role === "staff";
+    $("#custName").textContent = activeCard.name || "there";
+    $("#custTickets").textContent = activeCard.tickets;
+    $("#custCredits").textContent = staff ? "∞ free play" : `${activeCard.credits} credits to play`;
+    const lines = $("#custLines");
+    try {
+      const tx = (await store.listTransactions(activeCard.uid, 12))
+        .filter((t) => !t.voided && (t.tickets_d || t.credits_d)).slice(0, 5);
+      lines.innerHTML = "";
+      tx.forEach((t) => {
+        const useT = !!t.tickets_d;
+        const d = useT ? t.tickets_d : t.credits_d;
+        const unit = useT ? "tickets" : "credits";
+        const row = document.createElement("div");
+        row.className = "cust-line";
+        row.innerHTML = `<span class="cust-line-name">${escapeHtml(t.detail || (t.kind === "redeem" ? "Prize" : d > 0 ? "Added" : "Used"))}</span>
+          <span class="cust-line-amt ${d > 0 ? "up" : "down"}">${d > 0 ? "+" : ""}${d} ${unit}</span>`;
+        lines.appendChild(row);
+      });
+    } catch (_) { lines.innerHTML = ""; }
+  }
+  let custTimer = null;
+  function openCustomer() {
+    $("#customerScreen").classList.remove("hidden");
+    renderCustomer();
+    // Poll so the display stays live even when a different device (the staff
+    // iPad) is the one making changes against the same backend.
+    clearInterval(custTimer);
+    custTimer = setInterval(async () => {
+      if (!customerOpen()) return;
+      if (activeCard && store) { try { activeCard = await store.getCard(activeCard.uid); } catch (_) {} }
+      renderCustomer();
+    }, 2000);
+  }
+  function closeCustomer() { $("#customerScreen").classList.add("hidden"); clearInterval(custTimer); custTimer = null; }
 
   // ---------------------------------------------------------------
   // Full-screen leaderboard (for a big display)
@@ -1342,6 +1392,8 @@
     $("#closeLeaderboard").addEventListener("click", closeLeaderboard);
     $("#statsBtn").addEventListener("click", openStats);
     $("#closeStats").addEventListener("click", closeStats);
+    $("#customerBtn").addEventListener("click", openCustomer);
+    $("#closeCustomer").addEventListener("click", closeCustomer);
 
     // Prize claim receipt
     $("#rcClose").addEventListener("click", () => $("#receiptBackdrop").classList.add("hidden"));
@@ -1476,9 +1528,11 @@
       else if (k === "/") { e.preventDefault(); const s = $("#prizeSearch"); if (s) { switchTab("prizes"); s.focus(); } }
       else if (k === "b") { e.preventDefault(); if ($("#leaderboardScreen").classList.contains("hidden")) openLeaderboard(); else closeLeaderboard(); }
       else if (k === "s" && bodyIsAdvanced()) { e.preventDefault(); if ($("#statsScreen").classList.contains("hidden")) openStats(); else closeStats(); }
+      else if (k === "c") { e.preventDefault(); if (customerOpen()) closeCustomer(); else openCustomer(); }
       else if (e.key === "Escape") {
         if (!$("#leaderboardScreen").classList.contains("hidden")) closeLeaderboard();
         if (!$("#statsScreen").classList.contains("hidden")) closeStats();
+        if (customerOpen()) closeCustomer();
       }
     });
 

@@ -452,6 +452,35 @@ body.locked { overflow: hidden; }
 .stats-ticker { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
 .stats-ticker .log-entry { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; border-bottom: 1px solid var(--border); }
 
+/* ---------------- Customer display (Square-style) ---------------- */
+.cust-screen {
+  position: fixed; inset: 0; z-index: 160; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 6vh 6vw;
+  background: radial-gradient(1000px 700px at 50% 0%, rgba(79,107,237,.28), transparent), #0a0d14;
+}
+.cust-close { position: absolute; top: 18px; right: 18px; opacity: .5; }
+.cust-close:hover { opacity: 1; }
+.cust-idle-icon { width: clamp(90px, 16vw, 150px); height: clamp(90px, 16vw, 150px); margin: 0 auto 20px;
+  display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, rgba(56,189,248,.2), transparent 70%); }
+.cust-idle-icon .ico { width: 55%; height: 55%; color: var(--accent-2); stroke-width: 1.4; animation: pulse 2s infinite; }
+.cust-idle h1 { font-size: clamp(32px, 6vw, 64px); }
+.cust-idle p { color: var(--muted); font-size: clamp(16px, 2.4vw, 24px); margin-top: 8px; }
+.cust-hello { font-size: clamp(20px, 3vw, 34px); color: var(--muted); }
+.cust-hello span { color: var(--text); font-weight: 700; }
+.cust-total { margin: 2vh 0 0; line-height: 1; }
+.cust-total-num { display: block; font-size: clamp(80px, 20vw, 220px); font-weight: 850; color: var(--ticket); letter-spacing: -.03em; }
+.cust-total-label { font-size: clamp(16px, 3vw, 30px); letter-spacing: 6px; color: var(--muted); font-weight: 700; }
+.cust-credits { margin-top: 12px; font-size: clamp(15px, 2vw, 22px); color: var(--accent-2); font-weight: 600; }
+.cust-lines { margin: 4vh auto 0; width: min(560px, 92vw); display: flex; flex-direction: column; gap: 8px; }
+.cust-line { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; font-size: clamp(15px, 2vw, 20px); animation: lbIn .25s ease both; }
+.cust-line-name { font-weight: 600; }
+.cust-line-amt { font-weight: 800; font-family: ui-monospace, monospace; }
+.cust-line-amt.up { color: var(--add); }
+.cust-line-amt.down { color: var(--sub); }
+
 /* ---------------- Leaderboard big screen ---------------- */
 .leaderboard-screen {
   position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column;

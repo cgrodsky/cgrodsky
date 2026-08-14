@@ -31,6 +31,11 @@ arcade/ticket system.
 - **Big-screen leaderboard** — a full-screen, auto-refreshing ranking of who has
   the most tickets (gold/silver/bronze for the top 3). Open it from the trophy
   button or press **B** — great to show on a monitor at the event.
+- **Customer display** — a full-screen, Square-style screen for the *player* to
+  see (great on a second monitor or the Pi touchscreen): a friendly greeting, a
+  giant live **ticket total**, credits-to-play, and their recent activity as line
+  items. Stays live even when a different device makes the changes. Trophy-style
+  big screen; press **C**.
 - **Live stats screen** — a full-screen, auto-refreshing operations display
   (cards, credits/tickets in play, tickets won today, prizes today, top prizes,
   and a live activity ticker). Trophy-style big screen; press **S**.
