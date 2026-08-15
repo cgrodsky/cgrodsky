@@ -474,6 +474,7 @@ body.locked { overflow: hidden; }
 .st-hello { font-size: clamp(36px, 8vw, 92px); font-weight: 850; }
 .st-hello.warn { color: var(--sub); }
 .st-paid { margin-top: 2vh; font-size: clamp(22px, 4vw, 44px); font-weight: 800; color: var(--sub); white-space: pre-line; }
+.st-paid .won { color: var(--add); }
 .st-paid.free { color: var(--add); }
 .st-stats { display: flex; gap: clamp(20px, 6vw, 70px); justify-content: center; margin-top: 5vh; }
 .st-stat { display: flex; flex-direction: column; gap: 6px; }

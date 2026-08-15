@@ -22,7 +22,7 @@
     { backendUrl: "", rfidMode: "backend", mode: "simple", exchangeRate: 1,
       theme: "dark", accent: "#4f6bed", sound: false, autolockSec: 0, nfcWrite: false,
       receiptWidth: "80", receiptName: "ARCADE", autoPrint: false, operator: "",
-      stationName: "Ring Toss", stationCost: 1 },
+      stationName: "Ring Toss", stationCost: 1, stationReward: 0 },
     JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}")
   );
   if (settings.backendUrl === "" && location.protocol.startsWith("http")) {
@@ -67,7 +67,7 @@
     exportData() { return this._req("/api/export"); }
     importData(data) { return this._req("/api/import", { method: "POST", body: JSON.stringify(data) }); }
     voidTx(id) { return this._req(`/api/transactions/${id}/void`, { method: "POST" }); }
-    play(uid, cost, game) { return this._req("/api/play", { method: "POST", body: JSON.stringify({ uid, cost, game }) }); }
+    play(uid, cost, reward, game) { return this._req("/api/play", { method: "POST", body: JSON.stringify({ uid, cost, reward, game }) }); }
     nfcRead(_uid) { return this._req("/api/nfc/read", { method: "POST", body: JSON.stringify({}) }); }
     nfcWrite(_uid, data) { return this._req("/api/nfc/write", { method: "POST", body: JSON.stringify({ data }) }); }
     simulate(uid) { return this._req("/api/scan/simulate", { method: "POST", body: JSON.stringify({ uid }) }); }
@@ -176,16 +176,16 @@
       this._save(); return { source: s, dest: d };
     }
     async listTransactions(uid, limit = 50) { return this.data.tx.filter((t) => !uid || t.uid === uid).slice(0, limit); }
-    async play(uid, cost, game) {
+    async play(uid, cost, reward, game) {
       const c = this.data.cards[uid];
       if (!c) throw new Error("card_not_found");
       if (cardBlocked(c)) throw new Error("card_blocked");
-      if (c.role === "staff") { this._log(uid, "play", `${game} (free)`); this._save(); return { card: c, paid: 0, free: true }; }
-      cost = Math.max(0, +cost || 0);
+      if (c.role === "staff") { this._log(uid, "play", `${game} (free)`); this._save(); return { card: c, paid: 0, won: 0, free: true }; }
+      cost = Math.max(0, +cost || 0); reward = Math.max(0, +reward || 0);
       if (c.credits < cost) { const e = new Error("insufficient_credits"); e.have = c.credits; e.need = cost; throw e; }
-      c.credits -= cost; c.updated_at = Date.now() / 1000;
-      this._log(uid, "play", game, -cost);
-      this._save(); return { card: c, paid: cost, free: false };
+      c.credits -= cost; c.tickets += reward; c.updated_at = Date.now() / 1000;
+      this._log(uid, "play", game, -cost, reward);
+      this._save(); return { card: c, paid: cost, won: reward, free: false };
     }
     async nfcRead(uid) { this.data.nfcmem = this.data.nfcmem || {}; return { uid, data: this.data.nfcmem[uid] || null }; }
     async nfcWrite(uid, data) { this.data.nfcmem = this.data.nfcmem || {}; this.data.nfcmem[uid] = data; this._save(); return { ok: true, uid }; }
@@ -752,7 +752,15 @@
     $("#stHello").textContent = `Hi ${c.name || "player"}!`;
     $("#stHello").className = "st-hello";
     if (res.free) { $("#stPaid").textContent = "FREE PLAY"; $("#stPaid").className = "st-paid free"; }
-    else { $("#stPaid").textContent = `−${cost} credits`; $("#stPaid").className = "st-paid"; }
+    else {
+      const parts = [];
+      if (cost) parts.push(`−${cost} credits`);
+      if (res.won) parts.push(`+${res.won} tickets`);
+      $("#stPaid").innerHTML = parts.length
+        ? parts.map((t, i) => `<span class="${t[0] === "+" ? "won" : ""}">${t}</span>`).join("  ·  ")
+        : "Played!";
+      $("#stPaid").className = "st-paid";
+    }
     $("#stStats").classList.remove("hidden");
     if (res.free) $("#stLeft").textContent = "∞"; else countUp($("#stLeft"), c.credits);
     countUp($("#stTickets"), c.tickets);
@@ -762,10 +770,11 @@
   async function playAtStation(uid) {
     uid = (uid || "").trim(); if (!uid) return;
     const cost = parseInt(settings.stationCost, 10) || 0;
+    const reward = parseInt(settings.stationReward, 10) || 0;
     const game = settings.stationName || "Game";
     clearTimeout(stationTimer);
     try {
-      const res = await store.play(uid, cost, game);
+      const res = await store.play(uid, cost, reward, game);
       stationResult(res, cost); beep(880);
     } catch (e) {
       if (e.message === "card_not_found") stationMessage("Card not registered", "Ask a helper to set it up", true);
@@ -1499,8 +1508,10 @@
     // Game station
     $("#stationName").value = settings.stationName || "";
     $("#stationCost").value = settings.stationCost;
+    $("#stationReward").value = settings.stationReward;
     $("#stationName").addEventListener("input", () => { settings.stationName = $("#stationName").value; saveSettings(); if (stationOpen()) stationIdle(); });
     $("#stationCost").addEventListener("input", () => { settings.stationCost = parseInt($("#stationCost").value, 10) || 0; saveSettings(); if (stationOpen()) stationIdle(); });
+    $("#stationReward").addEventListener("input", () => { settings.stationReward = parseInt($("#stationReward").value, 10) || 0; saveSettings(); });
     $("#openStationBtn").addEventListener("click", () => { $("#settingsDrawer").classList.add("hidden"); $("#drawerBackdrop").classList.add("hidden"); openStation(); });
     $("#closeStation").addEventListener("click", closeStation);
 

@@ -408,6 +408,7 @@ def play_game():
     data = request.get_json(force=True) or {}
     uid = data.get("uid")
     cost = max(0, int(data.get("cost", 1)))
+    reward = max(0, int(data.get("reward", 0)))   # tickets won per play
     game = data.get("game", "Game")
     db = get_db()
     card = db.execute("SELECT * FROM cards WHERE uid=?", (uid,)).fetchone()
@@ -416,19 +417,20 @@ def play_game():
     if card_blocked(card):
         return jsonify({"error": "card_blocked"}), 400
     if card["role"] == "staff":
+        # Staff play free and never earn tickets.
         log_tx(db, uid, "play", detail=f"{game} (free)")
         db.commit()
-        return jsonify({"card": row_to_dict(card), "paid": 0, "free": True})
+        return jsonify({"card": row_to_dict(card), "paid": 0, "won": 0, "free": True})
     if card["credits"] < cost:
         return jsonify({"error": "insufficient_credits", "have": card["credits"], "need": cost}), 400
     db.execute(
-        "UPDATE cards SET credits=credits-?, updated_at=? WHERE uid=?",
-        (cost, time.time(), uid),
+        "UPDATE cards SET credits=credits-?, tickets=tickets+?, updated_at=? WHERE uid=?",
+        (cost, reward, time.time(), uid),
     )
-    log_tx(db, uid, "play", detail=game, credits_d=-cost)
+    log_tx(db, uid, "play", detail=game, credits_d=-cost, tickets_d=reward)
     db.commit()
     card = db.execute("SELECT * FROM cards WHERE uid=?", (uid,)).fetchone()
-    return jsonify({"card": row_to_dict(card), "paid": cost, "free": False})
+    return jsonify({"card": row_to_dict(card), "paid": cost, "won": reward, "free": False})
 
 
 @app.route("/api/transactions/<int:tx_id>/void", methods=["POST"])

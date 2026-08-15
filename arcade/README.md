@@ -33,9 +33,10 @@ arcade/ticket system.
   button or press **B** — great to show on a monitor at the event.
 - **Game station display** — turn a screen + reader at a game booth into a
   self-serve kiosk: it shows the game name and **credits to play**; when a card
-  taps, it charges the credits and shows "Hi [name]", credits paid, credits left,
-  and their ticket total, then resets for the next player. Staff cards play free
-  (∞). Set the game name and cost per device in Settings; press **G**.
+  taps, it **charges the credits and awards the tickets won** ("−2 credits · +15
+  tickets"), then shows their credits-left and ticket total and resets for the
+  next player. Staff cards play free (∞, no tickets). Set the game name, cost,
+  and tickets-won per device in Settings; press **G**.
 - **Customer display** — a full-screen, Square-style screen for the *player* to
   see (great on a second monitor or the Pi touchscreen): a friendly greeting, a
   giant live **ticket total**, credits-to-play, and their recent activity as line
