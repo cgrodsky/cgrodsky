@@ -1,0 +1,9 @@
+# Runtime database (created on first server run)
+arcade.db
+arcade.db-journal
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

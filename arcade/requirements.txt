@@ -1,0 +1,12 @@
+# Core web server (always needed)
+Flask>=3.0
+flask-cors>=4.0
+gunicorn>=21.0          # production/cloud web server
+
+# --- RFID reader backends (install only the one your hardware needs) ---
+# MFRC522 / RC522 SPI reader on Raspberry Pi:
+#   pip install mfrc522 RPi.GPIO
+# PC/SC contactless readers (ACR122U and most USB NFC readers):
+#   pip install pyscard
+# Serial / Wiegand-to-serial readers:
+#   pip install pyserial

@@ -1,0 +1,215 @@
+# Arcade Card Manager
+
+A professional web app for running an arcade card / ticket system. Load a card,
+**add or remove credits and tickets**, **create prize items**, **redeem** them,
+and **merge two cards** together. It connects to a real **RFID card reader**,
+and can store all data in the **cloud** so every device stays in sync.
+
+The card itself only carries an ID. All balances live in the database (cloud or
+local), looked up by that ID — so a lost card never means lost value you can't
+trace, and any reader that can read the ID works.
+
+## Features
+
+**Everyday use**
+- **Add / remove credits and tickets** with quick buttons or custom amounts.
+- **Create, edit and delete prize items** with **categories**; redeem with a tap.
+- **Prize search & category filter**, with low-stock warnings.
+- **Merge cards** — tap a second card, choose credits / tickets / both, and pick
+  which card keeps the combined balance.
+- **Transfer** — send a specific number of credits or tickets from one card to
+  another (rolls back safely if the target can't receive them).
+- **Restock** — a one-tap "+10 stock" button on limited-stock prize items.
+- **RFID support**: tap a card and it loads automatically. Unknown cards prompt
+  you to register them.
+
+Credits and tickets are only ever added **manually** by staff (or when a card is
+tapped) — there is **no way to buy credits with money**. It's a pure
+arcade/ticket system.
+
+**Advanced mode (a full back office)**
+- **Big-screen leaderboard** — a full-screen, auto-refreshing ranking of who has
+  the most tickets (gold/silver/bronze for the top 3). Open it from the trophy
+  button or press **B** — great to show on a monitor at the event.
+- **Game station display** — turn a screen + reader at a game booth into a
+  self-serve kiosk: it shows the game name and **credits to play**; when a card
+  taps, it **charges the credits and awards the tickets won** ("−2 credits · +15
+  tickets"), then shows their credits-left and ticket total and resets for the
+  next player. Staff cards play free (∞, no tickets). Set the game name, cost,
+  and tickets-won per device in Settings; press **G**.
+- **Customer display** — a full-screen, Square-style screen for the *player* to
+  see (great on a second monitor or the Pi touchscreen): a friendly greeting, a
+  giant live **ticket total**, credits-to-play, and their recent activity as line
+  items. Stays live even when a different device makes the changes. Trophy-style
+  big screen; press **C**.
+- **Live stats screen** — a full-screen, auto-refreshing operations display
+  (cards, credits/tickets in play, tickets won today, prizes today, top prizes,
+  and a live activity ticker). Trophy-style big screen; press **S**.
+- **Bulk actions** — in the Cards tab, add or remove credits/tickets for **all
+  shown cards at once** (respects the search filter, skips staff) — e.g. "everyone
+  gets 5 free tickets."
+- **Undo last** — one tap reverses the most recent balance change on a card.
+- **Receipt printing** — redeeming a prize prints a real thermal-style claim
+  receipt (monospace, dashed rules, and a **real scannable Code 39 barcode** of
+  the claim number). Set the **header name** and **paper size** (58mm / 80mm /
+  full page) in Settings, plus **auto-print on redeem** and **reprint last
+  receipt**. Prints via **AirPrint**; for true roll receipts use an AirPrint
+  thermal printer (Star / Epson).
+- **Dashboard** — tickets awarded, credits/tickets in circulation, redemptions, a
+  **7-day activity chart**, a **ticket leaderboard**, and **low-stock** list.
+- **Card status** — **Active / Frozen / Lost**. Frozen and Lost cards can't earn
+  or spend; mark a card Lost if it goes missing, then move its balance to a new
+  card with Merge. Plus **bulk freeze/unfreeze** for all shown cards.
+- **Membership** — card **tiers** (Standard/Silver/Gold/VIP) and **notes**.
+- **Staff cards** — an **infinite free-play** card: shows **∞ credits** and can
+  play forever, but **can't earn tickets or redeem prizes**, and never appears on
+  the leaderboard. Good for helpers/teachers.
+- **Card expiry** — give a card an expiry date; after it passes, the card is
+  automatically blocked (can't earn or spend) and shows **EXPIRED**.
+- **Manager PIN** — an optional second 4-digit PIN that's required for the
+  dangerous actions (delete a card, reset all balances, delete all cards), so a
+  helper can add tickets but can't wipe anything.
+- **Operator audit** — set an **operator name** per device/helper; every change
+  is stamped with it in the log ("… by Jaime"), so you can see who did what.
+- **Transfer from the Cards tab** — hit **Send** on any card row to move
+  credits/tickets from it to another card (not just the active card).
+- **Store data on the card (NFC)** — write a card's name and balances **onto the
+  chip itself**, and read it back, so each card carries its own data. A central
+  copy is still kept for the leaderboard/dashboard (a leaderboard needs to see
+  every card). Turn on "auto-save every change onto the card" in Settings. This
+  needs a **write-capable reader** (ACR122U over USB, or an MFRC522 on a
+  Raspberry Pi) — a keyboard-wedge reader can only read the card ID, and the
+  simulator fully emulates it for testing.
+- **Transaction tools** — **void/undo** any balance change, **CSV export**, and a
+  filterable activity log.
+- **Bulk & data** — **batch-create cards**, **backup/restore** (JSON), reset all
+  balances, delete all cards.
+- **Per-card operations** — set an exact balance, convert credits ⇄ tickets at a
+  configurable rate.
+
+**Kiosk & polish**
+- **4-digit PIN lock** with **auto-lock on idle**.
+- **Light / dark themes** + custom **accent colour**, **fullscreen** kiosk mode,
+  **beep on tap/redeem**, and **keyboard shortcuts**.
+- **Clean, icon-based interface** (no emoji), works well on tablets.
+- **Two data backends:** the Python/SQLite server (shared, persistent, real RFID)
+  or browser storage (zero-install, works on GitHub Pages).
+
+---
+
+## Three ways to run it
+
+| You want… | Do this | RFID? | Syncs across devices? |
+| --- | --- | --- | --- |
+| Just try it | Open the GitHub Pages link / `static/index.html` | No | No (per-device) |
+| One arcade PC with a reader | Run `python server.py` on that PC | Yes | Yes (on your network) |
+| **No computer — iPad + cloud** | **Deploy to the cloud (below)** | Yes, via a reader on the iPad | **Yes, everywhere** |
+
+---
+
+## Cloud hosting (no computer needed — iPad friendly)
+
+This is the setup for **online syncing** when you don't have a computer: the
+server runs in the cloud, and every device (iPad, phone, etc.) shares one
+database. You deploy entirely from a browser.
+
+**Why cloud, not a home computer?** The arcade UI hosted on GitHub Pages is
+served over HTTPS, and a browser will only let an HTTPS page talk to an HTTPS
+backend. Cloud hosts give you HTTPS automatically; a plain `http://` address on
+a home PC would be blocked.
+
+### Deploy to Render (free, from your iPad browser)
+
+1. Go to **[render.com](https://render.com)** and sign up (free).
+2. **New +  →  Blueprint**, and connect this GitHub repo. Render reads
+   `arcade/render.yaml` and creates the service for you. (Or use **New + →
+   Web Service**, set **Root Directory** to `arcade`, **Build**
+   `pip install -r requirements.txt`, **Start**
+   `gunicorn server:app -k gthread -w 1 --threads 8 -b 0.0.0.0:$PORT`.)
+3. When it finishes you get an HTTPS URL like
+   `https://arcade-card-manager.onrender.com`.
+4. On the iPad, open the arcade UI, go to **Settings**, paste that URL into
+   **Backend URL**, choose **USB keyboard-wedge reader**, and tap **Connect**.
+   The pill turns green: *Cloud · keyboard-wedge*.
+5. Do the same on any other device with the same URL — they now share one
+   database. Add tickets on one, see them on all.
+
+> **Keep your data across restarts.** Render's free disk resets on each redeploy.
+> To make card data permanent, add a **Render Disk** mounted at `/var/data`, then
+> uncomment the `DB_PATH: /var/data/arcade.db` lines in `render.yaml`. Other
+> hosts that work the same way: Replit, Railway, Fly.io, PythonAnywhere.
+
+### Using the RFID reader on the iPad
+
+Your USB RFID reader (via the USB adapter) acts like a keyboard: when you tap a
+card it "types" the card's ID and presses Enter. With **keyboard-wedge** mode
+selected, the app catches that and loads the card — no reader software needed on
+the iPad. The balances come from the cloud. (An Android phone could instead read
+NFC directly; iOS Safari can't, which is why the wedge reader is the way to go on
+iPad.)
+
+---
+
+## Run locally with a real reader (one arcade PC)
+
+```bash
+cd arcade
+pip install -r requirements.txt
+python server.py                 # http://localhost:5000  (simulated reader)
+```
+
+Pick your reader with `--reader`:
+
+| Reader hardware | Command | Extra install |
+| --- | --- | --- |
+| Simulator (demo) | `python server.py` | — |
+| MFRC522 / RC522 (Raspberry Pi, SPI) | `python server.py --reader mfrc522` | `pip install mfrc522 RPi.GPIO` |
+| PC/SC NFC (ACR122U & most USB NFC) | `python server.py --reader pcsc` | `pip install pyscard` |
+| Serial / Wiegand-to-serial | `python server.py --reader serial --port /dev/ttyUSB0` | `pip install pyserial` |
+| USB keyboard-wedge | Settings → keyboard-wedge (no backend reader needed) | — |
+
+Other computers on the same Wi-Fi can open `http://<that-pc-ip>:5000` and share
+the database.
+
+---
+
+## Browser-only mode (no install, no sync)
+
+Open `static/index.html` or the GitHub Pages link. With no backend, data is kept
+in that browser only. Good for a quick trial or a single kiosk.
+
+---
+
+## Project layout
+
+```
+arcade/
+├── server.py         Flask API + static hosting + live tap feed (SSE)
+├── rfid.py           Reader backends (sim / mfrc522 / pcsc / serial)
+├── requirements.txt
+├── render.yaml       One-click Render cloud deploy
+├── Procfile          Generic cloud start command
+└── static/
+    ├── index.html    UI markup + SVG icon set
+    ├── style.css     Professional dark theme
+    └── app.js        Front-end logic (cloud + local modes, PIN, merge)
+```
+
+## REST API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | Server + reader status |
+| GET/POST | `/api/cards` | List / create cards |
+| GET/PATCH/DELETE | `/api/cards/<uid>` | Read / adjust balances / delete |
+| GET/POST | `/api/items` | List / create prize items |
+| PATCH/DELETE | `/api/items/<id>` | Edit / delete an item |
+| POST | `/api/redeem` | `{uid, item_id}` — redeem an item |
+| POST | `/api/merge` | `{source, dest, credits, tickets}` — combine two cards |
+| GET | `/api/transactions` | Recent activity (`?uid=` to filter) |
+| GET | `/api/scan/stream` | Server-Sent Events feed of live card taps |
+| POST | `/api/scan/simulate` | `{uid}` — inject a fake tap for testing |
+| POST | `/api/nfc/read` | read the data stored on the physical card |
+| POST | `/api/nfc/write` | `{data}` — write data onto the physical card |
+
+`PATCH /api/cards/<uid>` body: `{ "credits_delta": 10, "tickets_delta": -5, "name": "...", "reason": "..." }`.
