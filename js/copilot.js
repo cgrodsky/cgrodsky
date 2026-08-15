@@ -58,6 +58,60 @@
     { label: "Image Assets", ic: "image", prefill: "Create an image of " },
   ];
 
+  // ---- AI Planning (coding requests) + rich code rendering ----
+  const cwait = (ms) => new Promise((r) => setTimeout(r, ms));
+  function isCodingRequest(t) {
+    return /\b(code|coding|component|function|script|program|website|web ?page|html|css|javascript|typescript|python|react|vue|api|class|algorithm|snippet|write me|build me|implement|refactor|debug|regex|sql|query)\b/i.test(t || "") || /```/.test(t || "");
+  }
+  const PLAN_ICON = {
+    search: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>`,
+    db: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>`,
+    cpu: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>`,
+    branch: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M6 15a9 9 0 0 0 9-6"/></svg>`,
+    play: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 5l12 7-12 7z"/></svg>`,
+  };
+  const SPIN_SVG = `<svg class="cop-spin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9" opacity=".85"/></svg>`;
+  const CHECK_SVG = `<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" fill="#1e9d57"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  function buildPlanningCard() {
+    const STEPS = [
+      { t: "Analyze request and extract constraints", ic: "search", dur: "0.4s", ms: 500 },
+      { t: "Search UI knowledge base", ic: "db", dur: "1.2s", ms: 950 },
+      { t: "Synthesize component logic", ic: "cpu", dur: "0.9s", ms: 850 },
+      { t: "Review dependency conflicts", ic: "branch", dur: "0.6s", ms: 650 },
+      { t: "Execute final rendering", ic: "play", dur: "0.8s", ms: 700 },
+    ];
+    const card = el(`<div class="cop-msg bot cop-wide"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-aiplan"><div class="cop-aiplan-head"><b>AI Planning</b><span class="cop-aiplan-sub">Working through your request…</span></div><div class="cop-aiplan-steps"></div></div></div></div>`);
+    const wrap = card.querySelector(".cop-aiplan-steps");
+    const rows = STEPS.map((s) => { const r = el(`<div class="cop-step pending"><span class="cop-step-ic">${PLAN_ICON[s.ic]}</span><span class="cop-step-t">${s.t}</span><span class="cop-step-dur"></span><span class="cop-step-status">${SPIN_SVG}</span></div>`); wrap.appendChild(r); return r; });
+    async function run() {
+      for (let i = 0; i < STEPS.length; i++) {
+        rows[i].className = "cop-step active";
+        await cwait(STEPS[i].ms);
+        rows[i].className = "cop-step success";
+        rows[i].querySelector(".cop-step-dur").textContent = STEPS[i].dur;
+        rows[i].querySelector(".cop-step-status").innerHTML = CHECK_SVG;
+      }
+      const sub = card.querySelector(".cop-aiplan-sub"); if (sub) sub.textContent = "Done";
+    }
+    return { card, run };
+  }
+  // Render assistant text with fenced ``` code blocks as styled code cards.
+  function renderRich(text) {
+    const parts = String(text || "").split("```");
+    let html = "";
+    parts.forEach((part, i) => {
+      if (i % 2 === 1) {
+        const nl = part.indexOf("\n"); let lang = "", code = part;
+        if (nl >= 0) { const first = part.slice(0, nl).trim(); if (/^[a-z0-9+#.\-]{1,20}$/i.test(first)) { lang = first; code = part.slice(nl + 1); } }
+        code = code.replace(/\n+$/, "");
+        html += `<div class="cop-code"><div class="cop-code-head"><span class="cop-code-lang">${escapeHtml(lang || "code")}</span><button class="cop-code-copy">Copy</button></div><pre class="cop-code-body">${escapeHtml(code)}</pre></div>`;
+      } else if (part.trim()) {
+        html += `<div class="cop-text">${escapeHtml(part).replace(/`([^`\n]+)`/g, '<code class="cop-inline">$1</code>')}</div>`;
+      }
+    });
+    return html || `<div class="cop-text">${escapeHtml(text)}</div>`;
+  }
+
   // ---- Plans & usage limits (fake money) ----
   const PLANS = {
     basic: { id: "basic", name: "Basic", price: 0, msgs: 15, attach: 1, images: 0, blurb: "Everyday help" },
@@ -337,11 +391,17 @@
       const who = msg.role === "user" ? "user" : "bot";
       const avatar = who === "bot" ? LOGO("cop-logo") : `${Icon.mini("user", S().profile.username)}`;
       let inner = "";
-      if (msg.content) inner += `<div class="cop-text">${escapeHtml(msg.content)}</div>`;
+      if (msg.content) inner += who === "bot" ? renderRich(msg.content) : `<div class="cop-text">${escapeHtml(msg.content)}</div>`;
       const imgs = (msg.images || []).concat(msg.image ? [msg.image] : []);
       imgs.forEach((u) => inner += `<img class="cop-img" src="${u}" alt="">`);
-      const bubble = el(`<div class="cop-msg ${who}"><div style="flex:0 0 auto">${avatar}</div><div class="cop-bubble">${inner || "&nbsp;"}</div></div>`);
+      const wide = who === "bot" && /```/.test(msg.content || "") ? " cop-wide" : "";
+      const bubble = el(`<div class="cop-msg ${who}${wide}"><div style="flex:0 0 auto">${avatar}</div><div class="cop-bubble">${inner || "&nbsp;"}</div></div>`);
       bubble.querySelectorAll(".cop-img").forEach((im) => im.onclick = () => viewImage(im.src));
+      bubble.querySelectorAll(".cop-code-copy").forEach((btn) => btn.onclick = () => {
+        const pre = btn.closest(".cop-code").querySelector(".cop-code-body");
+        try { navigator.clipboard.writeText(pre.textContent); } catch (_) {}
+        btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+      });
       msgs.appendChild(bubble);
       msgs.scrollTop = msgs.scrollHeight;
       return bubble;
@@ -372,12 +432,15 @@
       u.messages++; State.save(); updateUsage();
       addBubble(userMsg);
 
-      const typing = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
+      // Coding requests get the animated "AI Planning" workflow; everything else the dots.
+      const coding = isCodingRequest(content);
+      const plan = coding ? buildPlanningCard() : null;
+      const typing = plan ? plan.card : el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><div class="cop-typing"><span></span><span></span><span></span></div></div></div>`);
       msgs.appendChild(typing); msgs.scrollTop = msgs.scrollHeight;
       sendBtn.disabled = true;
 
       try {
-        const reply = await callApi(conv.history);
+        const [reply] = await Promise.all([callApi(conv.history), plan ? plan.run() : Promise.resolve()]);
         typing.remove();
         const m = reply.match(/\[\[IMAGE:\s*([\s\S]+?)\]\]/i);
         if (m) {
