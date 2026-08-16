@@ -253,5 +253,77 @@
     body.closest(".win").addEventListener("DOMNodeRemoved",()=>clearInterval(loop));
   };
 
+  // ---- Microsoft Flight Simulator (tap to keep the plane flying through the gaps) ----
+  games.flightsim = (body) => {
+    const { host, status } = wrap(body, "Microsoft Flight Simulator");
+    const W = 400, H = 360, cv = el(`<canvas width="${W}" height="${H}" style="background:linear-gradient(#79c6ef,#d6effb);border-radius:8px;touch-action:none;outline:none"></canvas>`); host.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    let y, vy, obs, loop, score, alive, best = 0;
+    function flap() { if (!alive) { init(); return; } vy = -5.4; }
+    cv.addEventListener("pointerdown", flap);
+    cv.tabIndex = 0; cv.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "ArrowUp") { e.preventDefault(); flap(); } });
+    function mk(x) { const gap = 120; return { x, top: 34 + Math.random() * (H - gap - 80), gap, passed: false }; }
+    function init() { y = 150; vy = 0; score = 0; alive = true; obs = [mk(440), mk(640), mk(840)]; clearInterval(loop); loop = setInterval(tick, 16); setTimeout(() => cv.focus(), 30); }
+    function die() { if (!alive) return; alive = false; clearInterval(loop); best = Math.max(best, score); status.textContent = `Crashed! Score ${score} · Best ${best} — tap to fly again`; }
+    function tick() {
+      if (!document.body.contains(cv)) { clearInterval(loop); return; }
+      vy += 0.3; y += vy;
+      obs.forEach((o) => o.x -= 2.6);
+      if (obs[0].x < -50) { obs.shift(); obs.push(mk(obs[obs.length - 1].x + 200)); }
+      const px = 88, pw = 30, ph = 14;
+      obs.forEach((o) => { if (!o.passed && o.x + 40 < px) { o.passed = true; score++; } if (px + pw > o.x && px < o.x + 40 && (y < o.top || y + ph > o.top + o.gap)) die(); });
+      if (y < 0 || y + ph > H) die();
+      draw();
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      for (let i = 0; i < 3; i++) { const cx = ((-score * 6 + i * 150) % 480 + 480) % 480 - 40; ctx.beginPath(); ctx.arc(cx, 50 + i * 26, 16, 0, 7); ctx.arc(cx + 18, 50 + i * 26, 20, 0, 7); ctx.arc(cx + 40, 50 + i * 26, 15, 0, 7); ctx.fill(); }
+      obs.forEach((o) => { ctx.fillStyle = "#3f8a44"; ctx.fillRect(o.x, 0, 40, o.top); ctx.fillRect(o.x, o.top + o.gap, 40, H - o.top - o.gap); ctx.fillStyle = "#347038"; ctx.fillRect(o.x, o.top - 8, 40, 8); ctx.fillRect(o.x, o.top + o.gap, 40, 8); });
+      ctx.save(); ctx.translate(88, y + 7); ctx.rotate(Math.max(-0.5, Math.min(0.7, vy * 0.06)));
+      ctx.fillStyle = "#e53935"; ctx.beginPath(); ctx.moveTo(-16, -8); ctx.lineTo(22, 0); ctx.lineTo(-16, 8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#fafafa"; ctx.fillRect(-14, -10, 12, 4); ctx.fillRect(-14, 6, 12, 4); ctx.fillStyle = "#90caf9"; ctx.fillRect(2, -3, 8, 6); ctx.restore();
+      status.textContent = "Score: " + score;
+    }
+    const btn = el(`<button class="pill-btn">Start · tap / space to fly</button>`); btn.onclick = init; host.appendChild(btn);
+    init();
+  };
+
+  // ---- Grand Theft Auto (top-down endless driver — dodge the traffic) ----
+  games.gtadrive = (body) => {
+    const { host, status } = wrap(body, "Grand Theft Auto");
+    const W = 360, H = 420, cv = el(`<canvas width="${W}" height="${H}" style="background:#4b4b4b;border-radius:8px;touch-action:none;outline:none"></canvas>`); host.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const lanes = [80, 180, 280]; let lane, cars, loop, score, alive, best = 0, speed, dash, sp;
+    function move(d) { if (!alive) { init(); return; } lane = Math.max(0, Math.min(2, lane + d)); }
+    cv.addEventListener("pointerdown", (e) => { if (!alive) { init(); return; } const r = cv.getBoundingClientRect(); move((e.clientX - r.left) < W / 2 ? -1 : 1); });
+    cv.tabIndex = 0; cv.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") { e.preventDefault(); move(-1); } if (e.key === "ArrowRight") { e.preventDefault(); move(1); } });
+    function init() { lane = 1; cars = []; score = 0; alive = true; speed = 4; dash = 0; sp = 0; clearInterval(loop); loop = setInterval(tick, 16); setTimeout(() => cv.focus(), 30); }
+    function die() { if (!alive) return; alive = false; clearInterval(loop); best = Math.max(best, Math.floor(score / 60)); status.textContent = `Busted! ${Math.floor(score / 60)}m · Best ${best}m — tap to restart`; }
+    function tick() {
+      if (!document.body.contains(cv)) { clearInterval(loop); return; }
+      dash = (dash + speed) % 40; score++; if (score % 600 === 0) speed += 0.6;
+      sp++; if (sp > Math.max(28, 72 - speed * 4)) { sp = 0; cars.push({ lane: Math.floor(Math.random() * 3), y: -70, c: ["#d32f2f", "#1976d2", "#388e3c", "#f57c00", "#7b1fa2", "#00838f"][Math.floor(Math.random() * 6)] }); }
+      cars.forEach((c) => c.y += speed);
+      const py = H - 90;
+      cars.forEach((c) => { if (c.lane === lane && c.y + 64 > py && c.y < py + 64) die(); });
+      cars = cars.filter((c) => c.y < H + 70);
+      draw();
+    }
+    function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+    function car(x, y, c) { ctx.fillStyle = c; rr(x - 18, y, 36, 64, 8); ctx.fill(); ctx.fillStyle = "rgba(10,10,20,.55)"; ctx.fillRect(x - 13, y + 8, 26, 16); ctx.fillRect(x - 13, y + 40, 26, 14); }
+    function draw() {
+      ctx.fillStyle = "#4b4b4b"; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "#eaeaea"; ctx.lineWidth = 4; ctx.setLineDash([20, 20]); ctx.lineDashOffset = -dash;
+      [130, 230].forEach((x) => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }); ctx.setLineDash([]);
+      ctx.fillStyle = "#c9a227"; ctx.fillRect(28, 0, 5, H); ctx.fillRect(W - 33, 0, 5, H);
+      cars.forEach((c) => car(lanes[c.lane], c.y, c.c));
+      car(lanes[lane], H - 90, "#f4d000");
+      status.textContent = "Distance: " + Math.floor(score / 60) + "m";
+    }
+    const btn = el(`<button class="pill-btn">Start · tap left / right to steer</button>`); btn.onclick = init; host.appendChild(btn);
+    init();
+  };
+
   window.Games = { launch };
 })();

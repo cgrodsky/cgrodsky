@@ -69,7 +69,8 @@
       });
     }
     function gmFolderIcon(id) {
-      const P = { inbox: "M4 4h16v16H4z M4 13h4l2 3h4l2-3h4", starred: "M12 3l2.9 6 6.1.9-4.5 4.3 1.1 6.1L12 17l-5.6 3.3 1.1-6.1L3 9.9 9.1 9z", sent: "M4 4l16 8-16 8 4-8z", drafts: "M6 3h8l4 4v14H6z", snoozed: "M12 3a9 9 0 1 0 9 9M12 8v4l3 2", important: "M4 5l7 7-7 7M13 5h6v14", spam: "M12 3l9 5v6c0 5-4 8-9 9-5-1-9-4-9-9V8z", trash: "M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" };
+      if (id === "sent") return `<img class="gm-fic" src="assets/gmail_sent.png?v=1" alt="" style="width:18px;height:18px;object-fit:contain">`;
+      const P = { inbox: "M4 4h16v16H4z M4 13h4l2 3h4l2-3h4", starred: "M12 3l2.9 6 6.1.9-4.5 4.3 1.1 6.1L12 17l-5.6 3.3 1.1-6.1L3 9.9 9.1 9z", drafts: "M6 3h8l4 4v14H6z", snoozed: "M12 3a9 9 0 1 0 9 9M12 8v4l3 2", important: "M4 5l7 7-7 7M13 5h6v14", spam: "M12 3l9 5v6c0 5-4 8-9 9-5-1-9-4-9-9V8z", trash: "M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" };
       return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${P[id] || P.inbox}"/></svg>`;
     }
 
