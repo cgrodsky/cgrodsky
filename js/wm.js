@@ -616,13 +616,55 @@
     { icon: "snow", label: "Snow", temp: 31, hi: 35, lo: 25 },
     { icon: "fog", label: "Foggy", temp: 52, hi: 55, lo: 48 },
   ];
-  function weatherToday() { const d = new Date(State.now ? State.now() : Date.now()); return WX_STATES[(d.getFullYear() + d.getMonth() * 31 + d.getDate()) % WX_STATES.length]; }
+  // Real weather from the NOAA/NWS API (no key; US-only). Falls back to the
+  // date-based demo whenever geolocation, network, or coverage isn't available.
+  function cachedWeather() { try { const w = S().appData && S().appData.weather; if (w && w.live && (Date.now() - w.ts) < 3600000) return w; } catch (e) {} return null; }
+  function weatherToday() { return cachedWeather() || WX_STATES[(() => { const d = new Date(State.now ? State.now() : Date.now()); return (d.getFullYear() + d.getMonth() * 31 + d.getDate()) % WX_STATES.length; })()]; }
+  function mapForecast(short, isDay) {
+    const s = (short || "").toLowerCase();
+    if (/thunder|t-?storm/.test(s)) return "thunder";
+    if (/snow|flurr|sleet|ice|wintry|blizzard/.test(s)) return "snow";
+    if (/rain|shower|drizzle/.test(s)) return /sun|partly|mostly sunny|few clouds/.test(s) ? "showers" : "rain";
+    if (/fog|haze|mist|smoke/.test(s)) return "fog";
+    if (/cloud|overcast/.test(s)) return /partly|mostly sunny|few|scattered/.test(s) ? "partly" : "cloud";
+    if (/sun|clear|fair/.test(s)) return isDay ? "sun" : "partly";
+    return "partly";
+  }
+  function getCoords() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject();
+      navigator.geolocation.getCurrentPosition((pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }), () => reject(), { timeout: 8000, maximumAge: 3600000 });
+    });
+  }
+  let wxLoading = false;
+  async function loadRealWeather() {
+    if (wxLoading || cachedWeather()) return; wxLoading = true;
+    try {
+      const c = await getCoords();
+      const ua = { headers: { "User-Agent": "(windows12-sim, grodsky@forgepr.com)", "Accept": "application/geo+json" } };
+      const pt = await fetch(`https://api.weather.gov/points/${c.lat.toFixed(4)},${c.lon.toFixed(4)}`, ua).then((r) => r.ok ? r.json() : Promise.reject());
+      const city = (pt.properties.relativeLocation && pt.properties.relativeLocation.properties.city) || (S().region && S().region.city) || "Weather";
+      const fc = await fetch(pt.properties.forecast, ua).then((r) => r.ok ? r.json() : Promise.reject());
+      const per = fc.properties.periods || [];
+      if (!per.length) throw 0;
+      const cur = per[0];
+      const temps = per.slice(0, 2).map((p) => p.temperature).filter((t) => typeof t === "number");
+      const hi = temps.length ? Math.max(...temps) : cur.temperature, lo = temps.length ? Math.min(...temps) : cur.temperature;
+      const days = per.filter((pp) => pp.isDaytime).slice(0, 5).map((pp) => ({ name: pp.name.slice(0, 3), hi: pp.temperature, icon: mapForecast(pp.shortForecast, true) }));
+      if (!S().appData) S().appData = {};
+      S().appData.weather = { live: true, ts: Date.now(), temp: cur.temperature, hi, lo, label: cur.shortForecast, icon: mapForecast(cur.shortForecast, cur.isDaytime), city, days };
+      State.save();
+      const t = taskbar && taskbar.querySelector(".tb-widgets"); if (t) { const w = S().appData.weather; t.innerHTML = (WX_SVG[w.icon] || WX_SVG.sun) + `<span class="tb-wx-temp">${w.temp}&deg;</span>`; }
+      const wp = document.getElementById("widgetsPanel"); if (wp) { wp.classList.add("closing"); setTimeout(() => wp.remove(), 0); toggleWidgets(); }
+    } catch (e) { /* keep the demo */ } finally { wxLoading = false; }
+  }
   function widgetTodos() { if (!S().appData) S().appData = {}; if (!S().appData.widgetTodos) S().appData.widgetTodos = [{ text: "Explore Windows 12", done: false }]; return S().appData.widgetTodos; }
 
   function toggleWidgets() {
     const ex = document.getElementById("widgetsPanel"); if (ex) { ex.classList.add("closing"); setTimeout(() => ex.remove(), 200); return; }
+    loadRealWeather(); // fire-and-forget: swaps in live NOAA data if available
     const w = weatherToday();
-    const city = (S().region && S().region.city) || "Seattle";
+    const city = w.city || (S().region && S().region.city) || "Seattle";
     const now = new Date(State.now ? State.now() : Date.now());
     const panel = el(`<div id="widgetsPanel" class="widgets-panel">
       <div class="wg-head"><b>Widgets</b><button class="wg-close" title="Close">&times;</button></div>
@@ -647,7 +689,11 @@
     // 4-day mini forecast
     const days = panel.querySelector(".wg-wx-days");
     const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    for (let i = 1; i <= 4; i++) { const st = WX_STATES[(now.getDate() + i) % WX_STATES.length]; days.appendChild(el(`<div class="wg-day"><span>${dow[(now.getDay() + i) % 7]}</span>${WX_SVG[st.icon]}<b>${st.hi}&deg;</b></div>`)); }
+    if (w.days && w.days.length) {
+      w.days.slice(1, 5).forEach((d) => days.appendChild(el(`<div class="wg-day"><span>${d.name}</span>${WX_SVG[d.icon] || WX_SVG.sun}<b>${d.hi}&deg;</b></div>`)));
+    } else {
+      for (let i = 1; i <= 4; i++) { const st = WX_STATES[(now.getDate() + i) % WX_STATES.length]; days.appendChild(el(`<div class="wg-day"><span>${dow[(now.getDay() + i) % 7]}</span>${WX_SVG[st.icon]}<b>${st.hi}&deg;</b></div>`)); }
+    }
     // To-do
     const list = panel.querySelector(".wg-todo-list");
     function renderTodos() {
