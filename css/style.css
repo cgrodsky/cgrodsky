@@ -3163,6 +3163,20 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .sol-win-trophy { font-size: 52px; } .sol-win-card h2 { margin: 8px 0 4px; color: #14713a; } .sol-win-card p { margin: 0 0 16px; color: #555; }
 .sol-win-again { background: #2f8f52; color: #fff; border: 0; border-radius: 8px; padding: 10px 24px; font-weight: 600; cursor: pointer; }
 
+/* ---------------- Flight Simulator (3D) ---------------- */
+.fsim { position: relative; width: 100%; height: 100%; overflow: hidden; background: #8fc7f0; }
+.fsim-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; gap: 10px; pointer-events: none; }
+.fsim-gauge { background: rgba(10,20,35,.55); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 6px 12px; text-align: center; color: #eaf4ff; min-width: 58px; font-family: Consolas, monospace; }
+.fsim-val { display: block; font-size: 20px; font-weight: 700; line-height: 1; } .fsim-lbl { font-size: 10px; opacity: .8; letter-spacing: .05em; }
+.fsim-score .fsim-val { color: #ffd23f; }
+.fsim-title { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; color: #fff; font-weight: 700; text-shadow: 0 1px 4px rgba(0,0,0,.5); pointer-events: none; }
+.fsim-help { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 2; background: rgba(10,20,35,.5); color: #dbe9ff; font-size: 12px; padding: 6px 12px; border-radius: 8px; pointer-events: none; text-align: center; }
+.fsim-thr { position: absolute; right: 14px; bottom: 44px; z-index: 3; display: flex; flex-direction: column; gap: 8px; }
+.fsim-tbtn { width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(10,20,35,.55); color: #fff; font-size: 18px; cursor: pointer; }
+.fsim-tbtn:active { background: rgba(60,120,200,.7); }
+.fsim-msg { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(0,0,0,.45); color: #fff; text-align: center; font-size: 18px; }
+.fsim-restart { background: #1e5fa8; color: #fff; border: 0; border-radius: 8px; padding: 10px 24px; font-weight: 600; cursor: pointer; }
+
 /* ---------------- Blender & Blockbench (3D) ---------------- */
 .m3-noengine { color: #ddd; padding: 30px; text-align: center; font-size: 14px; }
 .bl, .bb { display: flex; flex-direction: column; height: 100%; color: #d8d8d8; font-size: 13px; }

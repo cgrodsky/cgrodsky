@@ -4,7 +4,8 @@
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
 
   function launch(app, createWindow) {
-    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: 460, height: 540, appId: app.id });
+    const big = app.game === "flightsim";
+    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: big ? 900 : 460, height: big ? 600 : 540, appId: app.id });
     const fn = games[app.game];
     if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>Coming soon.</p>";
   }
@@ -253,40 +254,135 @@
     body.closest(".win").addEventListener("DOMNodeRemoved",()=>clearInterval(loop));
   };
 
-  // ---- Microsoft Flight Simulator (tap to keep the plane flying through the gaps) ----
+  // ---- Microsoft Flight Simulator (real 3D — fly a Boeing 707-300) ----
   games.flightsim = (body) => {
-    const { host, status } = wrap(body, "Microsoft Flight Simulator");
-    const W = 400, H = 360, cv = el(`<canvas width="${W}" height="${H}" style="background:linear-gradient(#79c6ef,#d6effb);border-radius:8px;touch-action:none;outline:none"></canvas>`); host.appendChild(cv);
-    const ctx = cv.getContext("2d");
-    let y, vy, obs, loop, score, alive, best = 0;
-    function flap() { if (!alive) { init(); return; } vy = -5.4; }
-    cv.addEventListener("pointerdown", flap);
-    cv.tabIndex = 0; cv.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "ArrowUp") { e.preventDefault(); flap(); } });
-    function mk(x) { const gap = 120; return { x, top: 34 + Math.random() * (H - gap - 80), gap, passed: false }; }
-    function init() { y = 150; vy = 0; score = 0; alive = true; obs = [mk(440), mk(640), mk(840)]; clearInterval(loop); loop = setInterval(tick, 16); setTimeout(() => cv.focus(), 30); }
-    function die() { if (!alive) return; alive = false; clearInterval(loop); best = Math.max(best, score); status.textContent = `Crashed! Score ${score} · Best ${best} — tap to fly again`; }
-    function tick() {
-      if (!document.body.contains(cv)) { clearInterval(loop); return; }
-      vy += 0.3; y += vy;
-      obs.forEach((o) => o.x -= 2.6);
-      if (obs[0].x < -50) { obs.shift(); obs.push(mk(obs[obs.length - 1].x + 200)); }
-      const px = 88, pw = 30, ph = 14;
-      obs.forEach((o) => { if (!o.passed && o.x + 40 < px) { o.passed = true; score++; } if (px + pw > o.x && px < o.x + 40 && (y < o.top || y + ph > o.top + o.gap)) die(); });
-      if (y < 0 || y + ph > H) die();
-      draw();
+    if (typeof THREE === "undefined") { body.innerHTML = `<div style="padding:24px;color:#334">3D engine (Three.js) failed to load. Check your connection and refresh.</div>`; return; }
+    const T = THREE;
+    body.innerHTML = `<div class="fsim">
+      <div class="fsim-hud">
+        <div class="fsim-gauge"><span class="fsim-val" id="fs-spd">120</span><span class="fsim-lbl">KTS</span></div>
+        <div class="fsim-gauge"><span class="fsim-val" id="fs-alt">1500</span><span class="fsim-lbl">ALT ft</span></div>
+        <div class="fsim-gauge"><span class="fsim-val" id="fs-hdg">000</span><span class="fsim-lbl">HDG</span></div>
+        <div class="fsim-gauge"><span class="fsim-val" id="fs-thr">70</span><span class="fsim-lbl">THR %</span></div>
+        <div class="fsim-gauge fsim-score"><span class="fsim-val" id="fs-rings">0</span><span class="fsim-lbl">RINGS</span></div>
+      </div>
+      <div class="fsim-title">Boeing 707-300</div>
+      <div class="fsim-help">Drag to steer (up/down = pitch, left/right = bank) · <b>+ / −</b> throttle · fly through the rings</div>
+      <div class="fsim-thr"><button class="fsim-tbtn" data-t="up">▲</button><button class="fsim-tbtn" data-t="dn">▼</button></div>
+      <div class="fsim-msg" style="display:none"></div>
+    </div>`;
+    const host = body.querySelector(".fsim");
+    const scene = new T.Scene();
+    scene.background = new T.Color(0x8fc7f0);
+    scene.fog = new T.Fog(0xbfe0f5, 200, 1400);
+    const camera = new T.PerspectiveCamera(60, 1, 0.5, 4000);
+    const renderer = new T.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.domElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none";
+    host.insertBefore(renderer.domElement, host.firstChild);
+    scene.add(new T.HemisphereLight(0xffffff, 0x6a7a55, 1.05));
+    const sun = new T.DirectionalLight(0xfff3d6, 0.8); sun.position.set(300, 500, 200); scene.add(sun);
+
+    // Ground + scenery
+    const ground = new T.Mesh(new T.PlaneGeometry(8000, 8000, 1, 1), new T.MeshLambertMaterial({ color: 0x5f9a4c }));
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
+    const grid = new T.GridHelper(8000, 160, 0x4a7d3a, 0x4a7d3a); grid.position.y = 0.2; scene.add(grid);
+    // runway
+    const rw = new T.Mesh(new T.PlaneGeometry(60, 900), new T.MeshLambertMaterial({ color: 0x3a3a3a })); rw.rotation.x = -Math.PI / 2; rw.position.set(0, 0.4, -200); scene.add(rw);
+    // mountains
+    for (let i = 0; i < 40; i++) { const h = 120 + Math.random() * 380; const m = new T.Mesh(new T.ConeGeometry(80 + Math.random() * 160, h, 5), new T.MeshLambertMaterial({ color: 0x6b8f5a })); m.position.set((Math.random() - 0.5) * 6000, h / 2, (Math.random() - 0.5) * 6000); scene.add(m); }
+
+    // Procedural Boeing 707-300
+    function buildPlane() {
+      const g = new T.Group();
+      const white = new T.MeshStandardMaterial({ color: 0xf3f5f8, metalness: 0.3, roughness: 0.5 });
+      const blue = new T.MeshStandardMaterial({ color: 0x1e5fa8, metalness: 0.3, roughness: 0.5 });
+      const dark = new T.MeshStandardMaterial({ color: 0x2b2b30, metalness: 0.5, roughness: 0.4 });
+      const fus = new T.Mesh(new T.CylinderGeometry(2.2, 2.2, 46, 20), white); fus.rotation.x = Math.PI / 2; g.add(fus);
+      const nose = new T.Mesh(new T.SphereGeometry(2.2, 16, 12), white); nose.position.z = 23; nose.scale.z = 1.8; g.add(nose);
+      const tailcone = new T.Mesh(new T.ConeGeometry(2.2, 6, 16), white); tailcone.rotation.x = -Math.PI / 2; tailcone.position.z = -25; g.add(tailcone);
+      const stripe = new T.Mesh(new T.CylinderGeometry(2.22, 2.22, 40, 20, 1, true), blue); stripe.rotation.x = Math.PI / 2; stripe.scale.y = 0.18; stripe.position.y = 0.7; g.add(stripe);
+      // swept wings
+      const wingGeo = new T.BoxGeometry(34, 0.7, 7);
+      const wingL = new T.Mesh(wingGeo, white); wingL.position.set(-15, -0.5, -2); wingL.rotation.y = 0.32; g.add(wingL);
+      const wingR = new T.Mesh(wingGeo, white); wingR.position.set(15, -0.5, -2); wingR.rotation.y = -0.32; g.add(wingR);
+      // tail fin + horizontal stabs
+      const fin = new T.Mesh(new T.BoxGeometry(0.7, 9, 7), blue); fin.position.set(0, 5, -22); fin.rotation.x = 0.3; g.add(fin);
+      const hs = new T.Mesh(new T.BoxGeometry(16, 0.6, 4), white); hs.position.set(0, 1.5, -23); g.add(hs);
+      // 4 engines under wings
+      [[-9, -3], [-16, -1], [9, -3], [16, -1]].forEach(([x, z]) => { const e = new T.Mesh(new T.CylinderGeometry(1.5, 1.4, 6, 14), dark); e.rotation.x = Math.PI / 2; e.position.set(x, -2.4, z + 3); g.add(e); });
+      g.scale.setScalar(0.9);
+      return g;
     }
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "rgba(255,255,255,.75)";
-      for (let i = 0; i < 3; i++) { const cx = ((-score * 6 + i * 150) % 480 + 480) % 480 - 40; ctx.beginPath(); ctx.arc(cx, 50 + i * 26, 16, 0, 7); ctx.arc(cx + 18, 50 + i * 26, 20, 0, 7); ctx.arc(cx + 40, 50 + i * 26, 15, 0, 7); ctx.fill(); }
-      obs.forEach((o) => { ctx.fillStyle = "#3f8a44"; ctx.fillRect(o.x, 0, 40, o.top); ctx.fillRect(o.x, o.top + o.gap, 40, H - o.top - o.gap); ctx.fillStyle = "#347038"; ctx.fillRect(o.x, o.top - 8, 40, 8); ctx.fillRect(o.x, o.top + o.gap, 40, 8); });
-      ctx.save(); ctx.translate(88, y + 7); ctx.rotate(Math.max(-0.5, Math.min(0.7, vy * 0.06)));
-      ctx.fillStyle = "#e53935"; ctx.beginPath(); ctx.moveTo(-16, -8); ctx.lineTo(22, 0); ctx.lineTo(-16, 8); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "#fafafa"; ctx.fillRect(-14, -10, 12, 4); ctx.fillRect(-14, 6, 12, 4); ctx.fillStyle = "#90caf9"; ctx.fillRect(2, -3, 8, 6); ctx.restore();
-      status.textContent = "Score: " + score;
+    const plane = buildPlane(); scene.add(plane);
+
+    // Rings to fly through
+    const rings = [];
+    function spawnRing(z) { const r = new T.Mesh(new T.TorusGeometry(22, 2.4, 10, 28), new T.MeshStandardMaterial({ color: 0xffc21e, emissive: 0x6b4b00, metalness: 0.3, roughness: 0.4 })); r.position.set((Math.random() - 0.5) * 500, 120 + Math.random() * 320, z); scene.add(r); rings.push(r); }
+    for (let i = 0; i < 6; i++) spawnRing(-500 - i * 500);
+
+    // State
+    let pos = new T.Vector3(0, 460, 0), heading = 0, pitch = 0, roll = 0, speed = 120, thr = 0.7, ringScore = 0, alive = true, raf = 0;
+    const spdEl = body.querySelector("#fs-spd"), altEl = body.querySelector("#fs-alt"), hdgEl = body.querySelector("#fs-hdg"), thrEl = body.querySelector("#fs-thr"), ringEl = body.querySelector("#fs-rings"), msg = body.querySelector(".fsim-msg");
+    // input
+    let drag = false, lx = 0, ly = 0, pRoll = 0, pPitch = 0;
+    const dom = renderer.domElement;
+    dom.addEventListener("pointerdown", (e) => { drag = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); });
+    dom.addEventListener("pointermove", (e) => { if (!drag) return; pRoll = Math.max(-1, Math.min(1, (e.clientX - lx) / 120)); pPitch = Math.max(-1, Math.min(1, (e.clientY - ly) / 120)); });
+    dom.addEventListener("pointerup", () => { drag = false; pRoll = 0; pPitch = 0; });
+    const keys = {};
+    const keyh = (e) => { keys[e.key] = e.type === "keydown"; if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "=", "w", "s"].includes(e.key)) e.preventDefault(); };
+    dom.tabIndex = 0; dom.addEventListener("keydown", keyh); dom.addEventListener("keyup", keyh);
+    body.querySelectorAll(".fsim-tbtn").forEach((b) => b.onpointerdown = () => { thr = Math.max(0, Math.min(1, thr + (b.dataset.t === "up" ? 0.08 : -0.08))); });
+
+    function resize() { const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    function reset() { pos.set(0, 460, 0); heading = 0; pitch = 0; roll = 0; speed = 120; thr = 0.7; alive = true; msg.style.display = "none"; }
+    function crash() { if (!alive) return; alive = false; msg.innerHTML = `<b>Crashed.</b><br>Rings cleared: ${ringScore}<br><button class="fsim-restart">Fly again</button>`; msg.style.display = "flex"; msg.querySelector(".fsim-restart").onclick = () => { ringScore = 0; ringEl.textContent = 0; reset(); }; }
+
+    function loop() {
+      if (!document.body.contains(host)) { renderer.dispose && renderer.dispose(); return; }
+      raf = requestAnimationFrame(loop);
+      resize();
+      if (alive) {
+        // controls: keyboard overrides/augments drag
+        let cRoll = pRoll + (keys.ArrowLeft ? -1 : 0) + (keys.ArrowRight ? 1 : 0);
+        let cPitch = pPitch + (keys.ArrowUp ? -1 : 0) + (keys.ArrowDown ? 1 : 0);
+        if (keys["+"] || keys["="] || keys.w) thr = Math.min(1, thr + 0.01);
+        if (keys["-"] || keys.s) thr = Math.max(0, thr - 0.01);
+        roll += (cRoll * 0.6 - roll) * 0.1;
+        pitch += (cPitch * 0.5 - pitch) * 0.08;
+        heading += -roll * 0.012 * (speed / 120);
+        const targetSpeed = 60 + thr * 320;
+        speed += (targetSpeed - speed) * 0.02 - pitch * 6; // climbing bleeds speed
+        speed = Math.max(30, speed);
+        const fwd = new T.Vector3(Math.sin(heading), -Math.sin(pitch) * 0.9, -Math.cos(heading));
+        pos.addScaledVector(fwd, speed * 0.02);
+        if (pos.y < 6) crash();
+        // orient plane
+        plane.position.copy(pos);
+        plane.rotation.set(0, 0, 0);
+        plane.rotateY(heading);
+        plane.rotateX(pitch);
+        plane.rotateZ(-roll);
+        // chase camera
+        const camOff = new T.Vector3(0, 9, 34).applyEuler(new T.Euler(0, heading, 0));
+        camera.position.copy(pos).add(camOff);
+        camera.lookAt(pos.x, pos.y + 3, pos.z);
+        // rings
+        rings.forEach((r) => {
+          const d = r.position.distanceTo(pos);
+          if (d < 22 && Math.abs(r.position.z - pos.z) < 12) { ringScore++; ringEl.textContent = ringScore; r.position.z = pos.z - 3000 - Math.random() * 500; r.position.x = pos.x + (Math.random() - 0.5) * 500; r.position.y = 120 + Math.random() * 340; }
+          else if (r.position.z > pos.z + 200) { r.position.z = pos.z - 2500 - Math.random() * 800; r.position.x = pos.x + (Math.random() - 0.5) * 500; }
+          r.rotation.z += 0.01;
+        });
+        spdEl.textContent = Math.round(speed);
+        altEl.textContent = Math.round(pos.y * 3.3);
+        hdgEl.textContent = String(Math.round((((heading * 180 / Math.PI) % 360) + 360) % 360)).padStart(3, "0");
+        thrEl.textContent = Math.round(thr * 100);
+      }
+      renderer.render(scene, camera);
     }
-    const btn = el(`<button class="pill-btn">Start · tap / space to fly</button>`); btn.onclick = init; host.appendChild(btn);
-    init();
+    reset(); requestAnimationFrame(loop);
   };
 
   // ---- Grand Theft Auto (top-down endless driver — dodge the traffic) ----
