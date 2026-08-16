@@ -44,52 +44,6 @@
     ta.oninput = () => { data.text = ta.value; State.save(); };
   };
 
-  // ---------- Weather ----------
-  AppRegistry.weather = function () {
-    const { body } = cw({ title: "Weather", icon: Icon.mini("weather", "Weather"), width: 480, height: 460 });
-    const region = S().region || "Your area";
-    const seed = [...region].reduce((a, c) => a + c.charCodeAt(0), 0);
-    const conditions = ["Sunny", "Partly cloudy", "Cloudy", "Light rain", "Showers", "Clear"];
-    const base = 12 + (seed % 18);
-    const days = ["Today", "Tomorrow", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const rows = days.map((d, i) => {
-      const c = conditions[(seed + i) % conditions.length];
-      const hi = base + ((seed + i * 7) % 8), lo = hi - 5 - ((seed + i) % 4);
-      return `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--border)"><span class="grow">${d}</span><span class="muted" style="width:120px">${c}</span><span>${hi}° / ${lo}°</span></div>`;
-    }).join("");
-    body.innerHTML = `<div style="padding:20px">
-      <div class="muted">${region}</div>
-      <div style="font-size:3.4rem;font-weight:300">${base + (seed % 8)}°</div>
-      <div class="muted">${conditions[seed % conditions.length]}</div>
-      <h3>7-day forecast</h3>${rows}</div>`;
-  };
-
-  // ---------- Calendar ----------
-  AppRegistry.calendar = function () {
-    const { body } = cw({ title: "Calendar", icon: Icon.mini("calendar", "Calendar"), width: 460, height: 460 });
-    let view = State.now();
-    function render() {
-      const y = view.getFullYear(), m = view.getMonth();
-      const first = new Date(y, m, 1).getDay();
-      const days = new Date(y, m + 1, 0).getDate();
-      const today = State.now();
-      const monthName = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-      let cells = "";
-      ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].forEach((d) => cells += `<div class="muted" style="text-align:center;font-size:.75rem">${d}</div>`);
-      for (let i = 0; i < first; i++) cells += "<div></div>";
-      for (let d = 1; d <= days; d++) {
-        const isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
-        cells += `<div style="text-align:center;padding:8px 0;border-radius:8px;${isToday ? "background:var(--accent);color:#fff" : ""}">${d}</div>`;
-      }
-      body.innerHTML = `<div style="padding:16px">
-        <div class="row"><button class="btn-text" id="prev">&#8249;</button><h2 class="grow" style="text-align:center;margin:0">${monthName}</h2><button class="btn-text" id="next">&#8250;</button></div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px">${cells}</div></div>`;
-      body.querySelector("#prev").onclick = () => { view = new Date(y, m - 1, 1); render(); };
-      body.querySelector("#next").onclick = () => { view = new Date(y, m + 1, 1); render(); };
-    }
-    render();
-  };
-
   // ---------- News ----------
   AppRegistry.news = function () {
     const { body } = cw({ title: "News", icon: Icon.mini("news", "News"), width: 560, height: 540 });

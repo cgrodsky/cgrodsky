@@ -77,7 +77,18 @@
       sel = null;
       if (foundations.every((f) => f.length === 13)) { won = true; }
       render();
-      if (won && window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("solitaire", "Solitaire") : "", title: "Solitaire", body: "You win! 🎉 (" + moves + " moves)" });
+      if (won) {
+        celebrate();
+        if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("solitaire", "Solitaire") : "", title: "Solitaire", body: "You win! 🎉 (" + moves + " moves)" });
+      }
+    }
+    function celebrate() {
+      const ov = el(`<div class="sol-win"><div class="sol-confetti"></div><div class="sol-win-card"><div class="sol-win-trophy">🏆</div><h2>You Win!</h2><p>Solved in ${moves} moves</p><button class="sol-win-again">Play again</button></div></div>`);
+      const conf = ov.querySelector(".sol-confetti");
+      const cols = ["#e11d48", "#f59e0b", "#10b981", "#3b82f6", "#a142f4", "#ec4899"];
+      for (let i = 0; i < 80; i++) { const c = document.createElement("i"); c.style.cssText = `left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${Math.random() * 1.2}s;animation-duration:${1.6 + Math.random() * 1.6}s;transform:rotate(${Math.random() * 360}deg)`; conf.appendChild(c); }
+      ov.querySelector(".sol-win-again").onclick = () => { ov.remove(); deal(); };
+      body.appendChild(ov);
     }
 
     function selectFrom(from, col, idx, f) {

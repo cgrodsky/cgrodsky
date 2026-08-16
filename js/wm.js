@@ -224,6 +224,34 @@
     render();
   };
 
+  // -------- Weather app (full screen, uses the same NOAA data as the widget) --------
+  function wxBg(icon) {
+    const M = { sun: "linear-gradient(160deg,#3a7bd5,#63b3ed)", partly: "linear-gradient(160deg,#4a7fb5,#7fb0d9)", cloud: "linear-gradient(160deg,#5a6b7e,#8a9bb0)", showers: "linear-gradient(160deg,#41668c,#6d8fb0)", rain: "linear-gradient(160deg,#374a63,#5b7089)", thunder: "linear-gradient(160deg,#2b3550,#4a4f6b)", snow: "linear-gradient(160deg,#6a7c93,#aebfd4)", fog: "linear-gradient(160deg,#6b7280,#9aa3b2)" };
+    return M[icon] || M.partly;
+  }
+  AppRegistry.weather = function () {
+    const ref = createWindow({ title: "Weather", icon: Icon.mini("weather", "Weather"), width: 720, height: 640, appId: "weather" });
+    const body = ref.body; body.classList.add("wx-host");
+    const esc = escAttr;
+    loadRealWeather();
+    function render() {
+      const w = weatherToday();
+      const city = w.city || (S().region && S().region.city) || "Seattle";
+      const now = new Date(State.now ? State.now() : Date.now());
+      const hours = Array.from({ length: 8 }, (_, i) => { const h = (now.getHours() + i) % 24; return { label: i === 0 ? "Now" : ((h % 12) || 12) + (h < 12 ? " AM" : " PM"), temp: Math.round(w.temp + Math.sin(i * 0.7) * 3 - i * 0.4), icon: w.icon }; });
+      const dnames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const days = (w.days && w.days.length) ? w.days : Array.from({ length: 7 }, (_, i) => { const st = WX_STATES[(now.getDate() + i) % WX_STATES.length]; return { name: dnames[(now.getDay() + i) % 7], hi: st.hi, lo: st.lo, icon: st.icon }; });
+      const maxHi = Math.max(...days.map((d) => d.hi || w.hi)), minLo = Math.min(...days.map((d) => d.lo != null ? d.lo : w.lo));
+      body.innerHTML = `<div class="wx" style="background:${wxBg(w.icon)}">
+        <div class="wx-cur"><div class="wx-city">${esc(city)}</div><div class="wx-temp">${w.temp}&deg;</div><div class="wx-cond">${esc(w.label)}</div><div class="wx-hilo">H:${w.hi}&deg; &nbsp; L:${w.lo}&deg;${w.live ? " &middot; Live" : ""}</div></div>
+        <div class="wx-panel wx-hours">${hours.map((h) => `<div class="wx-hour"><span>${esc(h.label)}</span><span class="wx-hic">${WX_SVG[h.icon] || WX_SVG.sun}</span><b>${h.temp}&deg;</b></div>`).join("")}</div>
+        <div class="wx-panel wx-days">${days.map((d, i) => { const hi = d.hi != null ? d.hi : w.hi, lo = d.lo != null ? d.lo : w.lo; const l = ((lo - minLo) / Math.max(1, maxHi - minLo)) * 100, r = ((hi - minLo) / Math.max(1, maxHi - minLo)) * 100; return `<div class="wx-drow"><span class="wx-dname">${i === 0 ? "Today" : esc(d.name || "")}</span><span class="wx-dic">${WX_SVG[d.icon] || WX_SVG.sun}</span><span class="wx-dlo">${lo}&deg;</span><span class="wx-bar"><span class="wx-bar-fill" style="left:${l}%;right:${100 - r}%"></span></span><span class="wx-dhi">${hi}&deg;</span></div>`; }).join("")}</div>
+      </div>`;
+    }
+    render();
+    setTimeout(() => { if (document.body.contains(body)) render(); }, 1600);
+  };
+
   // -------- Desktop App Groups (folders that live on the Home Screen) --------
   function deskGroups() {
     if (!S().desktop) S().desktop = {};
