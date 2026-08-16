@@ -155,7 +155,7 @@
       <div class="fe-touch">
         <button class="fe-b" data-k="thrUp">▲ THR</button><button class="fe-b" data-k="thrDn">▼ THR</button>
         <button class="fe-b" data-k="flaps">FLAPS</button><button class="fe-b" data-k="gear">GEAR</button>
-        <button class="fe-b" data-k="cam">CAM</button><button class="fe-b" data-k="reset">RESET</button>
+        <button class="fe-b" data-k="cam">CAM</button><button class="fe-b" data-k="hud">HUD</button><button class="fe-b" data-k="reset">RESET</button>
       </div>
       <div class="fe-warn" id="fe-warn"></div>
       <div class="fe-load" id="fe-load"></div>
@@ -296,12 +296,13 @@
         if (k === "g") st.gear = !st.gear;
         if (k === "b") st.brakes = !st.brakes;
         if (k === "r") reset();
+        if (k === "h") { hudOn = !hudOn; applyHud(); }
         if (k === "p") { acIndex = (acIndex + 1) % fleet.length; loadAircraft(acIndex); reset(); }
         if (k === "1") st.ap.alt = !st.ap.alt, st.ap.altTgt = Math.round(st.pos.y * 3.3 / 100) * 100 / 3.3;
         if (k === "2") st.ap.hdg = !st.ap.hdg, st.ap.hdgTgt = st.heading;
         if (k === "3") st.ap.spd = !st.ap.spd, st.ap.spdTgt = st.vel.length() * 1.94;
       }
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "+", "-", "=", "w", "s", "a", "d", "c", "f", "g", "b", "r", "p"].includes(k)) e.preventDefault();
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "+", "-", "=", "w", "s", "a", "d", "c", "f", "g", "b", "r", "p", "h"].includes(k)) e.preventDefault();
     };
     const dom = renderer.domElement; dom.tabIndex = 0;
     dom.addEventListener("keydown", kh); dom.addEventListener("keyup", kh);
@@ -316,6 +317,7 @@
       else if (k === "flaps") st.flaps = st.flaps >= 3 ? 0 : st.flaps + 1;
       else if (k === "gear") st.gear = !st.gear;
       else if (k === "cam") camMode = (camMode + 1) % CAMS.length;
+      else if (k === "hud") { hudOn = !hudOn; applyHud(); }
       else if (k === "reset") reset();
     });
 
@@ -351,6 +353,137 @@
     const ADI = buildInstruments();
     // fix tape label text nodes (createElementNS text content)
     instr.querySelectorAll(".fe-tape-l").forEach((n, i) => { n.textContent = i === 0 ? "KTS" : "ALT"; });
+
+    // ---- HUD (MSFS-style heads-up display) ----------------------------------
+    function buildHUD() {
+      const s = svg("svg", { class: "fe-hud-svg", viewBox: "0 0 1000 600", preserveAspectRatio: "xMidYMid meet" });
+      const cx = 500, cy = 300, PPD = 8.5;   // pixels per degree of pitch
+      const mk = (tag, a, txt) => { const e = svg(tag, a); if (txt != null) e.textContent = txt; s.appendChild(e); return e; };
+
+      // ---- pitch ladder: rolls about center, then translates by pitch ----
+      const ladClip = svg("clipPath", { id: "hudLad" }); ladClip.appendChild(svg("rect", { x: 175, y: 70, width: 650, height: 460 })); s.appendChild(ladClip);
+      const ladWrap = svg("g", { "clip-path": "url(#hudLad)" }); s.appendChild(ladWrap);
+      const rollG = svg("g", {}); ladWrap.appendChild(rollG);
+      const pitchG = svg("g", {}); rollG.appendChild(pitchG);
+      function rung(a) {
+        const g = svg("g", {}); const y = cy - a * PPD, gap = 66;
+        if (a === 0) {
+          g.appendChild(svg("line", { x1: cx - 300, y1: y, x2: cx - gap, y2: y, class: "hud-l" }));
+          g.appendChild(svg("line", { x1: cx + gap, y1: y, x2: cx + 300, y2: y, class: "hud-l" }));
+          return g;
+        }
+        const major = a % 10 === 0, seg = major ? 92 : 42, dash = a < 0 ? "9 7" : null, tick = a > 0 ? 13 : -13;
+        [-1, 1].forEach((side) => {
+          const x0 = cx + side * gap, x1 = cx + side * (gap + seg);
+          const ln = svg("line", { x1: x0, y1: y, x2: x1, y2: y, class: "hud-l" }); if (dash) ln.setAttribute("stroke-dasharray", dash); g.appendChild(ln);
+          g.appendChild(svg("line", { x1: x0, y1: y, x2: x0, y2: y + tick, class: "hud-l" }));
+          if (major) { const t = svg("text", { x: x1 + side * 15, y: y + 6, class: "hud-t", "text-anchor": "middle" }); t.textContent = Math.abs(a); g.appendChild(t); }
+        });
+        return g;
+      }
+      for (let a = -40; a <= 40; a += 5) pitchG.appendChild(rung(a));
+
+      // ---- bank scale + rolling pointer at top ----
+      const bank = svg("g", {}); s.appendChild(bank);
+      [-60, -45, -30, -20, -10, 0, 10, 20, 30, 45, 60].forEach((ang) => {
+        const r = 205, rad = (ang - 90) * Math.PI / 180, len = ang % 30 === 0 ? 15 : 9;
+        const x1 = cx + Math.cos(rad) * r, y1 = cy + Math.sin(rad) * r, x2 = cx + Math.cos(rad) * (r + len), y2 = cy + Math.sin(rad) * (r + len);
+        bank.appendChild(svg("line", { x1, y1, x2, y2, class: "hud-l" }));
+      });
+      const bankPtr = svg("path", { d: `M${cx},${cy - 190} l-9,-15 l18,0 z`, class: "hud-fill" }); s.appendChild(bankPtr);
+
+      // ---- flight path vector (velocity marker) ----
+      const fpv = svg("g", {}); s.appendChild(fpv);
+      fpv.appendChild(svg("circle", { cx: 0, cy: 0, r: 11, class: "hud-l", fill: "none" }));
+      fpv.appendChild(svg("line", { x1: 11, y1: 0, x2: 26, y2: 0, class: "hud-l" }));
+      fpv.appendChild(svg("line", { x1: -11, y1: 0, x2: -26, y2: 0, class: "hud-l" }));
+      fpv.appendChild(svg("line", { x1: 0, y1: -11, x2: 0, y2: -20, class: "hud-l" }));
+
+      // ---- fixed boresight (aircraft reference) ----
+      mk("path", { d: `M${cx - 60},${cy} l24,0 l10,10`, class: "hud-l", fill: "none" });
+      mk("path", { d: `M${cx + 60},${cy} l-24,0 l-10,10`, class: "hud-l", fill: "none" });
+
+      // ---- vertical tape (airspeed left / altitude right) ----
+      function vTape(edgeX, dir, step, pxPer, fmt, floorVal, labelEvery) {
+        const w = 84, x0 = dir < 0 ? edgeX : edgeX - w, N = 11, top = 120, h = 360;
+        s.appendChild(svg("rect", { x: x0, y: top, width: w, height: h, class: "hud-strip" }));
+        const clip = svg("clipPath", { id: "tp" + edgeX }); clip.appendChild(svg("rect", { x: x0, y: top, width: w, height: h })); s.appendChild(clip);
+        const g = svg("g", { "clip-path": `url(#tp${edgeX})` }); s.appendChild(g);
+        const slots = []; for (let i = 0; i < N; i++) { const l = svg("line", { class: "hud-l" }), t = svg("text", { class: "hud-t" }); g.appendChild(l); g.appendChild(t); slots.push({ l, t }); }
+        const bw = 70, bh = 36, innerX = dir < 0 ? x0 + w : x0;   // inner edge (toward center)
+        const bx = dir < 0 ? innerX - bw : innerX;
+        const tipX = dir < 0 ? bx : bx + bw, dirTip = dir < 0 ? -8 : 8;
+        s.appendChild(svg("path", { d: `M${bx},${cy - bh / 2} h${bw} v${bh} h${-bw} z`, class: "hud-box" }));
+        s.appendChild(svg("path", { d: `M${tipX},${cy - 9} l${dirTip},9 l${-dirTip},9`, class: "hud-l", fill: "none" }));
+        const valT = svg("text", { x: bx + bw / 2, y: cy + 7, class: "hud-val", "text-anchor": "middle" }); s.appendChild(valT);
+        const tickX = innerX, lblX = dir < 0 ? x0 + 10 : x0 + w - 10, anchor = dir < 0 ? "start" : "end";
+        return {
+          update(v) {
+            const base = Math.round(v / step) * step;
+            for (let i = 0; i < N; i++) {
+              const tv = base + (i - (N - 1) / 2) * step, y = cy - (tv - v) * pxPer, sl = slots[i];
+              if (y < top + 4 || y > top + h - 4 || (floorVal != null && tv < floorVal)) { sl.l.setAttribute("x1", -99); sl.l.setAttribute("x2", -99); sl.t.textContent = ""; continue; }
+              const major = tv % (labelEvery || step * 2) === 0;
+              sl.l.setAttribute("x1", tickX); sl.l.setAttribute("x2", tickX + (dir < 0 ? -1 : 1) * (major ? 14 : 8)); sl.l.setAttribute("y1", y); sl.l.setAttribute("y2", y);
+              sl.t.setAttribute("x", lblX); sl.t.setAttribute("y", y + 5); sl.t.setAttribute("text-anchor", anchor); sl.t.textContent = major ? fmt(tv) : "";
+            }
+            valT.textContent = fmt(v);
+          }
+        };
+      }
+      const spdTape = vTape(150, -1, 10, 2.0, (v) => String(Math.max(0, Math.round(v))), 0, 20);
+      const altTape = vTape(850, 1, 100, 0.13, (v) => String(Math.round(v)), null, 500);
+
+      // ---- heading tape (top) ----
+      const hClip = svg("clipPath", { id: "hHdg" }); hClip.appendChild(svg("rect", { x: 300, y: 40, width: 400, height: 40 })); s.appendChild(hClip);
+      const hg = svg("g", { "clip-path": "url(#hHdg)" }); s.appendChild(hg);
+      const hSlots = []; for (let i = 0; i < 13; i++) { const l = svg("line", { class: "hud-l" }), t = svg("text", { class: "hud-t" }); hg.appendChild(l); hg.appendChild(t); hSlots.push({ l, t }); }
+      mk("path", { d: `M${cx - 40},44 h80 v30 h-80 z`, class: "hud-box" });
+      const hdgVal = mk("text", { x: cx, y: 66, class: "hud-val", "text-anchor": "middle" }, "");
+      mk("path", { d: `M${cx},82 l-7,-10 l14,0 z`, class: "hud-fill" });
+      const hHdgUpdate = (hdg) => {
+        const ppdH = 5.5, base = Math.round(hdg / 10) * 10;
+        for (let i = 0; i < 13; i++) {
+          const tv = base + (i - 6) * 10, x = cx + (((tv - hdg + 540) % 360) - 180) * ppdH, sl = hSlots[i];
+          if (x < 300 || x > 700) { sl.l.setAttribute("x1", -99); sl.t.textContent = ""; continue; }
+          sl.l.setAttribute("x1", x); sl.l.setAttribute("x2", x); sl.l.setAttribute("y1", 66); sl.l.setAttribute("y2", 76);
+          const d = ((tv % 360) + 360) % 360;
+          sl.t.setAttribute("x", x); sl.t.setAttribute("y", 62); sl.t.setAttribute("text-anchor", "middle"); sl.t.textContent = String(d / 10).padStart(2, "0");
+        }
+        hdgVal.textContent = String(Math.round(((hdg % 360) + 360) % 360)).padStart(3, "0");
+      };
+
+      // ---- annunciators + side readouts ----
+      const ann = ["ARM", "LNAV", "VNAV PTH", "CMD"]; ann.forEach((a, i) => mk("text", { x: 320 + i * 130, y: 108, class: "hud-ann", "text-anchor": "middle" }, a));
+      const vsT = mk("text", { x: cx + 190, y: cy + 4, class: "hud-t", "text-anchor": "start" }, "");
+      const machT = mk("text", { x: 150 - 42, y: 500, class: "hud-t", "text-anchor": "middle" }, "");
+      const stdT = mk("text", { x: 850 - 42, y: 500, class: "hud-t", "text-anchor": "middle" }, "STD");
+      const botL = mk("text", { x: 210, y: 560, class: "hud-t", "text-anchor": "start" }, "");
+      const botR = mk("text", { x: 790, y: 560, class: "hud-t", "text-anchor": "end" }, "");
+
+      return {
+        el: s,
+        update(kts, altFt, hdgRad, vsFpm, thr) {
+          const pd = st.pitch * 57.2958, rd = st.roll * 57.2958;
+          pitchG.setAttribute("transform", `translate(0 ${pd * PPD})`);
+          rollG.setAttribute("transform", `rotate(${-rd} ${cx} ${cy})`);
+          bankPtr.setAttribute("transform", `rotate(${-rd} ${cx} ${cy})`);
+          const spd = st.vel.length(), fpa = spd > 1 ? Math.asin(clamp(st.vel.y / spd, -1, 1)) * 57.2958 : 0;
+          const fpvY = clamp(cy + (pd - fpa) * PPD, 96, 504);
+          fpv.setAttribute("transform", `translate(${cx} ${fpvY})`);
+          spdTape.update(kts); altTape.update(altFt); hHdgUpdate((hdgRad * 57.2958));
+          vsT.textContent = (vsFpm >= 0 ? "+" : "") + (Math.round(vsFpm / 50) * 50) + " VS";
+          machT.textContent = "." + String(Math.min(999, Math.round(spd / 343 * 1000))).padStart(3, "0");
+          botL.textContent = "HDG " + String(Math.round(((hdgRad * 57.2958) % 360 + 360) % 360)).padStart(3, "0") + "   " + (st.gear ? "GEAR DN" : "GEAR UP");
+          botR.textContent = "THR " + Math.round(thr * 100) + "%   FLP " + st.flaps;
+        }
+      };
+    }
+    const HUD = buildHUD();
+    host.appendChild(HUD.el);
+    let hudOn = true;
+    function applyHud() { HUD.el.style.display = hudOn ? "block" : "none"; instr.style.display = hudOn ? "none" : "block"; }
+    applyHud();
 
     function updateInstruments(kts, altFt, hdg, vsi, thr, aoa) {
       instr.querySelector("#fe-spd").textContent = Math.round(kts);
@@ -514,6 +647,7 @@
       orientPlane(); updateEnv(); updateCamera();
       const spd = st.vel.length(), kts = spd * 1.94384, altFt = st.pos.y * 3.3, vsi = st.vel.y * 196.85;
       updateInstruments(kts, altFt, st.heading, vsi, st.throttle, 0); apText();
+      if (hudOn) HUD.update(kts, altFt, st.heading, vsi, st.throttle);
       host.querySelector("#fe-clock").textContent = String(Math.floor(st.time)).padStart(2, "0") + ":" + String(Math.floor((st.time % 1) * 60)).padStart(2, "0") + (st.gear ? " · GEAR" : "") + (st.brakes ? " · BRK" : "") + (st.flaps ? " · FLAPS " + st.flaps : "");
       drawMap();
       renderer.render(scene, camera);
