@@ -3207,6 +3207,22 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .fe-hud-svg .hud-ann { fill: #6effd0; font: 700 15px "Consolas","SF Mono",ui-monospace,monospace; letter-spacing: .5px; }
 .fe-hud-svg .hud-box { fill: rgba(6,20,10,.35); stroke: #46ff62; stroke-width: 2; }
 .fe-hud-svg .hud-strip { fill: rgba(6,20,10,.28); stroke: #2f9c46; stroke-width: 1.5; }
+
+/* ---------------- GTA (3D open world) ---------------- */
+.gta { position: absolute; inset: 0; overflow: hidden; background: #9dc4e8; font-family: system-ui; user-select: none; }
+.gta-hud { position: absolute; top: 12px; right: 14px; z-index: 4; text-align: right; pointer-events: none; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.gta-top { display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
+.gta-cash { color: #7bffb0; font: 800 22px "Pricedown", Impact, system-ui; letter-spacing: 1px; }
+.gta-loc { color: #fff; font: 700 13px system-ui; opacity: .9; }
+.gta-stars { color: #ffd23f; font-size: 18px; letter-spacing: 2px; margin-top: 2px; }
+.gta-action { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); z-index: 4; color: #ffd23f; font: 800 34px Impact, system-ui; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; }
+.gta-help { position: absolute; top: 10px; left: 14px; z-index: 4; color: #fff; font: 600 11px system-ui; opacity: .82; text-shadow: 0 1px 4px rgba(0,0,0,.7); max-width: 46%; pointer-events: none; }
+.gta-load { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: #0c1622; color: #dfe9f5; font: 700 18px system-ui; letter-spacing: .5px; }
+.gta-stick { position: absolute; left: 20px; bottom: 22px; width: 96px; height: 96px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.4); z-index: 5; touch-action: none; }
+.gta-nub { position: absolute; left: 50%; top: 50%; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: rgba(255,255,255,.55); }
+.gta-btns { position: absolute; right: 16px; bottom: 20px; z-index: 5; display: grid; grid-template-columns: repeat(2, auto); gap: 8px; justify-items: end; }
+.gta-b { background: rgba(12,18,28,.72); color: #fff; border: 1px solid rgba(255,255,255,.28); border-radius: 10px; padding: 10px 14px; font: 700 13px system-ui; cursor: pointer; min-width: 62px; }
+.gta-b.on { background: #c0392b; border-color: #e05a4a; }
 .fe-load.on { display: block; }
 .fe-load.on::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 2px solid #6ea8e0; border-top-color: transparent; border-radius: 50%; vertical-align: -1px; animation: feSpin .8s linear infinite; }
 @keyframes feSpin { to { transform: rotate(360deg); } }

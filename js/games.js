@@ -4,7 +4,7 @@
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
 
   function launch(app, createWindow) {
-    const big = app.game === "flightsim";
+    const big = app.game === "flightsim" || app.game === "gta";
     const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: big ? 900 : 460, height: big ? 600 : 540, appId: app.id });
     const fn = games[app.game];
     if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>Coming soon.</p>";
@@ -258,6 +258,12 @@
   games.flightsim = (body) => {
     if (window.FlightEngine) return window.FlightEngine.start(body);
     body.innerHTML = "<div style='padding:24px'>Flight engine unavailable.</div>";
+  };
+
+  // ---- Grand Theft Auto (real 3D open-world, third-person character) ----
+  games.gta = (body) => {
+    if (window.GTA) return window.GTA.start(body);
+    body.innerHTML = "<div style='padding:24px'>Game engine unavailable.</div>";
   };
 
   // ---- Grand Theft Auto (top-down endless driver — dodge the traffic) ----
