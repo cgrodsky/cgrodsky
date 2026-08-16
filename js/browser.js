@@ -124,6 +124,7 @@
         const n = G_APPS[i] && G_APPS[i].n;
         if (n === "Classroom" && window.AppRegistry.classroom) window.WM.open("classroom");
         else if (n === "Gmail" && window.AppRegistry.gmail) window.WM.open("gmail");
+        else if (n === "Calendar" && window.AppRegistry.calendar) window.WM.open("calendar");
       });
       page.querySelector(".google-top").appendChild(pop);
       setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!pop.contains(x.target)) { pop.remove(); document.removeEventListener("pointerdown", h); } }), 0);
