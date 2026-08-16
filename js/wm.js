@@ -169,6 +169,61 @@
     render();
   };
 
+  // -------- Task Manager --------
+  AppRegistry.taskmanager = function () {
+    const ref = createWindow({ title: "Task Manager", icon: Icon.mini("taskmanager", "Task Manager"), width: 660, height: 520, appId: "taskmanager" });
+    const body = ref.body; body.classList.add("tm-host");
+    const esc = escAttr;
+    let tab = "proc", iv = null;
+    const BG = [
+      { name: "System", type: "sys" }, { name: "Registry", type: "sys" }, { name: "Desktop Window Manager", type: "sys" },
+      { name: "Windows Explorer", type: "sys" }, { name: "Client Server Runtime Process", type: "sys" }, { name: "Service Host: Network", type: "sys" },
+      { name: "Antimalware Service Executable", type: "sys" }, { name: "Runtime Broker", type: "sys" }, { name: "Search Indexer", type: "sys" },
+    ].map((p) => ({ ...p, cpu: Math.random() * 2, mem: 20 + Math.random() * 180 }));
+    let cpuHist = Array.from({ length: 40 }, () => 5 + Math.random() * 10);
+    let memHist = Array.from({ length: 40 }, () => 40 + Math.random() * 10);
+    function rows() {
+      const apps = openWindows.filter((w) => w.appId !== "taskmanager").map((w) => ({ name: w.title || w.appId, entry: w, app: true, cpu: Math.random() * 8, mem: 60 + Math.random() * 260 }));
+      BG.forEach((p) => { p.cpu = Math.max(0, p.cpu + (Math.random() - 0.5)); p.mem = Math.max(10, p.mem + (Math.random() - 0.5) * 6); });
+      return { apps, bg: BG };
+    }
+    function stop() { if (iv) clearInterval(iv); iv = null; }
+    function render() {
+      stop();
+      body.innerHTML = `<div class="tm">
+        <div class="tm-tabs"><button class="tm-tab ${tab === "proc" ? "on" : ""}" data-t="proc">Processes</button><button class="tm-tab ${tab === "perf" ? "on" : ""}" data-t="perf">Performance</button></div>
+        <div class="tm-body"></div></div>`;
+      body.querySelectorAll(".tm-tab").forEach((b) => b.onclick = () => { tab = b.dataset.t; render(); });
+      const host = body.querySelector(".tm-body");
+      if (tab === "proc") renderProc(host); else renderPerf(host);
+    }
+    function paintProc(host) {
+      const { apps, bg } = rows();
+      const totCpu = Math.min(100, apps.concat(bg).reduce((s, r) => s + r.cpu, 0) + 3);
+      const totMem = Math.min(99, 38 + apps.length * 4 + apps.concat(bg).reduce((s, r) => s + r.mem, 0) / 260);
+      const rowHtml = (r) => `<div class="tm-row${r.app ? " tm-app" : ""}"><span class="tm-name">${esc(r.name)}</span><span class="tm-cpu">${r.cpu.toFixed(1)}%</span><span class="tm-mem">${Math.round(r.mem)} MB</span>${r.app ? `<button class="tm-end" data-id="${r.entry.id}">End task</button>` : "<span class='tm-end'></span>"}</div>`;
+      host.innerHTML = `<div class="tm-head"><span class="tm-name">Name</span><span class="tm-cpu"><b>${totCpu.toFixed(0)}%</b><i>CPU</i></span><span class="tm-mem"><b>${totMem.toFixed(0)}%</b><i>Memory</i></span><span class="tm-end"></span></div>
+        <div class="tm-sec">Apps (${apps.length})</div>${apps.map(rowHtml).join("") || "<div class='tm-empty'>No apps running.</div>"}
+        <div class="tm-sec">Background processes (${bg.length})</div>${bg.map(rowHtml).join("")}`;
+      host.querySelectorAll(".tm-end[data-id]").forEach((b) => b.onclick = () => { const w = openWindows.find((x) => x.id === b.dataset.id); if (w) { w.win.querySelector(".ctl-close").click(); paintProc(host); } });
+    }
+    function renderProc(host) { paintProc(host); iv = setInterval(() => { if (!document.body.contains(host)) return stop(); paintProc(host); }, 1500); }
+    function spark(hist, color) { const w = 260, h = 90; const pts = hist.map((v, i) => `${(i / (hist.length - 1)) * w},${h - (v / 100) * h}`).join(" "); return `<svg viewBox="0 0 ${w} ${h}" class="tm-spark" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/><polyline points="0,${h} ${pts} ${w},${h}" fill="${color}22" stroke="none"/></svg>`; }
+    function renderPerf(host) {
+      function tick() {
+        cpuHist = cpuHist.slice(1).concat(Math.max(2, Math.min(100, cpuHist[cpuHist.length - 1] + (Math.random() - 0.5) * 18)));
+        memHist = memHist.slice(1).concat(Math.max(30, Math.min(90, memHist[memHist.length - 1] + (Math.random() - 0.5) * 4)));
+        host.innerHTML = `<div class="tm-perf">
+          <div class="tm-graph"><div class="tm-graph-h">CPU <b>${cpuHist[cpuHist.length - 1].toFixed(0)}%</b></div>${spark(cpuHist, "#2f7be0")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">Memory <b>${memHist[memHist.length - 1].toFixed(0)}%</b> · ${(memHist[memHist.length - 1] / 100 * 16).toFixed(1)}/16 GB</div>${spark(memHist, "#a142f4")}</div>
+        </div>`;
+      }
+      tick(); iv = setInterval(() => { if (!document.body.contains(host)) return stop(); tick(); }, 1000);
+    }
+    ref.onClose = stop;
+    render();
+  };
+
   // -------- Desktop App Groups (folders that live on the Home Screen) --------
   function deskGroups() {
     if (!S().desktop) S().desktop = {};

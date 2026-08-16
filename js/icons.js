@@ -327,6 +327,7 @@
     <circle cx="50" cy="59" r="5" fill="#0067c0"/><circle cx="68" cy="59" r="5" fill="#0067c0"/><circle cx="86" cy="59" r="5" fill="#0067c0"/>
   </svg>`);
 
+  register("taskmanager", `<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="20" height="18" rx="2.5" fill="#1f6feb"/><rect x="5" y="13" width="3" height="5" rx="1" fill="#fff"/><rect x="10" y="9" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="6" width="3" height="12" rx="1" fill="#fff"/></svg>`);
   register("recyclebin", `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M4 7h16" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>
     <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" stroke="#c7d0e6" stroke-width="1.6" stroke-linecap="round"/>

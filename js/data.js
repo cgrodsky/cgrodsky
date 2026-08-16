@@ -26,6 +26,7 @@
     { id: "blockbench", name: "Blockbench", cat: "Multimedia", price: 0, builtin: "blockbench", desc: "A boxy 3D model editor — add cubes, recolor, and pose them." },
     { id: "colorpicker", name: "Color Picker", cat: "Utilities", price: 0, builtin: "colorpicker", desc: "Pick colors with an HSV area and hue slider — copy HEX, RGB, or HSL." },
     { id: "run", name: "Run", cat: "Utilities", price: 0, builtin: "run", desc: "The Run dialog (Win+R) — open a program by name." },
+    { id: "taskmanager", name: "Task Manager", cat: "Utilities", price: 0, builtin: "taskmanager", desc: "Task Manager — see running apps and processes and end tasks." },
     { id: "itunes", name: "iTunes", cat: "Multimedia", price: 0, builtin: "itunes", desc: "Apple iTunes — your music library, player, and store. (Downloads with an installer.)" },
     { id: "classroom", name: "Google Classroom", cat: "Productivity", price: 0, builtin: "classroom", desc: "Google Classroom — your classes, announcements, and assignments." },
     { id: "gmail", name: "Gmail", cat: "Productivity", price: 0, builtin: "gmail", desc: "Gmail — your inbox with tabs, reading pane, star, and compose." },
