@@ -120,8 +120,10 @@
       const pop = el(`<div class="g-apps-pop"><div class="g-apps-grid">${G_APPS.map((a) => `<button class="g-app">${a.img ? `<span class="g-app-ic g-app-ic-img"><img src="${a.img}?v=1" alt=""></span>` : `<span class="g-app-ic" style="background:${a.c}">${a.e}</span>`}<span class="g-app-n">${a.n}</span></button>`).join("")}</div></div>`);
       pop.querySelectorAll(".g-app").forEach((b, i) => b.onclick = () => {
         pop.remove();
-        // Classroom opens the installed Classroom app; others are decorative for now.
-        if (G_APPS[i] && G_APPS[i].n === "Classroom" && window.AppRegistry && window.AppRegistry.classroom) window.WM.open("classroom");
+        // Classroom & Gmail open their apps; others are decorative for now.
+        const n = G_APPS[i] && G_APPS[i].n;
+        if (n === "Classroom" && window.AppRegistry.classroom) window.WM.open("classroom");
+        else if (n === "Gmail" && window.AppRegistry.gmail) window.WM.open("gmail");
       });
       page.querySelector(".google-top").appendChild(pop);
       setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!pop.contains(x.target)) { pop.remove(); document.removeEventListener("pointerdown", h); } }), 0);
