@@ -79,12 +79,60 @@
       const eng = new T.Mesh(new T.CylinderGeometry(1.3, 1.1, 4, 14), dark); eng.rotation.x = Math.PI / 2; eng.position.z = -14; g.add(eng);
       return g;
     }
+    function b747() { // fallback stand-in for the real Air France glTF
+      const g = new T.Group(); const white = mat(0xf3f5f8), blue = mat(0x123a86), grey = mat(0x2a2a30, 0.6, 0.4);
+      const fus = new T.Mesh(new T.CylinderGeometry(3.2, 3.2, 68, 24), white); fus.rotation.x = Math.PI / 2; g.add(fus);
+      const nose = new T.Mesh(new T.SphereGeometry(3.2, 20, 14), white); nose.position.z = 34; nose.scale.z = 1.7; g.add(nose);
+      const hump = new T.Mesh(new T.CapsuleGeometry(2.6, 12, 6, 14), white); hump.rotation.x = Math.PI / 2; hump.position.set(0, 2.6, 22); hump.scale.set(1, 0.7, 1); g.add(hump);
+      const cone = new T.Mesh(new T.ConeGeometry(3.2, 9, 18), white); cone.rotation.x = -Math.PI / 2; cone.position.z = -37; g.add(cone);
+      const wingGeo = new T.BoxGeometry(52, 1.0, 11);
+      const wl = new T.Mesh(wingGeo, white); wl.position.set(-24, -1.4, -3); wl.rotation.y = 0.36; g.add(wl);
+      const wr = new T.Mesh(wingGeo, white); wr.position.set(24, -1.4, -3); wr.rotation.y = -0.36; g.add(wr);
+      const fin = new T.Mesh(new T.BoxGeometry(1.0, 13, 10), blue); fin.position.set(0, 8, -32); fin.rotation.x = 0.34; g.add(fin);
+      const hs = new T.Mesh(new T.BoxGeometry(24, 0.9, 6), white); hs.position.set(0, 2.4, -34); g.add(hs);
+      [[-13, -1], [-23, 2], [13, -1], [23, 2]].forEach(([x, z]) => { const e = new T.Mesh(new T.CylinderGeometry(2.2, 2.0, 8, 16), grey); e.rotation.x = Math.PI / 2; e.position.set(x, -4, z); g.add(e); });
+      return g;
+    }
     return [
-      { id: "b707", name: "Boeing 707-300", mass: 116000, S: 283, thrust: 320000, clSlope: 5.6, clMax: 1.5, cd0: 0.021, vRef: 150, model: b707 },
+      { id: "b747", name: "Air France Boeing 747-400", mass: 285000, S: 525, thrust: 1000000, clSlope: 5.6, clMax: 1.5, cd0: 0.021, vRef: 160, model: b747,
+        real: { url: "assets/models/b747/scene.gltf", kind: "gltf", len: 70, orient: { x: 0, y: 0, z: 0 } } },
+      { id: "b707", name: "Boeing 707-300", mass: 116000, S: 283, thrust: 320000, clSlope: 5.6, clMax: 1.5, cd0: 0.021, vRef: 150, model: b707,
+        real: { url: "assets/models/b707.fbx", kind: "fbx", len: 46, orient: { x: 0, y: 0, z: 0 } } },
       { id: "a320", name: "Airbus A320", mass: 68000, S: 122, thrust: 240000, clSlope: 5.8, clMax: 1.6, cd0: 0.022, vRef: 140, model: a320 },
       { id: "c172", name: "Cessna 172", mass: 1100, S: 16, thrust: 4200, clSlope: 5.7, clMax: 1.6, cd0: 0.028, vRef: 55, model: cessna },
       { id: "f16", name: "F-16 Falcon", mass: 12000, S: 28, thrust: 130000, clSlope: 4.8, clMax: 1.2, cd0: 0.018, vRef: 130, model: f16 },
     ];
+  }
+
+  // ------------------------------------------------------------------ real model loading (glTF / FBX)
+  const _modelCache = {};   // url -> loaded Object3D (original; cloned per use)
+  function loadModel(url, kind) {
+    if (_modelCache[url]) return Promise.resolve(_modelCache[url]);
+    return new Promise((resolve, reject) => {
+      const Loader = kind === "fbx" ? window.FBXLoader : window.GLTFLoader;
+      if (!Loader) { reject(new Error("loader unavailable: " + kind)); return; }
+      new Loader().load(url,
+        (res) => { const obj = kind === "fbx" ? res : res.scene; _modelCache[url] = obj; resolve(obj); },
+        undefined,
+        (err) => reject(err));
+    });
+  }
+  // Center a loaded model at origin, scale it to `len` metres on its longest axis,
+  // apply a per-model orientation, and return it wrapped in a clean group whose
+  // rotation the engine is free to overwrite each frame.
+  function prepReal(T, obj, desc) {
+    if (desc.orient) obj.rotation.set(desc.orient.x || 0, desc.orient.y || 0, desc.orient.z || 0);
+    obj.updateMatrixWorld(true);
+    const box = new T.Box3().setFromObject(obj);
+    const size = box.getSize(new T.Vector3());
+    const center = box.getCenter(new T.Vector3());
+    obj.position.sub(center);
+    obj.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = o.receiveShadow = false; } });
+    const wrap = new T.Group();
+    wrap.add(obj);
+    const longest = Math.max(size.x, size.y, size.z) || 1;
+    wrap.scale.setScalar((desc.len || 40) / longest);
+    return wrap;
   }
 
   // ------------------------------------------------------------------ the engine
@@ -110,11 +158,14 @@
         <button class="fe-b" data-k="cam">CAM</button><button class="fe-b" data-k="reset">RESET</button>
       </div>
       <div class="fe-warn" id="fe-warn"></div>
+      <div class="fe-load" id="fe-load"></div>
     </div>`;
     const host = body.querySelector(".fe");
     const instr = host.querySelector(".fe-instr");
     const map = host.querySelector(".fe-map").getContext("2d");
     const warnEl = host.querySelector("#fe-warn");
+    const loadEl = host.querySelector("#fe-load");
+    const setLoad = (msg) => { loadEl.textContent = msg || ""; loadEl.classList.toggle("on", !!msg); };
 
     // ---- scene ----
     const scene = new T.Scene();
@@ -177,13 +228,46 @@
     }
 
     // ---- aircraft ----
-    let plane, spec;
+    let plane, spec, loadToken = 0;
     function loadAircraft(i) {
-      if (plane) scene.remove(plane);
-      spec = fleet[i]; plane = spec.model(); scene.add(plane);
+      if (plane) { scene.remove(plane); plane = null; }
+      spec = fleet[i];
       host.querySelector("#fe-ac").textContent = spec.name;
+      // Procedural stand-in shows instantly and is the permanent fallback if the
+      // real model can't be fetched (offline, decode error, missing loader).
+      plane = spec.model();
+      scene.add(plane);
+      if (spec.real) {
+        const token = ++loadToken;
+        setLoad("Loading " + spec.name + " …");
+        loadModel(spec.real.url, spec.real.kind).then((orig) => {
+          if (token !== loadToken) return;            // user already switched planes
+          const wrap = prepReal(T, orig.clone(true), spec.real);
+          if (plane) scene.remove(plane);
+          plane = wrap; scene.add(plane);
+          setLoad("");
+        }).catch((err) => {
+          if (token === loadToken) setLoad("");
+          console.warn("[FlightEngine] real model failed, using stand-in:", spec.real.url, err);
+        });
+      } else {
+        setLoad("");
+      }
     }
     loadAircraft(acIndex);
+
+    // ---- airport stairs at the runway threshold (scenery) ----
+    loadModel("assets/models/stairs/scene.gltf", "gltf").then((orig) => {
+      const s = orig.clone(true);
+      const g = new T.Group(); g.add(s);
+      const box = new T.Box3().setFromObject(s);
+      const size = box.getSize(new T.Vector3()); const c = box.getCenter(new T.Vector3());
+      s.position.sub(c); s.position.y += size.y / 2;             // sit flush on the ground
+      g.scale.setScalar(6 / (size.y || 6));                       // ~6 m tall
+      g.position.set(34, elev(0, -980) + 0.4, -980);
+      s.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+      scene.add(g);
+    }).catch(() => {});
 
     // ---- flight state ----
     const st = {};
@@ -436,6 +520,7 @@
     }
     paintTerrain(0, 0); terrCX = 0; terrCZ = 0;
     requestAnimationFrame(frame);
+    host.__fe = { scene, get plane() { return plane; }, get spec() { return spec; }, meshCount() { let n = 0; plane && plane.traverse((o) => { if (o.isMesh) n++; }); return n; } };
     return { dispose: () => { cancelAnimationFrame(raf); renderer.dispose && renderer.dispose(); } };
   }
 
