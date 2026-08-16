@@ -3187,6 +3187,7 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .bl-props select, .bl-props input[type=color], .bb-el input[type=color] { background: #383838; border: 1px solid #4a4a4a; color: #eee; border-radius: 4px; padding: 3px; }
 .bl-check { justify-content: flex-start !important; gap: 8px !important; }
 .bl-stats { margin-top: 6px; color: #8a8; font-size: 12px; line-height: 1.6; }
+.bl-export { margin-top: 6px; background: #383838; border: 1px solid #4a4a4a; color: #eee; border-radius: 6px; padding: 7px; cursor: pointer; } .bl-export:hover { background: #4a4a4a; }
 .bb-list { padding: 6px; min-height: 90px; } .bb-li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; cursor: pointer; } .bb-li:hover { background: #313742; } .bb-li.on { background: #2f6fdb; color: #fff; }
 .bb-sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.4); }
 .bb-empty { color: #667; padding: 10px; font-size: 12px; }

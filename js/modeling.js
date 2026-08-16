@@ -4,6 +4,7 @@
   "use strict";
   function el(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
   const cw = (opts) => window.WM.createWindow(opts);
+  function dlFile(url, name) { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 
   // Build an orbiting Three.js viewport inside `host`. Returns { scene, camera, THREE, add, dispose }.
   function viewport(host, bg) {
@@ -11,7 +12,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(bg || 0x1e1e1e);
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     host.appendChild(renderer.domElement);
     renderer.domElement.style.cssText = "width:100%;height:100%;display:block;touch-action:none";
@@ -70,6 +71,7 @@
             <label>Base color<input type="color" class="bl-color" value="#c8792e"></label>
             <label class="bl-check"><input type="checkbox" class="bl-wire">Wireframe</label>
             <label class="bl-check"><input type="checkbox" class="bl-spin" checked>Auto-rotate</label>
+            <button class="bl-export">Render image (PNG)</button>
             <div class="bl-stats"></div>
           </div>
         </div>
@@ -87,6 +89,7 @@
     body.querySelector(".bl-color").oninput = (e) => { mat.color.set(e.target.value); };
     body.querySelector(".bl-wire").onchange = (e) => { mat.wireframe = e.target.checked; };
     body.querySelector(".bl-spin").onchange = (e) => { spin = e.target.checked; };
+    body.querySelector(".bl-export").onclick = () => { try { vp.renderer.render(vp.scene, vp.camera); dlFile(vp.renderer.domElement.toDataURL("image/png"), "blender-render.png"); } catch (_) {} };
     (function anim() { if (!document.body.contains(body)) return; if (spin) mesh.rotation.y += 0.01; requestAnimationFrame(anim); })();
   };
 
@@ -102,6 +105,7 @@
           <div class="bb-panel-h">Outliner</div>
           <div class="bb-list"></div>
           <div class="bb-row"><button class="bb-add">+ Add Cube</button><button class="bb-del">Delete</button></div>
+          <div class="bb-row"><button class="bb-export">Export model (.json)</button></div>
           <div class="bb-panel-h">Element</div>
           <div class="bb-el">
             <label>Color<input type="color" class="bb-color" value="#4cc3ff"></label>
@@ -140,6 +144,10 @@
     body.querySelector(".bb-color").oninput = (e) => { const c = cubes[selected]; if (!c) return; c.color = parseInt(e.target.value.slice(1), 16); c.mesh.material.color.set(e.target.value); renderList(); };
     ["x", "y", "z"].forEach((ax) => body.querySelector(".bb-" + ax).oninput = (e) => { const c = cubes[selected]; if (!c) return; const v = +e.target.value; c.mesh.position[ax] = ax === "y" ? v + 0.5 : v; });
     // seed a tiny starter model
+    body.querySelector(".bb-export").onclick = () => {
+      const model = { format: "blockbench-lite", elements: cubes.map((c, i) => ({ name: "Cube " + (i + 1), position: [Math.round(c.mesh.position.x), Math.round(c.mesh.position.y - 0.5), Math.round(c.mesh.position.z)], color: "#" + c.color.toString(16).padStart(6, "0") })) };
+      dlFile("data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(model, null, 2)), "model.json");
+    };
     addCube(0, 0, 0, 0x4cc3ff); addCube(1, 0, 0, 0xff5c8a); addCube(0, 1, 0, 0xffd23f); selected = 0;
     renderList(); syncEl();
   };
