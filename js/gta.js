@@ -39,14 +39,24 @@
       </div>
       <div class="gta-weapon" id="gta-weapon"></div>
       <div class="gta-action" id="gta-action"></div>
-      <div class="gta-help">Drag look · WASD move · Shift run · F fire · G grenade · Space kick · C cam</div>
+      <div class="gta-help">Drag look · WASD move · Shift run · F fire · R reload · G grenade · Space kick · T phone · C cam</div>
       <div class="gta-stick" id="gta-stick"><div class="gta-nub" id="gta-nub"></div></div>
       <div class="gta-btns">
         <button class="gta-b fire" data-k="fire">FIRE</button>
+        <button class="gta-b" data-k="reload">RELOAD</button>
         <button class="gta-b" data-k="throw">GRENADE</button>
         <button class="gta-b" data-k="kick">KICK</button>
+        <button class="gta-b" data-k="phone">PHONE</button>
         <button class="gta-b" data-k="run">RUN</button>
         <button class="gta-b" data-k="cam">CAM</button>
+      </div>
+      <div class="gta-phone" id="gta-phone">
+        <div class="gph-frame">
+          <div class="gph-notch"></div>
+          <div class="gph-status"><span id="gph-time">12:00</span><span class="gph-sig">Badger &nbsp;5G&nbsp; &#9646;&#9646;&#9646;&#9646;</span></div>
+          <div class="gph-screen" id="gph-screen"></div>
+          <div class="gph-home" id="gph-homebtn"></div>
+        </div>
       </div>
       <div class="gta-flash" id="gta-flash"></div>
       <div class="gta-cine" id="gta-cine">
@@ -155,6 +165,7 @@
 
     // ---- weapons / combat / NPC / cinematic state ----
     let handBone = null, heldWeapon = null, equipped = null, ammo = 6, shake = 0, recoil = 0;
+    let reloading = false, reloadT = 0, phoneOpen = false, phoneView = "home";
     const inv = { revolver: false, grenade: 0 };
     const weaponModels = {};          // name -> loaded Object3D (original, cloned per use)
     const pickups = [];               // {key, holder, ring, spot, got}
@@ -348,8 +359,8 @@
       const ln = new T.Line(geo, new T.LineBasicMaterial({ color: 0xfff2a0, transparent: true, opacity: 0.9 })); scene.add(ln); bullets.push({ ln, t: 0 });
     }
     function fire() {
-      if (equipped !== "revolver" || !char) return;
-      if (ammo <= 0) { ammo = 6; updateWeaponHUD(); actionEl.textContent = "RELOAD"; setTimeout(() => (actionEl.textContent = ""), 600); return; }
+      if (equipped !== "revolver" || !char || reloading) return;
+      if (ammo <= 0) { startReload(); return; }
       ammo--; updateWeaponHUD(); recoil = 0.05; shake = Math.max(shake, 0.22); muzzle();
       const origin = new T.Vector3(player.pos.x, 3.4, player.pos.z);
       const dir = new T.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)).normalize();
@@ -357,6 +368,23 @@
       let best = null, bd = 1e9;
       npcs.forEach((n) => { if (!n.alive) return; const to = new T.Vector3(n.grp.position.x - origin.x, 0, n.grp.position.z - origin.z); const d = to.length(); if (d > 95) return; to.normalize(); if (to.dot(dir) > 0.985 && d < bd) { bd = d; best = n; } });
       if (best) setTimeout(() => killNPC(best), 50);
+      if (ammo <= 0) startReload();
+    }
+    // -- reload (with a hand/weapon animation) --
+    function startReload() {
+      if (reloading || equipped !== "revolver" || ammo >= 6) return;
+      reloading = true; reloadT = 0; actionEl.textContent = "RELOADING…";
+    }
+    function updateReload(dt) {
+      if (!reloading) return;
+      reloadT += dt; const k = clamp(reloadT / 1.3, 0, 1);
+      // tilt the gun down to load, snap back up — plus the character glances down (nod)
+      if (heldWeapon) {
+        const dip = Math.sin(k * Math.PI);                 // 0→1→0
+        heldWeapon.rotation.x = HANDROT.x + dip * 1.1;
+        heldWeapon.position.y = 7 - dip * 3; heldWeapon.rotation.z = dip * 0.5;
+      }
+      if (k >= 1) { reloading = false; ammo = 6; updateWeaponHUD(); actionEl.textContent = "RELOADED"; setTimeout(() => { if (actionEl.textContent === "RELOADED") actionEl.textContent = ""; }, 600); if (heldWeapon) { heldWeapon.rotation.set(HANDROT.x, HANDROT.y, HANDROT.z); heldWeapon.position.y = 7; } }
     }
     // -- grenades --
     function throwGrenade() {
@@ -408,6 +436,50 @@
       if (cine.t >= cine.dur) endCine();
     }
 
+    // -- phone (in-game smartphone) --
+    const phoneEl = host.querySelector("#gta-phone"), gphScreen = host.querySelector("#gph-screen"), gphTime = host.querySelector("#gph-time");
+    const PHONE_APPS = [
+      { id: "contacts", name: "Contacts", ic: "&#128100;", col: "#2f7d4f" },
+      { id: "map", name: "Maps", ic: "&#128506;", col: "#2a6fb0" },
+      { id: "snap", name: "Snapmatic", ic: "&#128247;", col: "#c0392b" },
+      { id: "messages", name: "Messages", ic: "&#128172;", col: "#1f9d55" },
+      { id: "web", name: "Weazel", ic: "&#127760;", col: "#8e44ad" },
+      { id: "settings", name: "Settings", ic: "&#9881;", col: "#555b66" },
+    ];
+    function togglePhone(force) { phoneOpen = force === undefined ? !phoneOpen : force; phoneEl.classList.toggle("open", phoneOpen); if (phoneOpen) phoneHome(); }
+    function phoneHome() {
+      phoneView = "home";
+      gphScreen.innerHTML = `<div class="gph-grid">${PHONE_APPS.map((a) => `<button class="gph-app" data-app="${a.id}"><span class="gph-ic" style="background:${a.col}">${a.ic}</span><span class="gph-nm">${a.name}</span></button>`).join("")}</div>`;
+      gphScreen.querySelectorAll(".gph-app").forEach((b) => b.onclick = () => phoneApp(b.dataset.app));
+    }
+    function phoneApp(id) {
+      phoneView = id; let html = "";
+      if (id === "contacts") { const n = ["Lamar", "Franklin", "Roman", "Lester", "Trevor", "Brucie", "Mom"]; html = `<div class="gph-hd">Contacts</div>` + n.map((x) => `<div class="gph-item" data-call="${x}"><span class="gph-av">${x[0]}</span><span class="gph-inm">${x}</span><span class="gph-ph">&#128222;</span></div>`).join(""); }
+      else if (id === "map") { html = `<div class="gph-hd">Maps</div><canvas id="gph-map" width="228" height="330"></canvas>`; }
+      else if (id === "snap") { html = `<div class="gph-hd">Snapmatic</div><div class="gph-snap">&#128248;<div>Say cheese, Los Santos.</div></div>`; }
+      else if (id === "messages") { const m = [["Lamar", "Homie where you at??"], ["Lester", "New score. Come by the factory."], ["Unknown", "You did NOT see nothing."]]; html = `<div class="gph-hd">Messages</div>` + m.map((x) => `<div class="gph-msg"><b>${x[0]}</b><span>${x[1]}</span></div>`).join(""); }
+      else if (id === "web") { html = `<div class="gph-hd">Weazel News</div><div class="gph-news">&#128680; Chaos downtown as a lone maniac tears through Los Santos. LSPD "completely baffled." More at 11.</div>`; }
+      else if (id === "settings") { html = `<div class="gph-hd">Settings</div><div class="gph-item">Brightness</div><div class="gph-item">Ringtone &middot; Badger</div><div class="gph-item">Airplane mode</div><div class="gph-item">Do not disturb</div>`; }
+      gphScreen.innerHTML = html;
+      if (id === "contacts") gphScreen.querySelectorAll("[data-call]").forEach((it) => it.onclick = () => phoneCall(it.dataset.call));
+    }
+    function phoneCall(name) {
+      phoneView = "call";
+      gphScreen.innerHTML = `<div class="gph-call"><div class="gph-av big">${name[0]}</div><div class="gph-caller">${name}</div><div class="gph-calling">calling&hellip;</div><button class="gph-hang">End Call</button></div>`;
+      gphScreen.querySelector(".gph-hang").onclick = phoneHome;
+    }
+    function drawPhoneMap() {
+      const cv = host.querySelector("#gph-map"); if (!cv) return; const g = cv.getContext("2d"); const W = 228, H = 330, sc = 0.7;
+      g.clearRect(0, 0, W, H); g.fillStyle = "#222c36"; g.fillRect(0, 0, W, H);
+      g.save(); g.translate(W / 2, H / 2);
+      buildings.forEach((b) => { g.fillStyle = "#3a4652"; g.fillRect((b.x - player.pos.x) * sc - b.hw * sc, (b.z - player.pos.z) * sc - b.hd * sc, b.hw * 2 * sc, b.hd * 2 * sc); });
+      pickups.forEach((pu) => { if (pu.got) return; g.fillStyle = pu.key === "revolver" ? "#ffd23f" : "#66ff88"; g.beginPath(); g.arc((pu.spot.x - player.pos.x) * sc, (pu.spot.z - player.pos.z) * sc, 4, 0, 7); g.fill(); });
+      npcs.forEach((n) => { if (!n.alive) return; g.fillStyle = "#e05a4a"; g.fillRect((n.grp.position.x - player.pos.x) * sc - 1.5, (n.grp.position.z - player.pos.z) * sc - 1.5, 3, 3); });
+      g.fillStyle = "#4ea3ff"; g.beginPath(); g.moveTo(0, -6); g.lineTo(-4, 5); g.lineTo(4, 5); g.closePath(); g.fill();
+      g.restore();
+    }
+    host.querySelector("#gph-homebtn").onclick = () => { if (phoneView !== "home") phoneHome(); else togglePhone(false); };
+
     // ---- input ----
     const keys = {};
     let camYaw = Math.PI, camPitch = 0.28, camDist = 11, camMode = 0, running = false;
@@ -418,6 +490,8 @@
       if (e.type === "keydown") {
         if (cine.active) { endCine(); e.preventDefault(); return; }   // any key skips a cutscene
         if (k === "f") fire();
+        if (k === "r") startReload();
+        if (k === "t") togglePhone();
         if (k === "g") throwGrenade();
         if (k === " ") oneShot("kick");
         if (k === "e") oneShot("wave");           // wave uses greeting one-shot
@@ -426,13 +500,13 @@
         if (k === "shift") running = true;
       }
       if (e.type === "keyup" && k === "shift") running = false;
-      if ([" ", "w", "a", "s", "d", "e", "q", "c", "f", "g", "Shift"].includes(k)) e.preventDefault();
+      if ([" ", "w", "a", "s", "d", "e", "q", "c", "f", "g", "r", "t", "Shift"].includes(k)) e.preventDefault();
     };
     dom.addEventListener("keydown", kh); dom.addEventListener("keyup", kh);
 
     // drag look
     let drag = false, lx = 0, ly = 0;
-    dom.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".gta-stick,.gta-btns")) return; if (cine.active) { endCine(); return; } drag = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); dom.focus(); });
+    dom.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".gta-stick,.gta-btns,.gta-phone")) return; if (cine.active) { endCine(); return; } drag = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); dom.focus(); });
     dom.addEventListener("pointermove", (e) => { if (!drag) return; camYaw -= (e.clientX - lx) * 0.005; camPitch = clamp(camPitch + (e.clientY - ly) * 0.004, -0.15, 0.9); lx = e.clientX; ly = e.clientY; });
     dom.addEventListener("pointerup", () => { drag = false; });
     dom.addEventListener("wheel", (e) => { camDist = clamp(camDist + Math.sign(e.deltaY) * 1.2, 6, 22); e.preventDefault(); }, { passive: false });
@@ -453,7 +527,9 @@
       if (k === "run") { b.onpointerdown = () => { running = !running; b.classList.toggle("on", running); }; return; }
       if (k === "cam") { b.onpointerdown = () => { camMode = (camMode + 1) % 2; }; return; }
       if (k === "fire") { b.onpointerdown = () => fire(); return; }
+      if (k === "reload") { b.onpointerdown = () => startReload(); return; }
       if (k === "throw") { b.onpointerdown = () => throwGrenade(); return; }
+      if (k === "phone") { b.onpointerdown = () => togglePhone(); return; }
       b.onpointerdown = () => oneShot(k);
     });
 
@@ -496,7 +572,8 @@
 
       if (char) { char.position.set(player.pos.x, 0, player.pos.z); char.rotation.y = player.yaw + faceOffset; }
       if (mixer) mixer.update(dt);
-      updateNPCs(dt); updateEffects(dt); checkPickups();
+      updateNPCs(dt); updateEffects(dt); checkPickups(); updateReload(dt);
+      if (phoneOpen) { if (phoneView === "map") drawPhoneMap(); const d = new Date(); if (gphTime) gphTime.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
       // camera
       if (cine.active) {
@@ -520,7 +597,7 @@
     spawnNPCs();
     loadWeapons();
     startIntro();
-    host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, fire, throwGrenade, setPos: (x, z) => player.pos.set(x, 0, z) };
+    host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z) };
     requestAnimationFrame(frame);
     setTimeout(() => dom.focus(), 40);
 

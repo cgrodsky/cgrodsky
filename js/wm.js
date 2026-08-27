@@ -938,7 +938,7 @@
     </div>`);
     screen().appendChild(taskbar);
     taskbar.querySelector(".start").onclick = toggleStart;
-    taskbar.querySelector(".tb-search").onclick = toggleStart;
+    taskbar.querySelector(".tb-search").onclick = (e) => { e.stopPropagation(); toggleSearch(); };
     taskbar.querySelector(".tb-qs").onclick = toggleQuickSettings;
     taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
     taskbar.querySelector(".tb-widgets").onclick = toggleWidgets;
@@ -952,6 +952,7 @@
     });
     applyTaskbarLayout();
     buildStartMenu();
+    buildSearchPanel();
     const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = qs().wifi ? "0.9" : "0.3";
     applyDisplayFx();
   }
@@ -1072,6 +1073,62 @@
       }
     });
   }
+
+  // ---------------- Taskbar search (Windows Search) ----------------
+  let searchPanel;
+  function buildSearchPanel() {
+    if (searchPanel) return;
+    searchPanel = el(`<div class="search-panel">
+      <div class="sp-bar"><span class="sp-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><input class="sp-input" placeholder="Search for apps and the web" spellcheck="false"></div>
+      <div class="sp-body"></div>
+    </div>`);
+    screen().appendChild(searchPanel);
+    const input = searchPanel.querySelector(".sp-input");
+    input.oninput = () => renderSearch(input.value);
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") { const first = searchPanel.querySelector(".sp-row"); if (first) first.click(); }
+      if (e.key === "Escape") closeSearch();
+    };
+    document.addEventListener("click", (e) => {
+      if (searchPanel.classList.contains("open") && !searchPanel.contains(e.target) && !e.target.closest(".tb-search")) closeSearch();
+    });
+  }
+  function openSearchApp(id) { closeSearch(); if (startMenu) startMenu.classList.remove("open"); open(id); }
+  function searchRow(icon, title, sub, onClick) {
+    const r = el(`<div class="sp-row"><div class="sp-row-ic">${icon}</div><div class="sp-row-tx"><div class="sp-row-t">${title}</div>${sub ? `<div class="sp-row-s">${sub}</div>` : ""}</div></div>`);
+    r.onclick = onClick; return r;
+  }
+  function renderSearch(q) {
+    const body = searchPanel.querySelector(".sp-body");
+    body.innerHTML = "";
+    const query = (q || "").trim();
+    const apps = allInstalledApps();
+    const matches = query ? apps.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())) : apps.slice(0, 8);
+    body.appendChild(el(`<div class="sp-head">${query ? "Best match" : "Apps"}</div>`));
+    if (matches.length) {
+      const grid = el(`<div class="sp-list"></div>`);
+      matches.slice(0, 8).forEach((a) => grid.appendChild(searchRow(Icon.mini(a.id === "duolingo" ? duoIconKey(true) : a.id, a.name), a.name, "App", () => openSearchApp(a.id))));
+      body.appendChild(grid);
+    } else {
+      body.appendChild(el(`<div class="sp-empty">No apps found for “${query.replace(/</g, "&lt;")}”</div>`));
+    }
+    if (query) {
+      body.appendChild(el(`<div class="sp-head">Search the web</div>`));
+      const web = el(`<div class="sp-list"></div>`);
+      web.appendChild(searchRow(`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>`,
+        `${query.replace(/</g, "&lt;")} - See web results`, "Bing search", () => { closeSearch(); if (window.Browser) window.Browser.openTo("https://www.bing.com/search?q=" + encodeURIComponent(query)); }));
+      body.appendChild(web);
+    }
+  }
+  function openSearch() {
+    if (!searchPanel) buildSearchPanel();
+    if (startMenu) startMenu.classList.remove("open");
+    renderSearch("");
+    searchPanel.classList.add("open");
+    const input = searchPanel.querySelector(".sp-input"); input.value = ""; setTimeout(() => input.focus(), 30);
+  }
+  function closeSearch() { if (searchPanel) searchPanel.classList.remove("open"); }
+  function toggleSearch() { if (searchPanel && searchPanel.classList.contains("open")) closeSearch(); else openSearch(); }
 
   function updateStartUser() {
     if (!startMenu) return;

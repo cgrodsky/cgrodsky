@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "9";
+  const ICONV = "10";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
