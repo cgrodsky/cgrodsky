@@ -417,7 +417,10 @@
     }
 
     // -- boot logo sequence (publisher splash before the game) --
-    const BOOT_LOGOS = ["assets/gta_boot1.png"];   // add more logos here to extend the sequence
+    const BOOT_LOGOS = [                              // add more logos here to extend the sequence
+      { img: "assets/gta_boot1.png", fit: "cover" },
+      { img: "assets/gta_boot2.png", fit: "contain" },
+    ];
     function bootSequence(done) {
       const bootEl = host.querySelector("#gta-boot"), imgEl = host.querySelector("#gta-boot-img");
       let i = 0, ended = false;
@@ -427,7 +430,7 @@
       function next() {
         if (ended) return;
         if (i >= BOOT_LOGOS.length) { finish(); return; }
-        imgEl.classList.remove("vis"); imgEl.src = BOOT_LOGOS[i] + "?v=1"; i++;
+        const L = BOOT_LOGOS[i]; imgEl.classList.remove("vis"); imgEl.style.objectFit = L.fit || "cover"; imgEl.src = L.img + "?v=1"; i++;
         requestAnimationFrame(() => requestAnimationFrame(() => imgEl.classList.add("vis")));
         T2(() => { imgEl.classList.remove("vis"); T2(next, 500); }, 2300);
       }
