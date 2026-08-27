@@ -671,6 +671,11 @@ input[type=range] { width: 100%; }
 .sp-row-t { font-size: .92rem; color: var(--text); }
 .sp-row-s { font-size: .74rem; color: var(--text); opacity: .55; }
 .sp-empty { padding: 14px 10px; color: var(--text); opacity: .6; font-size: .88rem; }
+.sp-know { display: flex; align-items: center; gap: 14px; padding: 12px 12px; border-radius: 10px; background: var(--bg-elev); border: 1px solid var(--border); cursor: pointer; margin-bottom: 4px; }
+.sp-know:hover { filter: brightness(1.06); }
+.sp-know-img { width: 46px; height: 46px; border-radius: 11px; object-fit: cover; flex: 0 0 46px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.sp-know-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+.sp-know-desc { font-size: .8rem; color: var(--text); opacity: .65; margin-top: 2px; line-height: 1.35; }
 .start-search { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 20px;
   border: 1px solid var(--border); background: var(--bg-elev); margin-bottom: 16px; }
 .start-search-ic { opacity: .6; }

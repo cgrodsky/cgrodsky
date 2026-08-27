@@ -51,7 +51,7 @@
   async function installerStage(meta, iconHtml) {
     const w = cw({ title: meta.name + " Setup", icon: iconHtml, width: 480, height: 300, noMax: true, noMin: true });
     w.body.innerHTML = `<div class="exe-inst">
-      <img class="exe-inst-ic" src="assets/exe_installer.png?v=9" alt="">
+      <img class="exe-inst-ic" src="assets/exe_installer.png?v=11" alt="">
       <h2>Installing ${meta.name}</h2>
       <div class="exe-bar"><div class="exe-fill"></div></div>
       <p class="exe-status">Preparing…</p>

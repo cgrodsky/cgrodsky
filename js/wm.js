@@ -1098,18 +1098,35 @@
     const r = el(`<div class="sp-row"><div class="sp-row-ic">${icon}</div><div class="sp-row-tx"><div class="sp-row-t">${title}</div>${sub ? `<div class="sp-row-s">${sub}</div>` : ""}</div></div>`);
     r.onclick = onClick; return r;
   }
+  // Rich knowledge cards for well-known web entities.
+  const SEARCH_KNOWLEDGE = [
+    { keys: ["roblox"], name: "Roblox", img: "assets/brand_roblox.png", desc: "Online platform where millions play and build 3D games together.", url: "https://www.roblox.com" },
+    { keys: ["app store", "appstore", "apple store"], name: "App Store", img: "assets/brand_appstore.png", desc: "Apple's marketplace for iPhone, iPad, and Mac apps.", url: "https://www.apple.com/app-store/" },
+    { keys: ["x", "twitter", "x app"], name: "X (formerly Twitter)", img: "assets/brand_xapp.png", desc: "Social platform for real-time posts, news, and conversation.", url: "https://x.com" },
+    { keys: ["gemini", "google gemini"], name: "Gemini", img: "assets/brand_gemini.png", desc: "Google's family of multimodal AI models and assistant.", url: "https://gemini.google.com" },
+    { keys: ["meta", "facebook meta"], name: "Meta", img: "assets/brand_meta.png", desc: "Parent company of Facebook, Instagram, WhatsApp, and Quest.", url: "https://about.meta.com" },
+  ];
+  function knowledgeFor(q) { const s = q.toLowerCase(); return SEARCH_KNOWLEDGE.find((k) => k.keys.some((key) => key === s || (s.length >= 2 && key.startsWith(s)))); }
   function renderSearch(q) {
     const body = searchPanel.querySelector(".sp-body");
     body.innerHTML = "";
     const query = (q || "").trim();
     const apps = allInstalledApps();
     const matches = query ? apps.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())) : apps.slice(0, 8);
-    body.appendChild(el(`<div class="sp-head">${query ? "Best match" : "Apps"}</div>`));
+    const know = query ? knowledgeFor(query) : null;
+    if (know) {
+      body.appendChild(el(`<div class="sp-head">Top result</div>`));
+      const card = el(`<div class="sp-know"><img class="sp-know-img" src="${know.img}?v=1" alt=""><div class="sp-know-tx"><div class="sp-know-name">${know.name}</div><div class="sp-know-desc">${know.desc}</div></div></div>`);
+      card.onclick = () => { closeSearch(); if (window.Browser) window.Browser.openTo(know.url); };
+      body.appendChild(card);
+    }
     if (matches.length) {
+      body.appendChild(el(`<div class="sp-head">Apps</div>`));
       const grid = el(`<div class="sp-list"></div>`);
       matches.slice(0, 8).forEach((a) => grid.appendChild(searchRow(Icon.mini(a.id === "duolingo" ? duoIconKey(true) : a.id, a.name), a.name, "App", () => openSearchApp(a.id))));
       body.appendChild(grid);
-    } else {
+    } else if (!know) {
+      body.appendChild(el(`<div class="sp-head">Apps</div>`));
       body.appendChild(el(`<div class="sp-empty">No apps found for “${query.replace(/</g, "&lt;")}”</div>`));
     }
     if (query) {
