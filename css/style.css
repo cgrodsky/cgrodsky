@@ -3223,6 +3223,21 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .gta-btns { position: absolute; right: 16px; bottom: 20px; z-index: 5; display: grid; grid-template-columns: repeat(2, auto); gap: 8px; justify-items: end; }
 .gta-b { background: rgba(12,18,28,.72); color: #fff; border: 1px solid rgba(255,255,255,.28); border-radius: 10px; padding: 10px 14px; font: 700 13px system-ui; cursor: pointer; min-width: 62px; }
 .gta-b.on { background: #c0392b; border-color: #e05a4a; }
+.gta-b.fire { background: rgba(150,30,24,.82); border-color: #e05a4a; }
+.gta-weapon { position: absolute; right: 16px; top: 64px; z-index: 4; text-align: right; pointer-events: none; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
+.gta-weapon .wpn { color: #fff; font: 800 15px "Bebas Neue", Impact, system-ui; letter-spacing: 1px; }
+.gta-weapon .ammo { color: #ffd23f; font: 800 18px "Consolas", monospace; margin-left: 6px; }
+.gta-flash { position: absolute; inset: 0; z-index: 3; background: radial-gradient(circle at 50% 60%, rgba(255,220,120,.5), transparent 60%); opacity: 0; pointer-events: none; transition: opacity .05s; }
+.gta-flash.on { opacity: 1; }
+/* cinematic letterbox + titles */
+.gta-cine { position: absolute; inset: 0; z-index: 7; pointer-events: none; opacity: 0; transition: opacity .5s; }
+.gta-cine.on { opacity: 1; }
+.gta-bar { position: absolute; left: 0; right: 0; height: 0; background: #000; transition: height .5s ease; }
+.gta-bar.top { top: 0; } .gta-bar.bot { bottom: 0; }
+.gta-cine.on .gta-bar { height: 13%; }
+.gta-title { position: absolute; left: 0; right: 0; bottom: 22%; text-align: center; color: #fff; font: 800 46px "Pricedown", Impact, system-ui; letter-spacing: 2px; text-shadow: 0 4px 18px rgba(0,0,0,.8); }
+.gta-sub { position: absolute; left: 0; right: 0; bottom: 17%; text-align: center; color: #ffd23f; font: 700 20px "Bebas Neue", Impact, system-ui; letter-spacing: 4px; text-shadow: 0 3px 12px rgba(0,0,0,.8); }
+.gta-skip { position: absolute; right: 18px; bottom: 15%; color: rgba(255,255,255,.7); font: 600 12px system-ui; }
 .fe-load.on { display: block; }
 .fe-load.on::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 8px; border: 2px solid #6ea8e0; border-top-color: transparent; border-radius: 50%; vertical-align: -1px; animation: feSpin .8s linear infinite; }
 @keyframes feSpin { to { transform: rotate(360deg); } }

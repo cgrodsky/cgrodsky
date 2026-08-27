@@ -37,21 +37,34 @@
         <div class="gta-top"><span class="gta-cash">$4,720</span><span class="gta-loc" id="gta-loc">Los Santos</span></div>
         <div class="gta-stars" id="gta-stars">★★☆☆☆</div>
       </div>
+      <div class="gta-weapon" id="gta-weapon"></div>
       <div class="gta-action" id="gta-action"></div>
-      <div class="gta-help">Drag = look · W/A/S/D move · Shift run · Space kick · E wave · Q nod · C camera</div>
+      <div class="gta-help">Drag look · WASD move · Shift run · F fire · G grenade · Space kick · C cam</div>
       <div class="gta-stick" id="gta-stick"><div class="gta-nub" id="gta-nub"></div></div>
       <div class="gta-btns">
+        <button class="gta-b fire" data-k="fire">FIRE</button>
+        <button class="gta-b" data-k="throw">GRENADE</button>
         <button class="gta-b" data-k="kick">KICK</button>
-        <button class="gta-b" data-k="wave">WAVE</button>
-        <button class="gta-b" data-k="nod">NOD</button>
         <button class="gta-b" data-k="run">RUN</button>
         <button class="gta-b" data-k="cam">CAM</button>
+      </div>
+      <div class="gta-flash" id="gta-flash"></div>
+      <div class="gta-cine" id="gta-cine">
+        <div class="gta-bar top"></div><div class="gta-bar bot"></div>
+        <div class="gta-title" id="gta-title"></div>
+        <div class="gta-sub" id="gta-sub"></div>
+        <div class="gta-skip">tap to skip ▸</div>
       </div>
       <div class="gta-load" id="gta-load">Loading Los Santos…</div>
     </div>`;
     const host = body.querySelector(".gta");
     const loadEl = host.querySelector("#gta-load");
     const actionEl = host.querySelector("#gta-action");
+    const weaponEl = host.querySelector("#gta-weapon");
+    const flashEl = host.querySelector("#gta-flash");
+    const cineEl = host.querySelector("#gta-cine");
+    const titleEl = host.querySelector("#gta-title");
+    const subEl = host.querySelector("#gta-sub");
 
     // ---- renderer / scene / camera ----
     const scene = new T.Scene();
@@ -91,20 +104,38 @@
       }
       const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; return t;
     }
+    // storefront sign texture
+    function signTexture(text, bg) {
+      const c = document.createElement("canvas"); c.width = 256; c.height = 64; const x = c.getContext("2d");
+      x.fillStyle = bg; x.fillRect(0, 0, 256, 64); x.fillStyle = "#ffe27a"; x.font = "bold 34px Impact, system-ui"; x.textAlign = "center"; x.textBaseline = "middle";
+      x.fillText(text, 128, 34); return new T.CanvasTexture(c);
+    }
+    // themed shops: revolver at the gun store, grenade at the army-surplus store
+    const SHOPS = { "1,0": { key: "revolver", sign: "AMMU-NATION", col: 0x6e2020, front: [-1, 0] }, "0,-1": { key: "grenade", sign: "ARMY SURPLUS", col: 0x3c4a28, front: [0, 1] } };
+    const pickupSpots = {};
     const buildings = []; // AABBs for collision {x,z,hw,hd}
     for (let gx = -3; gx <= 3; gx++) {
       for (let gz = -3; gz <= 3; gz++) {
         if (gx === 0 && gz === 0) continue;                    // spawn plaza
-        if ((gx + gz) % 5 === 0) continue;                     // occasional empty lot
+        const shop = SHOPS[gx + "," + gz];
+        if (!shop && (gx + gz) % 5 === 0) continue;            // occasional empty lot (never skip a shop)
         const cx = gx * BLOCK, cz = gz * BLOCK;
-        const hw = 12 + Math.random() * 6, hd = 12 + Math.random() * 6, h = 16 + Math.random() * 46;
-        const tex = cityTexture(); tex.repeat.set(Math.round(hw / 3), Math.round(h / 6));
-        const b = new T.Mesh(new T.BoxGeometry(hw * 2, h, hd * 2), new T.MeshLambertMaterial({ map: tex }));
+        let hw = 12 + Math.random() * 6, hd = 12 + Math.random() * 6, h = 16 + Math.random() * 46;
+        if (shop) { hw = 15; hd = 15; h = 20; }
+        const b = new T.Mesh(new T.BoxGeometry(hw * 2, h, hd * 2), shop
+          ? new T.MeshLambertMaterial({ color: shop.col })
+          : (() => { const tex = cityTexture(); tex.repeat.set(Math.round(hw / 3), Math.round(h / 6)); return new T.MeshLambertMaterial({ map: tex }); })());
         b.position.set(cx, h / 2, cz); scene.add(b);
-        // sidewalk pad
         const pad = new T.Mesh(new T.BoxGeometry(hw * 2 + 6, 0.6, hd * 2 + 6), new T.MeshLambertMaterial({ color: 0x8b8f96 }));
         pad.position.set(cx, 0.3, cz); scene.add(pad);
         buildings.push({ x: cx, z: cz, hw: hw + 1.4, hd: hd + 1.4 });
+        if (shop) {
+          const [nx, nz] = shop.front;
+          const sign = new T.Mesh(new T.PlaneGeometry(hw * 1.7, 6), new T.MeshBasicMaterial({ map: signTexture(shop.sign, "#12161d") }));
+          sign.position.set(cx + nx * (hw + 0.2), h * 0.62, cz + nz * (hd + 0.2));
+          sign.rotation.y = nx !== 0 ? nx * Math.PI / 2 : (nz > 0 ? 0 : Math.PI); scene.add(sign);
+          pickupSpots[shop.key] = { x: cx + nx * (hw + 5), z: cz + nz * (hd + 5) };
+        }
       }
     }
 
@@ -121,6 +152,18 @@
     // ---- character (built later, after FBX loads) ----
     let char = null, mixer = null, actions = {}, current = null, charReady = false, faceOffset = 0;
     const player = { pos: new T.Vector3(0, 0, 8), yaw: Math.PI, moving: false };
+
+    // ---- weapons / combat / NPC / cinematic state ----
+    let handBone = null, heldWeapon = null, equipped = null, ammo = 6, shake = 0, recoil = 0;
+    const inv = { revolver: false, grenade: 0 };
+    const weaponModels = {};          // name -> loaded Object3D (original, cloned per use)
+    const pickups = [];               // {key, holder, ring, spot, got}
+    const npcs = [];                  // {grp, dir, spd, phase, alive, deadT}
+    const bullets = [];               // tracer lines {ln, t}
+    const grenadesLive = [];          // thrown {m, vel, t}
+    const explosions = [];            // {mesh, t}
+    const HANDROT = { x: -1.2, y: 0, z: 0 };   // orient held gun in the hand (tuned)
+    const cine = { active: false, t: 0, dur: 0, mode: null };
 
     function buildCharacter(rootObj) {
       const skin = new T.MeshStandardMaterial({ color: 0xcf9c72, roughness: 0.8, metalness: 0 });
@@ -167,6 +210,7 @@
       char.add(root);
       char.position.copy(player.pos);
       scene.add(char);
+      root.traverse((o) => { if (o.isBone && o.name.replace(/^mixamorig:?/i, "") === "RightHand") handBone = o; });
       mixer = new T.AnimationMixer(root);
       // greeting clip already on root
       const add = (key, clip) => { stripRootMotion(clip); const a = mixer.clipAction(clip); actions[key] = a; };
@@ -202,6 +246,168 @@
       setTimeout(() => { actionEl.textContent = ""; }, 900);
     }
 
+    // ==================== weapons / NPCs / combat / cutscenes ====================
+    const _glb = {};
+    function loadGLB(url) {
+      if (_glb[url]) return Promise.resolve(_glb[url]);
+      return new Promise((res, rej) => { if (!window.GLTFLoader) { rej(new Error("no GLTFLoader")); return; } new window.GLTFLoader().load(url, (g) => { _glb[url] = g.scene; res(g.scene); }, undefined, rej); });
+    }
+    // clone a model, center it, scale to targetLen on its longest axis, wrap in a group
+    function normModel(src, targetLen) {
+      const m = src.clone(true); const box = new T.Box3().setFromObject(m); const s = box.getSize(new T.Vector3()); const c = box.getCenter(new T.Vector3());
+      m.position.sub(c); m.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+      const g = new T.Group(); g.add(m); g.scale.setScalar(targetLen / (Math.max(s.x, s.y, s.z) || 1)); return g;
+    }
+
+    // -- NPC pedestrians (simple blocky people you can kick / shoot / blow up) --
+    function makePed(color) {
+      const g = new T.Group();
+      const M = (c) => new T.MeshStandardMaterial({ color: c, roughness: 0.85 });
+      const torso = new T.Mesh(new T.BoxGeometry(1.1, 1.5, 0.6), M(color)); torso.position.y = 2.4; g.add(torso);
+      const head = new T.Mesh(new T.BoxGeometry(0.7, 0.7, 0.7), M(0xcaa17a)); head.position.y = 3.5; g.add(head);
+      const legL = new T.Mesh(new T.BoxGeometry(0.4, 1.6, 0.4), M(0x2b2f38)); legL.position.set(-0.3, 1.0, 0); g.add(legL);
+      const legR = legL.clone(); legR.position.x = 0.3; g.add(legR);
+      const armL = new T.Mesh(new T.BoxGeometry(0.35, 1.3, 0.35), M(color)); armL.position.set(-0.75, 2.5, 0); g.add(armL);
+      const armR = armL.clone(); armR.position.x = 0.75; g.add(armR);
+      g.userData = { legL, legR, armL, armR }; return g;
+    }
+    function spawnNPCs() {
+      const cols = [0x3355aa, 0xaa5533, 0x557733, 0x774488, 0x888888, 0xaa8822, 0x2a9d8f];
+      for (let i = 0; i < 7; i++) {
+        const g = makePed(cols[i % cols.length]); const a = Math.random() * Math.PI * 2, r = 18 + Math.random() * 74;
+        g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); scene.add(g);
+        npcs.push({ grp: g, dir: Math.random() * Math.PI * 2, spd: 2 + Math.random() * 2, phase: Math.random() * 6, alive: true, deadT: 0 });
+      }
+    }
+    function killNPC(n) { if (!n.alive) return; n.alive = false; n.deadT = 0; n.grp.rotation.set(0, n.grp.rotation.y, Math.PI / 2); n.grp.position.y = 0.6; }
+    function updateNPCs(dt) {
+      npcs.forEach((n) => {
+        if (!n.alive) { n.deadT += dt; if (n.deadT > 6) { const a = Math.random() * Math.PI * 2, r = 30 + Math.random() * 70; n.grp.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); n.grp.rotation.set(0, 0, 0); n.alive = true; } return; }
+        if (Math.random() < 0.012) n.dir += (Math.random() - 0.5);
+        const nx = n.grp.position.x + Math.cos(n.dir) * n.spd * dt, nz = n.grp.position.z + Math.sin(n.dir) * n.spd * dt;
+        if (nearestBlocked(nx, nz)) { n.dir += Math.PI * 0.7; } else { n.grp.position.x = clamp(nx, -140, 140); n.grp.position.z = clamp(nz, -140, 140); }
+        n.grp.rotation.y = -n.dir + Math.PI / 2;
+        n.phase += dt * n.spd * 2; const sw = Math.sin(n.phase) * 0.5; const u = n.grp.userData;
+        u.legL.rotation.x = sw; u.legR.rotation.x = -sw; u.armL.rotation.x = -sw; u.armR.rotation.x = sw;
+      });
+    }
+
+    // -- weapon pickups --
+    function placePickup(key) {
+      const spot = pickupSpots[key]; if (!spot || !weaponModels[key]) return;
+      const disp = normModel(weaponModels[key], key === "revolver" ? 2.4 : 1.5);
+      const holder = new T.Group(); holder.add(disp); holder.position.set(spot.x, 2.6, spot.z); scene.add(holder);
+      const ring = new T.Mesh(new T.TorusGeometry(1.7, 0.13, 8, 24), new T.MeshBasicMaterial({ color: key === "revolver" ? 0xffd23f : 0x66ff88 }));
+      ring.rotation.x = Math.PI / 2; ring.position.set(spot.x, 0.5, spot.z); scene.add(ring);
+      pickups.push({ key, holder, ring, spot, got: false });
+    }
+    function loadWeapons() {
+      loadGLB("assets/models/gta/revolver.glb").then((o) => { weaponModels.revolver = o; placePickup("revolver"); }).catch((e) => console.warn("[GTA] revolver", e));
+      loadGLB("assets/models/gta/grenade.glb").then((o) => { weaponModels.grenade = o; placePickup("grenade"); }).catch((e) => console.warn("[GTA] grenade", e));
+    }
+    function checkPickups() {
+      pickups.forEach((pu) => {
+        if (pu.got) return; pu.holder.rotation.y += 0.03; pu.ring.rotation.z += 0.02; pu.holder.position.y = 2.6 + Math.sin(performanceNow() * 0.003) * 0.25;
+        const dx = player.pos.x - pu.spot.x, dz = player.pos.z - pu.spot.z;
+        if (dx * dx + dz * dz < 12) { pu.got = true; scene.remove(pu.holder); scene.remove(pu.ring); pickup(pu.key); }
+      });
+    }
+    let _pn = 0; function performanceNow() { return (_pn += 16); }
+    function pickup(key) {
+      if (key === "revolver") { inv.revolver = true; ammo = 6; equip("revolver"); }
+      else { inv.grenade += 3; }
+      updateWeaponHUD(); pickupCine(key);
+    }
+    function equip(key) {
+      equipped = key;
+      if (!handBone || !weaponModels[key]) { updateWeaponHUD(); return; }
+      if (heldWeapon) { handBone.remove(heldWeapon); heldWeapon = null; }
+      const m = weaponModels[key].clone(true); const box = new T.Box3().setFromObject(m); const s = box.getSize(new T.Vector3()); const c = box.getCenter(new T.Vector3());
+      m.position.sub(c); m.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+      const wrap = new T.Group(); wrap.add(m); wrap.scale.setScalar(24 / (Math.max(s.x, s.y, s.z) || 1));
+      wrap.position.set(0, 7, 3); wrap.rotation.set(HANDROT.x, HANDROT.y, HANDROT.z);
+      handBone.add(wrap); heldWeapon = wrap;
+      updateWeaponHUD();
+    }
+    function updateWeaponHUD() {
+      let s = "";
+      if (equipped === "revolver") s = `<span class="wpn">.357 MAGNUM</span> <span class="ammo">${ammo} / 6</span>`;
+      if (inv.grenade > 0) s += `${s ? " &nbsp; " : ""}<span class="wpn">GRENADE ×${inv.grenade}</span>`;
+      weaponEl.innerHTML = s;
+    }
+    // -- shooting --
+    function muzzle() {
+      if (!heldWeapon) return;
+      const p = new T.Vector3(); heldWeapon.getWorldPosition(p);
+      const fwd = new T.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
+      const f = new T.Mesh(new T.SphereGeometry(0.5, 8, 6), new T.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.95 }));
+      f.position.copy(p).addScaledVector(fwd, 1.2); scene.add(f); explosions.push({ mesh: f, t: 0.35, flash: true });
+    }
+    function tracer(a, b) {
+      const geo = new T.BufferGeometry().setFromPoints([a, b]);
+      const ln = new T.Line(geo, new T.LineBasicMaterial({ color: 0xfff2a0, transparent: true, opacity: 0.9 })); scene.add(ln); bullets.push({ ln, t: 0 });
+    }
+    function fire() {
+      if (equipped !== "revolver" || !char) return;
+      if (ammo <= 0) { ammo = 6; updateWeaponHUD(); actionEl.textContent = "RELOAD"; setTimeout(() => (actionEl.textContent = ""), 600); return; }
+      ammo--; updateWeaponHUD(); recoil = 0.05; shake = Math.max(shake, 0.22); muzzle();
+      const origin = new T.Vector3(player.pos.x, 3.4, player.pos.z);
+      const dir = new T.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)).normalize();
+      tracer(origin.clone().addScaledVector(dir, 2), origin.clone().addScaledVector(dir, 120));
+      let best = null, bd = 1e9;
+      npcs.forEach((n) => { if (!n.alive) return; const to = new T.Vector3(n.grp.position.x - origin.x, 0, n.grp.position.z - origin.z); const d = to.length(); if (d > 95) return; to.normalize(); if (to.dot(dir) > 0.985 && d < bd) { bd = d; best = n; } });
+      if (best) setTimeout(() => killNPC(best), 50);
+    }
+    // -- grenades --
+    function throwGrenade() {
+      if (inv.grenade <= 0 || !char || !weaponModels.grenade) return;
+      inv.grenade--; updateWeaponHUD(); oneShot("wave");
+      const m = normModel(weaponModels.grenade, 0.9);
+      const fwd = new T.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw));
+      m.position.set(player.pos.x, 3.4, player.pos.z).addScaledVector(fwd, 1.5); scene.add(m);
+      grenadesLive.push({ m, vel: fwd.clone().multiplyScalar(24).setY(13), t: 0 });
+    }
+    function explode(pos) {
+      shake = Math.max(shake, 0.8);
+      flashEl.classList.add("on"); setTimeout(() => flashEl.classList.remove("on"), 90);
+      const s = new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: 0xffa63a, transparent: true, opacity: 0.95 }));
+      s.position.copy(pos); scene.add(s); explosions.push({ mesh: s, t: 0, blast: true });
+      const smoke = new T.Mesh(new T.SphereGeometry(1, 12, 10), new T.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.6 }));
+      smoke.position.copy(pos); scene.add(smoke); explosions.push({ mesh: smoke, t: -0.1, blast: true, smoke: true });
+      npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(pos) < 13) killNPC(n); });
+    }
+    function updateEffects(dt) {
+      shake = Math.max(0, shake - dt * 1.6); recoil = Math.max(0, recoil - dt * 0.4);
+      for (let i = bullets.length - 1; i >= 0; i--) { const b = bullets[i]; b.t += dt; b.ln.material.opacity = 0.9 * (1 - b.t / 0.12); if (b.t > 0.12) { scene.remove(b.ln); bullets.splice(i, 1); } }
+      for (let i = grenadesLive.length - 1; i >= 0; i--) { const g = grenadesLive[i]; g.vel.y -= 30 * dt; g.m.position.addScaledVector(g.vel, dt); g.m.rotation.x += dt * 9; g.t += dt; if (g.m.position.y <= 0.5 || g.t > 2) { explode(g.m.position.clone().setY(0.6)); scene.remove(g.m); grenadesLive.splice(i, 1); } }
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        const e = explosions[i]; e.t += dt;
+        if (e.flash) { e.mesh.material.opacity = 0.95 * Math.max(0, 1 - (e.t) / 0.08); if (e.t > 0.08) { scene.remove(e.mesh); explosions.splice(i, 1); } continue; }
+        if (e.blast) { const sc = e.smoke ? 1 + Math.max(0, e.t) * 14 : 1 + Math.max(0, e.t) * 26; e.mesh.scale.setScalar(sc); e.mesh.material.opacity = (e.smoke ? 0.6 : 0.95) * Math.max(0, 1 - Math.max(0, e.t) / (e.smoke ? 0.9 : 0.5)); if (e.t > (e.smoke ? 0.9 : 0.5)) { scene.remove(e.mesh); explosions.splice(i, 1); } }
+      }
+    }
+
+    // -- cutscenes --
+    function startCine(mode, dur) { cine.active = true; cine.t = 0; cine.dur = dur; cine.mode = mode; cineEl.classList.add("on"); }
+    function endCine() { if (!cine.active) return; cine.active = false; cineEl.classList.remove("on"); titleEl.textContent = ""; subEl.textContent = ""; }
+    function startIntro() {
+      startCine("intro", 6.5); titleEl.textContent = ""; subEl.textContent = "LOS SANTOS";
+      setTimeout(() => { if (cine.mode === "intro" && cine.active) { titleEl.textContent = "GRAND THEFT AUTO"; subEl.textContent = ""; } }, 3200);
+    }
+    function pickupCine(key) { startCine("pickup", 2.2); titleEl.textContent = key === "revolver" ? ".357 MAGNUM" : "GRENADES"; subEl.textContent = "ACQUIRED"; }
+    function cineCamera(dt) {
+      cine.t += dt;
+      const cx0 = player.pos.x, cz0 = player.pos.z;
+      if (cine.mode === "intro") {
+        const k = clamp(cine.t / cine.dur, 0, 1), a = k * 2.4 + 0.6, r = lerp(120, 16, k), y = lerp(78, 6, k * k);
+        camera.position.set(cx0 + Math.cos(a) * r, y, cz0 + Math.sin(a) * r); camera.lookAt(cx0, 3, cz0);
+      } else { // pickup close-up orbit
+        const a = cine.t * 2.2 + player.yaw, r = 6.5;
+        camera.position.set(cx0 + Math.sin(a) * r, 4.2, cz0 + Math.cos(a) * r); camera.lookAt(cx0, 3.2, cz0);
+      }
+      if (cine.t >= cine.dur) endCine();
+    }
+
     // ---- input ----
     const keys = {};
     let camYaw = Math.PI, camPitch = 0.28, camDist = 11, camMode = 0, running = false;
@@ -210,6 +416,9 @@
       const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       keys[k] = e.type === "keydown";
       if (e.type === "keydown") {
+        if (cine.active) { endCine(); e.preventDefault(); return; }   // any key skips a cutscene
+        if (k === "f") fire();
+        if (k === "g") throwGrenade();
         if (k === " ") oneShot("kick");
         if (k === "e") oneShot("wave");           // wave uses greeting one-shot
         if (k === "q") oneShot("nod");
@@ -217,13 +426,13 @@
         if (k === "shift") running = true;
       }
       if (e.type === "keyup" && k === "shift") running = false;
-      if ([" ", "w", "a", "s", "d", "e", "q", "c", "Shift"].includes(k)) e.preventDefault();
+      if ([" ", "w", "a", "s", "d", "e", "q", "c", "f", "g", "Shift"].includes(k)) e.preventDefault();
     };
     dom.addEventListener("keydown", kh); dom.addEventListener("keyup", kh);
 
     // drag look
     let drag = false, lx = 0, ly = 0;
-    dom.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".gta-stick,.gta-btns")) return; drag = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); dom.focus(); });
+    dom.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".gta-stick,.gta-btns")) return; if (cine.active) { endCine(); return; } drag = true; lx = e.clientX; ly = e.clientY; dom.setPointerCapture(e.pointerId); dom.focus(); });
     dom.addEventListener("pointermove", (e) => { if (!drag) return; camYaw -= (e.clientX - lx) * 0.005; camPitch = clamp(camPitch + (e.clientY - ly) * 0.004, -0.15, 0.9); lx = e.clientX; ly = e.clientY; });
     dom.addEventListener("pointerup", () => { drag = false; });
     dom.addEventListener("wheel", (e) => { camDist = clamp(camDist + Math.sign(e.deltaY) * 1.2, 6, 22); e.preventDefault(); }, { passive: false });
@@ -243,6 +452,8 @@
       const k = b.dataset.k;
       if (k === "run") { b.onpointerdown = () => { running = !running; b.classList.toggle("on", running); }; return; }
       if (k === "cam") { b.onpointerdown = () => { camMode = (camMode + 1) % 2; }; return; }
+      if (k === "fire") { b.onpointerdown = () => fire(); return; }
+      if (k === "throw") { b.onpointerdown = () => throwGrenade(); return; }
       b.onpointerdown = () => oneShot(k);
     });
 
@@ -259,15 +470,16 @@
       const w = host.clientWidth || 1, h = host.clientHeight || 1;
       renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 
-      // movement input (camera-relative)
+      // movement input (camera-relative) — suspended during a cutscene
       let ix = 0, iz = 0;
-      if (keys.w) iz -= 1; if (keys.s) iz += 1; if (keys.a) ix -= 1; if (keys.d) ix += 1;
-      if (sMag > 0.15) { ix += Math.cos(sAng) * sMag; iz += Math.sin(sAng) * sMag; }
+      if (!cine.active) {
+        if (keys.w) iz -= 1; if (keys.s) iz += 1; if (keys.a) ix -= 1; if (keys.d) ix += 1;
+        if (sMag > 0.15) { ix += Math.cos(sAng) * sMag; iz += Math.sin(sAng) * sMag; }
+      }
       const mag = Math.min(1, Math.hypot(ix, iz));
       player.moving = mag > 0.12 && charReady;
 
       if (player.moving) {
-        // direction in world from camera yaw
         const dir = Math.atan2(ix, -iz) + camYaw;
         const spd = (running ? 12 : 6) * mag;
         const nx = player.pos.x + Math.sin(dir) * spd * dt;
@@ -275,30 +487,40 @@
         if (!nearestBlocked(nx, player.pos.z)) player.pos.x = nx;
         if (!nearestBlocked(player.pos.x, nz)) player.pos.z = nz;
         player.pos.x = clamp(player.pos.x, -150, 150); player.pos.z = clamp(player.pos.z, -150, 150);
-        // face movement direction (smooth)
         player.yaw = lerpAngle(player.yaw, dir, clamp(dt * 10, 0, 1));
         if (current !== actions.kick && current !== actions.nod) fadeTo("walk", 0.2);
       } else if (charReady && current !== actions.kick && current !== actions.nod && current !== actions.wave) {
         fadeTo("idle", 0.3);
       }
-      // run animation faster when running
       if (actions.walk) actions.walk.setEffectiveTimeScale(running ? 1.6 : 1.0);
 
       if (char) { char.position.set(player.pos.x, 0, player.pos.z); char.rotation.y = player.yaw + faceOffset; }
       if (mixer) mixer.update(dt);
+      updateNPCs(dt); updateEffects(dt); checkPickups();
 
-      // camera follow
-      const tgt = new T.Vector3(player.pos.x, 3.2, player.pos.z);
-      const cd = camMode === 0 ? camDist : 5.5, cp = camMode === 0 ? camPitch : 0.1;
-      const cxp = tgt.x - Math.sin(camYaw) * Math.cos(cp) * cd;
-      const czp = tgt.z - Math.cos(camYaw) * Math.cos(cp) * cd;
-      const cyp = tgt.y + Math.sin(cp) * cd + 2;
-      camera.position.lerp(new T.Vector3(cxp, cyp, czp), clamp(dt * 8, 0, 1));
-      camera.lookAt(tgt);
+      // camera
+      if (cine.active) {
+        cineCamera(dt);
+      } else {
+        const tgt = new T.Vector3(player.pos.x, 3.2, player.pos.z);
+        const cd = camMode === 0 ? camDist : 5.5, cp = (camMode === 0 ? camPitch : 0.1) + recoil;
+        const cxp = tgt.x - Math.sin(camYaw) * Math.cos(cp) * cd;
+        const czp = tgt.z - Math.cos(camYaw) * Math.cos(cp) * cd;
+        const cyp = tgt.y + Math.sin(cp) * cd + 2;
+        camera.position.lerp(new T.Vector3(cxp, cyp, czp), clamp(dt * 8, 0, 1));
+        if (shake > 0.001) camera.position.x += (Math.sin(ts * 0.05) * shake), camera.position.y += (Math.cos(ts * 0.07) * shake);
+        camera.lookAt(tgt);
+      }
 
       renderer.render(scene, camera);
     }
     function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; if (d < -Math.PI) d += 2 * Math.PI; return a + d * t; }
+
+    // ---- kick off the world ----
+    spawnNPCs();
+    loadWeapons();
+    startIntro();
+    host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, fire, throwGrenade, setPos: (x, z) => player.pos.set(x, 0, z) };
     requestAnimationFrame(frame);
     setTimeout(() => dom.focus(), 40);
 
