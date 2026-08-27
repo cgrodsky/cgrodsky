@@ -66,6 +66,7 @@
         <div class="gta-skip">tap to skip ▸</div>
       </div>
       <div class="gta-load" id="gta-load">Loading Los Santos…</div>
+      <div class="gta-boot" id="gta-boot"><img class="gta-boot-img" id="gta-boot-img" alt=""><div class="gta-boot-skip">tap to skip ▸</div></div>
     </div>`;
     const host = body.querySelector(".gta");
     const loadEl = host.querySelector("#gta-load");
@@ -415,6 +416,26 @@
       }
     }
 
+    // -- boot logo sequence (publisher splash before the game) --
+    const BOOT_LOGOS = ["assets/gta_boot1.png"];   // add more logos here to extend the sequence
+    function bootSequence(done) {
+      const bootEl = host.querySelector("#gta-boot"), imgEl = host.querySelector("#gta-boot-img");
+      let i = 0, ended = false;
+      const timers = [];
+      const T2 = (fn, ms) => timers.push(setTimeout(fn, ms));
+      function finish() { if (ended) return; ended = true; timers.forEach(clearTimeout); bootEl.classList.remove("on"); T2(() => (bootEl.style.display = "none"), 500); if (done) done(); }
+      function next() {
+        if (ended) return;
+        if (i >= BOOT_LOGOS.length) { finish(); return; }
+        imgEl.classList.remove("vis"); imgEl.src = BOOT_LOGOS[i] + "?v=1"; i++;
+        requestAnimationFrame(() => requestAnimationFrame(() => imgEl.classList.add("vis")));
+        T2(() => { imgEl.classList.remove("vis"); T2(next, 500); }, 2300);
+      }
+      bootEl.style.display = "flex"; bootEl.classList.add("on");
+      bootEl.onpointerdown = finish;
+      next();
+    }
+
     // -- cutscenes --
     function startCine(mode, dur) { cine.active = true; cine.t = 0; cine.dur = dur; cine.mode = mode; cineEl.classList.add("on"); }
     function endCine() { if (!cine.active) return; cine.active = false; cineEl.classList.remove("on"); titleEl.textContent = ""; subEl.textContent = ""; }
@@ -596,7 +617,7 @@
     // ---- kick off the world ----
     spawnNPCs();
     loadWeapons();
-    startIntro();
+    bootSequence(startIntro);   // Rockstar-style publisher splash, then the LOS SANTOS cinematic
     host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z) };
     requestAnimationFrame(frame);
     setTimeout(() => dom.focus(), 40);

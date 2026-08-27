@@ -3250,6 +3250,12 @@ body.dark .on-title, body.dark .on-body { color: #f3f2f1; }
 .gta-weapon { position: absolute; right: 16px; top: 64px; z-index: 4; text-align: right; pointer-events: none; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
 .gta-weapon .wpn { color: #fff; font: 800 15px "Bebas Neue", Impact, system-ui; letter-spacing: 1px; }
 .gta-weapon .ammo { color: #ffd23f; font: 800 18px "Consolas", monospace; margin-left: 6px; }
+/* GTA boot / publisher splash */
+.gta-boot { position: absolute; inset: 0; z-index: 8; display: none; align-items: center; justify-content: center; background: #05070c; }
+.gta-boot.on { display: flex; }
+.gta-boot-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.04); transition: opacity .5s ease, transform 2.6s ease; }
+.gta-boot-img.vis { opacity: 1; transform: scale(1); }
+.gta-boot-skip { position: absolute; right: 18px; bottom: 16px; color: rgba(255,255,255,.75); font: 600 12px system-ui; z-index: 1; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
 /* in-game phone */
 .gta-phone { position: absolute; right: 14px; bottom: 12px; z-index: 6; width: 244px; height: 468px; transform: translateY(130%); transition: transform .3s cubic-bezier(.2,.8,.3,1); }
 .gta-phone.open { transform: translateY(0); }
