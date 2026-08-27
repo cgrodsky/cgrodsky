@@ -36,8 +36,7 @@
     { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
     { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d", art: "assets/game_stardew.jpg" },
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
-    { id: "gta5", name: "Grand Theft Auto V", price: 29.99, gp: true, tag: "Adventure", c1: "#1b5e20", c2: "#0a2410", icon: "assets/gta5.png", play: "gta" },
-    { id: "gta6", name: "Grand Theft Auto VI", price: 69.99, gp: false, tag: "Adventure", c1: "#ff5ca8", c2: "#5b2be0", icon: "assets/gta6.png", play: "gta" },
+    { id: "gta6", name: "Grand Theft Auto VI", price: 69.99, gp: false, tag: "Adventure", c1: "#ff7ab8", c2: "#2a9fd6", art: "assets/gta6_banner.jpg", play: "gta" },
     { id: "fortnite", name: "Fortnite", price: 0, gp: false, tag: "Shooter", c1: "#7c3aed", c2: "#2563eb" },
     { id: "bluey", name: "Bluey: The Videogame", price: 39.99, gp: true, tag: "Casual", c1: "#3a7bd5", c2: "#0a2540", art: "assets/game_bluey.jpg" },
     { id: "fallout4", name: "Fallout 4: Anniversary Edition", price: 19.99, gp: true, tag: "RPG", c1: "#caa23a", c2: "#3a2a12", art: "assets/game_fallout.jpg" },
@@ -47,7 +46,7 @@
   const RATINGS = {
     minecraft: "E", forza: "E", halo: "T", seaofthieves: "T", starfield: "M", flightsim: "E",
     gears5: "M", fallout4: "M", doometernal: "M", aoe4: "T", hades: "T", hollowknight: "E10+",
-    stardew: "E10+", cuphead: "E10+", gta5: "AO", gta6: "M", fortnite: "T", bluey: "EC",
+    stardew: "E10+", cuphead: "E10+", gta6: "M", fortnite: "T", bluey: "EC",
   };
   const RATING_COLOR = { "E": "#4b7f2f", "E10+": "#3a7bd5", "T": "#c98a1a", "M": "#c0392b" };
   // Official ESRB badge images (others fall back to a colored text badge).
@@ -171,7 +170,7 @@
     hollowknight: "Explore a vast, ruined kingdom of insects in this acclaimed hand-drawn adventure.",
     stardew: "Build the farm of your dreams, raise animals, fish, and join a cozy community.",
     cuphead: "Run and gun through a gorgeous 1930s cartoon world of tough bosses.",
-    gta5: "Live the high-stakes criminal life across the sprawling city of Los Santos.",
+    gta6: "Return to Vice City in the biggest, most immersive evolution of the Grand Theft Auto series.",
     fortnite: "Drop in, build, and battle to be the last one standing. Free to play.",
     bluey: "Play along with the Heeler family in games and adventures for the whole family.",
   };
