@@ -1108,9 +1108,10 @@
     { keys: ["tinder"], name: "Tinder", img: "assets/brand_tinder.png", desc: "The dating app that made swipe-to-match famous — meet people nearby.", url: "https://tinder.com" },
     { keys: ["starbucks", "star bucks"], name: "Starbucks", img: "assets/brand_starbucks.png", desc: "Global coffeehouse chain — order ahead, collect Stars, and pay in-app.", url: "https://www.starbucks.com" },
     { keys: ["playstation", "play station", "ps5", "psn"], name: "PlayStation", img: "assets/brand_playstation.png", desc: "Sony's gaming brand — consoles, exclusive games, and PlayStation Network.", url: "https://www.playstation.com" },
-    { keys: ["shutterstock", "shutter stock"], name: "Shutterstock", img: "assets/brand_shutterstock.png", desc: "Marketplace for stock photos, video, music, and design assets.", url: "https://www.shutterstock.com" },
-    { keys: ["plex"], name: "Plex", img: "assets/brand_plex.png", desc: "Streaming app that organizes and plays your movies, TV, and music.", url: "https://www.plex.tv" },
+    { keys: ["grok", "grok ai"], name: "Grok", img: "assets/brand_grok.png", desc: "xAI's conversational AI assistant, built to answer questions with real-time knowledge.", url: "https://grok.com" },
+    { keys: ["anydesk", "any desk"], name: "AnyDesk", img: "assets/brand_anydesk.png", desc: "Remote desktop software for accessing and controlling computers from anywhere.", url: "https://anydesk.com" },
     { keys: ["flower", "flowers", "daisy"], name: "Flower", img: "assets/brand_flower.png", desc: "The seed-bearing part of a plant — often bright and fragrant to attract pollinators like bees and butterflies.", url: "https://en.wikipedia.org/wiki/Flower" },
+    { keys: ["doordash", "door dash"], name: "DoorDash", img: "assets/brand_doordash.png", desc: "On-demand food and grocery delivery from local restaurants and stores.", url: "https://www.doordash.com" },
   ];
   function knowledgeFor(q) { const s = q.toLowerCase(); return SEARCH_KNOWLEDGE.find((k) => k.keys.some((key) => key === s || (s.length >= 2 && key.startsWith(s)))); }
   function renderSearch(q) {
