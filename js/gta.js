@@ -41,7 +41,10 @@
       <div class="gta-action" id="gta-action"></div>
       <div class="gta-help">Drag look · WASD move · Shift run · F fire · R reload · G grenade · Space kick · T phone · C cam</div>
       <div class="gta-stick" id="gta-stick"><div class="gta-nub" id="gta-nub"></div></div>
+      <div class="gta-carhint" id="gta-carhint"></div>
+      <div class="gta-speed" id="gta-speed"></div>
       <div class="gta-btns">
+        <button class="gta-b" data-k="car">ENTER</button>
         <button class="gta-b fire" data-k="fire">FIRE</button>
         <button class="gta-b" data-k="reload">RELOAD</button>
         <button class="gta-b" data-k="throw">GRENADE</button>
@@ -167,6 +170,8 @@
     // ---- weapons / combat / NPC / cinematic state ----
     let handBone = null, heldWeapon = null, equipped = null, ammo = 6, shake = 0, recoil = 0;
     let reloading = false, reloadT = 0, phoneOpen = false, phoneView = "home";
+    const vehicles = []; let inCar = null;
+    const carHintEl = host.querySelector("#gta-carhint"), speedEl = host.querySelector("#gta-speed");
     const inv = { revolver: false, grenade: 0 };
     const weaponModels = {};          // name -> loaded Object3D (original, cloned per use)
     const pickups = [];               // {key, holder, ring, spot, got}
@@ -416,6 +421,61 @@
       }
     }
 
+    // -- stealable vehicles --
+    const CARS = {
+      alfa:    { url: "assets/models/gta/alfa.fbx",    name: "Giulia Sprint GTA", len: 4.0, orient: { y: 0 }, maxSpeed: 36, accel: 17, turn: 1.8 },
+      mclaren: { url: "assets/models/gta/mclaren.fbx", name: "McLaren P1",        len: 4.6, orient: { y: 0 }, maxSpeed: 58, accel: 28, turn: 1.5 },
+    };
+    function placeVehicle(model, desc, x, z, yaw) {
+      const inner = model.clone(true);
+      inner.rotation.set(desc.orient && desc.orient.x || 0, desc.orient && desc.orient.y || 0, desc.orient && desc.orient.z || 0);
+      inner.updateMatrixWorld(true);
+      const box = new T.Box3().setFromObject(inner); const s = box.getSize(new T.Vector3()); const c = box.getCenter(new T.Vector3());
+      inner.position.sub(c); inner.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
+      const scale = desc.len / (Math.max(s.x, s.y, s.z) || 1);
+      const scaler = new T.Group(); scaler.add(inner); scaler.scale.setScalar(scale); scaler.position.y = (s.y * scale) / 2;
+      const g = new T.Group(); g.add(scaler); g.position.set(x, 0, z); g.rotation.y = yaw; scene.add(g);
+      const v = { g, name: desc.name, pos: new T.Vector3(x, 0, z), yaw, speed: 0, maxSpeed: desc.maxSpeed, accel: desc.accel, turn: desc.turn };
+      vehicles.push(v); return v;
+    }
+    function loadVehicles() {
+      loadFBX(CARS.alfa.url).then((m) => placeVehicle(m, CARS.alfa, 12, 2, -Math.PI / 2)).catch((e) => console.warn("[GTA] alfa", e));
+      loadFBX(CARS.mclaren.url).then((m) => placeVehicle(m, CARS.mclaren, -12, 2, Math.PI / 2)).catch((e) => console.warn("[GTA] mclaren", e));
+    }
+    function nearestVehicle() { let best = null, bd = 1e9; vehicles.forEach((v) => { const d = (v.pos.x - player.pos.x) ** 2 + (v.pos.z - player.pos.z) ** 2; if (d < bd) { bd = d; best = v; } }); return bd < 28 ? best : null; }
+    function toggleCar() {
+      if (!charReady) return;
+      if (inCar) {
+        const v = inCar; inCar = null; if (char) char.visible = true;
+        player.pos.set(v.pos.x + Math.cos(v.yaw) * 3.2, 0, v.pos.z - Math.sin(v.yaw) * 3.2); player.yaw = v.yaw;
+        speedEl.textContent = ""; carHintEl.textContent = "";
+      } else {
+        const v = nearestVehicle(); if (!v) return;
+        inCar = v; v.speed = 0; if (char) char.visible = false; carHintEl.textContent = "";
+      }
+    }
+    function driveCar(dt) {
+      const v = inCar; let thr = 0, steer = 0;
+      if (!cine.active) {
+        if (keys.w) thr += 1; if (keys.s) thr -= 1; if (keys.a) steer += 1; if (keys.d) steer -= 1;
+        if (sMag > 0.2) { thr += -Math.sin(sAng) * sMag; steer += -Math.cos(sAng) * sMag; }
+      }
+      v.speed += thr * v.accel * dt; v.speed *= (1 - dt * 0.7);
+      v.speed = clamp(v.speed, -v.maxSpeed * 0.4, v.maxSpeed);
+      const frac = clamp(Math.abs(v.speed) / v.maxSpeed, 0, 1);
+      v.yaw += steer * v.turn * dt * frac * Math.sign(v.speed || 1);
+      const fx = Math.sin(v.yaw), fz = Math.cos(v.yaw);
+      const nx = v.pos.x + fx * v.speed * dt, nz = v.pos.z + fz * v.speed * dt;
+      if (nearestBlocked(nx, v.pos.z)) v.speed *= -0.25; else v.pos.x = clamp(nx, -150, 150);
+      if (nearestBlocked(v.pos.x, nz)) v.speed *= -0.25; else v.pos.z = clamp(nz, -150, 150);
+      v.g.position.set(v.pos.x, 0, v.pos.z); v.g.rotation.y = v.yaw;
+      player.pos.set(v.pos.x, 0, v.pos.z); player.yaw = v.yaw;
+      camYaw = lerpAngle(camYaw, v.yaw, clamp(dt * 3, 0, 1));
+      speedEl.textContent = Math.round(Math.abs(v.speed) * 2.2) + " MPH";
+      // run over pedestrians
+      if (Math.abs(v.speed) > 6) npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(v.pos) < 2.6) killNPC(n); });
+    }
+
     // -- boot logo sequence (publisher splash before the game) --
     const BOOT_LOGOS = [                              // add more logos here to extend the sequence
       { img: "assets/gta_boot1.png", fit: "cover" },
@@ -518,7 +578,7 @@
         if (k === "t") togglePhone();
         if (k === "g") throwGrenade();
         if (k === " ") oneShot("kick");
-        if (k === "e") oneShot("wave");           // wave uses greeting one-shot
+        if (k === "e") toggleCar();                // enter / exit vehicle
         if (k === "q") oneShot("nod");
         if (k === "c") camMode = (camMode + 1) % 2;
         if (k === "shift") running = true;
@@ -554,6 +614,7 @@
       if (k === "reload") { b.onpointerdown = () => startReload(); return; }
       if (k === "throw") { b.onpointerdown = () => throwGrenade(); return; }
       if (k === "phone") { b.onpointerdown = () => togglePhone(); return; }
+      if (k === "car") { b.onpointerdown = () => toggleCar(); return; }
       b.onpointerdown = () => oneShot(k);
     });
 
@@ -570,6 +631,11 @@
       const w = host.clientWidth || 1, h = host.clientHeight || 1;
       renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 
+      // ---- driving vs on-foot ----
+      if (inCar) {
+        driveCar(dt);
+        if (char) char.visible = false;
+      } else {
       // movement input (camera-relative) — suspended during a cutscene
       let ix = 0, iz = 0;
       if (!cine.active) {
@@ -593,8 +659,12 @@
         fadeTo("idle", 0.3);
       }
       if (actions.walk) actions.walk.setEffectiveTimeScale(running ? 1.6 : 1.0);
+      if (char) { char.visible = true; char.position.set(player.pos.x, 0, player.pos.z); char.rotation.y = player.yaw + faceOffset; }
+      // proximity hint for stealing a car
+      const nv = nearestVehicle();
+      carHintEl.textContent = nv ? "\u{1F697}  Steal " + nv.name + "  ·  E" : "";
+      }
 
-      if (char) { char.position.set(player.pos.x, 0, player.pos.z); char.rotation.y = player.yaw + faceOffset; }
       if (mixer) mixer.update(dt);
       updateNPCs(dt); updateEffects(dt); checkPickups(); updateReload(dt);
       if (phoneOpen) { if (phoneView === "map") drawPhoneMap(); const d = new Date(); if (gphTime) gphTime.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
@@ -620,6 +690,7 @@
     // ---- kick off the world ----
     spawnNPCs();
     loadWeapons();
+    loadVehicles();
     bootSequence(startIntro);   // Rockstar-style publisher splash, then the LOS SANTOS cinematic
     host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z) };
     requestAnimationFrame(frame);
