@@ -1105,6 +1105,11 @@
     { keys: ["x", "twitter", "x app"], name: "X (formerly Twitter)", img: "assets/brand_xapp.png", desc: "Social platform for real-time posts, news, and conversation.", url: "https://x.com" },
     { keys: ["gemini", "google gemini"], name: "Gemini", img: "assets/brand_gemini.png", desc: "Google's family of multimodal AI models and assistant.", url: "https://gemini.google.com" },
     { keys: ["meta", "facebook meta"], name: "Meta", img: "assets/brand_meta.png", desc: "Parent company of Facebook, Instagram, WhatsApp, and Quest.", url: "https://about.meta.com" },
+    { keys: ["tinder"], name: "Tinder", img: "assets/brand_tinder.png", desc: "The dating app that made swipe-to-match famous — meet people nearby.", url: "https://tinder.com" },
+    { keys: ["starbucks", "star bucks"], name: "Starbucks", img: "assets/brand_starbucks.png", desc: "Global coffeehouse chain — order ahead, collect Stars, and pay in-app.", url: "https://www.starbucks.com" },
+    { keys: ["playstation", "play station", "ps5", "psn"], name: "PlayStation", img: "assets/brand_playstation.png", desc: "Sony's gaming brand — consoles, exclusive games, and PlayStation Network.", url: "https://www.playstation.com" },
+    { keys: ["shutterstock", "shutter stock"], name: "Shutterstock", img: "assets/brand_shutterstock.png", desc: "Marketplace for stock photos, video, music, and design assets.", url: "https://www.shutterstock.com" },
+    { keys: ["plex"], name: "Plex", img: "assets/brand_plex.png", desc: "Streaming app that organizes and plays your movies, TV, and music.", url: "https://www.plex.tv" },
   ];
   function knowledgeFor(q) { const s = q.toLowerCase(); return SEARCH_KNOWLEDGE.find((k) => k.keys.some((key) => key === s || (s.length >= 2 && key.startsWith(s)))); }
   function renderSearch(q) {
