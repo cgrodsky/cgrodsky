@@ -1110,6 +1110,7 @@
     { keys: ["playstation", "play station", "ps5", "psn"], name: "PlayStation", img: "assets/brand_playstation.png", desc: "Sony's gaming brand — consoles, exclusive games, and PlayStation Network.", url: "https://www.playstation.com" },
     { keys: ["shutterstock", "shutter stock"], name: "Shutterstock", img: "assets/brand_shutterstock.png", desc: "Marketplace for stock photos, video, music, and design assets.", url: "https://www.shutterstock.com" },
     { keys: ["plex"], name: "Plex", img: "assets/brand_plex.png", desc: "Streaming app that organizes and plays your movies, TV, and music.", url: "https://www.plex.tv" },
+    { keys: ["flower", "flowers", "daisy"], name: "Flower", img: "assets/brand_flower.png", desc: "The seed-bearing part of a plant — often bright and fragrant to attract pollinators like bees and butterflies.", url: "https://en.wikipedia.org/wiki/Flower" },
   ];
   function knowledgeFor(q) { const s = q.toLowerCase(); return SEARCH_KNOWLEDGE.find((k) => k.keys.some((key) => key === s || (s.length >= 2 && key.startsWith(s)))); }
   function renderSearch(q) {
