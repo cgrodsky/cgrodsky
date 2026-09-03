@@ -1003,9 +1003,11 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
         <input class="acro-url" placeholder="Paste a PDF link (https://…)"><button class="acro-open">Open</button></div>
       <div class="acro-tools" hidden>
         <button class="acro-tool" data-tool="sign" title="Add signature"><img src="assets/sign.png?v=1" alt="Sign"></button>
-        <button class="acro-tool" data-tool="pen" title="Draw">${penSVG()}</button>
+        <button class="acro-tool" data-tool="pen" title="Draw (ink pen)"><img src="assets/pdf_ink.png?v=1" alt="Ink"></button>
         <button class="acro-tool" data-tool="hi" title="Highlight">${hiSVG()}</button>
-        <button class="acro-tool" data-tool="text" title="Add text">${txtSVG()}</button>
+        <button class="acro-tool" data-tool="underline" title="Underline"><img src="assets/pdf_underline.png?v=1" alt="Underline"></button>
+        <button class="acro-tool" data-tool="text" title="Add text"><img src="assets/pdf_text.png?v=1" alt="Text"></button>
+        <button class="acro-tool" data-tool="shapes" title="Shapes (tap to switch rectangle / ellipse)"><img src="assets/pdf_shapes.png?v=1" alt="Shapes"></button>
         <span class="acro-tsep"></span>
         <span class="acro-swatches"></span>
         <span class="grow"></span>
@@ -1026,6 +1028,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     const toolsBar = body.querySelector(".acro-tools");
     const ctx = canvas.getContext("2d");
     let editMode = false, tool = "sign", color = "#1560c0", drawing = false, last = null;
+    let shapeMode = "rect", baseline = null, startPt = null;
     const undoStack = [];
 
     const COLORS = ["#1560c0", "#111111", "#e5484d", "#1a8f52", "#f5a623"];
@@ -1042,7 +1045,13 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     body.querySelector(".acro-open").onclick = () => openUrl(body.querySelector(".acro-url").value.trim());
     body.querySelector(".acro-url").addEventListener("keydown", (e) => { if (e.key === "Enter") openUrl(e.target.value.trim()); });
 
-    function setTool(t) { tool = t; toolsBar.querySelectorAll(".acro-tool").forEach((b) => b.classList.toggle("on", b.dataset.tool === t)); page.classList.toggle("acro-textmode", t === "text"); }
+    function setTool(t) {
+      if (t === "shapes" && tool === "shapes") shapeMode = shapeMode === "rect" ? "ellipse" : "rect";
+      tool = t;
+      toolsBar.querySelectorAll(".acro-tool").forEach((b) => b.classList.toggle("on", b.dataset.tool === t));
+      const sb = toolsBar.querySelector('.acro-tool[data-tool="shapes"]'); if (sb) sb.title = "Shapes: " + (shapeMode === "rect" ? "rectangle" : "ellipse") + " (tap to switch)";
+      page.classList.toggle("acro-textmode", t === "text");
+    }
     toolsBar.querySelectorAll(".acro-tool").forEach((b) => b.onclick = () => setTool(b.dataset.tool));
     function setEdit(on) {
       editMode = on; toolsBar.hidden = !on; body.querySelector(".acro-edit-toggle").classList.toggle("on", on);
@@ -1055,13 +1064,24 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     // ---- drawing ----
     function pushUndo() { try { undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (undoStack.length > 20) undoStack.shift(); } catch (e) {} }
     function pos(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) }; }
+    function drawShape(a, b) {
+      const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
+      ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineJoin = "round";
+      ctx.beginPath();
+      if (shapeMode === "ellipse") ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+      else { const r = Math.min(10, w / 2, h / 2); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
+      ctx.stroke();
+    }
     canvas.addEventListener("pointerdown", (e) => {
       if (!editMode || tool === "text") return;
-      drawing = true; pushUndo(); last = pos(e); canvas.setPointerCapture(e.pointerId);
-      ctx.beginPath(); ctx.moveTo(last.x, last.y);
+      drawing = true; pushUndo(); startPt = last = pos(e); try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      if (tool === "shapes" || tool === "underline") { try { baseline = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch (_) { baseline = null; } }
+      else { ctx.beginPath(); ctx.moveTo(last.x, last.y); }
     });
     canvas.addEventListener("pointermove", (e) => {
       if (!drawing) return; const p = pos(e);
+      if (tool === "shapes") { if (baseline) ctx.putImageData(baseline, 0, 0); drawShape(startPt, p); return; }
+      if (tool === "underline") { if (baseline) ctx.putImageData(baseline, 0, 0); ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(startPt.x, startPt.y); ctx.lineTo(p.x, startPt.y); ctx.stroke(); return; }
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       if (tool === "hi") { ctx.globalAlpha = 0.35; ctx.strokeStyle = "#ffe14d"; ctx.lineWidth = 18; }
       else if (tool === "pen") { ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 3; }
@@ -1069,7 +1089,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       ctx.quadraticCurveTo(last.x, last.y, (last.x + p.x) / 2, (last.y + p.y) / 2);
       ctx.stroke(); last = p;
     });
-    const endDraw = () => { drawing = false; ctx.globalAlpha = 1; };
+    const endDraw = () => { drawing = false; baseline = null; ctx.globalAlpha = 1; };
     canvas.addEventListener("pointerup", endDraw); canvas.addEventListener("pointerleave", endDraw);
     // ---- text tool ----
     page.addEventListener("pointerdown", (e) => {
