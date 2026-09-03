@@ -121,6 +121,9 @@
           <button data-cmd="redo" title="Redo">↻</button>
           <button class="wd-clear" title="Clear formatting">⌫</button>
         </div>
+        <div class="wd-grp">
+          <button class="wd-ai" title="Generate text with AI"><img src="assets/ai_gen.png?v=1" class="wd-ai-ic" alt="">AI Write</button>
+        </div>
       </div>
       <div class="wd-canvas"><div class="wd-page" contenteditable="true" spellcheck="true"></div></div>
     </div>`;
@@ -191,6 +194,16 @@
 
     body.querySelectorAll(".wd-ribbon [data-cmd]").forEach((b) => b.addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand(b.dataset.cmd, false, null); autosave(); }));
     body.querySelector(".wd-clear").addEventListener("mousedown", (e) => { e.preventDefault(); document.execCommand("removeFormat", false, null); autosave(); });
+    body.querySelector(".wd-ai").addEventListener("mousedown", saveSel);
+    body.querySelector(".wd-ai").addEventListener("click", async () => {
+      if (!window.AIText) return;
+      const text = await window.AIText.compose({ title: "Generate text with AI", placeholder: "Describe what to write — e.g. “a two-paragraph intro about renewable energy”" });
+      if (text == null || text === "") return;
+      const html = text.split(/\n{2,}/).map((p) => "<p>" + escapeHtml(p).replace(/\n/g, "<br>") + "</p>").join("");
+      restoreSel(); page.focus();
+      try { document.execCommand("insertHTML", false, html); } catch (e) { page.innerHTML += html; }
+      autosave();
+    });
 
     page.addEventListener("keyup", saveSel);
     page.addEventListener("mouseup", saveSel);

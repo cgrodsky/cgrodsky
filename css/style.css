@@ -4401,6 +4401,23 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .acro-sw { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; margin: 0 2px; cursor: pointer; }
 .acro-sw.on { border-color: #fff; }
 .acro-undo, .acro-clear { background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font-weight: 600; cursor: pointer; font-size: .82rem; }
+.acro-ai { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 1px solid transparent; border-radius: 7px; cursor: pointer; }
+.acro-ai:hover { background: rgba(255,255,255,.12); }
+.acro-ai img { width: 22px; height: 22px; object-fit: contain; }
+/* Word AI Write button */
+.wd-ai { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px !important; font-weight: 700; color: #6a2cff; }
+.wd-ai-ic { width: 18px; height: 18px; object-fit: contain; }
+/* Shared AI compose popover */
+.aitext-modal { position: absolute; inset: 0; z-index: 4000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); }
+.aitext-card { width: min(440px, 92%); background: var(--bg-elev, #fff); color: var(--text, #111); border: 1px solid var(--border, #ddd); border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,.4); padding: 18px; }
+.aitext-head { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; margin-bottom: 12px; }
+.aitext-head img { width: 26px; height: 26px; object-fit: contain; }
+.aitext-in { width: 100%; box-sizing: border-box; resize: vertical; border: 1px solid var(--border, #ccc); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: .95rem; background: var(--bg, #fff); color: var(--text, #111); outline: none; }
+.aitext-err { color: #e5484d; font-size: .82rem; min-height: 1em; margin-top: 6px; }
+.aitext-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+.aitext-cancel { background: transparent; border: 1px solid var(--border, #ccc); color: var(--text, #111); border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
+.aitext-go { background: linear-gradient(135deg, #3a8bff, #6a2cff); color: #fff; border: 0; border-radius: 8px; padding: 8px 18px; font-weight: 700; cursor: pointer; }
+.aitext-go:disabled { opacity: .7; cursor: default; }
 /* QR Code generator */
 .qr-app { padding: 22px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
 .qr-h { margin: 0; }

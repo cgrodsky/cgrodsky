@@ -1008,6 +1008,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
         <button class="acro-tool" data-tool="underline" title="Underline"><img src="assets/pdf_underline.png?v=1" alt="Underline"></button>
         <button class="acro-tool" data-tool="text" title="Add text"><img src="assets/pdf_text.png?v=1" alt="Text"></button>
         <button class="acro-tool" data-tool="shapes" title="Shapes (tap to switch rectangle / ellipse)"><img src="assets/pdf_shapes.png?v=1" alt="Shapes"></button>
+        <button class="acro-ai" title="AI — generate text"><img src="assets/ai_gen.png?v=1" alt="AI"></button>
         <span class="acro-tsep"></span>
         <span class="acro-swatches"></span>
         <span class="grow"></span>
@@ -1098,6 +1099,14 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       const t = document.createElement("div"); t.className = "acro-textbox"; t.contentEditable = "true"; t.style.left = (e.clientX - r.left) + "px"; t.style.top = (e.clientY - r.top) + "px"; t.style.color = color; t.textContent = "";
       textLayer.appendChild(t); setTimeout(() => t.focus(), 0);
     });
+    body.querySelector(".acro-ai").onclick = async () => {
+      if (!window.AIText) return;
+      const text = await window.AIText.compose({ title: "Generate text with AI", placeholder: "Describe what to write — e.g. “a short cover letter for a marketing role”" });
+      if (text == null || text === "") return;
+      const t = document.createElement("div"); t.className = "acro-textbox acro-aitext"; t.contentEditable = "true";
+      t.style.left = "60px"; t.style.top = "70px"; t.style.right = "60px"; t.style.color = "#111"; t.textContent = text;
+      textLayer.appendChild(t);
+    };
     body.querySelector(".acro-undo").onclick = () => { const s = undoStack.pop(); if (s) ctx.putImageData(s, 0, 0); };
     body.querySelector(".acro-clear").onclick = () => { pushUndo(); ctx.clearRect(0, 0, canvas.width, canvas.height); textLayer.innerHTML = ""; };
     showWelcome();

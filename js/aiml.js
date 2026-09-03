@@ -32,3 +32,60 @@ window.GIPHY_API_KEY = "k6lB9GA3q2cXzeOfXVS2UROmXC1RjLoS";
 /* QRCoder — powers the QR Code generator. GET the v4 endpoint with key + text;
    returns a QR PNG that can be used straight as an <img src>. */
 window.QRCODER_API_KEY = "ZMlBVgqOiHv1aobL3F6kTn4AwPKW8Chc";
+
+/* Shared AI text generation — used by Copilot-style "generate text" buttons in
+   apps like Word and Acrobat. Chat-completions against the AIML (OpenAI-compatible)
+   endpoint. Returns the generated text, or throws on error. */
+window.AIText = {
+  async generate(prompt, opts) {
+    opts = opts || {};
+    let key = window.AIML_KEY;
+    try { if (window.State && State.data && State.data.copilot && State.data.copilot.apiKey) key = State.data.copilot.apiKey; } catch (e) {}
+    const sys = opts.system || "You are a helpful writing assistant. Write clear, well-structured prose. Return only the requested text — no preamble, no markdown fences, no commentary.";
+    const res = await fetch(window.AIML_BASE + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({
+        model: opts.model || "openai/gpt-4o-mini",
+        messages: [{ role: "system", content: sys }, { role: "user", content: prompt }],
+        max_tokens: opts.max || 700,
+        temperature: opts.temperature == null ? 0.8 : opts.temperature,
+      }),
+    });
+    if (!res.ok) { let d = "HTTP " + res.status; try { const j = await res.json(); d += " — " + (j.error && j.error.message || j.message || ""); } catch (e) {} throw new Error(d); }
+    const data = await res.json();
+    return ((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "").trim();
+  },
+  // Popover: ask what to write, generate, and resolve the text (or null if cancelled).
+  compose(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const host = document.getElementById("screen") || document.body;
+      const wrap = document.createElement("div");
+      wrap.className = "aitext-modal";
+      wrap.innerHTML =
+        '<div class="aitext-card">' +
+        '<div class="aitext-head"><img src="assets/ai_gen.png?v=1" alt=""><b>' + (opts.title || "Generate text with AI") + "</b></div>" +
+        '<textarea class="aitext-in" rows="3" placeholder="' + (opts.placeholder || "Describe what to write…") + '"></textarea>' +
+        '<div class="aitext-err"></div>' +
+        '<div class="aitext-foot"><button class="aitext-cancel">Cancel</button><button class="aitext-go">Generate</button></div>' +
+        "</div>";
+      host.appendChild(wrap);
+      const ta = wrap.querySelector(".aitext-in"), go = wrap.querySelector(".aitext-go"), err = wrap.querySelector(".aitext-err");
+      const close = (v) => { wrap.remove(); resolve(v); };
+      setTimeout(() => ta.focus(), 30);
+      wrap.querySelector(".aitext-cancel").onclick = () => close(null);
+      wrap.addEventListener("mousedown", (e) => { if (e.target === wrap) close(null); });
+      async function run() {
+        const p = ta.value.trim(); if (!p) { ta.focus(); return; }
+        go.disabled = true; go.textContent = "Generating…"; err.textContent = "";
+        try {
+          const text = await window.AIText.generate(opts.prefix ? opts.prefix + " " + p : p, opts);
+          close(text || "");
+        } catch (e) { err.textContent = "Couldn't generate — " + (e.message || e); go.disabled = false; go.textContent = "Generate"; }
+      }
+      go.onclick = run;
+      ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) run(); if (e.key === "Escape") close(null); });
+    });
+  },
+};
