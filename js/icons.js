@@ -45,6 +45,13 @@
     size = size || 28;
     const safeKey = resolveKey(String(key || label || "icon").toLowerCase().replace(/[^a-z0-9_-]/g, ""));
     const customSrc = getCustomSrc(safeKey);
+    // Dynamic icons: a registered value can be a function that returns fresh SVG
+    // each render (e.g. the Calendar tile showing today's date). Rendered directly
+    // (no <img>), unless the user set their own custom icon for this key.
+    if (typeof custom[safeKey] === "function" && !customSrc) {
+      return `<span class="ico-wrap" style="width:${size}px;height:${size}px;box-shadow:none">` +
+        `<span class="ico-fallback ico-custom" style="display:flex;background:transparent;box-shadow:none;width:${size}px;height:${size}px">${custom[safeKey]()}</span></span>`;
+    }
     let fallbackInner, fallbackStyle, cls = "ico-fallback";
     if (custom[safeKey]) {
       fallbackInner = custom[safeKey];
@@ -430,6 +437,19 @@
     (document.getElementById("screen") || document.body).appendChild(ov);
     setTimeout(() => input.focus(), 30);
   }
+
+  // Calendar tile that shows today's date — re-generated on every render.
+  function calendarSVG(day) {
+    return `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="cal_hdr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4aa3ff"/><stop offset="1" stop-color="#1f7ae0"/></linearGradient></defs>
+      <rect x="12" y="18" width="104" height="98" rx="18" fill="url(#cal_hdr)"/>
+      <rect x="12" y="44" width="104" height="72" rx="14" fill="#ffffff"/>
+      <rect x="36" y="9" width="9" height="21" rx="4.5" fill="#7d8a99"/>
+      <rect x="83" y="9" width="9" height="21" rx="4.5" fill="#7d8a99"/>
+      <text x="64" y="98" text-anchor="middle" font-family="'Segoe UI',system-ui,Arial,sans-serif" font-weight="700" font-size="56" fill="#1f7ae0">${day}</text>
+    </svg>`;
+  }
+  register("calendar", () => calendarSVG(new Date().getDate()));
 
   window.Icon = {
     mini: (key, label) => box(key, label, 26),

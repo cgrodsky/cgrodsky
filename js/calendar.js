@@ -13,7 +13,7 @@
 
   window.AppRegistry = window.AppRegistry || {};
   window.AppRegistry.calendar = function () {
-    const ref = cw({ title: "Calendar", icon: mini("gapp_calendar", "Calendar"), width: 960, height: 660, appId: "calendar" });
+    const ref = cw({ title: "Calendar", icon: mini("calendar", "Calendar"), width: 960, height: 660, appId: "calendar" });
     const body = ref.body; body.classList.add("cal-host");
     if (!S().appData) S().appData = {};
     const store = S().appData.calendar || (S().appData.calendar = { events: null });
