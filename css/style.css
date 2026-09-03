@@ -4374,12 +4374,33 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .acro-name { font-weight: 700; }
 .acro-url { flex: 0 1 340px; border: 0; border-radius: 6px; padding: 7px 10px; font-size: .85rem; outline: none; }
 .acro-open { background: #d5290f; color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
-.acro-stage { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.acro-frame { flex: 1; width: 100%; border: 0; background: #fff; }
-.acro-frame-note { padding: 6px 12px; font-size: .78rem; }
-.acro-welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #555; }
+.acro-stage { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 18px; }
+.acro-page { position: relative; width: 760px; max-width: 100%; min-height: 980px; background: #fff; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.acro-doc { position: absolute; inset: 0; }
+.acro-doc .acro-frame, .acro-blankpage { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.acro-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
+.acro-page.acro-editing .acro-canvas { pointer-events: auto; cursor: crosshair; }
+.acro-page.acro-editing.acro-textmode .acro-canvas { pointer-events: none; }
+.acro-page.acro-editing.acro-textmode { cursor: text; }
+.acro-textlayer { position: absolute; inset: 0; pointer-events: none; }
+.acro-page.acro-editing.acro-textmode .acro-textlayer { pointer-events: auto; }
+.acro-textbox { position: absolute; min-width: 20px; min-height: 1em; font: 600 18px system-ui; outline: 1px dashed rgba(0,0,0,.3); padding: 2px 4px; background: transparent; white-space: pre; pointer-events: auto; }
+.acro-frame { width: 100%; border: 0; background: #fff; }
+.acro-welcome { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #555; }
 .acro-welcome img { width: 84px; height: auto; margin-bottom: 14px; }
 .acro-welcome h1 { margin: 0 0 6px; color: #333; }
+/* Acrobat edit toolbar */
+.acro-edit-toggle { background: #444; color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; font-weight: 700; cursor: pointer; }
+.acro-edit-toggle.on { background: #d5290f; }
+.acro-tools { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #3a3a3a; }
+.acro-tool { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: 1px solid transparent; border-radius: 7px; color: #ddd; cursor: pointer; }
+.acro-tool:hover { background: rgba(255,255,255,.12); }
+.acro-tool.on { background: rgba(255,255,255,.18); border-color: #d5290f; }
+.acro-tool img { width: 22px; height: 22px; object-fit: contain; }
+.acro-tsep { width: 1px; height: 22px; background: rgba(255,255,255,.2); margin: 0 4px; }
+.acro-sw { width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent; margin: 0 2px; cursor: pointer; }
+.acro-sw.on { border-color: #fff; }
+.acro-undo, .acro-clear { background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font-weight: 600; cursor: pointer; font-size: .82rem; }
 /* QR Code generator */
 .qr-app { padding: 22px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
 .qr-h { margin: 0; }

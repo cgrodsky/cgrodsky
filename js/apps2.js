@@ -996,25 +996,95 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
   // ---------- Adobe Acrobat (PDF reader) ----------
   AppRegistry.acrobat = function () {
-    const { body } = cw({ title: "Adobe Acrobat", icon: Icon.mini("acrobat", "Adobe Acrobat"), width: 860, height: 620, appId: "acrobat" });
+    const { body } = cw({ title: "Adobe Acrobat", icon: Icon.mini("acrobat", "Adobe Acrobat"), width: 900, height: 640, appId: "acrobat" });
     body.innerHTML = `<div class="acro">
-      <div class="acro-bar"><img class="acro-logo" src="assets/acrobat.png?v=1" alt=""><span class="acro-name">Adobe Acrobat</span><span class="grow"></span>
+      <div class="acro-bar"><img class="acro-logo" src="assets/acrobat.png?v=1" alt=""><span class="acro-name">Adobe Acrobat</span>
+        <button class="acro-edit-toggle">Edit</button><span class="grow"></span>
         <input class="acro-url" placeholder="Paste a PDF link (https://…)"><button class="acro-open">Open</button></div>
-      <div class="acro-stage"></div>
+      <div class="acro-tools" hidden>
+        <button class="acro-tool" data-tool="sign" title="Add signature"><img src="assets/sign.png?v=1" alt="Sign"></button>
+        <button class="acro-tool" data-tool="pen" title="Draw">${penSVG()}</button>
+        <button class="acro-tool" data-tool="hi" title="Highlight">${hiSVG()}</button>
+        <button class="acro-tool" data-tool="text" title="Add text">${txtSVG()}</button>
+        <span class="acro-tsep"></span>
+        <span class="acro-swatches"></span>
+        <span class="grow"></span>
+        <button class="acro-undo" title="Undo">Undo</button>
+        <button class="acro-clear" title="Clear all">Clear</button>
+      </div>
+      <div class="acro-stage"><div class="acro-page">
+        <div class="acro-doc"></div>
+        <canvas class="acro-canvas" width="760" height="980"></canvas>
+        <div class="acro-textlayer"></div>
+      </div></div>
     </div>`;
     const stage = body.querySelector(".acro-stage");
-    function showWelcome() {
-      stage.innerHTML = `<div class="acro-welcome"><img src="assets/pdf.png?v=1" alt=""><h1>Open a PDF</h1><p>Paste a PDF link above, or open a .pdf from File Explorer.</p></div>`;
-    }
+    const page = body.querySelector(".acro-page");
+    const doc = body.querySelector(".acro-doc");
+    const canvas = body.querySelector(".acro-canvas");
+    const textLayer = body.querySelector(".acro-textlayer");
+    const toolsBar = body.querySelector(".acro-tools");
+    const ctx = canvas.getContext("2d");
+    let editMode = false, tool = "sign", color = "#1560c0", drawing = false, last = null;
+    const undoStack = [];
+
+    const COLORS = ["#1560c0", "#111111", "#e5484d", "#1a8f52", "#f5a623"];
+    const swWrap = body.querySelector(".acro-swatches");
+    swWrap.innerHTML = COLORS.map((c, i) => `<button class="acro-sw${i === 0 ? " on" : ""}" style="background:${c}" data-c="${c}"></button>`).join("");
+    swWrap.querySelectorAll(".acro-sw").forEach((b) => b.onclick = () => { color = b.dataset.c; swWrap.querySelectorAll(".acro-sw").forEach((x) => x.classList.remove("on")); b.classList.add("on"); });
+
+    function showWelcome() { doc.innerHTML = `<div class="acro-welcome"><img src="assets/pdf.png?v=1" alt=""><h1>Open a PDF</h1><p>Paste a PDF link above, or click <b>Edit</b> to sign and mark up a blank page.</p></div>`; }
     function openUrl(u) {
       if (!u) return;
       const final = /^https?:\/\//.test(u) ? u : "https://" + u;
-      stage.innerHTML = `<iframe class="acro-frame" src="${escapeHtml(final)}"></iframe><div class="acro-frame-note muted">If the document is blank, that host blocks embedding. Try another link.</div>`;
+      doc.innerHTML = `<iframe class="acro-frame" src="${escapeHtml(final)}"></iframe>`;
     }
     body.querySelector(".acro-open").onclick = () => openUrl(body.querySelector(".acro-url").value.trim());
     body.querySelector(".acro-url").addEventListener("keydown", (e) => { if (e.key === "Enter") openUrl(e.target.value.trim()); });
+
+    function setTool(t) { tool = t; toolsBar.querySelectorAll(".acro-tool").forEach((b) => b.classList.toggle("on", b.dataset.tool === t)); page.classList.toggle("acro-textmode", t === "text"); }
+    toolsBar.querySelectorAll(".acro-tool").forEach((b) => b.onclick = () => setTool(b.dataset.tool));
+    function setEdit(on) {
+      editMode = on; toolsBar.hidden = !on; body.querySelector(".acro-edit-toggle").classList.toggle("on", on);
+      page.classList.toggle("acro-editing", on);
+      if (on && doc.querySelector(".acro-welcome")) doc.innerHTML = `<div class="acro-blankpage"></div>`; // give a page to sign
+      if (on) setTool(tool);
+    }
+    body.querySelector(".acro-edit-toggle").onclick = () => setEdit(!editMode);
+
+    // ---- drawing ----
+    function pushUndo() { try { undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height)); if (undoStack.length > 20) undoStack.shift(); } catch (e) {} }
+    function pos(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) }; }
+    canvas.addEventListener("pointerdown", (e) => {
+      if (!editMode || tool === "text") return;
+      drawing = true; pushUndo(); last = pos(e); canvas.setPointerCapture(e.pointerId);
+      ctx.beginPath(); ctx.moveTo(last.x, last.y);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drawing) return; const p = pos(e);
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      if (tool === "hi") { ctx.globalAlpha = 0.35; ctx.strokeStyle = "#ffe14d"; ctx.lineWidth = 18; }
+      else if (tool === "pen") { ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 3; }
+      else { ctx.globalAlpha = 1; ctx.strokeStyle = color; ctx.lineWidth = 2.6; } // sign
+      ctx.quadraticCurveTo(last.x, last.y, (last.x + p.x) / 2, (last.y + p.y) / 2);
+      ctx.stroke(); last = p;
+    });
+    const endDraw = () => { drawing = false; ctx.globalAlpha = 1; };
+    canvas.addEventListener("pointerup", endDraw); canvas.addEventListener("pointerleave", endDraw);
+    // ---- text tool ----
+    page.addEventListener("pointerdown", (e) => {
+      if (!editMode || tool !== "text" || e.target !== textLayer && e.target !== page && !e.target.classList.contains("acro-blankpage") && !e.target.classList.contains("acro-doc")) return;
+      const r = page.getBoundingClientRect();
+      const t = document.createElement("div"); t.className = "acro-textbox"; t.contentEditable = "true"; t.style.left = (e.clientX - r.left) + "px"; t.style.top = (e.clientY - r.top) + "px"; t.style.color = color; t.textContent = "";
+      textLayer.appendChild(t); setTimeout(() => t.focus(), 0);
+    });
+    body.querySelector(".acro-undo").onclick = () => { const s = undoStack.pop(); if (s) ctx.putImageData(s, 0, 0); };
+    body.querySelector(".acro-clear").onclick = () => { pushUndo(); ctx.clearRect(0, 0, canvas.width, canvas.height); textLayer.innerHTML = ""; };
     showWelcome();
   };
+  function penSVG() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1L19 8a2 2 0 0 0-3-3L5 16l-1 4Z"/><path d="M14 6l3 3"/></svg>`; }
+  function hiSVG() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M8 15l-2 2 3 1 2-2Z"/><path d="M10 14l6-6 3 3-6 6Z"/></svg>`; }
+  function txtSVG() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 6h14M12 6v12M9 18h6"/></svg>`; }
 
   // ---------- QR Code generator ----------
   AppRegistry.qrcode = function () {
