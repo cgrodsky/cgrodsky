@@ -49,7 +49,7 @@
     // each render (e.g. the Calendar tile showing today's date). Rendered directly
     // (no <img>), unless the user set their own custom icon for this key.
     if (typeof custom[safeKey] === "function" && !customSrc) {
-      return `<span class="ico-wrap" style="width:${size}px;height:${size}px;box-shadow:none">` +
+      return `<span class="ico-wrap" data-dyn-key="${safeKey}" style="width:${size}px;height:${size}px;box-shadow:none">` +
         `<span class="ico-fallback ico-custom" style="display:flex;background:transparent;box-shadow:none;width:${size}px;height:${size}px">${custom[safeKey]()}</span></span>`;
     }
     let fallbackInner, fallbackStyle, cls = "ico-fallback";
@@ -450,6 +450,28 @@
     </svg>`;
   }
   register("calendar", () => calendarSVG(new Date().getDate()));
+
+  // Live analog Clock icon — re-generated on every render / refresh.
+  function clockSVG() {
+    const d = new Date(), m = d.getMinutes(), h = d.getHours() % 12;
+    const ma = m * 6, ha = h * 30 + m * 0.5;
+    const hand = (len, deg, w, col) => { const a = (deg - 90) * Math.PI / 180; return `<line x1="64" y1="64" x2="${(64 + Math.cos(a) * len).toFixed(1)}" y2="${(64 + Math.sin(a) * len).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
+    let ticks = ""; for (let i = 0; i < 12; i++) { const a = (i * 30 - 90) * Math.PI / 180; ticks += `<line x1="${(64 + Math.cos(a) * 48).toFixed(1)}" y1="${(64 + Math.sin(a) * 48).toFixed(1)}" x2="${(64 + Math.cos(a) * 54).toFixed(1)}" y2="${(64 + Math.sin(a) * 54).toFixed(1)}" stroke="#8a97a6" stroke-width="${i % 3 === 0 ? 3 : 1.6}"/>`; }
+    return `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">` +
+      `<circle cx="64" cy="64" r="60" fill="#ffffff" stroke="#c9d2dc" stroke-width="4"/>${ticks}` +
+      hand(30, ha, 5, "#1f2a37") + hand(44, ma, 3.4, "#1f2a37") +
+      `<circle cx="64" cy="64" r="4.5" fill="#e5484d"/></svg>`;
+  }
+  register("clock", () => clockSVG());
+
+  // Re-render dynamic icons in place so the clock ticks and the calendar rolls over.
+  function refreshDynamic() {
+    document.querySelectorAll("[data-dyn-key]").forEach((wrap) => {
+      const k = wrap.getAttribute("data-dyn-key");
+      if (typeof custom[k] === "function") { const inner = wrap.querySelector(".ico-custom"); if (inner) inner.innerHTML = custom[k](); }
+    });
+  }
+  setInterval(refreshDynamic, 20000);
 
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
