@@ -918,9 +918,10 @@
   let _battClip = 0;
   function batterySVG(level, charging) {
     const L = Math.max(0, Math.min(1, level));
+    const critical = L <= 0.05 && !charging;
     const low = L <= 0.15 && !charging;
     const green = "#38c172", red = "#e5484d", grey = "#c3ccd4";
-    const fill = charging ? green : (low ? red : green);
+    const fill = low ? red : green;
     const id = "bc" + (++_battClip);
     const bx = 6.5, by = 5.5, bw = 11, bh = 15, r = 2.6;
     const fh = Math.max(2, bh * L), fy = by + (bh - fh);
@@ -928,8 +929,13 @@
     s += `<defs><clipPath id="${id}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}"/></clipPath></defs>`;
     s += `<rect x="9" y="2.6" width="6" height="3.4" rx="1.2" fill="${grey}"/>`;
     s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}" fill="${grey}"/>`;
-    s += `<rect x="${bx}" y="${fy}" width="${bw}" height="${fh}" fill="${fill}" clip-path="url(#${id})"/>`;
-    if (charging) s += `<path d="M12.6 7 L8.8 13.2 h2.5 l-1 3.9 L15.2 10.6 h-2.7 z" fill="#ffd21e" stroke="#1a8f52" stroke-width="0.4" stroke-linejoin="round"/>`;
+    if (critical) {
+      s += `<rect x="10.7" y="8" width="2.6" height="5.2" rx="1.3" fill="${red}"/>`;
+      s += `<circle cx="12" cy="15.6" r="1.4" fill="${red}"/>`;
+    } else {
+      s += `<rect x="${bx}" y="${fy}" width="${bw}" height="${fh}" fill="${fill}" clip-path="url(#${id})"/>`;
+      if (charging) s += `<path d="M12.6 7 L8.8 13.2 h2.5 l-1 3.9 L15.2 10.6 h-2.7 z" fill="#ffd21e" stroke="#1a8f52" stroke-width="0.4" stroke-linejoin="round"/>`;
+    }
     s += `</svg>`;
     return s;
   }
@@ -942,7 +948,7 @@
   function battTick() {
     if (batt.real) return;
     if (batt.charging) { batt.level = Math.min(1, batt.level + 0.03); if (batt.level >= 1) batt.charging = false; }
-    else { batt.level = Math.max(0, batt.level - 0.01); if (batt.level <= 0.08) batt.charging = true; }
+    else { batt.level = Math.max(0, batt.level - 0.01); if (batt.level <= 0.02) batt.charging = true; }
     refreshBattery();
   }
   function initBattery() {
