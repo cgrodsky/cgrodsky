@@ -851,7 +851,7 @@
       <div class="qs-tiles"></div>
       <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.sun}</span><input type="range" min="10" max="100" value="${st.brightness}" class="qs-brightness"></div>
       <div class="qs-slider"><span class="qs-sl-ic qs-vol-ic">${Icon.mini(st.volume > 0 ? "sound_on" : "sound_off", "Volume")}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
-      <div class="qs-foot"><span class="qs-batt">${SYS_SVG.battery} 100%</span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
+      <div class="qs-foot"><span class="qs-batt"></span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
     </div>`);
     const tilesWrap = panel.querySelector(".qs-tiles");
     tiles.forEach((t) => {
@@ -878,6 +878,7 @@
     };
     panel.querySelector(".qs-settings").onclick = () => { panel.remove(); open("settings"); };
     screen().appendChild(panel);
+    refreshBattery();
     setTimeout(() => document.addEventListener("mousedown", function h(ev) { if (!panel.contains(ev.target) && !ev.target.closest(".tb-qs")) { panel.remove(); document.removeEventListener("mousedown", h); } }), 0);
   }
 
@@ -912,6 +913,53 @@
   }
 
   // ---------------- Taskbar ----------------
+  // ---------------- Dynamic battery icon (level + charging) ----------------
+  const batt = { level: 0.9, charging: false, real: false, inited: false };
+  let _battClip = 0;
+  function batterySVG(level, charging) {
+    const L = Math.max(0, Math.min(1, level));
+    const low = L <= 0.15 && !charging;
+    const green = "#38c172", red = "#e5484d", grey = "#c3ccd4";
+    const fill = charging ? green : (low ? red : green);
+    const id = "bc" + (++_battClip);
+    const bx = 6.5, by = 5.5, bw = 11, bh = 15, r = 2.6;
+    const fh = Math.max(2, bh * L), fy = by + (bh - fh);
+    let s = `<svg viewBox="0 0 24 24" width="19" height="19" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle">`;
+    s += `<defs><clipPath id="${id}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}"/></clipPath></defs>`;
+    s += `<rect x="9" y="2.6" width="6" height="3.4" rx="1.2" fill="${grey}"/>`;
+    s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}" fill="${grey}"/>`;
+    s += `<rect x="${bx}" y="${fy}" width="${bw}" height="${fh}" fill="${fill}" clip-path="url(#${id})"/>`;
+    if (charging) s += `<path d="M12.6 7 L8.8 13.2 h2.5 l-1 3.9 L15.2 10.6 h-2.7 z" fill="#ffd21e" stroke="#1a8f52" stroke-width="0.4" stroke-linejoin="round"/>`;
+    s += `</svg>`;
+    return s;
+  }
+  function batteryPct() { return Math.round(batt.level * 100); }
+  function refreshBattery() {
+    const svg = batterySVG(batt.level, batt.charging);
+    const t = taskbar && taskbar.querySelector(".tb-batt"); if (t) t.innerHTML = svg;
+    const q = document.querySelector(".qs-batt"); if (q) q.innerHTML = svg + " " + batteryPct() + "%" + (batt.charging ? " · Charging" : "");
+  }
+  function battTick() {
+    if (batt.real) return;
+    if (batt.charging) { batt.level = Math.min(1, batt.level + 0.03); if (batt.level >= 1) batt.charging = false; }
+    else { batt.level = Math.max(0, batt.level - 0.01); if (batt.level <= 0.08) batt.charging = true; }
+    refreshBattery();
+  }
+  function initBattery() {
+    if (batt.inited) return; batt.inited = true;
+    let started = false;
+    const sim = () => { if (started) return; started = true; setInterval(battTick, 60000); };
+    try {
+      if (navigator.getBattery) {
+        navigator.getBattery().then((b) => {
+          batt.real = true;
+          const upd = () => { batt.level = b.level; batt.charging = b.charging; refreshBattery(); };
+          b.addEventListener("levelchange", upd); b.addEventListener("chargingchange", upd); upd();
+        }).catch(sim);
+      } else sim();
+    } catch (e) { sim(); }
+  }
+
   function buildTaskbar() {
     const w = weatherToday();
     taskbar = el(`<div class="taskbar tb-float">
@@ -931,7 +979,7 @@
         <button class="tb-qs" title="Quick settings">
           <span class="tb-wifi">${Icon.mini(wifiIconKey(), "Wi-Fi")}</span>
           <span class="tb-sysic tb-vol">${Icon.mini(qs().volume > 0 ? "sound_on" : "sound_off", "Volume")}</span>
-          <span class="tb-sysic">${SYS_SVG.battery}</span>
+          <span class="tb-sysic tb-batt"></span>
         </button>
         <button class="tb-clock" id="tbClock"></button>
       </div>
@@ -954,6 +1002,7 @@
     buildStartMenu();
     buildSearchPanel();
     const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = qs().wifi ? "0.9" : "0.3";
+    refreshBattery(); initBattery();
     applyDisplayFx();
   }
 
