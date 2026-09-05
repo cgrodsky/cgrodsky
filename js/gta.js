@@ -35,8 +35,10 @@
     body.innerHTML = `<div class="gta">
       <div class="gta-hud">
         <div class="gta-top"><span class="gta-cash">$4,720</span><span class="gta-loc" id="gta-loc">Los Santos</span></div>
-        <div class="gta-stars" id="gta-stars">★★☆☆☆</div>
+        <div class="gta-stars" id="gta-stars">☆☆☆☆☆</div>
+        <div class="gta-health"><div class="gta-health-fill" id="gta-health-fill"></div></div>
       </div>
+      <div class="gta-wasted" id="gta-wasted" hidden><div class="gta-wasted-t">WASTED</div><button class="gta-respawn">Respawn</button></div>
       <div class="gta-weapon" id="gta-weapon"></div>
       <div class="gta-action" id="gta-action"></div>
       <div class="gta-help">Drag look · WASD move · Shift run · F fire · R reload · G grenade · Space kick · T phone · C cam</div>
@@ -172,6 +174,8 @@
     let reloading = false, reloadT = 0, phoneOpen = false, phoneView = "home";
     const vehicles = []; let inCar = null;
     const carHintEl = host.querySelector("#gta-carhint"), speedEl = host.querySelector("#gta-speed");
+    const cops = []; let wanted = 0, wantedT = 0, health = 100, dead = false;
+    const healthFill = host.querySelector("#gta-health-fill"), starsEl = host.querySelector("#gta-stars"), wastedEl = host.querySelector("#gta-wasted");
     const inv = { revolver: false, grenade: 0 };
     const weaponModels = {};          // name -> loaded Object3D (original, cloned per use)
     const pickups = [];               // {key, holder, ring, spot, got}
@@ -309,6 +313,57 @@
       });
     }
 
+    // ---- wanted level + police ----
+    function updateStars() { let s = ""; for (let i = 0; i < 5; i++) s += i < wanted ? "★" : "☆"; starsEl.textContent = s; }
+    function setHealth(v) { health = clamp(v, 0, 100); healthFill.style.width = health + "%"; healthFill.style.background = health < 25 ? "#e5484d" : health < 55 ? "#f5a623" : "#38c172"; if (health <= 0 && !dead) wasted(); }
+    function addWanted(n) { if (dead) return; const prev = wanted; wanted = clamp(wanted + n, 0, 5); wantedT = 0; updateStars(); if (wanted > prev) for (let i = 0; i < Math.min(2, wanted); i++) if (cops.length < wanted * 2) spawnCop(); }
+    function spawnCop() {
+      const g = makePed(0x1c3f8f);            // navy uniform
+      const cap = new T.Mesh(new T.BoxGeometry(0.75, 0.28, 0.75), new T.MeshStandardMaterial({ color: 0x0d1b3a })); cap.position.y = 3.95; g.add(g.userData.cap = cap);
+      const a = Math.random() * Math.PI * 2, r = 40 + Math.random() * 30;
+      g.position.set(player.pos.x + Math.cos(a) * r, 0, player.pos.z + Math.sin(a) * r); scene.add(g);
+      cops.push({ grp: g, phase: Math.random() * 6, cd: 1 + Math.random() });
+    }
+    function updateCops(dt) {
+      // keep the right number of cops for the wanted level
+      const want = wanted * 2;
+      if (!dead && cops.length < want && Math.random() < 0.08) spawnCop();
+      for (let i = cops.length - 1; i >= 0; i--) {
+        const c = cops[i];
+        if (wanted === 0) { scene.remove(c.grp); cops.splice(i, 1); continue; }
+        const dx = player.pos.x - c.grp.position.x, dz = player.pos.z - c.grp.position.z, d = Math.hypot(dx, dz) || 1;
+        const spd = 5.5, nx = c.grp.position.x + (dx / d) * spd * dt, nz = c.grp.position.z + (dz / d) * spd * dt;
+        if (!nearestBlocked(nx, nz)) { c.grp.position.x = nx; c.grp.position.z = nz; }
+        c.grp.rotation.y = Math.atan2(dx, dz);
+        c.phase += dt * 10; const sw = Math.sin(c.phase) * 0.6, u = c.grp.userData;
+        u.legL.rotation.x = sw; u.legR.rotation.x = -sw; u.armL.rotation.x = -sw; u.armR.rotation.x = sw;
+        // shoot at the player when close and wanted >= 2
+        c.cd -= dt;
+        if (d < 34 && wanted >= 2 && c.cd <= 0) {
+          c.cd = 1.4;
+          const from = new T.Vector3(c.grp.position.x, 3.2, c.grp.position.z);
+          tracer(from, new T.Vector3(player.pos.x, 3.2, player.pos.z));
+          if (Math.random() < 0.55) setHealth(health - (4 + wanted * 2));
+        }
+        if (d < 22 && wanted >= 1) shake = Math.max(shake, 0.05);
+      }
+    }
+    function updateWanted(dt) {
+      if (dead || wanted === 0) return;
+      wantedT += dt;
+      if (wantedT > 12) { wanted = clamp(wanted - 1, 0, 5); wantedT = 0; updateStars(); } // evade: decays over time
+    }
+    function wasted() {
+      dead = true; wastedEl.hidden = false; shake = Math.max(shake, 1);
+    }
+    function respawn() {
+      dead = false; wastedEl.hidden = true; wanted = 0; wantedT = 0; updateStars(); setHealth(100);
+      cops.forEach((c) => scene.remove(c.grp)); cops.length = 0;
+      inCar = null; if (char) char.visible = true;
+      player.pos.set(0, 0, 8); player.yaw = Math.PI;
+    }
+    host.querySelector(".gta-respawn").onclick = respawn;
+
     // -- weapon pickups --
     function placePickup(key) {
       const spot = pickupSpots[key]; if (!spot || !weaponModels[key]) return;
@@ -373,7 +428,7 @@
       tracer(origin.clone().addScaledVector(dir, 2), origin.clone().addScaledVector(dir, 120));
       let best = null, bd = 1e9;
       npcs.forEach((n) => { if (!n.alive) return; const to = new T.Vector3(n.grp.position.x - origin.x, 0, n.grp.position.z - origin.z); const d = to.length(); if (d > 95) return; to.normalize(); if (to.dot(dir) > 0.985 && d < bd) { bd = d; best = n; } });
-      if (best) setTimeout(() => killNPC(best), 50);
+      if (best) { setTimeout(() => killNPC(best), 50); addWanted(1); }
       if (ammo <= 0) startReload();
     }
     // -- reload (with a hand/weapon animation) --
@@ -408,7 +463,8 @@
       s.position.copy(pos); scene.add(s); explosions.push({ mesh: s, t: 0, blast: true });
       const smoke = new T.Mesh(new T.SphereGeometry(1, 12, 10), new T.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.6 }));
       smoke.position.copy(pos); scene.add(smoke); explosions.push({ mesh: smoke, t: -0.1, blast: true, smoke: true });
-      npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(pos) < 13) killNPC(n); });
+      let hit = false; npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(pos) < 13) { killNPC(n); hit = true; } });
+      if (hit) addWanted(2);
     }
     function updateEffects(dt) {
       shake = Math.max(0, shake - dt * 1.6); recoil = Math.max(0, recoil - dt * 0.4);
@@ -473,7 +529,7 @@
       camYaw = lerpAngle(camYaw, v.yaw, clamp(dt * 3, 0, 1));
       speedEl.textContent = Math.round(Math.abs(v.speed) * 2.2) + " MPH";
       // run over pedestrians
-      if (Math.abs(v.speed) > 6) npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(v.pos) < 2.6) killNPC(n); });
+      if (Math.abs(v.speed) > 6) npcs.forEach((n) => { if (n.alive && n.grp.position.distanceTo(v.pos) < 2.6) { killNPC(n); addWanted(1); } });
     }
 
     // -- boot logo sequence (publisher splash before the game) --
@@ -666,7 +722,7 @@
       }
 
       if (mixer) mixer.update(dt);
-      updateNPCs(dt); updateEffects(dt); checkPickups(); updateReload(dt);
+      updateNPCs(dt); if (!cine.active) { updateCops(dt); updateWanted(dt); } updateEffects(dt); checkPickups(); updateReload(dt);
       if (phoneOpen) { if (phoneView === "map") drawPhoneMap(); const d = new Date(); if (gphTime) gphTime.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
       // camera
@@ -688,11 +744,13 @@
     function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % (2 * Math.PI)) - Math.PI; if (d < -Math.PI) d += 2 * Math.PI; return a + d * t; }
 
     // ---- kick off the world ----
+    updateStars(); setHealth(100);
     spawnNPCs();
     loadWeapons();
     loadVehicles();
     bootSequence(startIntro);   // Rockstar-style publisher splash, then the LOS SANTOS cinematic
-    host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z) };
+    host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z),
+      wanted: () => wanted, health: () => health, cops: () => cops.length, addWanted: (n) => addWanted(n), hurt: (n) => setHealth(health - n) };
     requestAnimationFrame(frame);
     setTimeout(() => dom.focus(), 40);
 
