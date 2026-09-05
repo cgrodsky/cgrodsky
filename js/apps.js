@@ -57,7 +57,7 @@
   };
 
   function isInstalled(id) {
-    const defaults = ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "canva", "acrobat", "qrcode", "achievements", "powershell", "security", "solitaire", "colorpicker", "run", "taskmanager", "tips", "calendar", "weather", "store__"];
+    const defaults = ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "canva", "acrobat", "qrcode", "achievements", "powershell", "security", "solitaire", "colorpicker", "run", "taskmanager", "tips", "snip", "calendar", "weather", "store__"];
     return defaults.includes(id) || S().installedApps.includes(id);
   }
 

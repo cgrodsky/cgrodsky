@@ -655,7 +655,9 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
     function showGallery() {
       setNav("gallery");
-      const all = userPhotos.concat(SAMPLES);
+      let snips = [];
+      try { snips = (State.data.appData && State.data.appData.snips || []).slice().reverse().map((u, i) => ({ src: u, name: "Snip " + (i + 1), date: "Today" })); } catch (e) {}
+      const all = snips.concat(userPhotos, SAMPLES);
       const srcs = all.map((p) => p.src);
       main.innerHTML = `<div class="pho-head"><h2>Gallery</h2><span class="grow"></span></div><div class="pho-grid"></div>`;
       main.querySelector(".pho-head").appendChild(importBtn());
