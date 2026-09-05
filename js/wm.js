@@ -182,6 +182,8 @@
     ].map((p) => ({ ...p, cpu: Math.random() * 2, mem: 20 + Math.random() * 180 }));
     let cpuHist = Array.from({ length: 40 }, () => 5 + Math.random() * 10);
     let memHist = Array.from({ length: 40 }, () => 40 + Math.random() * 10);
+    let diskHist = Array.from({ length: 40 }, () => Math.random() * 12);
+    let netHist = Array.from({ length: 40 }, () => Math.random() * 8);
     function rows() {
       const apps = openWindows.filter((w) => w.appId !== "taskmanager").map((w) => ({ name: w.title || w.appId, entry: w, app: true, cpu: Math.random() * 8, mem: 60 + Math.random() * 260 }));
       BG.forEach((p) => { p.cpu = Math.max(0, p.cpu + (Math.random() - 0.5)); p.mem = Math.max(10, p.mem + (Math.random() - 0.5) * 6); });
@@ -211,11 +213,17 @@
     function spark(hist, color) { const w = 260, h = 90; const pts = hist.map((v, i) => `${(i / (hist.length - 1)) * w},${h - (v / 100) * h}`).join(" "); return `<svg viewBox="0 0 ${w} ${h}" class="tm-spark" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/><polyline points="0,${h} ${pts} ${w},${h}" fill="${color}22" stroke="none"/></svg>`; }
     function renderPerf(host) {
       function tick() {
-        cpuHist = cpuHist.slice(1).concat(Math.max(2, Math.min(100, cpuHist[cpuHist.length - 1] + (Math.random() - 0.5) * 18)));
-        memHist = memHist.slice(1).concat(Math.max(30, Math.min(90, memHist[memHist.length - 1] + (Math.random() - 0.5) * 4)));
+        const nudge = (hist, lo, hi, amp) => hist.slice(1).concat(Math.max(lo, Math.min(hi, hist[hist.length - 1] + (Math.random() - 0.5) * amp)));
+        cpuHist = nudge(cpuHist, 2, 100, 18);
+        memHist = nudge(memHist, 30, 90, 4);
+        diskHist = nudge(diskHist, 0, 100, 26);
+        netHist = nudge(netHist, 0, 100, 22);
+        const last = (h) => h[h.length - 1];
         host.innerHTML = `<div class="tm-perf">
-          <div class="tm-graph"><div class="tm-graph-h">CPU <b>${cpuHist[cpuHist.length - 1].toFixed(0)}%</b></div>${spark(cpuHist, "#2f7be0")}</div>
-          <div class="tm-graph"><div class="tm-graph-h">Memory <b>${memHist[memHist.length - 1].toFixed(0)}%</b> · ${(memHist[memHist.length - 1] / 100 * 16).toFixed(1)}/16 GB</div>${spark(memHist, "#a142f4")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">CPU <b>${last(cpuHist).toFixed(0)}%</b></div>${spark(cpuHist, "#2f7be0")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">Memory <b>${last(memHist).toFixed(0)}%</b> · ${(last(memHist) / 100 * 16).toFixed(1)}/16 GB</div>${spark(memHist, "#a142f4")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">Disk <b>${last(diskHist).toFixed(0)}%</b></div>${spark(diskHist, "#1f9d57")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">Network <b>${(last(netHist) / 100 * 5).toFixed(1)} Mbps</b></div>${spark(netHist, "#f5820b")}</div>
         </div>`;
       }
       tick(); iv = setInterval(() => { if (!document.body.contains(host)) return stop(); tick(); }, 1000);

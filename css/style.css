@@ -2759,7 +2759,7 @@ body.dark .ol-cat-menu button:hover { background: #323130; }
 button.tm-end { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; padding: 4px 10px; cursor: pointer; }
 button.tm-end:hover { background: #d93025; color: #fff; border-color: transparent; }
 .tm-empty { padding: 16px; color: var(--muted, #8a94a6); }
-.tm-perf { padding: 18px; display: flex; flex-direction: column; gap: 20px; }
+.tm-perf { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .tm-graph { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
 .tm-graph-h { font-size: 13px; margin-bottom: 8px; } .tm-graph-h b { font-size: 18px; }
 .tm-spark { width: 100%; height: 120px; display: block; }
@@ -4418,6 +4418,35 @@ textarea.fm-p-text { border: 1px solid #ddd; border-radius: 6px; resize: vertica
 .aitext-cancel { background: transparent; border: 1px solid var(--border, #ccc); color: var(--text, #111); border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .aitext-go { background: linear-gradient(135deg, #3a8bff, #6a2cff); color: #fff; border: 0; border-radius: 8px; padding: 8px 18px; font-weight: 700; cursor: pointer; }
 .aitext-go:disabled { opacity: .7; cursor: default; }
+/* Sticky Notes */
+.stn { height: 100%; display: flex; flex-direction: column; background: var(--bg); }
+.stn-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.stn-new { background: #ffce3a; color: #3a2f00; border: 0; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.stn-board { flex: 1; overflow: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; align-content: start; }
+.stn-note { border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.18); display: flex; flex-direction: column; min-height: 150px; }
+.stn-note-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; }
+.stn-dots { display: flex; gap: 4px; }
+.stn-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; }
+.stn-dot.on { border-color: rgba(0,0,0,.7); }
+.stn-del { background: none; border: 0; font-size: 20px; line-height: 1; color: inherit; opacity: .5; cursor: pointer; }
+.stn-del:hover { opacity: 1; }
+.stn-text { flex: 1; padding: 6px 12px 14px; outline: none; font: 400 15px "Segoe UI", system-ui; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Photo editor */
+.pho-lb-edit { position: absolute; top: 16px; right: 64px; z-index: 2; background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; padding: 6px 16px; font-weight: 700; cursor: pointer; }
+.pho-ed { position: absolute; inset: 0; z-index: 60; background: #1b1b1f; display: flex; flex-direction: column; }
+.pho-ed-top { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: #fff; border-bottom: 1px solid #333; }
+.pho-ed-title { flex: 1; font-weight: 700; }
+.pho-ed-x { background: none; border: 0; color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
+.pho-ed-save { background: #2f7be0; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; }
+.pho-ed-stage { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 16px; }
+.pho-ed-cv { max-width: 100%; max-height: 100%; box-shadow: 0 6px 30px rgba(0,0,0,.5); background: #000; touch-action: none; }
+.pho-ed-cropbox { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,.4); pointer-events: none; }
+.pho-ed-tools { padding: 12px 16px; background: #232327; color: #ddd; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.pho-ed-grp, .pho-ed-filters { display: flex; gap: 6px; align-items: center; }
+.pho-ed-tools button { background: #33343a; color: #eee; border: 1px solid #444; border-radius: 7px; padding: 7px 12px; cursor: pointer; font-weight: 600; }
+.pho-ed-f.on { background: #2f7be0; border-color: #2f7be0; color: #fff; }
+.pho-ed-adj { display: flex; flex-direction: column; font-size: .72rem; gap: 3px; color: #bbb; }
+.pho-ed-adj input { width: 120px; }
 /* QR Code generator */
 .qr-app { padding: 22px; display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
 .qr-h { margin: 0; }

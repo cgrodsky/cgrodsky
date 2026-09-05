@@ -37,11 +37,34 @@
 
   // ---------- Sticky Notes ----------
   AppRegistry.stickynotes = function () {
-    const { body } = cw({ title: "Sticky Notes", icon: Icon.mini("stickynotes", "Notes"), width: 360, height: 420 });
-    const data = store("sticky", { text: "" });
-    body.innerHTML = `<textarea style="width:100%;height:100%;border:none;outline:none;resize:none;padding:16px;background:#fff8b0;color:#222;font-size:1.05rem;font-family:Segoe UI,sans-serif">${escapeHtml(data.text)}</textarea>`;
-    const ta = body.querySelector("textarea");
-    ta.oninput = () => { data.text = ta.value; State.save(); };
+    const { body } = cw({ title: "Sticky Notes", icon: Icon.mini("stickynotes", "Notes"), width: 560, height: 480, appId: "stickynotes" });
+    const data = store("stickyNotesV2", { notes: null });
+    const COLORS = [["#fff59a", "#3a3300"], ["#ffb3c7", "#4a0018"], ["#b7f0c0", "#083a15"], ["#a9d8ff", "#062a4a"], ["#d9b3ff", "#2a0a4a"], ["#c9ced6", "#1a1f27"]];
+    if (!data.notes) { data.text; data.notes = [{ id: Date.now(), text: (store("sticky", { text: "" }).text || ""), color: 0 }]; State.save(); }
+    body.innerHTML = `<div class="stn">
+      <div class="stn-bar"><button class="stn-new">+ New note</button><span class="stn-count muted"></span></div>
+      <div class="stn-board"></div>
+    </div>`;
+    const board = body.querySelector(".stn-board"), countEl = body.querySelector(".stn-count");
+    function save() { State.save(); countEl.textContent = data.notes.length + (data.notes.length === 1 ? " note" : " notes"); }
+    function render() {
+      board.innerHTML = "";
+      data.notes.forEach((n) => {
+        const c = COLORS[n.color] || COLORS[0];
+        const card = el(`<div class="stn-note" style="background:${c[0]};color:${c[1]}">
+          <div class="stn-note-head"><span class="stn-dots"></span><button class="stn-del" title="Delete">&times;</button></div>
+          <div class="stn-text" contenteditable="true" spellcheck="true">${escapeHtml(n.text)}</div>
+        </div>`);
+        const dots = card.querySelector(".stn-dots");
+        COLORS.forEach((cc, ci) => { const d = el(`<button class="stn-dot${ci === n.color ? " on" : ""}" style="background:${cc[0]}" title="Color"></button>`); d.onclick = () => { n.color = ci; save(); render(); }; dots.appendChild(d); });
+        const txt = card.querySelector(".stn-text");
+        txt.oninput = () => { n.text = txt.innerText; save(); };
+        card.querySelector(".stn-del").onclick = () => { data.notes = data.notes.filter((x) => x !== n); save(); render(); };
+        board.appendChild(card);
+      });
+    }
+    body.querySelector(".stn-new").onclick = () => { data.notes.unshift({ id: Date.now(), text: "", color: Math.floor(Math.random() * COLORS.length) }); save(); render(); setTimeout(() => { const t = board.querySelector(".stn-text"); t && t.focus(); }, 0); };
+    render(); save();
   };
 
   // ---------- News ----------
@@ -526,6 +549,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
 
     function lightbox(list, i) {
       const ov = el(`<div class="pho-lb"><button class="pho-lb-x" title="Close">&times;</button>
+        <button class="pho-lb-edit" title="Edit">Edit</button>
         <button class="pho-lb-nav pho-lb-prev" title="Previous">&#8249;</button>
         <img src="${escapeHtml(list[i])}" alt="">
         <button class="pho-lb-nav pho-lb-next" title="Next">&#8250;</button></div>`);
@@ -533,9 +557,84 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       const go = (d) => { i = (i + d + list.length) % list.length; img.src = list[i]; };
       ov.querySelector(".pho-lb-prev").onclick = (e) => { e.stopPropagation(); go(-1); };
       ov.querySelector(".pho-lb-next").onclick = (e) => { e.stopPropagation(); go(1); };
+      ov.querySelector(".pho-lb-edit").onclick = (e) => { e.stopPropagation(); editor(list[i]); };
       ov.querySelector(".pho-lb-x").onclick = () => ov.remove();
       ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
       body.appendChild(ov);
+    }
+
+    // ---------- Photo editor: rotate, filters, adjustments, crop ----------
+    function editor(src) {
+      const PRESETS = [["orig", "Original"], ["mono", "Mono"], ["sepia", "Sepia"], ["vivid", "Vivid"], ["cool", "Cool"], ["warm", "Warm"]];
+      let rotation = 0, preset = "orig", adj = { bri: 100, con: 100, sat: 100 }, cropMode = false, cropRect = null;
+      const ov = el(`<div class="pho-ed">
+        <div class="pho-ed-top"><button class="pho-ed-x" title="Close">&times;</button><span class="pho-ed-title">Edit photo</span><button class="pho-ed-save">Save a copy</button></div>
+        <div class="pho-ed-stage"><canvas class="pho-ed-cv"></canvas><div class="pho-ed-cropbox" hidden></div></div>
+        <div class="pho-ed-tools">
+          <div class="pho-ed-grp"><button data-rot="-90" title="Rotate left">⟲</button><button data-rot="90" title="Rotate right">⟳</button><button class="pho-ed-crop">Crop</button><button class="pho-ed-cropdo" hidden>Apply crop</button><button class="pho-ed-cropx" hidden>Cancel</button></div>
+          <div class="pho-ed-filters">${PRESETS.map((p) => `<button class="pho-ed-f${p[0] === "orig" ? " on" : ""}" data-f="${p[0]}">${p[1]}</button>`).join("")}</div>
+          <label class="pho-ed-adj">Brightness<input type="range" data-k="bri" min="50" max="150" value="100"></label>
+          <label class="pho-ed-adj">Contrast<input type="range" data-k="con" min="50" max="150" value="100"></label>
+          <label class="pho-ed-adj">Saturation<input type="range" data-k="sat" min="0" max="200" value="100"></label>
+          <button class="pho-ed-reset">Reset</button>
+        </div>
+      </div>`);
+      body.appendChild(ov);
+      const cv = ov.querySelector(".pho-ed-cv"), ctx = cv.getContext("2d"), stage = ov.querySelector(".pho-ed-stage"), cropBox = ov.querySelector(".pho-ed-cropbox");
+      let img = new Image(); img.crossOrigin = "anonymous"; img.onload = render; img.src = src;
+      function filterStr() {
+        let f = `brightness(${adj.bri}%) contrast(${adj.con}%) saturate(${adj.sat}%)`;
+        if (preset === "mono") f += " grayscale(1)"; else if (preset === "sepia") f += " sepia(0.7)";
+        else if (preset === "vivid") f += " saturate(1.5) contrast(1.08)"; else if (preset === "cool") f += " hue-rotate(-12deg) saturate(1.1)";
+        else if (preset === "warm") f += " sepia(0.25) saturate(1.15)";
+        return f;
+      }
+      function render() {
+        if (!img.naturalWidth) return;
+        const swap = rotation % 180 !== 0, w = img.naturalWidth, h = img.naturalHeight;
+        cv.width = swap ? h : w; cv.height = swap ? w : h;
+        ctx.save(); ctx.filter = filterStr(); ctx.translate(cv.width / 2, cv.height / 2); ctx.rotate(rotation * Math.PI / 180);
+        ctx.drawImage(img, -w / 2, -h / 2); ctx.restore();
+      }
+      ov.querySelectorAll("[data-rot]").forEach((b) => b.onclick = () => { rotation = (rotation + (+b.dataset.rot) + 360) % 360; render(); });
+      ov.querySelectorAll(".pho-ed-f").forEach((b) => b.onclick = () => { preset = b.dataset.f; ov.querySelectorAll(".pho-ed-f").forEach((x) => x.classList.remove("on")); b.classList.add("on"); render(); });
+      ov.querySelectorAll(".pho-ed-adj input").forEach((r) => r.oninput = () => { adj[r.dataset.k] = +r.value; render(); });
+      ov.querySelector(".pho-ed-reset").onclick = () => { rotation = 0; preset = "orig"; adj = { bri: 100, con: 100, sat: 100 }; cropRect = null; ov.querySelectorAll(".pho-ed-adj input").forEach((r) => r.value = r.dataset.k === "sat" || r.dataset.k === "bri" || r.dataset.k === "con" ? 100 : 100); ov.querySelectorAll(".pho-ed-f").forEach((x, i) => x.classList.toggle("on", i === 0)); preset = "orig"; render(); };
+      // crop
+      let drag = null;
+      function startCrop() { cropMode = true; ov.querySelector(".pho-ed-crop").hidden = true; ov.querySelector(".pho-ed-cropdo").hidden = false; ov.querySelector(".pho-ed-cropx").hidden = false; }
+      function endCrop(apply) {
+        cropMode = false; cropBox.hidden = true; ov.querySelector(".pho-ed-crop").hidden = false; ov.querySelector(".pho-ed-cropdo").hidden = true; ov.querySelector(".pho-ed-cropx").hidden = true;
+        if (apply && cropRect) {
+          const cr = cv.getBoundingClientRect();
+          const sx = cv.width / cr.width, sy = cv.height / cr.height;
+          const x = Math.round(cropRect.x * sx), y = Math.round(cropRect.y * sy), w = Math.round(cropRect.w * sx), hh = Math.round(cropRect.h * sy);
+          if (w > 4 && hh > 4) {
+            const tmp = document.createElement("canvas"); tmp.width = w; tmp.height = hh; tmp.getContext("2d").drawImage(cv, x, y, w, hh, 0, 0, w, hh);
+            const nimg = new Image(); nimg.onload = () => { img = nimg; rotation = 0; render(); }; nimg.src = tmp.toDataURL("image/png");
+          }
+        }
+        cropRect = null;
+      }
+      ov.querySelector(".pho-ed-crop").onclick = startCrop;
+      ov.querySelector(".pho-ed-cropx").onclick = () => endCrop(false);
+      ov.querySelector(".pho-ed-cropdo").onclick = () => endCrop(true);
+      stage.addEventListener("pointerdown", (e) => {
+        if (!cropMode) return; const r = cv.getBoundingClientRect(); drag = { x0: e.clientX - r.left, y0: e.clientY - r.top, rL: r.left, rT: r.top };
+        cropBox.hidden = false;
+      });
+      stage.addEventListener("pointermove", (e) => {
+        if (!drag) return; const x = e.clientX - drag.rL, y = e.clientY - drag.rT;
+        const cr = cv.getBoundingClientRect(); const ox = cr.left - stage.getBoundingClientRect().left, oy = cr.top - stage.getBoundingClientRect().top;
+        cropRect = { x: Math.min(drag.x0, x), y: Math.min(drag.y0, y), w: Math.abs(x - drag.x0), h: Math.abs(y - drag.y0) };
+        cropBox.style.left = (ox + cropRect.x) + "px"; cropBox.style.top = (oy + cropRect.y) + "px"; cropBox.style.width = cropRect.w + "px"; cropBox.style.height = cropRect.h + "px";
+      });
+      stage.addEventListener("pointerup", () => { drag = null; });
+      ov.querySelector(".pho-ed-save").onclick = () => {
+        try { const url = cv.toDataURL("image/png"); userPhotos.unshift({ src: url, name: "Edited photo", date: "Today" }); if (window.Notify) Notify.show({ icon: Icon.mini("photos", "Photos"), title: "Photos", body: "Saved an edited copy to your gallery." }); ov.remove(); showGallery(); }
+        catch (e) { if (window.Notify) Notify.show({ title: "Photos", body: "Couldn't save this image (protected source)." }); }
+      };
+      ov.querySelector(".pho-ed-x").onclick = () => ov.remove();
     }
 
     function tile(p, list, idx) {
