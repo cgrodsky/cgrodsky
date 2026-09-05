@@ -237,6 +237,17 @@
     const M = { sun: "linear-gradient(160deg,#3a7bd5,#63b3ed)", partly: "linear-gradient(160deg,#4a7fb5,#7fb0d9)", cloud: "linear-gradient(160deg,#5a6b7e,#8a9bb0)", showers: "linear-gradient(160deg,#41668c,#6d8fb0)", rain: "linear-gradient(160deg,#374a63,#5b7089)", thunder: "linear-gradient(160deg,#2b3550,#4a4f6b)", snow: "linear-gradient(160deg,#6a7c93,#aebfd4)", fog: "linear-gradient(160deg,#6b7280,#9aa3b2)" };
     return M[icon] || M.partly;
   }
+  // Animated CSS weather scene for the current condition.
+  function wxScene(icon) {
+    let s = '<div class="wx-scene">';
+    if (icon === "sun" || icon === "partly") s += '<div class="wx-sun"><span class="wx-rays"></span></div>';
+    if (icon !== "sun") { s += '<div class="wx-cloud c1"></div><div class="wx-cloud c2"></div>'; if (icon === "cloud" || icon === "fog" || icon === "thunder") s += '<div class="wx-cloud c3"></div>'; }
+    if (icon === "rain" || icon === "showers" || icon === "thunder") { let d = ""; const n = icon === "rain" ? 22 : 34; for (let i = 0; i < n; i++) d += `<span class="wx-drop" style="left:${(i * 4.3) % 100}%;animation-delay:${((i % 11) * 0.11).toFixed(2)}s;animation-duration:${(0.5 + (i % 5) * 0.08).toFixed(2)}s"></span>`; s += `<div class="wx-rainfield">${d}</div>`; }
+    if (icon === "thunder") s += '<div class="wx-flash"></div>';
+    if (icon === "snow") { let f = ""; for (let i = 0; i < 26; i++) f += `<span class="wx-flake" style="left:${(i * 3.9) % 100}%;animation-delay:${((i % 8) * 0.45).toFixed(2)}s;animation-duration:${(3 + (i % 4)).toFixed(1)}s">❄</span>`; s += `<div class="wx-snowfield">${f}</div>`; }
+    if (icon === "fog") s += '<div class="wx-fog f1"></div><div class="wx-fog f2"></div>';
+    return s + "</div>";
+  }
   AppRegistry.weather = function () {
     const ref = createWindow({ title: "Weather", icon: Icon.mini("weather", "Weather"), width: 720, height: 640, appId: "weather" });
     const body = ref.body; body.classList.add("wx-host");
@@ -251,6 +262,7 @@
       const days = (w.days && w.days.length) ? w.days : Array.from({ length: 7 }, (_, i) => { const st = WX_STATES[(now.getDate() + i) % WX_STATES.length]; return { name: dnames[(now.getDay() + i) % 7], hi: st.hi, lo: st.lo, icon: st.icon }; });
       const maxHi = Math.max(...days.map((d) => d.hi || w.hi)), minLo = Math.min(...days.map((d) => d.lo != null ? d.lo : w.lo));
       body.innerHTML = `<div class="wx" style="background:${wxBg(w.icon)}">
+        ${wxScene(w.icon)}
         <div class="wx-cur"><div class="wx-city">${esc(city)}</div><div class="wx-temp">${w.temp}&deg;</div><div class="wx-cond">${esc(w.label)}</div><div class="wx-hilo">H:${w.hi}&deg; &nbsp; L:${w.lo}&deg;${w.live ? " &middot; Live" : ""}</div></div>
         <div class="wx-panel wx-hours">${hours.map((h) => `<div class="wx-hour"><span>${esc(h.label)}</span><span class="wx-hic">${WX_SVG[h.icon] || WX_SVG.sun}</span><b>${h.temp}&deg;</b></div>`).join("")}</div>
         <div class="wx-panel wx-days">${days.map((d, i) => { const hi = d.hi != null ? d.hi : w.hi, lo = d.lo != null ? d.lo : w.lo; const l = ((lo - minLo) / Math.max(1, maxHi - minLo)) * 100, r = ((hi - minLo) / Math.max(1, maxHi - minLo)) * 100; return `<div class="wx-drow"><span class="wx-dname">${i === 0 ? "Today" : esc(d.name || "")}</span><span class="wx-dic">${WX_SVG[d.icon] || WX_SVG.sun}</span><span class="wx-dlo">${lo}&deg;</span><span class="wx-bar"><span class="wx-bar-fill" style="left:${l}%;right:${100 - r}%"></span></span><span class="wx-dhi">${hi}&deg;</span></div>`; }).join("")}</div>

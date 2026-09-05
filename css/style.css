@@ -2789,8 +2789,28 @@ button.tm-end:hover { background: #d93025; color: #fff; border-color: transparen
 
 /* ---------------- Weather app ---------------- */
 .wx-host .win-body { overflow: hidden; }
-.wx { height: 100%; overflow-y: auto; padding: 22px; color: #fff; }
-.wx-cur { text-align: center; padding: 20px 0 26px; text-shadow: 0 1px 6px rgba(0,0,0,.25); }
+.wx { height: 100%; overflow-y: auto; padding: 22px; color: #fff; position: relative; }
+.wx-cur { text-align: center; padding: 20px 0 26px; text-shadow: 0 1px 6px rgba(0,0,0,.25); position: relative; z-index: 2; }
+/* Animated weather scene */
+.wx-scene { position: absolute; top: 0; left: 0; right: 0; height: 230px; overflow: hidden; pointer-events: none; z-index: 1; }
+.wx-sun { position: absolute; top: 34px; right: 60px; width: 66px; height: 66px; border-radius: 50%; background: radial-gradient(circle, #fff3b0, #ffd23f 60%, #ffb800); box-shadow: 0 0 40px rgba(255,210,80,.7); }
+.wx-rays { position: absolute; inset: -22px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(255,220,120,.55) 0 6deg, transparent 6deg 30deg); animation: wxSpin 22s linear infinite; }
+@keyframes wxSpin { to { transform: rotate(360deg); } }
+.wx-cloud { position: absolute; width: 120px; height: 40px; background: rgba(255,255,255,.85); border-radius: 40px; filter: blur(1px); box-shadow: 30px 6px 0 -6px rgba(255,255,255,.85), -28px 8px 0 -8px rgba(255,255,255,.8); }
+.wx-cloud.c1 { top: 40px; left: -140px; animation: wxDrift 26s linear infinite; }
+.wx-cloud.c2 { top: 90px; left: -180px; transform: scale(.8); opacity: .8; animation: wxDrift 34s linear infinite 4s; }
+.wx-cloud.c3 { top: 140px; left: -160px; transform: scale(1.1); opacity: .7; animation: wxDrift 30s linear infinite 2s; }
+@keyframes wxDrift { from { transform: translateX(0); } to { transform: translateX(140vw); } }
+.wx-rainfield, .wx-snowfield { position: absolute; inset: 0; }
+.wx-drop { position: absolute; top: -12px; width: 2px; height: 14px; background: linear-gradient(rgba(255,255,255,.1), rgba(200,225,255,.85)); border-radius: 2px; animation-name: wxRain; animation-iteration-count: infinite; animation-timing-function: linear; }
+@keyframes wxRain { from { transform: translateY(-16px); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(240px); opacity: .2; } }
+.wx-flake { position: absolute; top: -16px; color: #fff; font-size: 14px; animation-name: wxSnow; animation-iteration-count: infinite; animation-timing-function: linear; }
+@keyframes wxSnow { from { transform: translateY(-16px) translateX(0) rotate(0); } to { transform: translateY(240px) translateX(20px) rotate(220deg); } }
+.wx-flash { position: absolute; inset: 0; background: rgba(255,255,255,.9); opacity: 0; animation: wxFlash 6s infinite; }
+@keyframes wxFlash { 0%,90%,100% { opacity: 0; } 92% { opacity: .8; } 94% { opacity: .1; } 96% { opacity: .7; } }
+.wx-fog { position: absolute; height: 46px; width: 160%; left: -30%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); filter: blur(6px); }
+.wx-fog.f1 { top: 70px; animation: wxDrift 40s linear infinite; }
+.wx-fog.f2 { top: 130px; opacity: .7; animation: wxDrift 55s linear infinite 6s; }
 .wx-city { font-size: 26px; font-weight: 300; }
 .wx-temp { font-size: 76px; font-weight: 200; line-height: 1; }
 .wx-cond { font-size: 16px; margin-top: 4px; } .wx-hilo { font-size: 14px; opacity: .9; margin-top: 4px; }
