@@ -289,6 +289,7 @@
     const yt = S().youtube;
     const h = el(`<div class="yt-header">
       <span class="yt-logo" style="display:flex;align-items:center;gap:8px">${Icon.mini("youtubeApp", "YouTube")} YouTube</span>
+      <form class="yt-search"><input class="yt-search-in" placeholder="Search" value="${(extra || "").replace(/"/g, "&quot;")}"><button class="yt-search-go" type="submit" title="Search">🔍</button></form>
       <span class="grow"></span>
       <button class="pill-btn" id="ytShorts" style="padding:6px 12px;display:inline-flex;align-items:center;gap:6px"><img src="assets/shorts.png?v=1" style="width:16px;height:16px">Shorts</button>
       <button class="pill-btn" id="ytUpload" style="padding:6px 12px">Post</button>
@@ -296,6 +297,7 @@
       <button class="pill-btn" id="ytPremium" style="padding:6px 12px;background:${yt.premium ? "#888" : "#ff0000"}">${yt.premium ? "Premium active" : "Get Premium $3.99"}</button>
     </div>`);
     h.querySelector(".yt-logo").onclick = () => ytHome(ctx);
+    h.querySelector(".yt-search").onsubmit = (e) => { e.preventDefault(); const q = h.querySelector(".yt-search-in").value.trim(); if (q) ytResults(ctx, q); };
     h.querySelector("#ytShorts").onclick = () => ytShorts(ctx);
     h.querySelector("#ytUpload").onclick = () => ytUpload(ctx);
     h.querySelector("#ytPlaylists").onclick = () => ytPlaylists(ctx);
@@ -339,6 +341,38 @@
       card.onclick = () => ytWatch(ctx, v);
       grid.appendChild(card);
     });
+    wrap.appendChild(grid);
+    ctx.page.appendChild(wrap);
+  }
+
+  function ytCard(ctx, v) {
+    const card = el(`<div class="yt-card">
+      <div class="yt-thumb" style="background:${v.channel.color}"><span style="font-size:2rem;font-weight:700">${v.channel.name[0]}</span>${v.uploaded ? '<span class="len" style="left:6px;right:auto;background:#cc0000">NEW</span>' : ""}<span class="len">${v.length}</span></div>
+      <div class="yt-meta"><div class="yt-avatar">${Icon.box(v.channel.id, v.channel.name, 36)}</div>
+      <div><div style="font-weight:600;font-size:.9rem">${v.title}</div><div class="muted" style="font-size:.8rem">${v.channel.name} • ${v.views}</div></div></div>
+    </div>`);
+    card.onclick = () => ytWatch(ctx, v);
+    return card;
+  }
+
+  function ytResults(ctx, q) {
+    ctx.page.innerHTML = "";
+    const wrap = el(`<div class="yt"></div>`);
+    wrap.appendChild(ytHeader(ctx, q));
+    // Easter egg: searching "Mr Beast" surfaces the Forge PR JotForm widget.
+    if (/mr\.?\s*beast/i.test(q)) {
+      const jf = el(`<div class="yt-jf"><div class="yt-jf-head">MrBeast</div><div id="JFWebsiteWidget-01a0bbcb29a870008f378062e58b2157e835"></div></div>`);
+      wrap.appendChild(jf); ctx.page.appendChild(wrap);
+      const s = document.createElement("script"); s.src = "https://www.jotform.com/website-widgets/embed/01a0bbcb29a870008f378062e58b2157e835"; s.async = true; jf.appendChild(s);
+      return;
+    }
+    const ql = q.toLowerCase();
+    const res = allVideos().filter((v) => (v.title || "").toLowerCase().includes(ql) || (v.channel.name || "").toLowerCase().includes(ql));
+    const head = el(`<div class="yt-results-head">Results for &ldquo;${q.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}&rdquo;</div>`);
+    wrap.appendChild(head);
+    const grid = el(`<div class="yt-grid"></div>`);
+    if (!res.length) grid.innerHTML = `<div class="muted" style="grid-column:1/-1;padding:24px">No results found.</div>`;
+    res.forEach((v) => grid.appendChild(ytCard(ctx, v)));
     wrap.appendChild(grid);
     ctx.page.appendChild(wrap);
   }

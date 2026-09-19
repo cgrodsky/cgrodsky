@@ -1124,6 +1124,12 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 /* YouTube */
 .yt { background: var(--bg); min-height: 100%; }
 .yt-header { background: var(--bg-elev); padding: 10px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); }
+.yt-search { flex: 1; max-width: 440px; display: flex; }
+.yt-search-in { flex: 1; min-width: 0; padding: 8px 14px; border: 1px solid var(--border); border-right: 0; border-radius: 20px 0 0 20px; background: var(--bg); color: var(--text); outline: none; }
+.yt-search-go { padding: 0 16px; border: 1px solid var(--border); border-radius: 0 20px 20px 0; background: var(--bg-elev); color: var(--text); cursor: pointer; }
+.yt-results-head { padding: 14px 16px 4px; font-weight: 600; color: var(--text); }
+.yt-jf { padding: 22px; max-width: 720px; margin: 0 auto; }
+.yt-jf-head { font: 800 22px system-ui; color: var(--text); margin-bottom: 12px; }
 .yt-logo { color: #ff0000; font-weight: 700; font-size: 1.2rem; }
 .yt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 16px; padding: 16px; }
 .yt-card { cursor: pointer; }
