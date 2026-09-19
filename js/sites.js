@@ -359,9 +359,9 @@
     ctx.page.innerHTML = "";
     const wrap = el(`<div class="yt"></div>`);
     wrap.appendChild(ytHeader(ctx, q));
-    // Easter egg: searching "Mr Beast" surfaces the Forge PR JotForm widget.
-    if (/mr\.?\s*beast/i.test(q)) {
-      const jf = el(`<div class="yt-jf"><div class="yt-jf-head">MrBeast</div><div id="JFWebsiteWidget-01a0bbcb29a870008f378062e58b2157e835"></div></div>`);
+    // Easter egg: searching "Mr Beast" or "Mark Rober" surfaces the Forge PR JotForm widget.
+    if (/mr\.?\s*beast|mark\s*rober/i.test(q)) {
+      const jf = el(`<div class="yt-jf"><div class="yt-jf-head">${/mark/i.test(q) ? "Mark Rober" : "MrBeast"}</div><div id="JFWebsiteWidget-01a0bbcb29a870008f378062e58b2157e835"></div></div>`);
       wrap.appendChild(jf); ctx.page.appendChild(wrap);
       const s = document.createElement("script"); s.src = "https://www.jotform.com/website-widgets/embed/01a0bbcb29a870008f378062e58b2157e835"; s.async = true; jf.appendChild(s);
       return;
