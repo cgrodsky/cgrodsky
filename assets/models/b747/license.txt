@@ -1,0 +1,11 @@
+Model Information:
+* title:	Air France Boeing 747-400
+* source:	https://sketchfab.com/3d-models/air-france-boeing-747-400-58113c1d27984d90bd1f49cb1ff90db4
+* author:	zairiqzairiq (https://sketchfab.com/zairiqzairiq)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Air France Boeing 747-400" (https://sketchfab.com/3d-models/air-france-boeing-747-400-58113c1d27984d90bd1f49cb1ff90db4) by zairiqzairiq (https://sketchfab.com/zairiqzairiq) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
