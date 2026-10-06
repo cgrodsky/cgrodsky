@@ -273,6 +273,15 @@
   };
 
   // -------- Desktop App Groups (folders that live on the Home Screen) --------
+  const ESSENTIALS = ["settings", "fileexplorer", "calculator", "copilot", "notepad", "clock", "calendar", "weather", "photos", "camera", "snip", "taskmanager", "tips"];
+  function migrateEssentials() {
+    if (!S().appData) S().appData = {};
+    if (S().appData.essMigrated2) return;
+    const bump = (groups) => (groups || []).forEach((g) => { if (g && g.name === "Essentials") ESSENTIALS.forEach((a) => { if (g.apps.indexOf(a) < 0) g.apps.push(a); }); });
+    bump(S().desktop && S().desktop.groups);
+    bump(S().appData.appGroups);
+    S().appData.essMigrated2 = true; State.save();
+  }
   function deskGroups() {
     if (!S().desktop) S().desktop = {};
     if (!S().desktop.groups) {
@@ -280,11 +289,12 @@
       // now live on the desktop instead of the search bar.
       const src = (S().appData && S().appData.appGroups) || [
         { name: "Office", apps: ["word", "powerpoint", "excel", "outlook", "onenote", "forms", "notepad"] },
-        { name: "Essentials", apps: ["settings", "fileexplorer", "calculator", "copilot"] },
+        { name: "Essentials", apps: ESSENTIALS.slice() },
       ];
       S().desktop.groups = src.map((g, i) => ({ id: "grp" + i + "_" + Math.abs(hashStr(g.name)), name: g.name, apps: g.apps.slice() }));
       State.save();
     }
+    migrateEssentials();
     return S().desktop.groups;
   }
   function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
@@ -1259,7 +1269,7 @@
     if (!S().appData) S().appData = {};
     if (!S().appData.appGroups) S().appData.appGroups = [
       { name: "Office", apps: ["word", "powerpoint", "excel", "notepad"] },
-      { name: "Essentials", apps: ["settings", "fileexplorer", "calculator", "copilot"] },
+      { name: "Essentials", apps: ESSENTIALS.slice() },
     ];
     return S().appData.appGroups;
   }
