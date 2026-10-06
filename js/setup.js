@@ -29,6 +29,34 @@
   // ============================================================
   //  STAGE 1 — INSTALLER (windowed "Windows Setup")
   // ============================================================
+  const WIN_FLAG = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="2" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="2" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/></svg>`;
+
+  // Classic "Windows Setup" language dialog — the first thing a real install shows.
+  function installerLanguage() {
+    bg.className = "setup-bg iclassic-bg";
+    const opt = (arr, sel) => arr.map((o) => `<option${o === sel ? " selected" : ""}>${o}</option>`).join("");
+    const langs = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "日本語 (日本)", "Português (Brasil)", "中文 (简体)"];
+    const times = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "日本語 (日本)"];
+    const kbs = ["US", "United Kingdom", "Spanish", "French", "German", "Japanese"];
+    bg.innerHTML = `
+      <div class="iclassic-win">
+        <div class="iclassic-tb"><span class="iclassic-tt">${WIN_FLAG(14)} Windows Setup</span>
+          <span class="iclassic-ctrls"><i class="iclassic-min">&#9472;</i><i class="iclassic-max">&#9723;</i><i class="iclassic-close setup-skip">&#215;</i></span></div>
+        <div class="iclassic-body">
+          <div class="iclassic-logo">${WIN_FLAG(40)}<span>Windows</span></div>
+          <div class="iclassic-rows">
+            <div class="iclassic-row"><label>Language to install:</label><select class="iclassic-sel" id="il-lang">${opt(langs, "English (United States)")}</select></div>
+            <div class="iclassic-row"><label>Time and currency format:</label><select class="iclassic-sel" id="il-time">${opt(times, "English (United States)")}</select></div>
+            <div class="iclassic-row"><label>Keyboard or input method:</label><select class="iclassic-sel" id="il-kb">${opt(kbs, "US")}</select></div>
+          </div>
+          <div class="iclassic-hint">Enter your language and other preferences and click &ldquo;Next&rdquo; to continue.</div>
+        </div>
+        <div class="iclassic-foot"><span class="iclassic-copy">&copy; Microsoft Corporation. All rights reserved.</span><button class="iclassic-next" id="il-next">Next</button></div>
+      </div>`;
+    wireSkip();
+    bg.querySelector("#il-next").onclick = installerWelcome;
+  }
+
   function installerFrame(inner, step) {
     bg.className = "setup-bg installer-bg";
     bg.innerHTML = `
@@ -307,10 +335,40 @@
   }
 
   // ---- Microsoft account ----
+  function msAppsIllus() {
+    const apps = [["edge", 70, 4, 1.05], ["ms365", 150, 42, 0.95], ["outlook", 40, 92, 1], ["xbox", 8, 168, 0.95], ["onenote", 118, 128, 1.05], ["store__", 160, 190, 0.92]];
+    return `<div class="ms-apps-illus">${apps.map((a) => `<span class="ms-app-tile" style="left:${a[1]}px;top:${a[2]}px;transform:scale(${a[3]})">${Icon.box(a[0], a[0], 40)}</span>`).join("")}</div>`;
+  }
+  function benIcon(k) {
+    const map = {
+      grid: `<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>`,
+      shield: `<path d="M12 3 L20 6 V12 Q20 18 12 21 Q4 18 4 12 V6 Z"/>`,
+      cloud: `<path d="M7 18 a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3 A4 4 0 0 1 17 18 Z"/>`,
+      globe: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 4 3 14 0 18M12 3c-3 4-3 14 0 18"/>`,
+    };
+    return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">${map[k] || map.grid}</svg>`;
+  }
   function oobeAccount() {
     const node = el(`<div>
       <h1>Sign in with a Microsoft account</h1>
-      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Edge and Store.</p>
+      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Microsoft Edge and Microsoft Store.</p>
+      <div class="ms-benefits">
+        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("grid")}</span><div><b>The best of Windows and Microsoft 365</b><span>Personalized widgets, quick chat, and web versions of Word, Excel, and PowerPoint.</span></div></div>
+        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("shield")}</span><div><b>Your account, your data. More secure</b><span>Keep tabs on your subscription and order history, and manage privacy settings.</span></div></div>
+        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("cloud")}</span><div><b>Protect a lifetime of memories</b><span>OneDrive backs up your Desktop, Documents, and Pictures folders to the cloud.</span></div></div>
+        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("globe")}</span><div><b>Browsing made easier</b><span>Sync your favorites, passwords, and history across your devices.</span></div></div>
+      </div>
+      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="signin">Sign in</button></div>
+    </div>`);
+    node.querySelector("#skip").onclick = () => oobeJustAMoment(oobePersonalize);
+    node.querySelector("#signin").onclick = accountSignIn;
+    oobe(node, { illustration: msAppsIllus(), back: oobeAccessibility });
+  }
+
+  function accountSignIn() {
+    const node = el(`<div>
+      <h1>Let's add your Microsoft account</h1>
+      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Edge, and the Microsoft Store.</p>
       <div class="ms-badge">${msLogo()} Microsoft</div>
       <div class="ms-stage" id="msStage"></div>
     </div>`);
@@ -318,10 +376,19 @@
     function emailView() {
       stage.innerHTML = `
         <div class="field"><label>Sign in</label><input type="email" id="email" placeholder="Email, phone, or Skype" value="${S().account ? S().account.email : ""}"></div>
-        <p class="ms-links"><span class="link-blue" id="createLink">No account? Create one!</span><br><span class="link-blue">Sign-in options</span></p>
-        <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="next">Next</button></div>`;
-      stage.querySelector("#skip").onclick = () => oobeJustAMoment(oobePersonalize);
+        <p class="ms-links"><span class="link-blue" id="createLink">No account? Create one!</span><span class="link-blue" id="optLink">Sign-in options</span></p>
+        <div class="ms-signin-opts" id="opts" hidden>
+          <button class="ms-opt" id="optKey"><span class="ms-opt-ic">&#128273;</span><div><b>Sign in with a security key</b><span>Choose this only if you've enabled a security key for your account.</span></div></button>
+          <button class="ms-opt" id="optOffline"><span class="ms-opt-ic">&#128187;</span><div><b>Offline account</b><span>Set up this device with a local account, no Microsoft account needed.</span></div></button>
+          <button class="ms-opt" id="optForgot"><span class="ms-opt-ic">?</span><div><b>Forgot my username</b></div></button>
+        </div>
+        <div class="oobe-actions spread"><button class="btn-text" id="skip2">Back</button><button class="btn-primary" id="next">Next</button></div>`;
       stage.querySelector("#createLink").onclick = createView;
+      stage.querySelector("#optLink").onclick = () => { const o = stage.querySelector("#opts"); o.hidden = !o.hidden; };
+      stage.querySelector("#optKey").onclick = () => oobeJustAMoment(oobePersonalize);
+      stage.querySelector("#optOffline").onclick = () => { S().account = null; State.save(); oobeJustAMoment(oobePersonalize); };
+      stage.querySelector("#optForgot").onclick = () => stage.querySelector("#opts").hidden = true;
+      stage.querySelector("#skip2").onclick = oobeAccount;
       stage.querySelector("#next").onclick = () => {
         const email = stage.querySelector("#email").value.trim();
         if (!email) { stage.querySelector("#email").focus(); return; }
@@ -353,7 +420,7 @@
         <div class="ms-return">&#8592; ${escapeHtml(email)}</div>
         <div class="field"><label>Enter Password</label>
           <div class="pw-wrap"><input type="password" id="pw" placeholder="Password"><button class="pw-eye" id="eye">&#128065;</button></div></div>
-        <p class="ms-links"><span class="link-blue">Forgot password?</span><br><span class="link-blue">Email code to ${escapeHtml(email)}</span></p>
+        <p class="ms-links"><span class="link-blue">Forgot password?</span><span class="link-blue">Email code to ${escapeHtml(email)}</span></p>
         <div class="oobe-actions spread"><button class="btn-text" id="back2">Back</button><button class="btn-primary" id="signin">Next</button></div>`;
       const pw = stage.querySelector("#pw");
       stage.querySelector("#eye").onclick = () => { pw.type = pw.type === "password" ? "text" : "password"; };
@@ -364,7 +431,7 @@
       };
     }
     emailView();
-    oobe(node, { illustration: ILLUS.apps, back: oobeAccessibility });
+    oobe(node, { illustration: msAppsIllus(), back: oobeAccount });
   }
 
   // ---- Just a moment… ----
@@ -405,9 +472,22 @@
       const uname = node.querySelector("#uname").value.trim() || "User";
       S().profile = Object.assign({}, S().profile, { picture: imgEl ? captureCrop(imgEl, crop) : (S().profile && S().profile.picture) || null, username: uname });
       State.save();
-      oobePin();
+      oobeHelloIntro();
     };
     oobe(node, { illustration: ILLUS.apps, back: oobeAccount });
+  }
+
+  // ---- Use Windows Hello (intro) ----
+  function oobeHelloIntro() {
+    const node = el(`<div>
+      <h1>Use Windows Hello with your account</h1>
+      <p class="sub">Your organization requires you to set up your account with Windows Hello Face, Fingerprint, or PIN.</p>
+      <p class="sub">If you've already set up Windows Hello on this device, we'll automatically add it for this account. You may be asked to re-verify with Windows Hello.</p>
+      <p class="sub">If your organization requires a more complex PIN, Windows will prompt you to change it.</p>
+      <div class="oobe-actions"><button class="btn-primary" id="ok">OK</button></div>
+    </div>`);
+    node.querySelector("#ok").onclick = oobePin;
+    oobe(node, { illustration: ILLUS.lock, back: oobePersonalize });
   }
 
   // ---- Set up a PIN ----
@@ -643,7 +723,7 @@
     document.body.classList.toggle("dark", S().theme === "dark");
     document.documentElement.style.setProperty("--scale", S().textScale / 100);
     mount();
-    if (!S().installerDone) installerWelcome();
+    if (!S().installerDone) installerLanguage();
     else oobeRegion();
   }
 

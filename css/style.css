@@ -1745,6 +1745,28 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 /* ============ Windows Setup installer (windowed) ============ */
 .installer-bg { background: #0b1020 !important; display: flex; align-items: center; justify-content: center; }
 .installer-bg::before, .installer-bg::after { display: none !important; }
+/* Classic "Windows Setup" language dialog */
+.iclassic-bg { background: #00034a !important; display: flex; align-items: center; justify-content: center; }
+.iclassic-bg::before, .iclassic-bg::after { display: none !important; }
+.iclassic-win { width: min(660px, 92vw); background: #efeff1; color: #1b1b1b; border: 1px solid #8ab4e8; box-shadow: 0 0 0 1px rgba(255,255,255,.2), 0 20px 60px rgba(0,0,0,.6); font-family: "Segoe UI", Tahoma, system-ui, sans-serif; display: flex; flex-direction: column; animation: popIn .25s ease; }
+.iclassic-tb { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 2px 0 10px; background: linear-gradient(#fbfbfc, #e7e8ea); border-bottom: 1px solid #d4d5d8; }
+.iclassic-tt { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; color: #333; }
+.iclassic-ctrls { display: inline-flex; height: 100%; }
+.iclassic-ctrls i { width: 44px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; color: #333; cursor: pointer; }
+.iclassic-ctrls i:hover { background: #d9dadd; }
+.iclassic-close:hover { background: #e81123 !important; color: #fff !important; }
+.iclassic-body { padding: 44px 40px 30px; display: flex; flex-direction: column; align-items: center; min-height: 360px; }
+.iclassic-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 44px; }
+.iclassic-logo span { font-size: 2rem; font-weight: 300; letter-spacing: .5px; color: #1b1b1b; }
+.iclassic-rows { display: flex; flex-direction: column; gap: 14px; width: 420px; max-width: 100%; }
+.iclassic-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: .86rem; }
+.iclassic-row label { color: #1b1b1b; }
+.iclassic-sel { width: 230px; padding: 4px 6px; border: 1px solid #7a7a7a; border-radius: 0; background: #fff; color: #1b1b1b; font-size: .84rem; }
+.iclassic-hint { margin-top: 34px; font-size: .82rem; color: #333; text-align: center; }
+.iclassic-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid #d4d5d8; background: #e9eaec; }
+.iclassic-copy { font-size: .72rem; color: #555; }
+.iclassic-next { min-width: 86px; padding: 6px 18px; border: 1px solid #adadad; border-radius: 2px; background: linear-gradient(#fdfdfd, #e9eaec); color: #1b1b1b; font-size: .84rem; cursor: pointer; }
+.iclassic-next:hover { border-color: #2f6bff; background: linear-gradient(#f3f8ff, #dceaff); }
 .installer-win { width: min(760px, 92vw); max-height: 88vh; background: #141a2e; color: #e9edf6; border-radius: 12px;
   border: 1px solid rgba(255,255,255,.08); box-shadow: 0 30px 80px rgba(0,0,0,.6); display: flex; flex-direction: column; overflow: hidden;
   animation: stepIn .35s cubic-bezier(.2,.7,.2,1); }
@@ -1840,7 +1862,26 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 
 /* Microsoft account */
 .ms-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin: 4px 0 10px; }
-.ms-links { font-size: .82rem; margin: 10px 0; line-height: 1.8; }
+.ms-links { font-size: .82rem; margin: 10px 0; line-height: 1.8; display: flex; flex-direction: column; gap: 2px; }
+/* account benefits list */
+.ms-benefits { display: flex; flex-direction: column; gap: 16px; margin: 18px 0 6px; }
+.ms-benefit { display: flex; gap: 14px; align-items: flex-start; }
+.ms-ben-ic { width: 32px; height: 32px; flex: 0 0 32px; display: inline-flex; align-items: center; justify-content: center; color: var(--text); opacity: .85; }
+.ms-benefit b { display: block; font-size: .92rem; }
+.ms-benefit span { font-size: .8rem; opacity: .7; line-height: 1.4; }
+/* floating Microsoft app tiles illustration */
+.ms-apps-illus { position: relative; width: 220px; height: 260px; }
+.ms-app-tile { position: absolute; width: 60px; height: 60px; border-radius: 12px; background: #fff; box-shadow: 0 8px 22px rgba(0,0,0,.18); display: flex; align-items: center; justify-content: center; animation: msFloat 5s ease-in-out infinite; }
+.ms-app-tile:nth-child(2) { animation-delay: .6s; } .ms-app-tile:nth-child(3) { animation-delay: 1.2s; }
+.ms-app-tile:nth-child(4) { animation-delay: 1.8s; } .ms-app-tile:nth-child(5) { animation-delay: 2.4s; } .ms-app-tile:nth-child(6) { animation-delay: 3s; }
+@keyframes msFloat { 0%,100% { transform: translateY(0) scale(var(--s,1)); } 50% { transform: translateY(-8px) scale(var(--s,1)); } }
+/* sign-in options */
+.ms-signin-opts { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; border-top: 1px solid var(--border); }
+.ms-opt { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px 10px; background: none; border: 0; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; font: inherit; }
+.ms-opt:hover { background: var(--bg-elev); }
+.ms-opt-ic { width: 26px; text-align: center; font-size: 16px; opacity: .8; }
+.ms-opt b { display: block; font-size: .88rem; }
+.ms-opt span { font-size: .76rem; opacity: .65; }
 .ms-return { color: #aeb8d2; font-size: .9rem; margin-bottom: 6px; }
 .pw-wrap { display: flex; align-items: center; border-bottom: 2px solid rgba(255,255,255,.28); }
 .pw-wrap input { flex: 1; border: 0 !important; border-bottom: 0 !important; }
