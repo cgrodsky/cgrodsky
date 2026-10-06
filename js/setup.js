@@ -14,6 +14,7 @@
   let bg, onComplete;
   const S = () => State.data;
   const EDITION_YEAR = "2026";
+  const SETUP_IC = (s) => `<img src="assets/winsetup.png?v=1" alt="Setup" style="width:${s || 18}px;height:${s || 18}px;object-fit:contain;vertical-align:middle">`;
 
   function mount() {
     bg = el(`<div class="setup-bg oobe-bg"></div>`);
@@ -40,7 +41,7 @@
     const kbs = ["US", "United Kingdom", "Spanish", "French", "German", "Japanese"];
     bg.innerHTML = `
       <div class="iclassic-win">
-        <div class="iclassic-tb"><span class="iclassic-tt">${WIN_FLAG(14)} Windows Setup</span>
+        <div class="iclassic-tb"><span class="iclassic-tt">${SETUP_IC(16)} Windows Setup</span>
           <span class="iclassic-ctrls"><i class="iclassic-min">&#9472;</i><i class="iclassic-max">&#9723;</i><i class="iclassic-close setup-skip">&#215;</i></span></div>
         <div class="iclassic-body">
           <div class="iclassic-logo">${WIN_FLAG(40)}<span>Windows</span></div>
@@ -62,7 +63,7 @@
     bg.innerHTML = `
       <div class="installer-win">
         <div class="installer-titlebar">
-          <span class="installer-tt">${Icon.mini("settings", "Setup")} Windows Setup</span>
+          <span class="installer-tt">${SETUP_IC(18)} Windows Setup</span>
           <span class="row" style="gap:12px"><button class="setup-skip">Skip setup</button><span class="installer-x">&#215;</span></span>
         </div>
         <div class="installer-body">${inner}</div>
@@ -184,7 +185,7 @@
       <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12</b><sup>${EDITION_YEAR}</sup></div>
       <div class="oobe-orb"></div>
       <div class="oobe-panel">
-        <div class="oobe-breadcrumb"><span class="oobe-crumb"><span>${Icon.mini("settings", "Setup")} Set up Windows</span></span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
+        <div class="oobe-breadcrumb"><span class="oobe-crumb"><span>${SETUP_IC(18)} Set up Windows</span></span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
         <div class="oobe-stage">
           <div class="oobe-illus"></div>
           <div class="oobe-content"></div>
