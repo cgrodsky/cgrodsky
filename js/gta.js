@@ -258,7 +258,7 @@
       current = next;
     }
     let oneShotUntil = 0;
-    function oneShot(key) {
+    function oneShot(key) { if (dead) return;
       if (!charReady || !actions[key]) return;
       actions[key].reset().setEffectiveWeight(1).fadeIn(0.12).play();
       if (current && current !== actions[key]) current.fadeOut(0.12);
@@ -419,7 +419,7 @@
       const geo = new T.BufferGeometry().setFromPoints([a, b]);
       const ln = new T.Line(geo, new T.LineBasicMaterial({ color: 0xfff2a0, transparent: true, opacity: 0.9 })); scene.add(ln); bullets.push({ ln, t: 0 });
     }
-    function fire() {
+    function fire() { if (dead) return;
       if (equipped !== "revolver" || !char || reloading) return;
       if (ammo <= 0) { startReload(); return; }
       ammo--; updateWeaponHUD(); recoil = 0.05; shake = Math.max(shake, 0.22); muzzle();
@@ -432,7 +432,7 @@
       if (ammo <= 0) startReload();
     }
     // -- reload (with a hand/weapon animation) --
-    function startReload() {
+    function startReload() { if (dead) return;
       if (reloading || equipped !== "revolver" || ammo >= 6) return;
       reloading = true; reloadT = 0; actionEl.textContent = "RELOADING…";
     }
@@ -448,7 +448,7 @@
       if (k >= 1) { reloading = false; ammo = 6; updateWeaponHUD(); actionEl.textContent = "RELOADED"; setTimeout(() => { if (actionEl.textContent === "RELOADED") actionEl.textContent = ""; }, 600); if (heldWeapon) { heldWeapon.rotation.set(HANDROT.x, HANDROT.y, HANDROT.z); heldWeapon.position.y = 7; } }
     }
     // -- grenades --
-    function throwGrenade() {
+    function throwGrenade() { if (dead) return;
       if (inv.grenade <= 0 || !char || !weaponModels.grenade) return;
       inv.grenade--; updateWeaponHUD(); oneShot("wave");
       const m = normModel(weaponModels.grenade, 0.9);
@@ -499,7 +499,7 @@
       loadFBX(CARS.mclaren.url).then((m) => placeVehicle(m, CARS.mclaren, -12, 2, Math.PI / 2)).catch((e) => console.warn("[GTA] mclaren", e));
     }
     function nearestVehicle() { let best = null, bd = 1e9; vehicles.forEach((v) => { const d = (v.pos.x - player.pos.x) ** 2 + (v.pos.z - player.pos.z) ** 2; if (d < bd) { bd = d; best = v; } }); return bd < 28 ? best : null; }
-    function toggleCar() {
+    function toggleCar() { if (dead) return;
       if (!charReady) return;
       if (inCar) {
         const v = inCar; inCar = null; if (char) char.visible = true;
@@ -688,7 +688,9 @@
       renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 
       // ---- driving vs on-foot ----
-      if (inCar) {
+      if (dead) {
+        // frozen while WASTED — no movement, driving, or actions
+      } else if (inCar) {
         driveCar(dt);
         if (char) char.visible = false;
       } else {
@@ -750,7 +752,8 @@
     loadVehicles();
     bootSequence(startIntro);   // Rockstar-style publisher splash, then the LOS SANTOS cinematic
     host.__gta = { player, cine, pickups: () => pickups.map((p) => ({ key: p.key, got: p.got })), equipped: () => equipped, ammo: () => ammo, grenades: () => inv.grenade, npcAlive: () => npcs.filter((n) => n.alive).length, reloading: () => reloading, reloadT: () => reloadT, fire, throwGrenade, startReload, togglePhone, phoneApp: (id) => phoneApp(id), setPos: (x, z) => player.pos.set(x, 0, z),
-      wanted: () => wanted, health: () => health, cops: () => cops.length, addWanted: (n) => addWanted(n), hurt: (n) => setHealth(health - n) };
+      wanted: () => wanted, health: () => health, cops: () => cops.length, addWanted: (n) => addWanted(n), hurt: (n) => setHealth(health - n),
+      vehicles: () => vehicles.length, inCar: () => !!inCar, nearCar: () => { const v = nearestVehicle(); return v ? v.name : null; }, toggleCar: () => toggleCar(), charReady: () => charReady, cineActive: () => cine.active };
     requestAnimationFrame(frame);
     setTimeout(() => dom.focus(), 40);
 
