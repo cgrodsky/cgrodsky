@@ -307,7 +307,7 @@
       ctx.fillStyle = "#c9a227"; ctx.fillRect(28, 0, 5, H); ctx.fillRect(W - 33, 0, 5, H);
       cars.forEach((c) => car(lanes[c.lane], c.y, c.c));
       car(lanes[lane], H - 90, "#f4d000");
-      status.textContent = "Distance: " + Math.floor(score / 60) + "m";
+      if (alive) status.textContent = "Distance: " + Math.floor(score / 60) + "m"; // don't clobber die()'s "Busted!" message
     }
     const btn = el(`<button class="pill-btn">Start · tap left / right to steer</button>`); btn.onclick = init; host.appendChild(btn);
     init();
