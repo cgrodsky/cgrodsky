@@ -171,7 +171,7 @@
 
     // ---- weapons / combat / NPC / cinematic state ----
     let handBone = null, heldWeapon = null, equipped = null, ammo = 6, shake = 0, recoil = 0;
-    let reloading = false, reloadT = 0, phoneOpen = false, phoneView = "home";
+    let reloading = false, reloadT = 0, reloadStart = 0, phoneOpen = false, phoneView = "home";
     const vehicles = []; let inCar = null;
     const carHintEl = host.querySelector("#gta-carhint"), speedEl = host.querySelector("#gta-speed");
     const cops = []; let wanted = 0, wantedT = 0, health = 100, dead = false;
@@ -434,11 +434,11 @@
     // -- reload (with a hand/weapon animation) --
     function startReload() { if (dead) return;
       if (reloading || equipped !== "revolver" || ammo >= 6) return;
-      reloading = true; reloadT = 0; actionEl.textContent = "RELOADING…";
+      reloading = true; reloadT = 0; reloadStart = nowMs(); actionEl.textContent = "RELOADING…";
     }
     function updateReload(dt) {
       if (!reloading) return;
-      reloadT += dt; const k = clamp(reloadT / 1.3, 0, 1);
+      reloadT = (nowMs() - reloadStart) / 1000; const k = clamp(reloadT / 1.3, 0, 1);   // wall-clock ~1.3s regardless of fps
       // tilt the gun down to load, snap back up — plus the character glances down (nod)
       if (heldWeapon) {
         const dip = Math.sin(k * Math.PI);                 // 0→1→0
@@ -556,7 +556,8 @@
     }
 
     // -- cutscenes --
-    function startCine(mode, dur) { cine.active = true; cine.t = 0; cine.dur = dur; cine.mode = mode; cineEl.classList.add("on"); }
+    const nowMs = () => (window.performance && performance.now ? performance.now() : Date.now());
+    function startCine(mode, dur) { cine.active = true; cine.t = 0; cine.start = nowMs(); cine.dur = dur; cine.mode = mode; cineEl.classList.add("on"); }
     function endCine() { if (!cine.active) return; cine.active = false; cineEl.classList.remove("on"); titleEl.textContent = ""; subEl.textContent = ""; }
     function startIntro() {
       startCine("intro", 6.5); titleEl.textContent = ""; subEl.textContent = "LOS SANTOS";
@@ -564,7 +565,7 @@
     }
     function pickupCine(key) { startCine("pickup", 2.2); titleEl.textContent = key === "revolver" ? ".357 MAGNUM" : "GRENADES"; subEl.textContent = "ACQUIRED"; }
     function cineCamera(dt) {
-      cine.t += dt;
+      cine.t = (nowMs() - cine.start) / 1000;   // wall-clock, so cutscenes run the same length regardless of frame rate
       const cx0 = player.pos.x, cz0 = player.pos.z;
       if (cine.mode === "intro") {
         const k = clamp(cine.t / cine.dur, 0, 1), a = k * 2.4 + 0.6, r = lerp(120, 16, k), y = lerp(78, 6, k * k);
