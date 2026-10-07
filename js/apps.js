@@ -77,7 +77,7 @@
     function press(k) {
       if (k === "C") { cur = "0"; prev = null; op = null; fresh = true; }
       else if ("0123456789".includes(k)) { cur = fresh ? k : (cur === "0" ? k : cur + k); fresh = false; }
-      else if (k === ".") { if (!cur.includes(".")) cur += "."; fresh = false; }
+      else if (k === ".") { if (fresh) { cur = "0."; fresh = false; } else if (!cur.includes(".")) cur += "."; }
       else if (k === "±") cur = String(parseFloat(cur) * -1);
       else if (k === "%") cur = String(parseFloat(cur) / 100);
       else if (["÷", "×", "−", "+"].includes(k)) { if (op && !fresh) compute(); prev = parseFloat(cur); op = k; fresh = true; }
