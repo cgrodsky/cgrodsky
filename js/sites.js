@@ -1016,7 +1016,13 @@
       node.querySelector("button").onclick = () => {
         if (locked) return;
         if (d.hearts <= 0) { alert("Out of hearts! Try again later."); return; }
-        startLesson(ctx, i, () => { if (!d.completed.includes(i)) d.completed.push(i); State.save(); duolingo(ctx); });
+        startLesson(ctx, i, () => {
+          if (!d.completed.includes(i)) d.completed.push(i);
+          // Daily streak: +1 the first lesson each new day, reset to 1 after a missed day.
+          const today = new Date().toDateString();
+          if (d.lastDay !== today) { const yest = new Date(Date.now() - 864e5).toDateString(); d.streak = (d.lastDay === yest) ? (d.streak || 0) + 1 : 1; d.lastDay = today; }
+          State.save(); duolingo(ctx);
+        });
       };
       path.appendChild(node);
     });
