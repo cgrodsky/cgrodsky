@@ -177,17 +177,21 @@
 
     const track = inner.querySelector(".swipe-track");
     const thumb = inner.querySelector(".swipe-thumb");
+    thumb.style.touchAction = "none";
     let dragging = false, startX = 0, x = 0;
     const maxX = () => track.clientWidth - thumb.clientWidth - 6;
-    thumb.onmousedown = (e) => { dragging = true; startX = e.clientX - x; };
-    window.addEventListener("mousemove", (e) => {
+    // Pointer events + pointer capture: the swipe works by finger on touch devices
+    // (mouse events don't), and capture means no window-level listeners to leak.
+    thumb.onpointerdown = (e) => { dragging = true; startX = e.clientX - x; try { thumb.setPointerCapture(e.pointerId); } catch (_) {} };
+    thumb.onpointermove = (e) => {
       if (!dragging) return;
       x = Math.min(maxX(), Math.max(0, e.clientX - startX));
       thumb.style.left = 3 + x + "px";
-    });
-    window.addEventListener("mouseup", () => {
+    };
+    thumb.onpointerup = (e) => {
       if (!dragging) return;
       dragging = false;
+      try { thumb.releasePointerCapture(e.pointerId); } catch (_) {}
       if (x >= maxX() - 4) {
         if (S().bank.balance < total) { alert("Insufficient funds in Forge Bank."); thumb.style.left = "3px"; x = 0; return; }
         Pay.ensureCard(() => {
@@ -197,7 +201,7 @@
           thanksPage(ctx, items, total);
         });
       } else { thumb.style.left = "3px"; x = 0; }
-    });
+    };
   }
 
   function thanksPage(ctx, items, total) {
