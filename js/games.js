@@ -144,6 +144,7 @@
     function add(){const e=b.map((v,i)=>v?-1:i).filter(i=>i>=0);if(e.length)b[e[Math.floor(Math.random()*e.length)]]=Math.random()<.9?2:4;}
     function draw(){grid.innerHTML="";b.forEach(v=>{const c=el(`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:700;font-size:1.4rem;background:${v?colors[v]||"#3c3a32":"#cdc1b4"};color:${v>4?"#fff":"#776e65"}">${v||""}</div>`);grid.appendChild(c);});}
     function slide(row){let a=row.filter(x=>x);for(let i=0;i<a.length-1;i++)if(a[i]===a[i+1]){a[i]*=2;score+=a[i];a.splice(i+1,1);}while(a.length<4)a.push(0);return a;}
+    function canMove(){if(b.includes(0))return true;for(let r=0;r<4;r++)for(let c=0;c<4;c++){const v=b[r*4+c];if(c<3&&v===b[r*4+c+1])return true;if(r<3&&v===b[(r+1)*4+c])return true;}return false;}
     function move(dir){
       const old=b.join();let rows=[];
       for(let r=0;r<4;r++){let row=[0,1,2,3].map(c=>{
@@ -151,7 +152,7 @@
         row=slide(row);
         row.forEach((v,c)=>{const idx=dir==="l"?r*4+c:dir==="r"?r*4+(3-c):dir==="u"?c*4+r:(3-c)*4+r;b[idx]=v;});
       }
-      if(b.join()!==old){add();draw();if(b.includes(2048))status.textContent="You made 2048!";}
+      if(b.join()!==old){add();draw();if(b.includes(2048))status.textContent="You made 2048!";else if(!canMove())status.textContent="Game over! Score "+score;}
     }
     const onKey=(e)=>{const m={ArrowLeft:"l",ArrowRight:"r",ArrowUp:"u",ArrowDown:"d"}[e.key];if(m){move(m);e.preventDefault();}};
     document.addEventListener("keydown",onKey);
