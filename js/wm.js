@@ -1269,6 +1269,12 @@
       card.onclick = () => { closeSearch(); if (window.Browser) window.Browser.openTo(know.url); };
       body.appendChild(card);
     }
+    // Dictionary knowledge card — any single word shows its definition (offline).
+    const dict = (!know && /^[a-zA-Z]{2,}$/.test(query)) ? (window.DICTIONARY && window.DICTIONARY[query.toLowerCase()]) : null;
+    if (dict) {
+      body.appendChild(el(`<div class="sp-head">Dictionary</div>`));
+      body.appendChild(el(`<div class="sp-know"><div class="sp-know-img" style="display:flex;align-items:center;justify-content:center;font-size:22px;background:#eef1f6;color:#3a4a63">📖</div><div class="sp-know-tx"><div class="sp-know-name">${query.toLowerCase()} <span style="font-weight:400;font-style:italic;opacity:.65">· ${dict.pos}</span></div><div class="sp-know-desc">${dict.def}</div></div></div>`));
+    }
     if (matches.length) {
       body.appendChild(el(`<div class="sp-head">Apps</div>`));
       const grid = el(`<div class="sp-list"></div>`);
