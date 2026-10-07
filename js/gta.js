@@ -29,8 +29,23 @@
   }
 
   function start(body, opts) {
+    // Three.js loads as an async ES module from a CDN. If GTA is opened before it
+    // finishes (common right after boot), window.THREE is still undefined — so wait
+    // for it and then start, instead of failing with "refresh and try again".
+    if (!window.THREE) {
+      body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#cdd;font:600 15px/1.5 system-ui,sans-serif;text-align:center">Loading 3D engine…</div>`;
+      let started = false, tries = 0;
+      const go = () => {
+        if (started) return;
+        if (window.THREE) { started = true; start(body, opts); }
+        else if (++tries <= 200) { setTimeout(go, 50); }
+        else { body.innerHTML = `<div style="padding:24px;color:#334">3D engine (Three.js) failed to load. Check your connection and reopen.</div>`; }
+      };
+      window.addEventListener("three-ready", go, { once: true });
+      go();
+      return null;
+    }
     const T = window.THREE;
-    if (!T) { body.innerHTML = `<div style="padding:24px;color:#334">3D engine (Three.js) failed to load. Refresh and try again.</div>`; return null; }
 
     body.innerHTML = `<div class="gta">
       <div class="gta-hud">
