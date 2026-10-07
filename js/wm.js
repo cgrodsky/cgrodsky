@@ -98,6 +98,14 @@
       const idx = openWindows.indexOf(entry);
       if (idx >= 0) openWindows.splice(idx, 1);
       if (entry.taskBtn && entry.taskBtn.parentNode && !entry.pinned) entry.taskBtn.remove();
+      else if (entry.taskBtn && entry.pinned) {
+        // A pinned button's click was repointed at this window when it opened;
+        // now that it's closing, point it at another open window of the same app
+        // if one remains, otherwise back to launching the app (so it still opens).
+        const btn = entry.taskBtn, id = entry.appId;
+        const other = openWindows.find((e) => e.taskBtn === btn);
+        btn.onclick = other ? () => toggleWindow(other) : () => open(id);
+      }
       win.remove();
       if (opts.onClose) opts.onClose();
       refreshTaskbarActive();
