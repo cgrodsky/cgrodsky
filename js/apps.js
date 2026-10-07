@@ -492,13 +492,17 @@
     const picker = makeColorPicker("#0485F7", () => {});
     body.querySelector("#col-host").replaceWith(picker.el);
     const cv = body.querySelector("canvas"), ctx = cv.getContext("2d");
+    cv.style.touchAction = "none"; // let finger drags draw instead of scrolling (iPad/touch)
     let drawing = false;
-    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-    cv.onmousedown = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-    cv.onmousemove = (e) => { if (!drawing) return; const p = pos(e); ctx.strokeStyle = picker.getValue(); ctx.lineWidth = body.querySelector("#sz").value; ctx.lineCap = "round"; ctx.lineTo(p.x, p.y); ctx.stroke(); };
-    window.addEventListener("mouseup", () => drawing = false);
-    body.querySelector("#clr").onclick = () => ctx.clearRect(0, 0, 600, 420);
-    body.closest(".win").addEventListener("wm-cleanup", () => picker.destroy());
+    // Pointer events unify mouse, touch and pen — mouse events don't fire reliably
+    // during a touch drag on mobile Safari, so finger drawing was broken before.
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * (cv.width / r.width), y: (e.clientY - r.top) * (cv.height / r.height) }; };
+    cv.onpointerdown = (e) => { drawing = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {} const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+    cv.onpointermove = (e) => { if (!drawing) return; const p = pos(e); ctx.strokeStyle = picker.getValue(); ctx.lineWidth = body.querySelector("#sz").value; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    const stopDraw = () => { drawing = false; };
+    window.addEventListener("pointerup", stopDraw);
+    body.querySelector("#clr").onclick = () => ctx.clearRect(0, 0, cv.width, cv.height);
+    body.closest(".win").addEventListener("wm-cleanup", () => { picker.destroy(); window.removeEventListener("pointerup", stopDraw); });
   };
 
   // ---------- Clock ----------
