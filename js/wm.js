@@ -69,10 +69,12 @@
     win.style.zIndex = ++zCounter;
     win.addEventListener("mousedown", () => focusWindow(win));
 
-    // drag
+    // drag — pointer events so windows can be dragged by finger on touch devices
+    // (mouse events aren't delivered during a touch drag on mobile Safari).
     const tb = win.querySelector(".win-titlebar");
+    tb.style.touchAction = "none";
     let dragging = false, sx, sy, sl, st;
-    tb.addEventListener("mousedown", (e) => {
+    tb.addEventListener("pointerdown", (e) => {
       if (e.target.closest(".win-controls")) return;
       if (win.classList.contains("maximized")) return;
       dragging = true; sx = e.clientX; sy = e.clientY; sl = win.offsetLeft; st = win.offsetTop;
@@ -83,13 +85,13 @@
       win.style.top = Math.max(0, st + e.clientY - sy) + "px";
     };
     const onDragUp = () => { dragging = false; };
-    window.addEventListener("mousemove", onDragMove);
-    window.addEventListener("mouseup", onDragUp);
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", onDragUp);
     // These live on window, so they must be torn down when the window goes away
-    // (any removal path), or they pile up and run on every global mouse event.
+    // (any removal path), or they pile up and run on every global pointer event.
     win.addEventListener("wm-cleanup", () => {
-      window.removeEventListener("mousemove", onDragMove);
-      window.removeEventListener("mouseup", onDragUp);
+      window.removeEventListener("pointermove", onDragMove);
+      window.removeEventListener("pointerup", onDragUp);
     });
 
     const entry = { id: "w" + (++zCounter), win, appId: opts.appId, title: opts.title || "", icon: opts.icon };
