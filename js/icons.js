@@ -453,25 +453,29 @@
 
   // Live analog Clock icon — re-generated on every render / refresh.
   function clockSVG() {
-    const d = new Date(), m = d.getMinutes(), h = d.getHours() % 12;
-    const ma = m * 6, ha = h * 30 + m * 0.5;
+    const d = new Date(), s = d.getSeconds(), m = d.getMinutes(), h = d.getHours() % 12;
+    const sa = s * 6, ma = m * 6 + s * 0.1, ha = h * 30 + m * 0.5;
     const hand = (len, deg, w, col) => { const a = (deg - 90) * Math.PI / 180; return `<line x1="64" y1="64" x2="${(64 + Math.cos(a) * len).toFixed(1)}" y2="${(64 + Math.sin(a) * len).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
     let ticks = ""; for (let i = 0; i < 12; i++) { const a = (i * 30 - 90) * Math.PI / 180; ticks += `<line x1="${(64 + Math.cos(a) * 48).toFixed(1)}" y1="${(64 + Math.sin(a) * 48).toFixed(1)}" x2="${(64 + Math.cos(a) * 54).toFixed(1)}" y2="${(64 + Math.sin(a) * 54).toFixed(1)}" stroke="#8a97a6" stroke-width="${i % 3 === 0 ? 3 : 1.6}"/>`; }
     return `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">` +
       `<circle cx="64" cy="64" r="60" fill="#ffffff" stroke="#c9d2dc" stroke-width="4"/>${ticks}` +
-      hand(30, ha, 5, "#1f2a37") + hand(44, ma, 3.4, "#1f2a37") +
+      hand(30, ha, 5, "#1f2a37") + hand(44, ma, 3.4, "#1f2a37") + hand(50, sa, 1.5, "#e5484d") +
       `<circle cx="64" cy="64" r="4.5" fill="#e5484d"/></svg>`;
   }
   register("clock", () => clockSVG());
 
   // Re-render dynamic icons in place so the clock ticks and the calendar rolls over.
-  function refreshDynamic() {
+  // Clocks refresh every second (so the second hand sweeps); other dynamic icons
+  // (e.g. the calendar's date) only need to roll over, so they refresh less often.
+  function refreshDynamic(clocksOnly) {
     document.querySelectorAll("[data-dyn-key]").forEach((wrap) => {
       const k = wrap.getAttribute("data-dyn-key");
+      if (clocksOnly && k !== "clock") return;
       if (typeof custom[k] === "function") { const inner = wrap.querySelector(".ico-custom"); if (inner) inner.innerHTML = custom[k](); }
     });
   }
-  setInterval(refreshDynamic, 20000);
+  setInterval(() => refreshDynamic(true), 1000);   // tick the clock every second
+  setInterval(() => refreshDynamic(false), 30000); // roll over calendar / other dynamic icons
 
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
