@@ -257,24 +257,37 @@
     function expandRange(a, b) { const A = parseRef(a), B = parseRef(b), out = []; if (!A || !B) return out; for (let r = Math.min(A.r, B.r); r <= Math.max(A.r, B.r); r++) for (let c = Math.min(A.c, B.c); c <= Math.max(A.c, B.c); c++) out.push(colName(c) + r); return out; }
     function valOf(r, seen) { r = r.toUpperCase(); if (seen.has(r)) return 0; const raw = rawOf(r); if (raw === "") return 0; if (raw[0] === "=") { seen.add(r); const v = evalF(raw.slice(1), seen); seen.delete(r); return v; } const n = parseFloat(raw); return isNaN(n) ? raw : n; }
     function evalF(expr, seen) {
-      expr = expr.replace(/([A-Za-z]+)\s*\(([^()]*)\)/g, (m, fn, args) => {
-        fn = fn.toUpperCase();
-        const vals = args.split(",").flatMap((tok) => {
-          tok = tok.trim(); if (!tok) return [];
-          const rng = /^([A-Z]+\d+):([A-Z]+\d+)$/i.exec(tok);
-          if (rng) return expandRange(rng[1], rng[2]).map((r) => Number(valOf(r, seen)) || 0);
-          if (/^[A-Z]+\d+$/i.test(tok)) return [Number(valOf(tok, seen)) || 0];
-          const n = parseFloat(tok); return isNaN(n) ? [] : [n];
+      // Resolve function calls innermost-first, repeating until none remain, so
+      // nested formulas like =ROUND(AVERAGE(A1:A3),2) evaluate instead of #ERR.
+      // The regex only matches a call with no inner "()", i.e. the innermost one;
+      // each pass replaces those with their numeric result, exposing the next level.
+      for (let guard = 0; guard < 30; guard++) {
+        let changed = false;
+        expr = expr.replace(/([A-Za-z]+)\s*\(([^()]*)\)/g, (m, fn, args) => {
+          changed = true;
+          fn = fn.toUpperCase();
+          const cellNum = (r) => { if (rawOf(r) === "") return []; const v = valOf(r, seen); return (typeof v === "number" && !isNaN(v)) ? [v] : []; };
+          const vals = args.split(",").flatMap((tok) => {
+            tok = tok.trim(); if (!tok) return [];
+            const rng = /^([A-Z]+\d+):([A-Z]+\d+)$/i.exec(tok);
+            if (rng) return expandRange(rng[1], rng[2]).flatMap(cellNum); // Excel skips blank/non-numeric cells
+            if (/^[A-Z]+\d+$/i.test(tok)) return cellNum(tok);
+            // arithmetic argument (inner calls already resolved to numbers): evaluate it
+            const sub = tok.replace(/[A-Z]+\d+/gi, (r) => { const v = valOf(r, seen); return typeof v === "number" ? v : JSON.stringify(v); });
+            try { const n = Function('"use strict";return (' + sub + ")")(); return (typeof n === "number" && !isNaN(n)) ? [n] : []; }
+            catch (e) { const n = parseFloat(tok); return isNaN(n) ? [] : [n]; }
+          });
+          if (fn === "SUM") return vals.reduce((a, b) => a + b, 0);
+          if (fn === "AVERAGE" || fn === "AVG") return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+          if (fn === "MIN") return vals.length ? Math.min.apply(null, vals) : 0;
+          if (fn === "MAX") return vals.length ? Math.max.apply(null, vals) : 0;
+          if (fn === "COUNT") return vals.length;
+          if (fn === "ROUND") return vals.length ? Math.round((vals[0]) * Math.pow(10, vals[1] || 0)) / Math.pow(10, vals[1] || 0) : 0;
+          if (fn === "PRODUCT") return vals.reduce((a, b) => a * b, 1);
+          return 0;
         });
-        if (fn === "SUM") return vals.reduce((a, b) => a + b, 0);
-        if (fn === "AVERAGE" || fn === "AVG") return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-        if (fn === "MIN") return vals.length ? Math.min.apply(null, vals) : 0;
-        if (fn === "MAX") return vals.length ? Math.max.apply(null, vals) : 0;
-        if (fn === "COUNT") return vals.length;
-        if (fn === "ROUND") return vals.length ? Math.round((vals[0]) * Math.pow(10, vals[1] || 0)) / Math.pow(10, vals[1] || 0) : 0;
-        if (fn === "PRODUCT") return vals.reduce((a, b) => a * b, 1);
-        return 0;
-      });
+        if (!changed) break;
+      }
       expr = expr.replace(/[A-Z]+\d+/gi, (r) => { const v = valOf(r, seen); return typeof v === "number" ? v : JSON.stringify(v); });
       try { const r = Function('"use strict";return (' + expr + ")")(); return (r == null) ? "" : r; } catch (e) { return "#ERR"; }
     }
