@@ -70,9 +70,13 @@
     }
     function tick() {
       const h = { x: (snake[0].x+dir.x+N)%N, y: (snake[0].y+dir.y+N)%N };
-      if (snake.some(s=>s.x===h.x&&s.y===h.y)) { clearInterval(loop); status.textContent = "Game over! Score "+score; return; }
+      const grow = (h.x===food.x&&h.y===food.y);
+      // The tail cell is vacated this move unless we're growing, so following your
+      // own tail is legal — exclude the tail from the self-collision check then.
+      const body = grow ? snake : snake.slice(0, -1);
+      if (body.some(s=>s.x===h.x&&s.y===h.y)) { clearInterval(loop); status.textContent = "Game over! Score "+score; return; }
       snake.unshift(h);
-      if (h.x===food.x&&h.y===food.y) { score++; status.textContent="Score: "+score; place(); } else snake.pop();
+      if (grow) { score++; status.textContent="Score: "+score; place(); } else snake.pop();
       ctx.fillStyle="#111"; ctx.fillRect(0,0,360,360);
       ctx.fillStyle="#e53935"; ctx.fillRect(food.x*sz,food.y*sz,sz-2,sz-2);
       ctx.fillStyle="#43a047"; snake.forEach(s=>ctx.fillRect(s.x*sz,s.y*sz,sz-2,sz-2));
