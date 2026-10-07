@@ -162,22 +162,29 @@
   // ---- Minesweeper ----
   games.minesweeper = (body) => {
     const { host, status } = wrap(body, "Minesweeper");
-    const N=9, M=10; let cells, revealed, over;
+    const N=9, M=10; let cells, revealed, over, firstClick;
     const grid=el(`<div style="display:grid;grid-template-columns:repeat(9,30px);gap:2px"></div>`);host.appendChild(grid);
+    function countAll(){for(let i=0;i<N*N;i++){if(cells[i]===-1)continue;let n=0;neighbors(i).forEach(j=>{if(cells[j]===-1)n++;});cells[i]=n;}}
     function init(){
-      cells=Array(N*N).fill(0);revealed=Array(N*N).fill(false);over=false;status.textContent=M+" mines";
+      cells=Array(N*N).fill(0);revealed=Array(N*N).fill(false);over=false;firstClick=true;status.textContent=M+" mines";
       let placed=0;while(placed<M){const i=Math.floor(Math.random()*N*N);if(cells[i]!==-1){cells[i]=-1;placed++;}}
-      for(let i=0;i<N*N;i++){if(cells[i]===-1)continue;let n=0;neighbors(i).forEach(j=>{if(cells[j]===-1)n++;});cells[i]=n;}
+      countAll();
       grid.innerHTML="";
       for(let i=0;i<N*N;i++){const c=el(`<button style="width:30px;height:30px;border:1px solid var(--border);background:var(--bg-elev);cursor:pointer"></button>`);c.onclick=()=>reveal(i);grid.appendChild(c);}
     }
     function neighbors(i){const r=Math.floor(i/N),c=i%N,out=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(nr>=0&&nr<N&&nc>=0&&nc<N)out.push(nr*N+nc);}return out;}
+    function relocateMine(i){ // guarantee a safe first click by moving that mine elsewhere
+      let j;do{j=Math.floor(Math.random()*N*N);}while(j===i||cells[j]===-1);
+      cells[j]=-1;cells[i]=0;countAll();
+    }
     function reveal(i){
-      if(over||revealed[i])return;revealed[i]=true;const c=grid.children[i];
+      if(over||revealed[i])return;
+      if(firstClick){firstClick=false;if(cells[i]===-1)relocateMine(i);}
+      revealed[i]=true;const c=grid.children[i];
       if(cells[i]===-1){c.textContent="*";c.style.background="#e53935";status.textContent="Boom! Game over";over=true;return;}
       c.style.background="var(--bg)";c.textContent=cells[i]||"";
       if(cells[i]===0)neighbors(i).forEach(reveal);
-      if(revealed.filter(Boolean).length===N*N-M)status.textContent="You cleared it!";
+      if(revealed.filter(Boolean).length===N*N-M){status.textContent="You cleared it!";over=true;}
     }
     const btn=el(`<button class="pill-btn">New game</button>`);btn.onclick=init;host.appendChild(btn);init();
   };
