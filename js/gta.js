@@ -724,7 +724,7 @@
       }
 
       if (mixer) mixer.update(dt);
-      updateNPCs(dt); if (!cine.active) { updateCops(dt); updateWanted(dt); } updateEffects(dt); checkPickups(); updateReload(dt);
+      updateNPCs(dt); if (!cine.active && !dead) { updateCops(dt); updateWanted(dt); } updateEffects(dt); if (!dead) checkPickups(); updateReload(dt);
       if (phoneOpen) { if (phoneView === "map") drawPhoneMap(); const d = new Date(); if (gphTime) gphTime.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 
       // camera
