@@ -696,9 +696,12 @@
   function enableDrag(img, container) {
     let dragging = false, sx, sy, ox = 0, oy = 0;
     img.style.position = "absolute"; img.style.left = "0px"; img.style.top = "0px";
-    img.onmousedown = (e) => { dragging = true; sx = e.clientX; sy = e.clientY; img.style.cursor = "grabbing"; e.preventDefault(); };
-    window.addEventListener("mousemove", (e) => { if (!dragging) return; ox += e.clientX - sx; oy += e.clientY - sy; sx = e.clientX; sy = e.clientY; img.style.left = ox + "px"; img.style.top = oy + "px"; });
-    window.addEventListener("mouseup", () => { dragging = false; img.style.cursor = "grab"; });
+    img.style.touchAction = "none";
+    // Pointer events + capture: repositioning the photo works by finger on touch
+    // devices, and capture keeps move/up on the image so no window listeners leak.
+    img.addEventListener("pointerdown", (e) => { dragging = true; sx = e.clientX; sy = e.clientY; img.style.cursor = "grabbing"; try { img.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
+    img.addEventListener("pointermove", (e) => { if (!dragging) return; ox += e.clientX - sx; oy += e.clientY - sy; sx = e.clientX; sy = e.clientY; img.style.left = ox + "px"; img.style.top = oy + "px"; });
+    img.addEventListener("pointerup", (e) => { dragging = false; img.style.cursor = "grab"; try { img.releasePointerCapture(e.pointerId); } catch (_) {} });
   }
 
   function captureCrop(img) {
