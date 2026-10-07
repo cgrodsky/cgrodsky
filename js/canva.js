@@ -1221,10 +1221,57 @@
 
     body.querySelector(".cv-title").oninput = (e) => { design.name = e.target.value; };
     body.querySelector(".cv-back").onclick = () => { saveDesign(); home(body, ref); };
-    body.querySelector(".cv-dl").onclick = () => {
+    // Rasterize the actual design (background + every element) to a PNG canvas.
+    function bgFill(bg) { if (!bg) return "#ffffff"; if (/^\s*(#|rgb|hsl)/i.test(bg)) return bg; const m = bg.match(/#[0-9a-f]{3,8}|rgba?\([^)]+\)/i); return m ? m[0] : "#ffffff"; }
+    function loadImg(src) { return new Promise((res) => { if (!src) return res(null); const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }); }
+    async function renderToCanvas(scale) {
+      scale = scale || 2; const W = ty.w, H = ty.h;
+      const c = document.createElement("canvas"); c.width = Math.round(W * scale); c.height = Math.round(H * scale);
+      const g = c.getContext("2d"); g.scale(scale, scale);
+      g.fillStyle = bgFill(design.bg); g.fillRect(0, 0, W, H);
+      for (const e of (design.els || [])) {
+        g.save(); g.globalAlpha = (e.opacity != null ? e.opacity : 1);
+        if (e.rot) { const cx = e.x + (e.w || 0) / 2, cy = e.y + (e.h || 0) / 2; g.translate(cx, cy); g.rotate(e.rot * Math.PI / 180); g.translate(-cx, -cy); }
+        if (e.t === "text") {
+          const size = e.size || 32; g.font = `${e.italic ? "italic " : ""}${e.bold ? "800" : "400"} ${size}px '${(e.font || "Nunito").replace(/'/g, "")}', system-ui, sans-serif`;
+          g.fillStyle = e.color || "#000"; g.textBaseline = "top"; g.textAlign = e.align || "left";
+          const maxW = e.w || null; let tx = e.x; if (maxW && e.align === "center") tx = e.x + maxW / 2; else if (maxW && e.align === "right") tx = e.x + maxW;
+          const lines = String(e.text || "Text").split("\n"), lh = size * 1.25;
+          lines.forEach((ln, li) => g.fillText(ln, tx, e.y + li * lh));
+        } else if (e.t === "image" || e.t === "frame") {
+          const im = await loadImg(e.src); const w = e.w || 160, h = e.h || 160;
+          if (e.t === "frame" && e.shape === "circle") { g.beginPath(); g.ellipse(e.x + w / 2, e.y + h / 2, w / 2, h / 2, 0, 0, 7); g.clip(); }
+          if (im) g.drawImage(im, e.x, e.y, w, h);
+          else if (e.t === "frame") { g.fillStyle = "#e8ebf0"; g.fillRect(e.x, e.y, w, h); }
+        } else if (e.t === "path") {
+          const pts = e.pts || []; if (pts.length) { const sx = (e.w || 1) / (e.vbW || e.w || 1), sy = (e.h || 1) / (e.vbH || e.h || 1); g.strokeStyle = e.color || "#000"; g.lineWidth = e.width || 4; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); pts.forEach((p, k) => { const X = e.x + p[0] * sx, Y = e.y + p[1] * sy; k ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke(); }
+        } else if (e.t === "table") {
+          const w = e.w || 240, h = e.h || 160, rows = e.rows || 3, cols = e.cols || 3; g.strokeStyle = e.color || "#1c1c28"; g.lineWidth = 1.5;
+          for (let r = 0; r <= rows; r++) { g.beginPath(); g.moveTo(e.x, e.y + h * r / rows); g.lineTo(e.x + w, e.y + h * r / rows); g.stroke(); }
+          for (let cc = 0; cc <= cols; cc++) { g.beginPath(); g.moveTo(e.x + w * cc / cols, e.y); g.lineTo(e.x + w * cc / cols, e.y + h); g.stroke(); }
+        }
+        g.restore();
+      }
+      return c;
+    }
+    async function doDownload() {
       saveDesign();
-      if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: `“${design.name}” downloaded (${ty.w}×${ty.h}).` });
-    };
+      const notify = (msg) => { if (window.Notify) Notify.show({ icon: window.Icon ? Icon.mini("canva", "Canva") : "", title: "Canva", body: msg }); };
+      try {
+        const canvas = await renderToCanvas(2);
+        canvas.toBlob((blob) => {
+          if (!blob) { notify("Couldn't export this design."); return; }
+          const a = document.createElement("a"), url = URL.createObjectURL(blob);
+          a.href = url; a.download = (design.name || "design").replace(/[^\w.\- ]+/g, "").trim().replace(/\s+/g, "_") + ".png";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+          notify(`Downloaded “${design.name}.png” (${ty.w}×${ty.h})`);
+        }, "image/png");
+      } catch (err) {
+        notify("Couldn't export — an external image blocked it. Remove it and retry.");
+      }
+    }
+    body.querySelector(".cv-dl").onclick = doDownload;
     body.querySelector(".cv-share-btn").onclick = () => openShare();
 
     function openShare() {
@@ -1262,7 +1309,7 @@
       ov.querySelector(".cv-share-access").onclick = () => share("More access levels are coming soon.");
       ov.querySelector(".cv-share-perso").onclick = () => share("Personalized links are coming soon.");
       ov.querySelectorAll(".cv-share-opt").forEach((b) => b.onclick = () => {
-        if (b.dataset.k === "download") { close(); share(`“${design.name}” downloaded (${ty.w}×${ty.h}).`); }
+        if (b.dataset.k === "download") { close(); doDownload(); }
         else share((items.find((i) => i.k === b.dataset.k) || {}).label + " — coming soon.");
       });
       body.querySelector(".cv").appendChild(ov);
