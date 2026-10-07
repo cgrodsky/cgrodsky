@@ -221,7 +221,22 @@
     let cpuHist = Array.from({ length: 40 }, () => 5 + Math.random() * 10);
     let memHist = Array.from({ length: 40 }, () => 40 + Math.random() * 10);
     let diskHist = Array.from({ length: 40 }, () => Math.random() * 12);
-    let netHist = Array.from({ length: 40 }, () => Math.random() * 8);
+    let netHist = Array.from({ length: 40 }, () => 0);
+    // Real network throughput: seed from the Network Information API where it
+    // exists (Chrome/Edge), and actively measure by timing a cache-busted fetch
+    // of a real asset — so the graph reflects the actual connection, not a fake.
+    let netMbps = (navigator.connection && navigator.connection.downlink) || 0, netProbing = false;
+    async function measureNet() {
+      if (netProbing || (navigator.onLine === false)) return; netProbing = true;
+      try {
+        const t0 = performance.now();
+        const res = await fetch("assets/wall3.jpg?_net=" + Date.now(), { cache: "no-store" });
+        const buf = await res.arrayBuffer();
+        const dt = (performance.now() - t0) / 1000;
+        if (dt > 0.01 && buf.byteLength > 0) { const mbps = (buf.byteLength * 8) / dt / 1e6; netMbps = netMbps ? netMbps * 0.5 + mbps * 0.5 : mbps; }
+      } catch (e) { /* offline/blocked — keep the last reading */ }
+      netProbing = false;
+    }
     function rows() {
       const apps = openWindows.filter((w) => w.appId !== "taskmanager").map((w) => ({ name: w.title || w.appId, entry: w, app: true, cpu: Math.random() * 8, mem: 60 + Math.random() * 260 }));
       BG.forEach((p) => { p.cpu = Math.max(0, p.cpu + (Math.random() - 0.5)); p.mem = Math.max(10, p.mem + (Math.random() - 0.5) * 6); });
@@ -250,18 +265,22 @@
     function renderProc(host) { paintProc(host); iv = setInterval(() => { if (!document.body.contains(host)) return stop(); paintProc(host); }, 1500); }
     function spark(hist, color) { const w = 260, h = 90; const pts = hist.map((v, i) => `${(i / (hist.length - 1)) * w},${h - (v / 100) * h}`).join(" "); return `<svg viewBox="0 0 ${w} ${h}" class="tm-spark" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"/><polyline points="0,${h} ${pts} ${w},${h}" fill="${color}22" stroke="none"/></svg>`; }
     function renderPerf(host) {
+      let n = 0;
       function tick() {
         const nudge = (hist, lo, hi, amp) => hist.slice(1).concat(Math.max(lo, Math.min(hi, hist[hist.length - 1] + (Math.random() - 0.5) * amp)));
         cpuHist = nudge(cpuHist, 2, 100, 18);
         memHist = nudge(memHist, 30, 90, 4);
         diskHist = nudge(diskHist, 0, 100, 26);
-        netHist = nudge(netHist, 0, 100, 22);
+        if (n % 4 === 0) measureNet();           // re-probe the real connection every ~4s
+        netHist = netHist.slice(1).concat(netMbps);
+        n++;
         const last = (h) => h[h.length - 1];
+        const netMax = Math.max(1, ...netHist), netScaled = netHist.map((v) => (v / netMax) * 100);
         host.innerHTML = `<div class="tm-perf">
           <div class="tm-graph"><div class="tm-graph-h">CPU <b>${last(cpuHist).toFixed(0)}%</b></div>${spark(cpuHist, "#2f7be0")}</div>
           <div class="tm-graph"><div class="tm-graph-h">Memory <b>${last(memHist).toFixed(0)}%</b> · ${(last(memHist) / 100 * 16).toFixed(1)}/16 GB</div>${spark(memHist, "#a142f4")}</div>
           <div class="tm-graph"><div class="tm-graph-h">Disk <b>${last(diskHist).toFixed(0)}%</b></div>${spark(diskHist, "#1f9d57")}</div>
-          <div class="tm-graph"><div class="tm-graph-h">Network <b>${(last(netHist) / 100 * 5).toFixed(1)} Mbps</b></div>${spark(netHist, "#f5820b")}</div>
+          <div class="tm-graph"><div class="tm-graph-h">Network <b>${netMbps.toFixed(1)} Mbps</b></div>${spark(netScaled, "#f5820b")}</div>
         </div>`;
       }
       tick(); iv = setInterval(() => { if (!document.body.contains(host)) return stop(); tick(); }, 1000);
