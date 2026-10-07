@@ -66,7 +66,7 @@
     function init() {
       snake = [{x:9,y:9}]; dir = {x:1,y:0}; score = 0; place();
       clearInterval(loop); loop = setInterval(tick, 110);
-      status.textContent = "Score: 0  (arrow keys)";
+      status.textContent = "Score: 0  (arrows or swipe)";
     }
     function tick() {
       const h = { x: (snake[0].x+dir.x+N)%N, y: (snake[0].y+dir.y+N)%N };
@@ -81,11 +81,20 @@
       ctx.fillStyle="#e53935"; ctx.fillRect(food.x*sz,food.y*sz,sz-2,sz-2);
       ctx.fillStyle="#43a047"; snake.forEach(s=>ctx.fillRect(s.x*sz,s.y*sz,sz-2,sz-2));
     }
+    const setDir = (mx, my) => { if (mx !== -dir.x || my !== -dir.y) dir = { x: mx, y: my }; };
     const onKey = (e) => {
       const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
-      if (m && (m[0]!==-dir.x||m[1]!==-dir.y)) { dir={x:m[0],y:m[1]}; e.preventDefault(); }
+      if (m) { setDir(m[0], m[1]); e.preventDefault(); }
     };
     document.addEventListener("keydown", onKey);
+    // Swipe controls so the game is playable by touch (no keyboard on tablets).
+    cv.style.touchAction = "none"; let tsx = 0, tsy = 0;
+    cv.addEventListener("pointerdown", (e) => { tsx = e.clientX; tsy = e.clientY; });
+    cv.addEventListener("pointerup", (e) => {
+      const dx = e.clientX - tsx, dy = e.clientY - tsy;
+      if (Math.abs(dx) < 16 && Math.abs(dy) < 16) return;
+      if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0); else setDir(0, dy > 0 ? 1 : -1);
+    });
     body.closest(".win").addEventListener("wm-cleanup", () => { clearInterval(loop); document.removeEventListener("keydown", onKey); });
     const btn = el(`<button class="pill-btn">Restart</button>`); btn.onclick=init; host.appendChild(btn);
     init();
@@ -146,7 +155,7 @@
     const grid = el(`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#bbada0;padding:8px;border-radius:8px;width:300px"></div>`); host.appendChild(grid);
     let b, score;
     const colors={2:"#eee4da",4:"#ede0c8",8:"#f2b179",16:"#f59563",32:"#f67c5f",64:"#f65e3b",128:"#edcf72",256:"#edcc61",512:"#edc850",1024:"#edc53f",2048:"#edc22e"};
-    function init(){b=Array(16).fill(0);score=0;add();add();draw();status.textContent="Use arrow keys";}
+    function init(){b=Array(16).fill(0);score=0;add();add();draw();status.textContent="Swipe or arrow keys";}
     function add(){const e=b.map((v,i)=>v?-1:i).filter(i=>i>=0);if(e.length)b[e[Math.floor(Math.random()*e.length)]]=Math.random()<.9?2:4;}
     function draw(){grid.innerHTML="";b.forEach(v=>{const c=el(`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:700;font-size:1.4rem;background:${v?colors[v]||"#3c3a32":"#cdc1b4"};color:${v>4?"#fff":"#776e65"}">${v||""}</div>`);grid.appendChild(c);});}
     function slide(row){let a=row.filter(x=>x);for(let i=0;i<a.length-1;i++)if(a[i]===a[i+1]){a[i]*=2;score+=a[i];a.splice(i+1,1);}while(a.length<4)a.push(0);return a;}
@@ -162,6 +171,10 @@
     }
     const onKey=(e)=>{const m={ArrowLeft:"l",ArrowRight:"r",ArrowUp:"u",ArrowDown:"d"}[e.key];if(m){move(m);e.preventDefault();}};
     document.addEventListener("keydown",onKey);
+    // Swipe controls so the game is playable by touch (no keyboard on tablets).
+    grid.style.touchAction="none"; let tsx=0,tsy=0;
+    grid.addEventListener("pointerdown",(e)=>{tsx=e.clientX;tsy=e.clientY;});
+    grid.addEventListener("pointerup",(e)=>{const dx=e.clientX-tsx,dy=e.clientY-tsy;if(Math.abs(dx)<16&&Math.abs(dy)<16)return;move(Math.abs(dx)>Math.abs(dy)?(dx>0?"r":"l"):(dy>0?"d":"u"));});
     body.closest(".win").addEventListener("wm-cleanup",()=>document.removeEventListener("keydown",onKey));
     init();
   };
