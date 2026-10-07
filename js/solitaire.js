@@ -42,7 +42,7 @@
       return true;
     }
     function canToTableau(card, col) {
-      const dst = tableau[col]; if (!dst.length) return card.r === 13;
+      const dst = tableau[col]; if (!dst) return false; if (!dst.length) return card.r === 13;
       const top = dst[dst.length - 1]; return top.up && top.r === card.r + 1 && isRed(top.s) !== isRed(card.s);
     }
     function canToFoundation(card, f) {
