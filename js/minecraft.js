@@ -1418,7 +1418,7 @@
       Object.values(materials).forEach((m) => Array.isArray(m) ? m.forEach((x) => x.dispose()) : m.dispose());
       Object.values(textures).forEach((t) => t.dispose());
     }
-    body.closest(".win").addEventListener("DOMNodeRemoved", cleanup);
+    body.closest(".win").addEventListener("wm-cleanup", cleanup);
 
     raf = requestAnimationFrame(loop);
   }

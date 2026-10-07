@@ -82,7 +82,7 @@
       if (m && (m[0]!==-dir.x||m[1]!==-dir.y)) { dir={x:m[0],y:m[1]}; e.preventDefault(); }
     };
     document.addEventListener("keydown", onKey);
-    body.closest(".win").addEventListener("DOMNodeRemoved", () => { clearInterval(loop); document.removeEventListener("keydown", onKey); });
+    body.closest(".win").addEventListener("wm-cleanup", () => { clearInterval(loop); document.removeEventListener("keydown", onKey); });
     const btn = el(`<button class="pill-btn">Restart</button>`); btn.onclick=init; host.appendChild(btn);
     init();
   };
@@ -107,7 +107,7 @@
     }
     function reset(){bx=200;by=150;vx=(Math.random()<.5?3:-3);vy=2;}
     loop=setInterval(tick,16);
-    body.closest(".win").addEventListener("DOMNodeRemoved",()=>clearInterval(loop));
+    body.closest(".win").addEventListener("wm-cleanup",()=>clearInterval(loop));
   };
 
   // ---- Memory match (letters) ----
@@ -155,7 +155,7 @@
     }
     const onKey=(e)=>{const m={ArrowLeft:"l",ArrowRight:"r",ArrowUp:"u",ArrowDown:"d"}[e.key];if(m){move(m);e.preventDefault();}};
     document.addEventListener("keydown",onKey);
-    body.closest(".win").addEventListener("DOMNodeRemoved",()=>document.removeEventListener("keydown",onKey));
+    body.closest(".win").addEventListener("wm-cleanup",()=>document.removeEventListener("keydown",onKey));
     init();
   };
 
@@ -191,7 +191,7 @@
     function init(){score=0;timeLeft=20;status.textContent="Score: 0";clearInterval(loop);
       loop=setInterval(()=>{holes.forEach(h=>{h.textContent="";h.dataset.m="";});const i=Math.floor(Math.random()*9);holes[i].dataset.m="1";holes[i].textContent="●";timeLeft-=0.7;if(timeLeft<=0){clearInterval(loop);holes.forEach(h=>{h.textContent="";h.dataset.m="";});status.textContent="Time! Final score "+score;}},700);}
     const btn=el(`<button class="pill-btn">Start</button>`);btn.onclick=init;host.appendChild(btn);
-    body.closest(".win").addEventListener("DOMNodeRemoved",()=>clearInterval(loop));
+    body.closest(".win").addEventListener("wm-cleanup",()=>clearInterval(loop));
   };
 
   // ---- Rock Paper Scissors ----
@@ -251,7 +251,7 @@
       if(bricks.every(b=>!b.on)){clearInterval(loop);status.textContent="You win! Score "+score;}
     }
     const btn=el(`<button class="pill-btn">Start</button>`);btn.onclick=init;host.appendChild(btn);
-    body.closest(".win").addEventListener("DOMNodeRemoved",()=>clearInterval(loop));
+    body.closest(".win").addEventListener("wm-cleanup",()=>clearInterval(loop));
   };
 
   // ---- Microsoft Flight Simulator (real 3D flight engine) ----

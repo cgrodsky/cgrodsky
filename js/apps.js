@@ -498,7 +498,7 @@
     cv.onmousemove = (e) => { if (!drawing) return; const p = pos(e); ctx.strokeStyle = picker.getValue(); ctx.lineWidth = body.querySelector("#sz").value; ctx.lineCap = "round"; ctx.lineTo(p.x, p.y); ctx.stroke(); };
     window.addEventListener("mouseup", () => drawing = false);
     body.querySelector("#clr").onclick = () => ctx.clearRect(0, 0, 600, 420);
-    body.closest(".win").addEventListener("DOMNodeRemoved", () => picker.destroy());
+    body.closest(".win").addEventListener("wm-cleanup", () => picker.destroy());
   };
 
   // ---------- Clock ----------

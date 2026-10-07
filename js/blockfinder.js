@@ -168,6 +168,6 @@
     }
 
     // Stop audio when the window closes.
-    body.closest(".win").addEventListener("DOMNodeRemoved", stopSound);
+    body.closest(".win").addEventListener("wm-cleanup", stopSound);
   };
 })();

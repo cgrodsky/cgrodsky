@@ -564,7 +564,7 @@
       fill.style.width = (t / SIM_SECONDS * 100) + "%"; timeEl.textContent = fmt(t);
     };
     raf = requestAnimationFrame(loop);
-    videoEl.closest(".win").addEventListener("DOMNodeRemoved", () => cancelAnimationFrame(raf));
+    videoEl.closest(".win").addEventListener("wm-cleanup", () => cancelAnimationFrame(raf));
     return { play, pause };
   }
 

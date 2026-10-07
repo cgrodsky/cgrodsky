@@ -14,6 +14,26 @@
   const AppRegistry = {};
   window.AppRegistry = AppRegistry;
 
+  // Modern replacement for the long-removed DOMNodeRemoved mutation event
+  // (gone from Chrome 127+ and Safari 18+). Apps used to hang teardown logic —
+  // stopping timers, audio, animation loops, WebGL map contexts — off
+  // DOMNodeRemoved, but it no longer fires, so those leaked on every close.
+  // One observer watches for detached .win subtrees and fires a "wm-cleanup"
+  // event on each window element instead, through any removal path.
+  (function installCleanupObserver() {
+    function fire(w) { if (w.__wmCleaned) return; w.__wmCleaned = true; w.dispatchEvent(new CustomEvent("wm-cleanup")); }
+    function scan(node) {
+      if (!node || node.nodeType !== 1) return;
+      if (node.matches && node.matches(".win")) fire(node);
+      if (node.querySelectorAll) node.querySelectorAll(".win").forEach(fire);
+    }
+    try {
+      new MutationObserver((muts) => {
+        for (const m of muts) for (const n of m.removedNodes) scan(n);
+      }).observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  })();
+
   // Duolingo icon depends on the current subscription tier.
   function duoIconKey(forApp) {
     const tier = (S().appData && S().appData.duolingo && S().appData.duolingo.tier) || "free";
@@ -57,12 +77,20 @@
       if (win.classList.contains("maximized")) return;
       dragging = true; sx = e.clientX; sy = e.clientY; sl = win.offsetLeft; st = win.offsetTop;
     });
-    window.addEventListener("mousemove", (e) => {
+    const onDragMove = (e) => {
       if (!dragging) return;
       win.style.left = Math.max(0, sl + e.clientX - sx) + "px";
       win.style.top = Math.max(0, st + e.clientY - sy) + "px";
+    };
+    const onDragUp = () => { dragging = false; };
+    window.addEventListener("mousemove", onDragMove);
+    window.addEventListener("mouseup", onDragUp);
+    // These live on window, so they must be torn down when the window goes away
+    // (any removal path), or they pile up and run on every global mouse event.
+    win.addEventListener("wm-cleanup", () => {
+      window.removeEventListener("mousemove", onDragMove);
+      window.removeEventListener("mouseup", onDragUp);
     });
-    window.addEventListener("mouseup", () => { dragging = false; });
 
     const entry = { id: "w" + (++zCounter), win, appId: opts.appId, title: opts.title || "", icon: opts.icon };
 

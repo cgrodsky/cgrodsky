@@ -91,6 +91,6 @@
       if (!consoleTabActive) { unread++; badge.textContent = unread; badge.style.display = ""; }
     }
     window.addEventListener("message", onMsg);
-    body.closest(".win").addEventListener("DOMNodeRemoved", () => window.removeEventListener("message", onMsg));
+    body.closest(".win").addEventListener("wm-cleanup", () => window.removeEventListener("message", onMsg));
   };
 })();

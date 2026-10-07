@@ -512,7 +512,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
     // Resize the map when the window's body resizes (window drag/resize)
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(body.querySelector(".maps-stage"));
-    body.closest(".win").addEventListener("DOMNodeRemoved", () => { ro.disconnect(); map.remove(); });
+    body.closest(".win").addEventListener("wm-cleanup", () => { ro.disconnect(); map.remove(); });
   };
 
   // ---------- Photos (image viewer) ----------
