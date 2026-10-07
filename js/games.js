@@ -90,10 +90,12 @@
   // ---- Pong ----
   games.pong = (body) => {
     const { host, status } = wrap(body, "Pong");
-    const cv = el(`<canvas width="400" height="300" style="background:#000;border-radius:8px"></canvas>`); host.appendChild(cv);
+    const cv = el(`<canvas width="400" height="300" style="background:#000;border-radius:8px;touch-action:none"></canvas>`); host.appendChild(cv);
     const ctx = cv.getContext("2d");
     let py=120, ay=120, bx=200, by=150, vx=3, vy=2, ps=0, as=0, loop;
-    cv.onmousemove = (e) => { const r=cv.getBoundingClientRect(); py=Math.max(0,Math.min(240,e.clientY-r.top-30)); };
+    // Pointer events so a finger drag controls the paddle on touch, and scale CSS
+    // coordinates to the 300px-tall bitmap so the paddle tracks the pointer exactly.
+    cv.onpointermove = (e) => { const r=cv.getBoundingClientRect(); const y=(e.clientY-r.top)*(cv.height/(r.height||cv.height)); py=Math.max(0,Math.min(240,y-30)); };
     function tick() {
       bx+=vx; by+=vy;
       if (by<0||by>300) vy=-vy;
@@ -243,10 +245,11 @@
   // ---- Breakout ----
   games.breakout = (body) => {
     const { host, status } = wrap(body, "Breakout");
-    const cv=el(`<canvas width="400" height="320" style="background:#111;border-radius:8px"></canvas>`);host.appendChild(cv);
+    const cv=el(`<canvas width="400" height="320" style="background:#111;border-radius:8px;touch-action:none"></canvas>`);host.appendChild(cv);
     const ctx=cv.getContext("2d");
     let px=160,bx=200,by=250,vx=3,vy=-3,bricks,loop,score;
-    cv.onmousemove=(e)=>{const r=cv.getBoundingClientRect();px=Math.max(0,Math.min(320,e.clientX-r.left-40));};
+    // Pointer events + CSS→bitmap scaling so a finger drag moves the paddle on touch.
+    cv.onpointermove=(e)=>{const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*(cv.width/(r.width||cv.width));px=Math.max(0,Math.min(320,x-40));};
     function init(){bricks=[];for(let r=0;r<4;r++)for(let c=0;c<8;c++)bricks.push({x:c*50+2,y:r*20+20,on:true});score=0;bx=200;by=250;vx=3;vy=-3;clearInterval(loop);loop=setInterval(tick,16);}
     function tick(){bx+=vx;by+=vy;if(bx<0||bx>396)vx=-vx;if(by<0)vy=-vy;
       if(by>300&&bx>px&&bx<px+80)vy=-Math.abs(vy);
