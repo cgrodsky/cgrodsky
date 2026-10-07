@@ -1579,7 +1579,7 @@
     let pct = start, playing = true, timer = null;
     const fill = player.querySelector(".nf-scrub-fill");
     const pp = player.querySelector(".nf-pp");
-    function tick() { if (!playing) return; pct = Math.min(100, pct + 0.4); fill.style.width = pct + "%"; if (pct >= 100) stop(); }
+    function tick() { if (!document.body.contains(fill)) { stop(); return; } if (!playing) return; pct = Math.min(100, pct + 0.4); fill.style.width = pct + "%"; if (pct >= 100) stop(); }
     function stop() { if (timer) { clearInterval(timer); timer = null; } d.progress[t.id] = Math.round(pct); State.save(); }
     timer = setInterval(tick, 200);
     pp.onclick = () => { playing = !playing; pp.innerHTML = playing ? "&#10074;&#10074;" : "&#9654;"; pp.title = playing ? "Pause" : "Play"; };
