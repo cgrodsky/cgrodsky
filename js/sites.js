@@ -1827,6 +1827,9 @@
         const fillEl = out.querySelector(".fs-line-fill"), planeEl = out.querySelector(".fs-plane");
         // Advance the plane in real time; CSS transitions make each step slide.
         function tick() {
+          // Self-terminate once the card leaves the DOM (navigated away or window
+          // closed) — nothing clears this 1s timer on navigation otherwise.
+          if (!fillEl || !document.body.contains(fillEl)) { stopLive(); return; }
           const p = progressFrom(f.depTs, f.arrTs);
           const prog = p != null ? p : f.progress || 0;
           if (fillEl) fillEl.style.width = prog + "%";
