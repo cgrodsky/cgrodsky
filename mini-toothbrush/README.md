@@ -5,6 +5,7 @@ It prints flat on the bed with the tufts pointing up, so it needs no supports.
 
 | File | What it is |
 | --- | --- |
+| `bambu_projects/Mini Toothbrush - <printer>.3mf` | Bambu Studio project per printer: printer, process and filament already set, plate already sliced |
 | `mini_toothbrush.3mf` | Model: handle and bristles as two coloured parts of one object. PrusaSlicer settings are embedded. |
 | `profiles/mini_toothbrush_prusaslicer.ini` | PrusaSlicer / SuperSlicer print profile |
 | `profiles/bambu/<printer>/` | Bambu Studio presets per printer: a process preset and a PLA filament preset |
@@ -33,7 +34,12 @@ All presets are for the stock 0.4 mm nozzle. The A1 and A1 mini use slower
 walls (30 mm/s outer) than the enclosed core-XY printers (40 mm/s outer),
 because the bed moves the thin tufts back and forth.
 
-To use them in Bambu Studio:
+The quickest route is the ready-made project in `bambu_projects/`: open the one
+for your printer in Bambu Studio and press Print. Each was written and sliced by
+Bambu Studio 2.8.2 (about 20 minutes and 2.3 g of PLA). `profiles/bambu/build_projects.py`
+rebuilds them with the Bambu Studio command line.
+
+To use the presets with your own project instead:
 
 1. Select your printer (0.4 nozzle).
 2. **File → Import → Import Configs…** and pick both `.json` files in your printer's folder.
