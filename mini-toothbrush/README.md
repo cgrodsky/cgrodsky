@@ -7,10 +7,42 @@ It prints flat on the bed with the tufts pointing up, so it needs no supports.
 | --- | --- |
 | `mini_toothbrush.3mf` | Model: handle and bristles as two coloured parts of one object. PrusaSlicer settings are embedded. |
 | `profiles/mini_toothbrush_prusaslicer.ini` | PrusaSlicer / SuperSlicer print profile |
-| `profiles/mini_toothbrush_orca_bambu_process.json` | OrcaSlicer / Bambu Studio process preset |
-| `profiles/mini_toothbrush_orca_bambu_filament.json` | OrcaSlicer / Bambu Studio PLA filament preset (cooling for the tufts) |
+| `profiles/bambu/<printer>/` | Bambu Studio presets per printer: a process preset and a PLA filament preset |
+| `profiles/mini_toothbrush_orca_bambu_process.json` | Generic OrcaSlicer process preset (non-Bambu printers) |
+| `profiles/mini_toothbrush_orca_bambu_filament.json` | Generic OrcaSlicer PLA filament preset |
 | `images/` | Preview renders |
 | `make_model.py`, `render.py` | Scripts that regenerate the model and images |
+
+## Bambu Lab printers
+
+Each folder in `profiles/bambu/` holds two presets that inherit the printer's
+official Bambu Studio preset and change only what the toothbrush needs:
+
+| Folder | Printer | Process based on | Filament based on |
+| --- | --- | --- | --- |
+| `A1` | A1 | 0.12mm Fine @BBL A1 | Bambu PLA Basic @BBL A1 |
+| `A1_mini` | A1 mini | 0.12mm Fine @BBL A1M | Bambu PLA Basic @BBL A1M |
+| `P1S` | P1S | 0.12mm Fine @BBL X1C | Bambu PLA Basic @BBL P1S 0.4 nozzle |
+| `P2S` | P2S | 0.12mm High Quality @BBL P2S | Bambu PLA Basic @BBL P2S |
+| `H2S` | H2S | 0.12mm High Quality @BBL H2S | Bambu PLA Basic @BBL H2S |
+| `H2C` | H2C | 0.12mm High Quality @BBL H2C | Bambu PLA Basic @BBL H2C |
+| `X1C` | X1 Carbon | 0.12mm Fine @BBL X1C | Bambu PLA Basic @BBL X1C |
+| `X2D` | X2D | 0.12mm High Quality @BBL X2D | Bambu PLA Basic @BBL X2D 0.4 nozzle |
+
+All presets are for the stock 0.4 mm nozzle. The A1 and A1 mini use slower
+walls (30 mm/s outer) than the enclosed core-XY printers (40 mm/s outer),
+because the bed moves the thin tufts back and forth.
+
+To use them in Bambu Studio:
+
+1. Select your printer (0.4 nozzle).
+2. **File → Import → Import Configs…** and pick both `.json` files in your printer's folder.
+3. Open `mini_toothbrush.3mf`, choose the "Mini Toothbrush 0.12mm @ …" process
+   and the "Mini Toothbrush PLA @ …" filament, then slice.
+4. On enclosed printers, open the door or lift the lid for PLA so the tufts cool well.
+
+`profiles/bambu/generate.py` rebuilds the presets from a BambuStudio source
+checkout and checks every setting name against Bambu Studio's option table.
 
 ## Print settings at a glance
 
