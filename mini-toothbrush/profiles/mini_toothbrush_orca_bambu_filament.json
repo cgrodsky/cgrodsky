@@ -1,0 +1,49 @@
+{
+  "type": "filament",
+  "from": "User",
+  "inherits": "Generic PLA",
+  "version": "1.9.0.0",
+  "name": "Mini Toothbrush - PLA (tuft cooling)",
+  "nozzle_temperature": [
+    "210"
+  ],
+  "nozzle_temperature_initial_layer": [
+    "215"
+  ],
+  "hot_plate_temp": [
+    "60"
+  ],
+  "hot_plate_temp_initial_layer": [
+    "60"
+  ],
+  "textured_plate_temp": [
+    "60"
+  ],
+  "textured_plate_temp_initial_layer": [
+    "60"
+  ],
+  "fan_min_speed": [
+    "100"
+  ],
+  "fan_max_speed": [
+    "100"
+  ],
+  "close_fan_the_first_x_layers": [
+    "1"
+  ],
+  "slow_down_layer_time": [
+    "12"
+  ],
+  "slow_down_min_speed": [
+    "8"
+  ],
+  "filament_retraction_length": [
+    "0.8"
+  ],
+  "filament_z_hop": [
+    "0.2"
+  ],
+  "filament_wipe": [
+    "1"
+  ]
+}

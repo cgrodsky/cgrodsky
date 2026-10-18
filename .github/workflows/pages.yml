@@ -1,0 +1,40 @@
+name: Deploy Windows 12 to GitHub Pages
+
+on:
+  push:
+    branches:
+      - claude/windows-12-setup-experience-FsKgd
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages (auto-enable on first run)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload windows12 as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: windows12
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
