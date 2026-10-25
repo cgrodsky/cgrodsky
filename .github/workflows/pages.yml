@@ -1,9 +1,10 @@
-name: Deploy Windows 12 to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   push:
     branches:
       - claude/windows-12-setup-experience-FsKgd
+      - claude/arcade-card-rfid-system-qzyg3g
   workflow_dispatch:
 
 permissions:
@@ -30,10 +31,10 @@ jobs:
         with:
           enablement: true
 
-      - name: Upload windows12 as artifact
+      - name: Upload whole repo as artifact (Windows 12 + Arcade)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: windows12
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment

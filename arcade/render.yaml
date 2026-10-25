@@ -1,0 +1,20 @@
+# One-click cloud hosting on Render (https://render.com).
+# In Render: New + -> Blueprint -> connect this GitHub repo. Render reads this
+# file and creates the web service automatically. You get an HTTPS URL like
+# https://arcade-card-manager.onrender.com — paste that into the app's
+# Settings -> Backend URL on every device to share one database (online sync).
+services:
+  - type: web
+    name: arcade-card-manager
+    runtime: python
+    rootDir: arcade
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app -k gthread -w 1 --threads 8 -b 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      # Uncomment and attach a Render Disk mounted at /var/data to keep card
+      # data across deploys (the free plan's disk resets on each redeploy).
+      # - key: DB_PATH
+      #   value: /var/data/arcade.db
