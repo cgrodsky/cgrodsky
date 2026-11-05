@@ -758,6 +758,7 @@
     // ---------- player ----------
     const spawnX = 0.5, spawnZ = 0.5, spawnY = heightAt(0, 0) + 1;
     const player = { pos: new THREE.Vector3(spawnX, spawnY + 0.1, spawnZ), vel: new THREE.Vector3(), yaw: 0, pitch: 0, onGround: false, hp: 20, dead: false, fallStart: null, hurtCd: 0 };
+    body.__mc = { player, lookDir: () => lookDir() };   // test hook (read-only use)
 
     const inv = {};
     let hotbar = [], selected = 0;
@@ -1330,8 +1331,10 @@
       if (touchMove && touchMoveStart) { const tdx = touchMove.x - touchMoveStart.x, tdy = touchMove.y - touchMoveStart.y, mag = Math.hypot(tdx, tdy); if (mag > 8) { fx += tdx / mag; fz += tdy / mag; } }
       const nMag = Math.hypot(fx, fz); if (nMag > 1) { fx /= nMag; fz /= nMag; }
       const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
-      player.vel.x = (fx * cy - fz * sy) * speed;
-      player.vel.z = (fx * sy + fz * cy) * speed;
+      // Rotate input into world space with the same yaw convention the camera uses
+      // (forward = (-sin, -cos), right = (cos, -sin)), so W always walks where you look.
+      player.vel.x = (fx * cy + fz * sy) * speed;
+      player.vel.z = (-fx * sy + fz * cy) * speed;
       if (keys[" "] && player.onGround) { player.vel.y = jumpVel; player.onGround = false; }
       player.vel.y -= grav * dt / 1000; if (player.vel.y < -40) player.vel.y = -40;
       if (player.onGround) player.fallStart = null; else if (player.fallStart === null) player.fallStart = player.pos.y;
