@@ -36,6 +36,7 @@
     { id: "hollowknight", name: "Hollow Knight", price: 14.99, gp: true, tag: "Metroidvania", c1: "#0e7490", c2: "#083344" },
     { id: "stardew", name: "Stardew Valley", price: 14.99, gp: true, tag: "Farming", c1: "#16a34a", c2: "#14532d", art: "assets/game_stardew.jpg" },
     { id: "cuphead", name: "Cuphead", price: 19.99, gp: true, tag: "Platformer", c1: "#eab308", c2: "#713f12" },
+    { id: "doom", name: "DOOM (1993)", price: 4.99, gp: true, tag: "Shooter", c1: "#b91c1c", c2: "#1c0402", play: "doom" },
     { id: "gta6", name: "Grand Theft Auto VI", price: 69.99, gp: false, tag: "Adventure", c1: "#ff7ab8", c2: "#2a9fd6", art: "assets/gta6_banner.jpg", play: "gta" },
     { id: "fortnite", name: "Fortnite", price: 0, gp: false, tag: "Shooter", c1: "#7c3aed", c2: "#2563eb" },
     { id: "bluey", name: "Bluey: The Videogame", price: 39.99, gp: true, tag: "Casual", c1: "#3a7bd5", c2: "#0a2540", art: "assets/game_bluey.jpg" },

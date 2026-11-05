@@ -5,7 +5,8 @@
 
   function launch(app, createWindow) {
     const big = app.game === "flightsim" || app.game === "gta";
-    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: big ? 900 : 460, height: big ? 600 : 540, appId: app.id });
+    const doom = app.game === "doom"; // 4:3 view + titlebar
+    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: doom ? 800 : big ? 900 : 460, height: doom ? 636 : big ? 600 : 540, appId: app.id });
     const fn = games[app.game];
     if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>Coming soon.</p>";
   }
@@ -306,6 +307,12 @@
   };
 
   // ---- Grand Theft Auto (real 3D open-world, third-person character) ----
+  // ---- DOOM (raycasting FPS — see doom.js) ----
+  games.doom = (body) => {
+    if (window.DOOM) return window.DOOM.start(body);
+    body.innerHTML = "<div style='padding:24px'>DOOM failed to load. Refresh and try again.</div>";
+  };
+
   games.gta = (body) => {
     if (window.GTA) return window.GTA.start(body);
     body.innerHTML = "<div style='padding:24px'>Game engine unavailable.</div>";

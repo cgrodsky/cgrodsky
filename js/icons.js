@@ -464,6 +464,14 @@
   }
   register("clock", () => clockSVG());
 
+  // DOOM — red-on-black logo plate with the classic flame gradient.
+  register("doom", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="doomG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".4" stop-color="#ff7a1a"/><stop offset=".75" stop-color="#c41a0a"/><stop offset="1" stop-color="#5a0804"/></linearGradient>
+    <radialGradient id="doomB" cx=".5" cy=".9" r=".8"><stop offset="0" stop-color="#5a0a04"/><stop offset="1" stop-color="#0c0202"/></radialGradient></defs>
+    <rect width="128" height="128" rx="26" fill="url(#doomB)"/>
+    <text x="64" y="80" text-anchor="middle" font-family="Impact,'Arial Black',sans-serif" font-weight="900" font-size="44" fill="url(#doomG)" stroke="#1a0402" stroke-width="3" transform="translate(64 0) scale(1.18 1) translate(-64 0)">DOOM</text>
+  </svg>`);
+
   // Re-render dynamic icons in place so the clock ticks and the calendar rolls over.
   // Clocks refresh every second (so the second hand sweeps); other dynamic icons
   // (e.g. the calendar's date) only need to roll over, so they refresh less often.
