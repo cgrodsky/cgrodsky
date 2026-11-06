@@ -55,6 +55,8 @@
     { id: "outlook", name: "Outlook", cat: "Productivity", price: 0, builtin: "outlook", desc: "Microsoft Outlook — email with folders, a reading pane, and compose." },
     { id: "onenote", name: "OneNote", cat: "Productivity", price: 0, builtin: "onenote", desc: "Microsoft OneNote — notebooks, sections, and pages for your notes." },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
+    { id: "sims", name: "The Sims", cat: "Games", price: 0, game: "sims", desc: "Create a Sim, build a life: needs, careers, skills, friends and a house to furnish." },
+    { id: "stardew", name: "Stardew Valley", cat: "Games", price: 0, game: "stardew", desc: "Inherit your grandpa's farm. Grow crops, forage, fish and ship your harvest." },
     { id: "doom", name: "DOOM", cat: "Games", price: 0, game: "doom", desc: "Rip and tear. A raycasting FPS tribute to the 1993 classic — two maps, imps, demons, shotgun." },
     { id: "minecraft", name: "Mincraft", cat: "Games", price: 0, builtin: "minecraft", desc: "A 2D block-building sandbox. Mine, build, explore." },
     { id: "mclauncher", name: "Minecraft Launcher", cat: "Games", price: 0, builtin: "mclauncher", desc: "Launch Minecraft — pick a version and press Play." },

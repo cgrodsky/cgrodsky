@@ -6,7 +6,8 @@
   function launch(app, createWindow) {
     const big = app.game === "flightsim" || app.game === "gta";
     const doom = app.game === "doom"; // 4:3 view + titlebar
-    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: doom ? 800 : big ? 900 : 460, height: doom ? 636 : big ? 600 : 540, appId: app.id });
+    const life = app.game === "sims" || app.game === "stardew";
+    const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: doom ? 800 : life ? 1000 : big ? 900 : 460, height: doom ? 636 : life ? 680 : big ? 600 : 540, appId: app.id });
     const fn = games[app.game];
     if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>Coming soon.</p>";
   }
@@ -307,6 +308,10 @@
   };
 
   // ---- Grand Theft Auto (real 3D open-world, third-person character) ----
+  // ---- The Sims / Stardew Valley (see sims.js, stardew.js) ----
+  games.sims = (body) => { if (window.SIMS) return window.SIMS.start(body); body.innerHTML = "<div style='padding:24px'>The Sims failed to load. Refresh and try again.</div>"; };
+  games.stardew = (body) => { if (window.STARDEW) return window.STARDEW.start(body); body.innerHTML = "<div style='padding:24px'>Stardew Valley failed to load. Refresh and try again.</div>"; };
+
   // ---- DOOM (raycasting FPS — see doom.js) ----
   games.doom = (body) => {
     if (window.DOOM) return window.DOOM.start(body);
