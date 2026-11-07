@@ -33,5 +33,5 @@ Author names and links still need to be added for these models.
 36 sofas, loveseats, sectionals, chaises, armchairs and ottomans. The original files were Portuguese-named GLB, OBJ and
 Blend files, about 575 MB. Each GLB was flattened, welded and simplified to about 6k triangles. The textures were cut
 to 256 px JPEG, or replaced with their average color where the texture seams blocked the simplifier. Each model was
-set on the floor (y = 0) and centered. All 36 together are 4.8 MB. `sofas/catalog.json` gives each one an English
-name, a type, a seat count and a Buy-mode price.
+set on the floor (y = 0) and centered. All 36 together are 4.8 MB. `sofas/catalog.json` (and the full `catalog.json`, which covers every model) gives each one an English
+name, a type, a seat count, a comfort rating and a Buy-mode price.

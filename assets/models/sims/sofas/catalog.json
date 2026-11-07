@@ -4,287 +4,359 @@
   "file": "sofas/sofa-chaise-mesa.glb",
   "name": "Chaise with Side Table",
   "kind": "daybed",
-  "price": 590,
-  "seats": 1
+  "price": 780,
+  "seats": 1,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "chaise-sem-braco",
   "file": "sofas/sofa-chaise-sem-braco.glb",
   "name": "Armless Tufted Chaise",
   "kind": "daybed",
-  "price": 540,
-  "seats": 1
+  "price": 650,
+  "seats": 1,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "chaise",
   "file": "sofas/sofa-chaise.glb",
   "name": "Square Chaise",
   "kind": "daybed",
-  "price": 590,
-  "seats": 1
+  "price": 420,
+  "seats": 1,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "modelo-cadeira-rede",
   "file": "sofas/sofa-modelo-cadeira-rede.glb",
   "name": "Papasan Hammock Chair",
   "kind": "chair",
-  "price": 390,
-  "seats": 1
+  "price": 340,
+  "seats": 1,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-canto-com-puff",
   "file": "sofas/sofa-modelo-canto-com-puff.glb",
   "name": "Corner Sectional with Ottoman",
   "kind": "sectional",
-  "price": 1480,
-  "seats": 4
+  "price": 2450,
+  "seats": 4,
+  "comfort": 9,
+  "category": "Seating"
  },
  {
   "id": "modelo-diva-2",
   "file": "sofas/sofa-modelo-diva-2.glb",
   "name": "Bolster Daybed",
   "kind": "daybed",
-  "price": 610,
-  "seats": 1
+  "price": 560,
+  "seats": 1,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-diva",
   "file": "sofas/sofa-modelo-diva.glb",
   "name": "Classic Leather Daybed",
   "kind": "daybed",
-  "price": 540,
-  "seats": 1
+  "price": 1350,
+  "seats": 1,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-braco-vazado",
   "file": "sofas/sofa-modelo-duplo-braco-vazado.glb",
   "name": "Open-Arm Loveseat",
   "kind": "loveseat",
-  "price": 990,
-  "seats": 2
+  "price": 720,
+  "seats": 2,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-chaise-lat",
   "file": "sofas/sofa-modelo-duplo-chaise-lat.glb",
   "name": "Loveseat with Side Chaise",
   "kind": "sectional",
-  "price": 1490,
-  "seats": 4
+  "price": 1180,
+  "seats": 4,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-encosto-baixo",
   "file": "sofas/sofa-modelo-duplo-encosto-baixo.glb",
   "name": "Low-Back Loveseat",
   "kind": "loveseat",
-  "price": 710,
-  "seats": 2
+  "price": 690,
+  "seats": 2,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-encosto-rede",
   "file": "sofas/sofa-modelo-duplo-encosto-rede.glb",
   "name": "Net-Back Loveseat",
   "kind": "loveseat",
-  "price": 740,
-  "seats": 2
+  "price": 840,
+  "seats": 2,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-estofado",
   "file": "sofas/sofa-modelo-duplo-estofado.glb",
   "name": "Plush Loveseat",
   "kind": "loveseat",
-  "price": 740,
-  "seats": 2
+  "price": 610,
+  "seats": 2,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-king",
   "file": "sofas/sofa-modelo-duplo-king.glb",
   "name": "King Loveseat",
   "kind": "loveseat",
-  "price": 810,
-  "seats": 2
+  "price": 980,
+  "seats": 2,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-largo",
   "file": "sofas/sofa-modelo-duplo-largo.glb",
   "name": "Wide Loveseat",
   "kind": "loveseat",
-  "price": 680,
-  "seats": 2
+  "price": 870,
+  "seats": 2,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-quad-2",
   "file": "sofas/sofa-modelo-duplo-quad-2.glb",
   "name": "Compact Square Loveseat",
   "kind": "loveseat",
-  "price": 930,
-  "seats": 2
+  "price": 480,
+  "seats": 2,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-quad",
   "file": "sofas/sofa-modelo-duplo-quad.glb",
   "name": "Square Loveseat",
   "kind": "loveseat",
-  "price": 690,
-  "seats": 2
+  "price": 640,
+  "seats": 2,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-reto",
   "file": "sofas/sofa-modelo-duplo-reto.glb",
   "name": "Straight Loveseat",
   "kind": "loveseat",
-  "price": 680,
-  "seats": 2
+  "price": 590,
+  "seats": 2,
+  "comfort": 5,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-sem-braco",
   "file": "sofas/sofa-modelo-duplo-sem-braco.glb",
   "name": "Armless Loveseat",
   "kind": "loveseat",
-  "price": 750,
-  "seats": 2
+  "price": 520,
+  "seats": 2,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-simples",
   "file": "sofas/sofa-modelo-duplo-simples.glb",
   "name": "Simple Loveseat",
   "kind": "loveseat",
-  "price": 690,
-  "seats": 2
+  "price": 450,
+  "seats": 2,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "modelo-duplo-um-braco",
   "file": "sofas/sofa-modelo-duplo-um-braco.glb",
   "name": "One-Arm Loveseat",
   "kind": "loveseat",
-  "price": 750,
-  "seats": 2
+  "price": 760,
+  "seats": 2,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-meia-lua-chaise",
   "file": "sofas/sofa-modelo-meia-lua-chaise.glb",
   "name": "Curved Chaise Sofa",
   "kind": "sofa",
-  "price": 980,
-  "seats": 3
+  "price": 2100,
+  "seats": 3,
+  "comfort": 8,
+  "category": "Seating"
  },
  {
   "id": "modelo-meia-lua",
   "file": "sofas/sofa-modelo-meia-lua.glb",
   "name": "Half-Moon Sofa",
   "kind": "sofa",
-  "price": 990,
-  "seats": 3
+  "price": 1850,
+  "seats": 3,
+  "comfort": 8,
+  "category": "Seating"
  },
  {
   "id": "modelo-puff",
   "file": "sofas/sofa-modelo-puff.glb",
   "name": "Modular Ottoman Lounge",
   "kind": "sectional",
-  "price": 1490,
-  "seats": 4
+  "price": 1650,
+  "seats": 4,
+  "comfort": 8,
+  "category": "Seating"
  },
  {
   "id": "modelo-quatro-estofado",
   "file": "sofas/sofa-modelo-quatro-estofado.glb",
   "name": "Plush Four-Seater",
   "kind": "sofa",
-  "price": 1040,
-  "seats": 3
+  "price": 1240,
+  "seats": 3,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-quatro-lugares",
   "file": "sofas/sofa-modelo-quatro-lugares.glb",
   "name": "Long Four-Seat Bench Sofa",
   "kind": "sofa",
-  "price": 1140,
-  "seats": 3
+  "price": 1480,
+  "seats": 3,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-quatro-pes",
   "file": "sofas/sofa-modelo-quatro-pes.glb",
   "name": "Four-Seat Sofa on Legs",
   "kind": "sofa",
-  "price": 990,
-  "seats": 3
+  "price": 1320,
+  "seats": 3,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-alcochoado",
   "file": "sofas/sofa-modelo-triplo-alcochoado.glb",
   "name": "Tufted Chaise Sectional",
   "kind": "sectional",
-  "price": 1490,
-  "seats": 4
+  "price": 1980,
+  "seats": 4,
+  "comfort": 9,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-chaise",
   "file": "sofas/sofa-modelo-triplo-chaise.glb",
   "name": "Three-Seat Chaise Sectional",
   "kind": "sectional",
-  "price": 1500,
-  "seats": 4
+  "price": 2250,
+  "seats": 4,
+  "comfort": 9,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-encosto-baixo",
   "file": "sofas/sofa-modelo-triplo-encosto-baixo.glb",
   "name": "Low-Back Sofa",
   "kind": "sofa",
-  "price": 1020,
-  "seats": 3
+  "price": 1060,
+  "seats": 3,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-estofado",
   "file": "sofas/sofa-modelo-triplo-estofado.glb",
   "name": "Plush Sofa",
   "kind": "sofa",
-  "price": 1040,
-  "seats": 3
+  "price": 990,
+  "seats": 3,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-padrao",
   "file": "sofas/sofa-modelo-triplo-padrao.glb",
   "name": "Classic Frame Sofa",
   "kind": "sofa",
-  "price": 1150,
-  "seats": 3
+  "price": 1120,
+  "seats": 3,
+  "comfort": 7,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-pes",
   "file": "sofas/sofa-modelo-triplo-pes.glb",
   "name": "Green Leather Sofa",
   "kind": "sofa",
-  "price": 990,
-  "seats": 3
+  "price": 1590,
+  "seats": 3,
+  "comfort": 8,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-reto",
   "file": "sofas/sofa-modelo-triplo-reto.glb",
   "name": "Straight Tufted Sofa",
   "kind": "sofa",
-  "price": 1000,
-  "seats": 3
+  "price": 940,
+  "seats": 3,
+  "comfort": 6,
+  "category": "Seating"
  },
  {
   "id": "modelo-triplo-sem-braco",
   "file": "sofas/sofa-modelo-triplo-sem-braco.glb",
   "name": "Armless Lounge Chair",
   "kind": "chair",
-  "price": 330,
-  "seats": 1
+  "price": 380,
+  "seats": 1,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "modelo-um-assento",
   "file": "sofas/sofa-modelo-um-assento.glb",
   "name": "Single-Seat Armchair",
   "kind": "chair",
-  "price": 390,
-  "seats": 1
+  "price": 310,
+  "seats": 1,
+  "comfort": 4,
+  "category": "Seating"
  },
  {
   "id": "puff",
   "file": "sofas/sofa-puff.glb",
   "name": "Storage Ottoman",
   "kind": "ottoman",
-  "price": 210,
-  "seats": 1
+  "price": 140,
+  "seats": 1,
+  "comfort": 2,
+  "category": "Seating"
  }
 ]

@@ -167,6 +167,11 @@
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
     <div class="sm-cred-i"><b>Everything else</b> (the Sims, walls, other furniture, textures and sounds) is made in code for this game.</div></div>`;
 
+  /* Flat 2D plumbob (six-faceted green diamond), used on the loading screen. */
+  const PLUMBOB_SVG = `<svg viewBox="0 0 40 60" aria-hidden="true"><g stroke="#0d5a22" stroke-width=".8" stroke-linejoin="round">
+    <polygon points="20,0 2,30 14,30" fill="#9bf7a9"/><polygon points="20,0 14,30 26,30" fill="#62ee7d"/><polygon points="20,0 26,30 38,30" fill="#34c957"/>
+    <polygon points="2,30 14,30 20,60" fill="#2fbf50"/><polygon points="14,30 26,30 20,60" fill="#22a443"/><polygon points="26,30 38,30 20,60" fill="#15782f"/></g></svg>`;
+
   function start(body) {
     const store = () => { const S = window.State && State.data; if (!S) return {}; if (!S.appData) S.appData = {}; return S.appData; };
     let G = store().sims || null;
@@ -1028,8 +1033,8 @@
     function splash(next) {
       const tips = ["Reticulating splines…", "Adding hidden agendas…", "Polishing the plumbob…", "Calibrating personality matrix…"];
       const sp = document.createElement("div"); sp.className = "sm-splash";
-      sp.innerHTML = `<div class="sm-sp-in"><div class="sm-sp-bob">◆</div><div class="sm-sp-t">The Sims</div><div class="sm-sp-tip">${tips[0]}</div>
-        <div class="sm-sp-bar"><div></div></div><div class="sm-sp-h">Credits</div>${creditsHTML()}<button class="sm-sp-go">Play</button></div>`;
+      sp.innerHTML = `<div class="sm-sp-in"><div class="sm-sp-bob">${PLUMBOB_SVG}</div><div class="sm-sp-t">The Sims</div><div class="sm-sp-tip">${tips[0]}</div>
+        <div class="sm-sp-bar"><div class="sm-sp-fill"></div><div class="sm-sp-dot">${PLUMBOB_SVG}</div></div><div class="sm-sp-h">Credits</div>${creditsHTML()}<button class="sm-sp-go">Play</button></div>`;
       host.appendChild(sp);
       let ti = 0, done = false; const tipT = setInterval(() => { ti = (ti + 1) % tips.length; sp.querySelector(".sm-sp-tip").textContent = tips[ti]; }, 900);
       const go = () => { if (done) return; done = true; clearInterval(tipT); clearTimeout(auto); sp.remove(); if (!dead) next(); };
@@ -1083,11 +1088,14 @@
       .sm-dialog { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: grid; place-items: center; z-index: 30; }
       .sm-splash { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, #4f8be0, #142c66 75%); color: #fff; font-family: system-ui; overflow: auto; }
       .sm-sp-in { width: min(440px, 90%); text-align: center; padding: 16px 0; }
-      .sm-sp-bob { font-size: 46px; color: #3be36a; text-shadow: 0 0 18px #3be36a; animation: smbob 1.6s ease-in-out infinite; }
+      .sm-sp-bob { width: 34px; height: 51px; margin: 0 auto 4px; filter: drop-shadow(0 0 10px #3be36a); animation: smbob 1.6s ease-in-out infinite; } .sm-sp-bob svg { width: 100%; height: 100%; display: block; }
       @keyframes smbob { 50% { transform: translateY(-8px) rotateY(180deg); } }
       .sm-sp-t { font: 900 40px system-ui; letter-spacing: 1px; text-shadow: 0 3px 0 #0b1d48; } .sm-sp-tip { font-size: 13px; opacity: .85; margin: 6px 0; min-height: 18px; }
-      .sm-sp-bar { height: 8px; background: #0b1d48; border-radius: 4px; overflow: hidden; margin: 0 30px 14px; } .sm-sp-bar div { height: 100%; width: 0; background: #3be36a; animation: smload 4.5s linear forwards; }
-      @keyframes smload { to { width: 100%; } }
+      .sm-sp-bar { position: relative; height: 6px; background: rgba(255,255,255,.22); border-radius: 3px; margin: 22px 30px 26px; }
+      .sm-sp-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #3be36a; border-radius: 3px; animation: smload 4.5s linear forwards; }
+      .sm-sp-dot { position: absolute; top: 50%; left: 0; width: 20px; height: 30px; transform: translate(-50%, -50%); filter: drop-shadow(0 0 6px #3be36a) drop-shadow(0 2px 2px rgba(0,0,0,.4)); animation: smdot 4.5s linear forwards; }
+      .sm-sp-dot svg { width: 100%; height: 100%; display: block; }
+      @keyframes smload { to { width: 100%; } } @keyframes smdot { to { left: 100%; } }
       .sm-sp-h { font: 800 14px system-ui; text-transform: uppercase; letter-spacing: 2px; opacity: .8; margin-bottom: 6px; }
       .sm-cred { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 12.5px; } .sm-cred-i { background: rgba(255,255,255,.12); border-radius: 8px; padding: 6px 10px; }
       .sm-cred-i span { opacity: .8; font-size: 11.5px; } .sm-cred a { color: #9fe8b0; } .sm-dlg .sm-cred-i { background: rgba(47,90,168,.12); } .sm-dlg .sm-cred a { color: #2f5aa8; }
