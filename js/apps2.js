@@ -881,7 +881,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   };
 
   // ---------- Files (a virtual, persistent file manager) ----------
-  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png", "Local Disk (C:)": "assets/thispc.png", Fonts: "assets/fonts_folder.png", Desktop: "assets/desktop_folder.png", Education: "assets/edu_folder.png", Math: "assets/math_folder.png", "3D Models": "assets/models_folder.png", "3D Objects": "assets/models_folder.png" };
+  const FOLDER_ICON = { Music: "assets/musicfolder.png", Pictures: "assets/picturesfolder.png", Videos: "assets/videosfolder.png", Downloads: "assets/downloadsfolder.png", OneDrive: "assets/onedrivefolder.png", Documents: "assets/documentsfolder.png", "Local Disk (C:)": "assets/thispc.png", Fonts: "assets/fonts_folder.png", Desktop: "assets/desktop_folder.png", Education: "assets/edu_folder.png", Homework: "assets/edu_folder.png", Math: "assets/math_folder.png", "3D Models": "assets/models_folder.png", "3D Objects": "assets/models_folder.png" };
   // Hover (opened) icons — matched to each folder's colour (Music≈salmon, Videos≈purple, etc.).
   // Hover (opened) icons — matched to each folder's colour. The music/videos _open art was
   // authored swapped (music_open is purple, videos_open is salmon), so cross-map them here.
@@ -943,6 +943,8 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       if (!root["Education"]) { root["Education"] = { type: "folder", children: {} }; State.save(); }
       if (!root["Math"]) { root["Math"] = { type: "folder", children: {} }; State.save(); }
     }
+    // School mode: a Homework folder that Classroom fills with every file you turn in.
+    if (S().appData && (S().appData.usage === "school" || S().appData.schoolFolders) && !root["Homework"]) { root["Homework"] = { type: "folder", children: {} }; State.save(); }
     let path = []; // array of folder names from root
 
     function folderAt(p) { let node = { children: root }; for (const seg of p) { node = node.children[seg]; if (!node) return null; } return node; }
@@ -962,7 +964,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
       body.innerHTML = `<div style="display:flex;height:100%">
         <div class="files-side">
           <div class="muted files-side-h">This PC</div>
-          ${["OneDrive", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"].map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
+          ${["OneDrive", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music"].concat(root["Homework"] ? ["Homework"] : []).map((q) => `<div class="files-quick" data-q="${q}">${q}</div>`).join("")}
         </div>
         <div style="flex:1;display:flex;flex-direction:column;min-width:0">
           <div class="files-toolbar">

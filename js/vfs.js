@@ -75,7 +75,7 @@
     const selLabel = overlay.querySelector("#fdlgSel");
     const okBtn = overlay.querySelector(".fdlg-ok");
 
-    ["Desktop", "Documents", "Downloads", "Pictures", "Music"].forEach((q) => {
+    ["Desktop", "Documents", "Downloads", "Pictures", "Music"].concat(ensure().Homework ? ["Homework"] : []).forEach((q) => {
       const b = el(`<button class="fdlg-quick">${KIND_ICON.folder} ${q}</button>`);
       b.onclick = () => { path = [q]; render(); };
       side.appendChild(b);
@@ -154,6 +154,7 @@
         ov.querySelector("#cl").onclick = () => ov.remove(); ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
         screen().appendChild(ov);
       }
+      else if (node.src) { const a = document.createElement("a"); a.href = node.src; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
     },
   };
 })();
