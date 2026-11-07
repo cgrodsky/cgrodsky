@@ -36,6 +36,22 @@
   "environment": 1
  },
  {
+  "id": "metal-bookshelf",
+  "file": "metal-bookshelf.glb",
+  "name": "Slim Black Metal Bookshelf",
+  "kind": "bookshelf",
+  "category": "Knowledge",
+  "price": 520,
+  "environment": 3,
+  "skill": "cooking",
+  "actions": [
+   "Read a Book",
+   "Study Cooking",
+   "Study Mechanical"
+  ],
+  "author": "ludasachk25"
+ },
+ {
   "id": "crt-tv",
   "file": "crt-tv.glb",
   "name": "Retro CRT Television with Lace Doily",

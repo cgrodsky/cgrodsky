@@ -61,3 +61,8 @@ is the oak staves, lid and plug. Smooth shading with crisp edges, cut to 4.6k tr
 small parser (meshes, UVs, transform hierarchy; the power-cord curve was skipped). The real-brand logos in the front
 photo were painted out. The doily's lace holes come from an alpha channel made from its brightness. Textures cut to
 512 px. 0.88 × 0.66 × 0.66 m, 252 KB.
+
+### Slim black metal bookshelf (`metal-bookshelf.glb`) by **ludasachk25** (https://www.cgtrader.com/designers/ludasachk25)
+`metal shelf.FBX`: a 1.9 m styled shelf with books and vases (47k triangles). The textures weren't included, so it uses
+matte black metal, navy, terracotta and sage book covers, cream pages and white ceramic vases. The vases were smoothed
+and the detail was cut to 13k triangles. 0.81 × 1.9 × 0.26 m, 365 KB.
