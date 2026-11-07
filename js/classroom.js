@@ -41,6 +41,56 @@
   const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
   const MAX_UPLOAD = 2 * 1048576; // keep the saved state small
 
+  // ---- Teacher grading: a little while after you turn in, the teacher grades it ----
+  const GRADE_DELAY = [20000, 45000]; // 20–45 s after turning in
+  function workText(st) {
+    let words = 0, files = 0, links = 0, images = 0;
+    (st.files || []).forEach((f) => {
+      if (f.link) { links++; return; }
+      files++; const n = f.node || {};
+      if (n.kind === "image") images++;
+      if (typeof n.content === "string") words += n.content.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+    });
+    return { words, files, links, images };
+  }
+  function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; }
+  function gradeFor(cl, w, st) {
+    const { words, files, links, images } = workText(st), pts = w[2], r = hash(cl.name + w[0] + st.turnedInAt);
+    let pct;
+    if (!files && !links) pct = 0.55 + r * 0.15;                  // "Mark as done" with nothing attached
+    else {
+      pct = 0.72 + r * 0.1;
+      pct += Math.min(0.12, words / 1500);                          // more writing, more credit
+      if (images) pct += 0.03; if (files + links >= 2) pct += 0.03;
+      if (words > 0 && words < 15 && !images) pct -= 0.08;          // almost empty document
+    }
+    const late = /next|2 weeks/.test(w[1]) ? 0 : 0;
+    pct = Math.max(0.4, Math.min(1, pct - late));
+    const score = Math.round(pct * pts);
+    const band = pct >= 0.93 ? 0 : pct >= 0.85 ? 1 : pct >= 0.75 ? 2 : 3;
+    const C = [
+      ["Outstanding work! This is exactly what I was looking for.", "Excellent job — thorough and well organized. Keep it up!", "Fantastic effort. Your work really shows you understand this."],
+      ["Great job! Just a couple of small things to tighten up.", "Nice work — strong overall. Double-check your details next time.", "Good effort, well done. A bit more explanation would make it perfect."],
+      ["Solid start. Add more detail and show more of your reasoning.", "You're on the right track — expand on your answers next time.", "Decent work. Review the instructions and include every required part."],
+      ["Please come see me — this is missing a lot of what was asked.", "You turned something in, but it needs much more work. Let's talk in class.", "Remember to attach your actual work, not just mark it as done."],
+    ][band];
+    return { score, of: pts, comment: C[Math.floor(r * C.length)], at: Date.now() };
+  }
+  function runGrading(notify) {
+    const d = S(); if (!d || !d.appData || !d.appData.classroom) return false;
+    let changed = false;
+    Object.entries(store().work).forEach(([key, st]) => {
+      if (!st.turnedIn || st.grade || !st.gradeDueAt || Date.now() < st.gradeDueAt) return;
+      const [cn, an] = key.split("::"); const cl = CLASSES.find((c) => c.name === cn); const w = cl && (WORK[cn] || []).find((x) => x[0] === an);
+      if (!w) return;
+      st.grade = gradeFor(cl, w, st); st.returned = true; changed = true;
+      if (notify && window.Notify) Notify.show({ icon: mini("classroom", "Classroom"), title: "Grade posted: " + an, body: cl.teacher + " returned your work — " + st.grade.score + "/" + st.grade.of });
+    });
+    if (changed) { save(); document.dispatchEvent(new CustomEvent("classroom-graded")); }
+    return changed;
+  }
+  setInterval(() => runGrading(true), 4000);
+
   window.AppRegistry = window.AppRegistry || {};
   window.AppRegistry.classroom = function () {
     const ref = cw({ title: "Classroom", icon: mini("classroom", "Classroom"), width: 940, height: 620, appId: "classroom" });
@@ -77,7 +127,7 @@
             <button class="gc-announce">Announce something to your class</button>
             ${[["Reminder: quiz this Friday covers chapters 4–5. Study the review sheet in the Classwork tab.", cl.teacher, "2 days ago"], ["Great work on the last assignment, everyone! Grades are posted.", cl.teacher, "4 days ago"], ["New assignment posted: " + cl.due + ". Submit before the deadline.", cl.teacher, "6 days ago"]].map(([txt, who, when]) => `<div class="gc-post"><div class="gc-post-av" style="background:${cl.c}">${esc(who.split(" ").pop()[0])}</div><div class="gc-post-body"><div class="gc-post-who">${esc(who)}<span>${esc(when)}</span></div><p>${esc(txt)}</p></div></div>`).join("")}
           </div>
-        </div>` : `<div class="gc-worklist">${work.map((w, i) => { const st = store().work[cl.name + "::" + w[0]]; const done = st && st.turnedIn; return `<button class="gc-witem" data-i="${i}"><span class="gc-wic" style="background:${done ? "#1e8e3e" : cl.c}">${done ? "✓" : "📝"}</span><span class="gc-wt"><b>${esc(w[0])}</b><span>${esc(w[1])} · ${w[2]} points</span></span><span class="gc-wst ${done ? "done" : ""}">${done ? "Turned in" : st && (st.files || []).length ? "Draft" : "Assigned"}</span></button>`; }).join("")}</div>`}
+        </div>` : `<div class="gc-worklist">${work.map((w, i) => { const st = store().work[cl.name + "::" + w[0]]; const done = st && st.turnedIn, g = done && st.grade; return `<button class="gc-witem" data-i="${i}"><span class="gc-wic" style="background:${done ? "#1e8e3e" : cl.c}">${done ? "✓" : "📝"}</span><span class="gc-wt"><b>${esc(w[0])}</b><span>${esc(w[1])} · ${w[2]} points</span></span><span class="gc-wst ${done ? "done" : ""}">${g ? `<span class="gc-grade">${g.score}/${g.of}</span>` : done ? "Turned in" : st && (st.files || []).length ? "Draft" : "Assigned"}</span></button>`; }).join("")}</div>`}
       </div>`;
       body.querySelector(".gc-back").onclick = home;
       body.querySelectorAll(".gc-tab").forEach((b) => b.onclick = () => classView(cl, b.dataset.t));
@@ -98,6 +148,7 @@
         </div>
         <div class="gc-a-side"><div class="gc-yw">
           <div class="gc-yw-h"><b>Your work</b><span class="gc-yw-st"></span></div>
+          <div class="gc-yw-grade" hidden></div>
           <div class="gc-yw-files"></div>
           <div class="gc-yw-add"><button class="gc-addbtn">+ Add or create</button><div class="gc-addmenu" hidden>
             <button data-a="pc">📁 File from this PC</button><button data-a="upload">⬆️ Upload from device</button><button data-a="link">🔗 Link</button><button data-a="doc">📄 New Word document</button></div></div>
@@ -109,7 +160,9 @@
       const filesEl = body.querySelector(".gc-yw-files"), menu = body.querySelector(".gc-addmenu"), addBtn = body.querySelector(".gc-addbtn"), tBtn = body.querySelector(".gc-turnin"), note = body.querySelector(".gc-yw-note");
 
       function render() {
-        body.querySelector(".gc-yw-st").textContent = st.turnedIn ? "Turned in" : "Assigned";
+        body.querySelector(".gc-yw-st").textContent = st.grade ? "Graded" : st.turnedIn ? "Turned in" : "Assigned";
+        const gEl = body.querySelector(".gc-yw-grade"); gEl.hidden = !st.grade;
+        if (st.grade) { const pc = Math.round(st.grade.score / st.grade.of * 100); gEl.innerHTML = `<div class="gc-g-score"><b>${st.grade.score}</b>/${st.grade.of}<span class="gc-g-pct" style="background:${pc >= 90 ? "#1e8e3e" : pc >= 80 ? "#188038" : pc >= 70 ? "#e37400" : "#d93025"}">${pc}%</span></div><div class="gc-g-cmt"><span class="gc-post-av" style="background:${cl.c};width:28px;height:28px;font-size:12px">${esc(cl.teacher.split(" ").pop()[0])}</span><div><b>${esc(cl.teacher)}</b><p>${esc(st.grade.comment)}</p></div></div>`; }
         body.querySelector(".gc-yw-st").className = "gc-yw-st" + (st.turnedIn ? " done" : "");
         filesEl.innerHTML = st.files.length ? "" : `<div class="gc-yw-empty">No files attached yet</div>`;
         st.files.forEach((f, i) => {
@@ -122,9 +175,9 @@
           filesEl.appendChild(row);
         });
         addBtn.parentElement.hidden = st.turnedIn;
-        tBtn.textContent = st.turnedIn ? "Unsubmit" : st.files.length ? "Turn in" : "Mark as done";
+        tBtn.textContent = st.turnedIn ? "Unsubmit" : st.grade ? "Resubmit" : st.files.length ? "Turn in" : "Mark as done";
         tBtn.className = "gc-turnin" + (st.turnedIn ? " un" : "");
-        note.textContent = st.turnedIn ? (st.savedTo ? "Turned in " + new Date(st.turnedInAt).toLocaleString() + " · copies saved to " + st.savedTo : "Turned in " + new Date(st.turnedInAt).toLocaleString()) : isSchool() ? "When you turn in, your files are also saved to the Homework folder." : "";
+        note.textContent = st.turnedIn && !st.grade ? "Your teacher is grading this…  " + (st.savedTo ? "Copies saved to " + st.savedTo : "") : st.turnedIn ? (st.savedTo ? "Turned in " + new Date(st.turnedInAt).toLocaleString() + " · copies saved to " + st.savedTo : "Turned in " + new Date(st.turnedInAt).toLocaleString()) : isSchool() ? "When you turn in, your files are also saved to the Homework folder." : "";
       }
       function attach(name, node) { st.files.push({ name, node: clone(node) }); save(); render(); }
 
@@ -159,8 +212,9 @@
       });
 
       tBtn.onclick = () => {
-        if (st.turnedIn) { st.turnedIn = false; save(); render(); return; }
-        st.turnedIn = true; st.turnedInAt = Date.now(); st.savedTo = "";
+        if (st.turnedIn) { st.turnedIn = false; st.grade = null; st.returned = false; st.gradeDueAt = 0; save(); render(); return; }
+        st.turnedIn = true; st.turnedInAt = Date.now(); st.savedTo = ""; st.grade = null;
+        st.gradeDueAt = Date.now() + GRADE_DELAY[0] + Math.random() * (GRADE_DELAY[1] - GRADE_DELAY[0]);
         if (isSchool()) {
           const dest = homeworkFolder(cl.name); let n = 0;
           if (dest) st.files.forEach((f) => {
@@ -175,9 +229,11 @@
         save(); render();
       };
       render();
+      const onGraded = () => { if (!body.isConnected || !body.querySelector(".gc-yw")) { document.removeEventListener("classroom-graded", onGraded); return; } render(); };
+      document.addEventListener("classroom-graded", onGraded);
     }
 
     home();
   };
-  window.Classroom = { WORK, homeworkFolder, isSchool };
+  window.Classroom = { WORK, homeworkFolder, isSchool, runGrading, gradeFor };
 })();

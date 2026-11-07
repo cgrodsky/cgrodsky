@@ -54,6 +54,7 @@
     { id: "clock", name: "Clock", cat: "Utilities", price: 0, builtin: "clock", desc: "Clock — a countdown timer, world clock, and stopwatch." },
     { id: "outlook", name: "Outlook", cat: "Productivity", price: 0, builtin: "outlook", desc: "Microsoft Outlook — email with folders, a reading pane, and compose." },
     { id: "onenote", name: "OneNote", cat: "Productivity", price: 0, builtin: "onenote", desc: "Microsoft OneNote — notebooks, sections, and pages for your notes." },
+    { id: "cafe", name: "Sip & Bite Café", cat: "Lifestyle", price: 0, builtin: "cafe", desc: "Order drinks and food in every flavor — tea, hot chocolate, coffee, bubble tea, shakes, bakery, lunch and desserts. Earn reward stars!" },
     { id: "duolingo", name: "Duolingo", cat: "Lifestyle", price: 0, builtin: "duolingo", desc: "Learn a language for free — fun bite-sized lessons." },
     { id: "sims", name: "The Sims", cat: "Games", price: 0, game: "sims", desc: "Create a Sim, build a life: needs, careers, skills, friends and a house to furnish." },
     { id: "stardew", name: "Stardew Valley", cat: "Games", price: 0, game: "stardew", desc: "Inherit your grandpa's farm. Grow crops, forage, fish and ship your harvest." },
