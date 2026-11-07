@@ -107,7 +107,7 @@
       if (sim) { sim.rotation.y = yaw; const rg = sim.userData.rig; if (rg) { rg.chest.rotation.x = Math.sin(t * 1.8) * 0.02; rg.armL.rotation.z = 0.12 + Math.sin(t * 1.3) * 0.03; rg.armR.rotation.z = -0.12 - Math.sin(t * 1.3) * 0.03; rg.head.rotation.y = Math.sin(t * 0.7) * 0.15; rg.lids.visible = (t % 4) > 3.88; } }
       r.render(sc, cam); raf = requestAnimationFrame(loop);
     }
-    function dispose() { alive = false; cancelAnimationFrame(raf); r.dispose(); disp.forEach((d) => { try { d.dispose(); } catch (e) {} }); canvas.remove(); }
+    function dispose() { alive = false; cancelAnimationFrame(raf); try { r.forceContextLoss(); } catch (e) {} r.dispose(); canvas.width = 0; canvas.height = 0; disp.forEach((d) => { try { d.dispose(); } catch (e) {} }); canvas.remove(); }
     size(); loop();
     return { set, turn: (d) => { tgt += d * Math.PI / 4; }, resize: size, dispose };
   }
@@ -286,6 +286,7 @@
           g.add(box(W - 0.7, 2.0, 0.04, cedar, -0.35, 0.06, 0.45)); g.add(box(0.6, 1.9, 0.03, mat(0xffc890, { transparent: true, opacity: 0.35, roughness: 0.05, emissive: 0xff9a40, emissiveIntensity: 0.4 }), W / 2 - 0.36, 0.1, 0.46));
           g.add(box(W - 0.2, 0.06, 0.4, cedar, 0, 0.45, -0.22)); g.add(box(W - 0.2, 0.06, 0.35, cedar, 0, 0.85, -0.3));
           g.add(box(0.3, 0.3, 0.3, mat(0x555555, { emissive: 0xff5a20, emissiveIntensity: 0.3 }), W / 2 - 0.3, 0.06, -0.2)); break; }
+        case "pizzabox": g.add(box(0.42, 0.06, 0.42, 0xe8c48a, 0, 0, 0)); g.add(box(0.3, 0.005, 0.12, 0xc0283a, 0, 0.06, 0)); break;
         case "plate": g.add(cyl(0.14, 0.12, 0.02, 0xf0ede6, 0, 0, 0)); g.add(cyl(0.06, 0.06, 0.015, 0x9a6a3a, 0.02, 0.02, 0)); break;
         case "puddle": { const p = new THREE.Mesh(keep(new THREE.CircleGeometry(0.35, 20)), mat(0xd8e24a, { transparent: true, opacity: 0.7, roughness: 0.05 })); p.rotation.x = -Math.PI / 2; p.position.y = 0.015; g.add(p); } break;
         case "sofa": case "armchair": case "sofa3": case "sectional": case "papasan": case "daybed": g.add(box(W, 0.42, 0.8, 0x6a3a8a, 0, 0, 0)); g.add(box(W, 0.45, 0.2, 0x6a3a8a, 0, 0.42, -0.3)); break;
@@ -631,7 +632,8 @@
       }
     }
     function dispose() {
-      renderer.dispose(); disposables.forEach((d) => { try { d.dispose(); } catch (e) {} });
+      try { renderer.forceContextLoss(); } catch (e) {}
+      renderer.dispose(); canvas.width = 0; canvas.height = 0; disposables.forEach((d) => { try { d.dispose(); } catch (e) {} });
       Object.values(TEX).forEach((tx) => tx.dispose());
       canvas.remove();
     }

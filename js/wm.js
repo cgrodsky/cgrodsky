@@ -21,7 +21,26 @@
   // One observer watches for detached .win subtrees and fires a "wm-cleanup"
   // event on each window element instead, through any removal path.
   (function installCleanupObserver() {
-    function fire(w) { if (w.__wmCleaned) return; w.__wmCleaned = true; w.dispatchEvent(new CustomEvent("wm-cleanup")); }
+    function fire(w) {
+      if (w.__wmCleaned) return; w.__wmCleaned = true; w.dispatchEvent(new CustomEvent("wm-cleanup"));
+      // iPad Safari only allows a few live WebGL contexts and a fixed pool of canvas memory, and frees
+      // them lazily. Release every canvas in a closed window right away so the next app can draw.
+      setTimeout(() => releaseCanvases(w), 0);
+    }
+    function releaseCanvases(root) {
+      try {
+        root.querySelectorAll("canvas").forEach((c) => {
+          try { const gl = c.__gl || null; if (gl && gl.getExtension) { const ext = gl.getExtension("WEBGL_lose_context"); if (ext) ext.loseContext(); } } catch (e) {}
+          c.width = 0; c.height = 0;
+        });
+      } catch (e) {}
+    }
+    // Remember WebGL contexts as they're created so they can be released on close.
+    try {
+      const orig = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, opts) { const ctx = orig.call(this, type, opts); if (ctx && /webgl/.test(type)) this.__gl = ctx; return ctx; };
+    } catch (e) {}
+    window.WMReleaseCanvases = releaseCanvases;
     function scan(node) {
       if (!node || node.nodeType !== 1) return;
       if (node.matches && node.matches(".win")) fire(node);

@@ -89,6 +89,7 @@
     porchswing: { name: "Cedar A-Frame Porch Swing", price: 650, cat: "Seating", w: 3, h: 70, col: "#b5794a", room: 3, ints: ["sit"], enter: true, seat: true },
     hottub: { name: "Bubbly Hot Tub", price: 3500, cat: "Outdoor", w: 2, h: 20, col: "#3ab0c8", room: 5, ints: ["soak"], enter: true, seat: true },
     sauna: { name: "Cedar Sauna", price: 4200, cat: "Outdoor", w: 2, h: 70, col: "#c08a52", room: 4, ints: ["sauna"], enter: true },
+    pizzabox: { name: "Pizza Box", price: 0, w: 1, h: 8, col: "#e8c48a", room: 0, ints: ["eatPizza"], fixed: true },
     santamailbox: { name: "Santa Express Mailbox", price: 180, cat: "Decorative", w: 1, h: 60, col: "#c0283a", room: 3, ints: ["letterSanta"] },
     barrel: { name: "Iron-Hooped Oak Barrel", price: 95, cat: "Decorative", w: 1, h: 30, col: "#8b5a2b", room: 2, ints: [] },
     crib: { name: "Baby Bassinet", price: 0, w: 1, h: 30, col: "#f4e6f0", room: 1, ints: ["feedBaby", "playBaby"], fixed: true },
@@ -125,6 +126,8 @@
     workout: { label: "Work Out", icon: "🏋️", dur: 50, gain: { fun: 0.2, energy: -0.4, hygiene: -0.3 }, pose: "stand", skill: "body" },
     soak: { label: "Soak in Hot Tub", icon: "♨️", dur: 45, gain: { comfort: 1.6, fun: 1.0, hygiene: 0.5 }, pose: "bath", steam: true },
     sauna: { label: "Relax in Sauna", icon: "🧖", dur: 40, gain: { comfort: 1.3, hygiene: 0.8, fun: 0.5 }, pose: "sit", steam: true },
+    eatPizza: { label: "Eat Pizza", icon: "🍕", dur: 25, gain: { hunger: 2.4, fun: 0.3 }, pose: "eat", clean: true },
+    pizza: { label: "Order Pizza", icon: "🍕", dur: 4, gain: {}, pose: "stand", pizza: true },
     letterSanta: { label: "Write a Letter to Santa", icon: "🎅", dur: 15, gain: { fun: 0.9, social: 0.3 }, pose: "stand" },
     mail: { label: "Get Mail", icon: "✉️", dur: 4, gain: {}, pose: "stand", mail: true },
     clean: { label: "Clean Up", icon: "🧹", dur: 8, gain: { fun: -0.1 }, pose: "stand", clean: true },
@@ -264,7 +267,7 @@
       <div class="sm-modes"><button class="sm-mode on" data-m="live" title="Live mode"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg></button><button class="sm-mode" data-m="buy" title="Buy mode"><svg viewBox="0 0 24 24"><path d="M4 12h16v5H4zM6 9h12v3H6zM5 17v2M19 17v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><button class="sm-mode" data-m="menu" title="Options"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
       <div class="sm-bar">
         <div class="sm-hud-left">
-          <div class="sm-tabs"><button class="on" data-t="needs" title="Needs">❤</button><button data-t="job" title="Career">💼</button><button data-t="skills" title="Skills">★</button><button data-t="rel" title="Relationships">👥</button><button data-t="pers" title="Personality">✦</button></div>
+          <div class="sm-tabs"><button class="on" data-t="needs" title="Needs">❤</button><button data-t="job" title="Career">💼</button><button data-t="skills" title="Skills">★</button><button data-t="rel" title="Relationships">👥</button><button data-t="pers" title="Personality">✦</button><button class="sm-cellbtn" title="Phone">📱</button></div>
           <div class="sm-face"><div class="sm-ring"><canvas class="sm-portrait" width="72" height="84"></canvas></div><div class="sm-moodchip">Fine</div><div class="sm-mood"><div></div></div><div class="sm-name"></div><div class="sm-money">§0</div></div>
         </div>
         <div class="sm-left"><div class="sm-speeds"><button data-s="0" title="Pause">❚❚</button><button data-s="1" title="Normal">▶</button><button data-s="2" title="Fast">▶▶</button><button data-s="3" title="Ultra">▶▶▶</button></div><div class="sm-clock"><b class="sm-time">8:00 AM</b><span class="sm-day">Day 1</span></div></div>
@@ -275,14 +278,14 @@
       <div class="sm-dialog" hidden></div>
     </div>`;
     injectStyles();
-    const host = body.querySelector(".sm"), cv = host.querySelector(".sm-cv"), g = cv.getContext("2d");
+    const host = body.querySelector(".sm"), cv = host.querySelector(".sm-cv"), g = cv.getContext("2d", { willReadFrequently: false });
     const $ = (q) => host.querySelector(q);
     let W = 0, H = 0, dpr = 1, zoom = 1, camX = 0, camY = 0, mode = "live", tab = "needs";
     let buyRot = 0; let sim = null, npcs = [], objs = [], acts = [], hover = null, buyItem = null, ghostOk = false, dialogOpen = false, t = 0, flash = [];
     let lastSave = 0, dead = false, raf = 0, last = performance.now(), userCam = false;
 
     function fit() {
-      const r = host.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
+      const r = host.getBoundingClientRect(); dpr = Math.min(/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ? 1.5 : 2, window.devicePixelRatio || 1);
       W = r.width; H = r.height; cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr); cv.style.height = H + "px";
       if (view3d) view3d.resize(W, H);
       if (!camX && !camY) centerCam();
@@ -300,7 +303,7 @@
       try {
         view3d = window.Sims3DView.create({ layout: HDEF.model || HDEF.floors ? { model: HDEF.model, path: HDEF.path, floors: HDEF.floors, FH: HDEF.FH, off: HDEF.off, gridW: LW } : null, LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
         host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
-      } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
+      } catch (e) { console.warn("3D view unavailable", e); view3d = null; notify("3D couldn't start (" + (e && e.message || "graphics unavailable") + ") — playing in 2D."); }
     }
     // If 3D can't run on this device, keep playing in 2D instead of breaking the game.
     function fail3D(why) {
@@ -484,6 +487,7 @@
     }
     function startAct(a) {
       const A = ACTS[a.type];
+      if (a.cell) { sim.route = null; beginUse(a); return; }
       if (a.type === "goto") { const p = path(sim.x, sim.y, a.target.x, a.target.y); if (!p) { failAct(a, "Can't get there."); return; } sim.route = p.slice(1); a.phase = "walk"; return; }
       let spots;
       if (A.bedAct) {
@@ -525,6 +529,7 @@
       if (A.clean && a.target) { const i = objs.indexOf(a.target); if (i >= 0) objs.splice(i, 1); }
       if (A.babyCare && G.baby) { G.baby.care = clamp(G.baby.care + A.babyCare, 0, 100); G.baby.neglect = 0; }
       if (A.adopt) adoptBaby();
+      if (A.pizza) { if (G.money < 40) notify("You can't afford pizza (§40)."); else { G.money -= 40; G.pizzaAt = G.min + 45; notify("🍕 Pizza ordered! It'll be here in about 45 minutes (§40)."); } }
       if (A.call) changeRel(NEIGHBORS[(Math.random() * NEIGHBORS.length) | 0].name, 3);
       if (a.target && a.target.npc) {
         const n = a.target; n.busy = false; if (n.bedTarget) { n.bedTarget = null; n.pose = "stand"; }
@@ -752,10 +757,17 @@
       else { e.fx += dx / d * sp; e.fy += dy / d * sp; }
       return false;
     }
+    function pizzaTick() {
+      if (!G || !sim || !G.pizzaAt || G.min < G.pizzaAt) return;
+      G.pizzaAt = 0; const tries = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [2, 0], [0, 2]];
+      const spot = tries.map(([dx, dy]) => [sim.x + dx, sim.y + dy]).find(([x, y]) => x >= 0 && y >= 0 && x < LW && y < LH - 2 && !objAt(x, y) && !fixedBlock(x, y));
+      if (spot) { objs.push({ t: "pizzabox", x: spot[0], y: spot[1] }); notify("🍕 The pizza is here! Tap the box to eat."); } else { G.sim.needs.hunger = Math.min(100, G.sim.needs.hunger + 50); notify("🍕 The pizza arrived and you ate it at the door."); }
+    }
     function update(dt) {
+      pizzaTick();
       t += dt;
       flash.forEach((f) => (f.t -= dt)); flash = flash.filter((f) => f.t > 0);
-      if (!G || dialogOpen || mode === "buy") return;
+      if (!G || !sim || dialogOpen || mode === "buy") return; // (the Sim loads after the startup screen)
       const mult = SPEED_MULT[G.speed], sdt = dt * mult, gm = sdt; // 1 game minute per sim-second
       if (!mult) return;
       const prevDay = Math.floor(G.min / 1440);
@@ -978,7 +990,7 @@
         host.querySelectorAll(".sm-floorbtn").forEach((b) => b.hidden = false);
       }
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-      if (!G) return;
+      if (!G || !sim) return;
       const hr = G.min / 60 % 24;
       const ents = [sim].concat(npcs).filter(Boolean).map(entInfo);
       let ghost = null;
@@ -1015,7 +1027,7 @@
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hr = (G ? G.min : 480) / 60 % 24, sky = hr < 5 || hr > 21 ? "#0e1a30" : hr < 7 ? "#5a7aa8" : hr > 19 ? "#c07a5a" : "#7fb8e0";
       g.fillStyle = sky; g.fillRect(0, 0, W, H);
-      if (!G) return;
+      if (!G || !sim) return;
       // ground beyond the lot
       for (let y = 0; y < LH; y++) for (let x = 0; x < LW; x++) floorTile(x, y);
       // back (full-height) walls
@@ -1236,6 +1248,13 @@
     cv.addEventListener("contextmenu", (e) => { e.preventDefault(); buyItem = null; if (mode === "buy") openCatalog(); });
     cv.addEventListener("wheel", (e) => { e.preventDefault(); if (view3d) { view3d.zoom(e.deltaY < 0 ? 0.9 : 1.11); return; } const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, z0 = zoom; zoom = clamp(zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.45, 1.8); camX = mx - (mx - camX) * zoom / z0; camY = my - (my - camY) * zoom / z0; userCam = true; }, { passive: false });
     host.querySelectorAll(".sm-mode").forEach((b) => b.onclick = () => setMode(b.dataset.m));
+    const cellBtn = host.querySelector(".sm-cellbtn");
+    if (cellBtn) cellBtn.onclick = (e) => {
+      e.stopPropagation(); if (!G || dialogOpen) return;
+      const r = cellBtn.getBoundingClientRect(), hr = host.getBoundingClientRect();
+      const cellAct = (k) => { queueAct(k, null); const a = acts[acts.length - 1]; if (a && a.type === k) a.cell = true; };
+      pie(r.left - hr.left + 120, r.top - hr.top - 40, [["Call a Friend", () => cellAct("call")], ["Invite Over", () => cellAct("invite")], ["Order Pizza (§40)", () => cellAct("pizza")], ["Find a Job", () => cellAct("job")], ["Adopt a Baby", () => cellAct("adopt")]]);
+    };
     $(".sm-portrait").style.cursor = "pointer"; $(".sm-portrait").title = "Center the camera on your Sim";
     $(".sm-portrait").onclick = () => { if (view3d && sim) view3d.focus(sim.fx + 0.5, sim.fy + 0.5, 9); };
     host.querySelectorAll(".sm-view3d button").forEach((b) => b.onclick = () => {
@@ -1249,7 +1268,7 @@
       if (v === "walls") { const order = ["cutaway", "up", "down"], nm = { cutaway: "▥ Cutaway", up: "▮ Walls Up", down: "▁ Walls Down" }; const nx = order[(order.indexOf(view3d.wallMode) + 1) % 3]; view3d.setWallMode(nx); b.textContent = nm[nx]; }
     });
     host.querySelectorAll(".sm-speeds button").forEach((b) => b.onclick = () => { if (G) { G.speed = +b.dataset.s; paintUI(); } });
-    host.querySelectorAll(".sm-tabs button").forEach((b) => b.onclick = () => { tab = b.dataset.t; host.querySelectorAll(".sm-tabs button").forEach((x) => x.classList.toggle("on", x === b)); paintTab(); });
+    host.querySelectorAll(".sm-tabs button[data-t]").forEach((b) => b.onclick = () => { tab = b.dataset.t; host.querySelectorAll(".sm-tabs button[data-t]").forEach((x) => x.classList.toggle("on", x === b)); paintTab(); });
     function onKey(e) {
       if (!document.body.contains(host) || !host.closest(".win") || dialogOpen) return;
       const a = document.activeElement; if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
@@ -1265,15 +1284,39 @@
 
     // ---------------- loop ----------------
     let uiT = 0;
+    let errCount = 0, blankCheck = 0, diagShown = false;
+    // Visible report instead of a silent blank screen (so a screenshot tells what went wrong).
+    function showDiag(text) {
+      let d = host.querySelector(".sm-diag");
+      if (!d) { d = document.createElement("div"); d.className = "sm-diag"; host.appendChild(d); d.onclick = () => d.remove(); }
+      const gl = (() => { try { const c = document.createElement("canvas"); return c.getContext("webgl2") ? "WebGL2" : c.getContext("webgl") ? "WebGL1" : "no WebGL"; } catch (e) { return "WebGL error"; } })();
+      d.innerHTML = `<b>⚠️ ${esc(text)}</b><br><small>${esc(gl)} · canvas ${cv.width}×${cv.height} · ${esc(navigator.userAgent.replace(/^Mozilla\/5\.0 /, ""))}</small><br><small>Tip: close other windows (Minecraft, GTA…) or reload the page, then open The Sims again. Tap to hide.</small>`;
+    }
+    // The 2D view should never be one flat colour; if it is, the canvas couldn't draw (out of canvas memory).
+    function check2D() {
+      if (diagShown || !G) return;
+      try {
+        const w = cv.width, h = cv.height; if (w < 50 || h < 50) return;
+        const a = g.getImageData(Math.floor(w * 0.5), Math.floor(h * 0.5), 1, 1).data, b = g.getImageData(Math.floor(w * 0.3), Math.floor(h * 0.6), 1, 1).data, c = g.getImageData(Math.floor(w * 0.7), Math.floor(h * 0.4), 1, 1).data;
+        const same = (p, q) => Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]) < 4;
+        if ((same(a, b) && same(b, c)) || a[3] === 0) { diagShown = true; showDiag("The game screen couldn't draw on this device"); }
+      } catch (e) { diagShown = true; showDiag("The game screen couldn't draw: " + e.message); }
+    }
     function frame(now) {
       if (dead) return;
       if (!document.body.contains(host)) { cleanup(); return; }
       let dt = (now - last) / 1000; last = now; if (dt > 0.1) dt = 0.1;
-      update(dt); draw();
+      try { update(dt); draw(); errCount = 0; }
+      catch (err) {
+        errCount++; console.error("Sims frame error", err);
+        if (view3d) fail3D("3D had a problem");
+        if (errCount === 1 || errCount === 30) showDiag("The game hit an error: " + (err && err.message) + " · " + String(err && err.stack || "").split("\n")[1]);
+      }
+      if (!view3d && ++blankCheck % 180 === 0) check2D();
       uiT += dt; if (uiT > 0.25) { uiT = 0; paintUI(); }
       raf = requestAnimationFrame(frame);
     }
-    function cleanup() { if (dead) return; dead = true; cancelAnimationFrame(raf); if (view3d) { try { view3d.dispose(); } catch (e) {} view3d = null; } save(); document.removeEventListener("keydown", onKey); if (ro) ro.disconnect(); }
+    function cleanup() { if (dead) return; dead = true; cancelAnimationFrame(raf); if (view3d) { try { view3d.dispose(); } catch (e) {} view3d = null; } save(); setTimeout(() => { try { cv.width = 0; cv.height = 0; } catch (e) {} }, 0); document.removeEventListener("keydown", onKey); if (ro) ro.disconnect(); }
     let ro = null; try { ro = new ResizeObserver(() => { fit(); if (!userCam) centerCam(); }); ro.observe(host); } catch (e) {}
     const win = body.closest(".win"); if (win) win.addEventListener("wm-cleanup", cleanup);
     fit();
@@ -1368,6 +1411,7 @@
       .sm-trait { display: grid; grid-template-columns: 70px 1fr 70px 20px; align-items: center; gap: 6px; } .sm-trait span:last-of-type { text-align: right; }
       .sm-pts { font-weight: 700; text-align: right; }
       .sm-jobs { display: flex; flex-direction: column; gap: 6px; } .sm-job { text-align: left; border: 2px solid #5a80c8; background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; color: #102a5a; } .sm-job:hover { background: #fff7c2; } .sm-job span { font-size: 12px; color: #2a6a2a; }
+      .sm-diag { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 60; width: min(560px, 88%); background: #fff4f2; color: #6a1a10; border: 2px solid #e05a40; border-radius: 12px; padding: 10px 14px; font: 600 13px system-ui; box-shadow: 0 8px 24px rgba(0,0,0,.35); } .sm-diag small { color: #6a4a40; font-weight: 500; }
       .sm-house.cur { border-color: #3be36a; } .sm-house span { display: block; font-size: 12px; color: #4a5a74; }
       .sm-row { display: flex; gap: 8px; align-items: center; } .sm-small { font-size: 12px; opacity: .8; }
       @media (max-width: 640px) { .sm-tabs { display: none; } .sm-left { width: 140px; } }
@@ -1379,6 +1423,7 @@
       .sm-tabs { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
       .sm-tabs button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); color: #2a5aa0; font: 700 15px system-ui; padding: 0; text-align: center; box-shadow: 0 2px 8px rgba(0,30,80,.3); cursor: pointer; }
       .sm-tabs button.on { background: #3a7be0; color: #fff; }
+      .sm-tabs .sm-cellbtn { margin-top: 6px; background: #3be36a; color: #fff; font-size: 16px; }
       .sm-face { width: 112px; gap: 3px; align-items: center; }
       .sm-ring { width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(#d6ecff, #7ab0e8); border: 4px solid #fff; box-shadow: 0 4px 14px rgba(0,30,80,.4), 0 0 0 3px #3be36a; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
       .sm-ring.live { background: transparent; } .sm-ring.live .sm-portrait { visibility: hidden; }
