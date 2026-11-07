@@ -36,6 +36,29 @@
   "environment": 1
  },
  {
+  "id": "family-home",
+  "file": "familyhome.glb",
+  "name": "Family Home",
+  "kind": "house",
+  "category": "Lots",
+  "price": 40000,
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "author": "Gabriele Romagnoli",
+  "license": "CC-BY"
+ },
+ {
+  "id": "chess-set",
+  "file": "chessset.glb",
+  "name": "Chess Set",
+  "kind": "decor",
+  "category": "Knowledge",
+  "price": 0,
+  "onTable": "chess",
+  "author": "Pia Leung",
+  "license": "CC-BY"
+ },
+ {
   "id": "mailbox-post",
   "file": "mailbox-post.glb",
   "name": "Classic Post Mailbox",

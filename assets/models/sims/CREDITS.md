@@ -73,3 +73,12 @@ and the detail was cut to 13k triangles. 0.81 × 1.9 × 0.26 m, 365 KB.
 
 ### Classic Post Mailbox (`mailbox-post.glb`) — "Mailbox" by **Poly by Google**, CC-BY, via Poly Pizza (https://poly.pizza/)
 Scaled from 4.5 m to 1.35 m and set on the ground. Used as every house's mailbox.
+
+### Family Home (`familyhome.glb`) — "House interior" by **Gabriele Romagnoli**, via Poly Pizza (https://poly.pizza/), CC-BY
+The medium-quality house (§40,000, Options → Move House). Scaled 2.6× (1 model unit = 2.6 m), turned 90° and placed on the lot.
+Its walls, doorways, built-in furniture and floors were measured with ray tests into the game's 1 m walking grid (stored in
+`js/sims.js` → `HOUSES.family.layout`). The model's fridge, oven, sink, bathroom sink and tub are usable by Sims. In-game cutaway
+slices the walls facing the camera.
+
+### Chess set (`chessset.glb`) — "Chess Set" by **Pia Leung**, via Poly Pizza (https://poly.pizza/), CC-BY
+Scaled to a 52 cm board and set on top of the game's chess table. Cut from 9.3k to ~5.6k triangles.

@@ -10,8 +10,8 @@
 
   const TW = 64, TH = 32, WALL_H = 92, WALL_LOW = 18;
   const LW = 15, LH = 14;                       // lot size in tiles
-  const HOUSE = { x0: 2, y0: 2, x1: 12, y1: 10 };
-  const ROOMS = [
+  const HOUSE0 = { x0: 2, y0: 2, x1: 12, y1: 10 };
+  const ROOMS0 = [
     { id: "bed", name: "Bedroom", x0: 2, y0: 2, x1: 6, y1: 6, floor: "carpet" },
     { id: "bath", name: "Bathroom", x0: 7, y0: 2, x1: 9, y1: 6, floor: "tile" },
     { id: "kit", name: "Kitchen", x0: 10, y0: 2, x1: 12, y1: 6, floor: "kitchen" },
@@ -59,6 +59,7 @@
     chair: { name: "Werkbunnst Chair", price: 80, cat: "Seating", w: 1, h: 30, col: "#7a4a2a", room: 1, ints: ["sit"], enter: true, seat: true },
     toilet: { name: "Hydrotech Toilet", price: 300, cat: "Plumbing", w: 1, h: 30, col: "#f6f7f9", room: 0, ints: ["toilet"], enter: true },
     shower: { name: "Spartan Shower", price: 650, cat: "Plumbing", w: 1, h: 84, col: "#cfe6f2", room: 0, ints: ["shower"], enter: true },
+    btub: { name: "Built-in Bathtub", price: 0, cat: "Plumbing", w: 1, h: 22, col: "#f6f7f9", room: 1, ints: ["bath"], enter: true, fixed: true },
     tub: { name: "Justa Bathtub", price: 800, cat: "Plumbing", w: 2, h: 22, col: "#f6f7f9", room: 1, ints: ["bath"], enter: true },
     sink: { name: "Hydronomic Sink", price: 250, cat: "Plumbing", w: 1, h: 34, col: "#e6eaee", room: 0, ints: ["wash"] },
     bed: { name: "Spartan Special Bed", price: 450, cat: "Seating", w: 2, h: 22, col: "#3a5a9a", room: 2, ints: ["sleep", "nap"], enter: true },
@@ -141,6 +142,31 @@
     adopt: { label: "Adopt a Baby", icon: "📞", dur: 10, gain: {}, pose: "stand", adopt: true },
   };
 
+  // ---------------- houses ----------------
+  // The Starter Home is built from walls in code. The Family Home is the "House interior" model by
+  // Gabriele Romagnoli; its walls/doors were measured into this grid (h/v = walls on tile edges,
+  // b = tiles taken by the model's own furniture or walls). hid:1 objects are the model's built-in
+  // fridge/oven/sink/tub made usable (the model draws them).
+  const HOUSES = {
+    starter: { name: "Starter Home", price: 0, beds: 1, baths: 1, desc: "A cozy one-bedroom place with a kitchen, bathroom and living room." },
+    family: { name: "Family Home", price: 40000, beds: 2, baths: 1, desc: "A medium house: big open living area, two bedrooms, a study, a real kitchen and a side porch.",
+      HOUSE: { x0: 1, y0: 1, x1: 11, y1: 9 },
+      ROOMS: [{ id: "liv", name: "House", x0: 1, y0: 1, x1: 11, y1: 9, floor: "wood" }],
+      layout: {"h": ["0000000000000000", "0000011111110000", "0000000000000000", "0111100000000000", "0110000000010000", "0000000000010000", "0110100000000000", "0111111011100000", "0000000100010000", "0000010100010000", "0111111110010000", "0111111111110000", "0000000000000000", "0000000000000000", "0000000000000000"], "v": ["0000000000000000", "0000010010001000", "0000010010001000", "0111110010001000", "0111110000011000", "0111110000011000", "0100000010011000", "0100000000000000", "0100011010001000", "0100001010011000", "0111110011111000", "0000000000000000", "0000000000000000", "0000000000000000", "0000000000000000"], "b": ["000000000000000", "000000000000000", "000000000000000", "001010000000000", "011010000000000", "011010000000000", "010010000000000", "000000000000000", "000000010001000", "000000010001000", "011111111111000", "000000000000000", "000000000000000", "000000000000000"]},
+      model: { file: "familyhome.glb", scale: 2.6, rot: 1.5708, ox: 0.8, oz: 0.9, floorY: 1.118 },
+      path: [12.5, 7.5, 12],
+      start: [12, 11],
+      objects: () => [
+        ["fridge", 11, 8, 1], ["stove", 9, 10, 1], ["sink", 10, 10, 1], ["btub", 7, 9, 1], ["sink", 7, 8, 1],
+        ["toilet", 5, 1], ["shower", 7, 1], ["mirror", 6, 1],
+        ["bookshelf", 8, 1], ["computer", 11, 1], ["chair", 11, 2], ["chess", 9, 2],
+        ["sofa", 5, 6], ["tv", 5, 3], ["phone", 8, 6], ["plant", 11, 3], ["table", 9, 4], ["chair", 9, 5], ["stereo", 7, 3], ["trash", 1, 7], ["lamp", 5, 4],
+        ["bed", 1, 9], ["lamp", 3, 9],
+        ["mailbox", 13, 11],
+      ].map(([t, x, y, hid]) => (hid ? { t, x, y, hid: 1 } : { t, x, y })),
+    },
+  };
+
   // ---------------- default lot ----------------
   function starterObjects() {
     return [
@@ -181,6 +207,8 @@
     { what: "Metal bookshelf with books and vases", who: "ludasachk25 (CGTrader)", link: "https://www.cgtrader.com/designers/ludasachk25", license: "CGTrader license", note: "Recolored" },
     { what: "Santa's mailbox", who: "katerinabondarenko (CGTrader)", link: "https://www.cgtrader.com/designers/katerinabondarenko", license: "CGTrader license", note: "Converted from Blender 4" },
     { what: "Mailbox", who: "Poly by Google via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Scaled to 1.35 m" },
+    { what: "Family Home (house interior)", who: "Gabriele Romagnoli via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Walls mapped to the game grid" },
+    { what: "Chess set", who: "Pia Leung via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "On every chess table" },
     { what: "Sofa collection (36 sofas, loveseats, chaises and armchairs)", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk from 575 MB to 4.8 MB" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
@@ -191,9 +219,12 @@
     <polygon points="20,0 2,30 14,30" fill="#9bf7a9"/><polygon points="20,0 14,30 26,30" fill="#62ee7d"/><polygon points="20,0 26,30 38,30" fill="#34c957"/>
     <polygon points="2,30 14,30 20,60" fill="#2fbf50"/><polygon points="14,30 26,30 20,60" fill="#22a443"/><polygon points="26,30 38,30 20,60" fill="#15782f"/></g></svg>`;
 
-  function start(body) {
+  function start(body, startOpts) {
     const store = () => { const S = window.State && State.data; if (!S) return {}; if (!S.appData) S.appData = {}; return S.appData; };
     let G = store().sims || null;
+    const HKEY = (G && G.house && HOUSES[G.house]) ? G.house : "starter", HDEF = HOUSES[HKEY];
+    const HOUSE = HDEF.HOUSE || HOUSE0, ROOMS = HDEF.ROOMS || ROOMS0, LAYOUT = HDEF.layout || null;
+    const fixedBlock = (x, y) => !!(LAYOUT && LAYOUT.b[y] && LAYOUT.b[y][x] === "1");
     body.innerHTML = `<div class="sm"><canvas class="sm-cv"></canvas>
       <div class="sm-queue"></div>
       <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="turn" title="Turn the item you're placing (R)" class="sm-turnbtn" hidden>↻ Turn</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
@@ -237,7 +268,7 @@
     function enable3D() {
       if (view3d || !want3d || !window.THREE || !window.Sims3DView || dead) return;
       try {
-        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
+        view3d = window.Sims3DView.create({ layout: HDEF.model ? { model: HDEF.model, path: HDEF.path } : null, LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
         host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
       } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
     }
@@ -259,9 +290,10 @@
     // ---------------- walls ----------------
     const hWall = [], vWall = [];
     for (let y = 0; y <= LH; y++) { hWall.push(new Array(LW + 1).fill(0)); vWall.push(new Array(LW + 1).fill(0)); }
-    for (let x = HOUSE.x0; x <= HOUSE.x1; x++) { hWall[HOUSE.y0][x] = 2; if (x !== 7) hWall[HOUSE.y1 + 1][x] = 1; if (![4, 8, 11].includes(x)) hWall[7][x] = 1; }
-    for (let y = HOUSE.y0; y <= HOUSE.y1; y++) { vWall[y][HOUSE.x0] = 2; vWall[y][HOUSE.x1 + 1] = 1; }
-    for (let y = 2; y <= 6; y++) { vWall[y][7] = 1; vWall[y][10] = 1; }
+    if (LAYOUT) { for (let y = 0; y <= LH; y++) for (let x = 0; x <= LW; x++) { hWall[y][x] = +(LAYOUT.h[y] || "")[x] || 0; vWall[y][x] = +(LAYOUT.v[y] || "")[x] || 0; } }
+    else for (let x = HOUSE.x0; x <= HOUSE.x1; x++) { hWall[HOUSE.y0][x] = 2; if (x !== 7) hWall[HOUSE.y1 + 1][x] = 1; if (![4, 8, 11].includes(x)) hWall[7][x] = 1; }
+    if (!LAYOUT) for (let y = HOUSE.y0; y <= HOUSE.y1; y++) { vWall[y][HOUSE.x0] = 2; vWall[y][HOUSE.x1 + 1] = 1; }
+    if (!LAYOUT) for (let y = 2; y <= 6; y++) { vWall[y][7] = 1; vWall[y][10] = 1; }
     function canStep(x, y, nx, ny) {
       if (nx < 0 || ny < 0 || nx >= LW || ny >= LH) return false;
       if (ny === y + 1) return !hWall[ny][x]; if (ny === y - 1) return !hWall[y][x];
@@ -274,7 +306,7 @@
     // ---------------- objects ----------------
     function cells(o) { const d = CAT[o.t]; const a = []; for (let i = 0; i < d.w; i++) a.push([o.x + i, o.y]); return a; }
     function objAt(x, y) { return objs.find((o) => !CAT[o.t].walk && cells(o).some(([cx, cy]) => cx === x && cy === y)); }
-    function blockedCell(x, y, except) { const o = objAt(x, y); return o && o !== except; }
+    function blockedCell(x, y, except) { const o = objAt(x, y); if (o) return o !== except; return fixedBlock(x, y); }
     function useSpots(o) {
       const d = CAT[o.t];
       if (d.enter) return [[o.x, o.y]];
@@ -312,7 +344,7 @@
     function boot() {
       objs = G.objects.map((o) => ({ ...o }));
       sim = makeSimEntity({ ...G.sim, x: G.sim.x, y: G.sim.y }, true);
-      if (objAt(sim.x, sim.y)) { sim.x = 7; sim.y = 11; sim.fx = 7; sim.fy = 11; }
+      if (objAt(sim.x, sim.y) || fixedBlock(sim.x, sim.y)) { const st = HDEF.start || [7, 11]; sim.x = st[0]; sim.y = st[1]; sim.fx = st[0]; sim.fy = st[1]; }
       acts = []; npcs = [];
       if (!G.romance) G.romance = {}; if (!G.household) G.household = []; if (!G.sim.gender) G.sim.gender = "F";
       G.household.forEach((m) => spawnMember(m));
@@ -326,7 +358,7 @@
     const member = (name) => G.household.find((m) => m.name === name);
     const findBed = () => objs.find((o) => o.t === "bed");
     function save() {
-      if (!G) return; if (sim) { G.objects = objs.map((o) => (o.rot ? { t: o.t, x: o.x, y: o.y, rot: o.rot } : { t: o.t, x: o.x, y: o.y })); G.sim.x = Math.round(sim.fx); G.sim.y = Math.round(sim.fy); }
+      if (!G) return; if (sim) { G.objects = objs.map((o) => { const r = { t: o.t, x: o.x, y: o.y }; if (o.rot) r.rot = o.rot; if (o.hid) r.hid = 1; return r; }); G.sim.x = Math.round(sim.fx); G.sim.y = Math.round(sim.fy); }
       store().sims = G; try { State.save(); } catch (e) {}
     }
 
@@ -456,7 +488,7 @@
     }
     function finishAct(a) {
       const A = ACTS[a.type];
-      if (A.plate) { const spot = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [sim.x + dx, sim.y + dy]).find(([x, y]) => x >= 0 && y >= 0 && x < LW && y < LH - 2 && !objAt(x, y) && !objs.some((o) => o.x === x && o.y === y) && (canStep(sim.x, sim.y, x, sim.y) || canStep(sim.x, sim.y, sim.x, y))); if (spot) objs.push({ t: "plate", x: spot[0], y: spot[1] }); }
+      if (A.plate) { const spot = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [sim.x + dx, sim.y + dy]).find(([x, y]) => x >= 0 && y >= 0 && x < LW && y < LH - 2 && !objAt(x, y) && !fixedBlock(x, y) && !objs.some((o) => o.x === x && o.y === y) && (canStep(sim.x, sim.y, x, sim.y) || canStep(sim.x, sim.y, sim.x, y))); if (spot) objs.push({ t: "plate", x: spot[0], y: spot[1] }); }
       if (A.painting) { const v = 20 + Math.round(G.sim.skills.creativity * 16 + Math.random() * 20); G.money += v; notify(`${G.sim.name} sold a painting for §${v}.`); }
       if (A.clean && a.target) { const i = objs.indexOf(a.target); if (i >= 0) objs.splice(i, 1); }
       if (A.babyCare && G.baby) { G.baby.care = clamp(G.baby.care + A.babyCare, 0, 100); G.baby.neglect = 0; }
@@ -1034,7 +1066,7 @@
     }
     function canPlace(type, x, y) {
       const d = CAT[type];
-      for (let i = 0; i < d.w; i++) { const cx = x + i; if (cx < 0 || y < 0 || cx >= LW || y >= LH - 2) return false; if (objAt(cx, y)) return false; if (Math.round(sim.fx) === cx && Math.round(sim.fy) === y) return false; if (i > 0 && vWall[y][cx]) return false; }
+      for (let i = 0; i < d.w; i++) { const cx = x + i; if (cx < 0 || y < 0 || cx >= LW || y >= LH - 2) return false; if (objAt(cx, y) || fixedBlock(cx, y)) return false; if (Math.round(sim.fx) === cx && Math.round(sim.fy) === y) return false; if (i > 0 && vWall[y][cx]) return false; }
       return true;
     }
     function setMode(m) {
@@ -1043,9 +1075,39 @@
       const tb = host.querySelector(".sm-turnbtn"); if (tb) tb.hidden = !(m === "buy" && view3d);
       if (m === "buy") openCatalog(); else { $(".sm-catalog").hidden = true; buyItem = null; }
     }
+    // Move to another house. Furniture you bought comes with you as cash (sold at full price);
+    // the new house comes furnished.
+    function moveHouse() {
+      const cur = G.house || "starter";
+      const bought = objs.filter((o) => !o.hid && !CAT[o.t].fixed && !(HOUSES[cur].objects ? HOUSES[cur].objects() : starterObjects()).some((q) => q.t === o.t && q.x === o.x && q.y === o.y));
+      const refund = bought.reduce((a, o) => a + CAT[o.t].price, 0);
+      const cards = Object.entries(HOUSES).map(([k, h]) => `<button class="sm-job sm-house ${k === cur ? "cur" : ""}" data-h="${k}"><b>${esc(h.name)}${k === cur ? " · you live here" : ""}</b><span>${h.beds} bed · ${h.baths} bath · ${h.price ? "§" + h.price.toLocaleString() : "Free"}</span><span>${esc(h.desc)}</span></button>`).join("");
+      dialog("Move House", `<p>Pick a home. Furniture you bought is sold back for <b>§${refund.toLocaleString()}</b> when you move.</p><div class="sm-jobs">${cards}</div>`, [["Cancel"]], (d) => {
+        d.querySelectorAll("[data-h]").forEach((b) => b.onclick = () => {
+          const k = b.dataset.h, h = HOUSES[k]; if (k === cur) return;
+          if (G.money + refund < h.price) { notify(`You need §${(h.price - G.money - refund).toLocaleString()} more for the ${h.name}.`); return; }
+          G.money = G.money + refund - h.price; G.house = k;
+          G.objects = h.objects ? h.objects() : starterObjects();
+          const st = h.start || [7, 11]; G.sim.x = st[0]; G.sim.y = st[1];
+          objs = G.objects.map((o) => ({ ...o })); acts = []; sim.x = sim.fx = st[0]; sim.y = sim.fy = st[1]; sim.route = null;
+          d.hidden = true; dialogOpen = false; save();
+          const bodyEl = host.parentElement; cleanup(); setTimeout(() => { if (window.SIMS) { const r = window.SIMS.start(bodyEl, { skipSplash: true }); setTimeout(() => { const nh = bodyEl.querySelector(".sm"); if (nh && nh.__sims) nh.__sims.toast(`Welcome to your ${h.name}!`); }, 600); } }, 50);
+        });
+      });
+    }
+    function cheats() {
+      dialog("Cheats", `<p>Type a cheat code:</p><input class="sm-in sm-cheat" placeholder="motherlode" autocomplete="off"><p class="sm-small">motherlode · kaching · rosebud · freerealestate</p>`, [["Enter", (d) => {
+        const c = d.querySelector(".sm-cheat").value.trim().toLowerCase();
+        if (c === "motherlode") { G.money += 50000; notify("Motherlode! +§50,000"); }
+        else if (c === "kaching" || c === "rosebud") { G.money += 1000; notify("Kaching! +§1,000"); }
+        else if (c === "freerealestate") { G.freeRealEstate = !G.freeRealEstate; HOUSES.family.price = G.freeRealEstate ? 0 : 40000; notify(G.freeRealEstate ? "Free real estate is ON — houses cost nothing." : "Free real estate is off."); }
+        else { notify("That cheat doesn't exist."); }
+        save(); paintUI();
+      }], ["Close"]], (d) => setTimeout(() => { const i = d.querySelector(".sm-cheat"); if (i) i.focus(); }, 50));
+    }
     function openMenu() {
       dialog("Options", `<label class="sm-row"><input type="checkbox" class="sm-fw" ${G && G.freeWill ? "checked" : ""}> Free will (Sims take care of themselves)</label><p class="sm-small">Your game saves automatically.</p>`,
-        [["Credits", () => { setTimeout(() => dialog("Credits", creditsHTML()), 30); }], ["Close", (d) => { G.freeWill = d.querySelector(".sm-fw").checked; save(); }], ["New household", () => { setTimeout(() => dialog("Start over?", "<p>This replaces your current household and house.</p>", [["Start over", () => { setTimeout(createASim, 30); }], ["Cancel"]]), 30); }]]);
+        [["Move House", () => { setTimeout(moveHouse, 30); }], ["Cheats", () => { setTimeout(cheats, 30); }], ["Credits", () => { setTimeout(() => dialog("Credits", creditsHTML()), 30); }], ["Close", (d) => { G.freeWill = d.querySelector(".sm-fw").checked; save(); }], ["New household", () => { setTimeout(() => dialog("Start over?", "<p>This replaces your current household and house.</p>", [["Start over", () => { setTimeout(createASim, 30); }], ["Cancel"]]), 30); }]]);
     }
 
     // ---------------- pie menu ----------------
@@ -1097,7 +1159,7 @@
         const c = cellAt(mx, my);
         if (buyItem) { if (canPlace(buyItem, c.x, c.y)) { G.money -= CAT[buyItem].price; objs.push(Object.assign({ t: buyItem, x: c.x, y: c.y }, view3d && buyRot ? { rot: CAT[buyItem].w > 1 ? (buyRot % 2 ? 2 : buyRot) : buyRot } : {})); notify(`Bought ${CAT[buyItem].name}.`); if (CAT[buyItem].price > G.money) buyItem = null; openCatalog(); save(); } else notify("It doesn't fit there."); return; }
         const h = pick(mx, my);
-        if (h.obj && !CAT[h.obj.t].fixed) { const o = h.obj, v = Math.round(CAT[o.t].price * 0.8); dialog(CAT[o.t].name, `<p>Sell it for §${v}${view3d ? ", or turn it to face another way" : ""}?</p>`, [["Sell", () => { acts = acts.filter((a) => a.target !== o); paintQueue(); objs.splice(objs.indexOf(o), 1); G.money += v; save(); }]].concat(view3d ? [["Rotate ⟳", () => { const step = CAT[o.t].w > 1 ? 2 : 1; o.rot = ((o.rot != null ? o.rot : Math.round(((view3d.yawOf(o) % (Math.PI * 2)) + Math.PI * 2) / (Math.PI / 2)) % 4) + step) % 4; save(); }]] : []).concat([["Cancel"]])); }
+        if (h.obj && !CAT[h.obj.t].fixed && !h.obj.hid) { const o = h.obj, v = Math.round(CAT[o.t].price * 0.8); dialog(CAT[o.t].name, `<p>Sell it for §${v}${view3d ? ", or turn it to face another way" : ""}?</p>`, [["Sell", () => { acts = acts.filter((a) => a.target !== o); paintQueue(); objs.splice(objs.indexOf(o), 1); G.money += v; save(); }]].concat(view3d ? [["Rotate ⟳", () => { const step = CAT[o.t].w > 1 ? 2 : 1; o.rot = ((o.rot != null ? o.rot : Math.round(((view3d.yawOf(o) % (Math.PI * 2)) + Math.PI * 2) / (Math.PI / 2)) % 4) + step) % 4; save(); }]] : []).concat([["Cancel"]])); }
         return;
       }
       const h = pick(mx, my), opts = [];
@@ -1182,9 +1244,10 @@
       sp.querySelector(".sm-sp-go").onclick = go;
       sp.addEventListener("pointerdown", (e) => { if (!e.target.closest("a")) go(); });
     }
-    splash(() => { if (G && G.v === 1) boot(); else { G = null; createASim(); } });
+    if (G && G.freeRealEstate) HOUSES.family.price = 0;
+    if (startOpts && startOpts.skipSplash && G && G.v === 1) boot(); else splash(() => { if (G && G.v === 1) boot(); else { G = null; createASim(); } });
     raf = requestAnimationFrame((n) => { last = n; frame(n); });
-    host.__sims = { get view3d() { return view3d; }, set3D, get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
+    host.__sims = { toast: (t) => notify(t), moveHouse, cheats, HOUSE, get house() { return HKEY; }, fixedBlock, path: (a, b, c, d) => path(a, b, c, d), get view3d() { return view3d; }, set3D, get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
     return { dispose: cleanup };
   }
 
@@ -1259,6 +1322,7 @@
       .sm-trait { display: grid; grid-template-columns: 70px 1fr 70px 20px; align-items: center; gap: 6px; } .sm-trait span:last-of-type { text-align: right; }
       .sm-pts { font-weight: 700; text-align: right; }
       .sm-jobs { display: flex; flex-direction: column; gap: 6px; } .sm-job { text-align: left; border: 2px solid #5a80c8; background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; color: #102a5a; } .sm-job:hover { background: #fff7c2; } .sm-job span { font-size: 12px; color: #2a6a2a; }
+      .sm-house.cur { border-color: #3be36a; } .sm-house span { display: block; font-size: 12px; color: #4a5a74; }
       .sm-row { display: flex; gap: 8px; align-items: center; } .sm-small { font-size: 12px; opacity: .8; }
       @media (max-width: 640px) { .sm-tabs { display: none; } .sm-left { width: 140px; } }
       /* ===== Modern Sims-style HUD (floats over the lot) ===== */
