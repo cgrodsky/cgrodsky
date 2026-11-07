@@ -192,7 +192,7 @@
     let G = store().sims || null;
     body.innerHTML = `<div class="sm"><canvas class="sm-cv"></canvas>
       <div class="sm-queue"></div>
-      <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
+      <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="turn" title="Turn the item you're placing (R)" class="sm-turnbtn" hidden>↻ Turn</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
       <div class="sm-hint"></div>
       <div class="sm-bar">
         <div class="sm-left">
@@ -213,7 +213,7 @@
     const host = body.querySelector(".sm"), cv = host.querySelector(".sm-cv"), g = cv.getContext("2d");
     const $ = (q) => host.querySelector(q);
     let W = 0, H = 0, dpr = 1, zoom = 1, camX = 0, camY = 0, mode = "live", tab = "needs";
-    let sim = null, npcs = [], objs = [], acts = [], hover = null, buyItem = null, ghostOk = false, dialogOpen = false, t = 0, flash = [];
+    let buyRot = 0; let sim = null, npcs = [], objs = [], acts = [], hover = null, buyItem = null, ghostOk = false, dialogOpen = false, t = 0, flash = [];
     let lastSave = 0, dead = false, raf = 0, last = performance.now(), userCam = false;
 
     function fit() {
@@ -241,7 +241,7 @@
     function set3D(on) {
       want3d = on; try { State.data.appData.sims3dView = on; State.save(); } catch (e) {}
       if (on) enable3D(); else disable3D();
-      $(".sm-2dbtn").textContent = view3d ? "2D" : "3D"; host.querySelectorAll(".sm-view3d button:not(.sm-2dbtn)").forEach((b) => b.hidden = !view3d);
+      $(".sm-2dbtn").textContent = view3d ? "2D" : "3D"; host.querySelectorAll(".sm-view3d button:not(.sm-2dbtn):not(.sm-turnbtn)").forEach((b) => b.hidden = !view3d);
       $(".sm-view3d").hidden = false;
     }
     if (window.THREE) setTimeout(enable3D, 0); else window.addEventListener("three-ready", () => enable3D(), { once: true });
@@ -316,7 +316,7 @@
     const member = (name) => G.household.find((m) => m.name === name);
     const findBed = () => objs.find((o) => o.t === "bed");
     function save() {
-      if (!G) return; if (sim) { G.objects = objs.map((o) => ({ t: o.t, x: o.x, y: o.y })); G.sim.x = Math.round(sim.fx); G.sim.y = Math.round(sim.fy); }
+      if (!G) return; if (sim) { G.objects = objs.map((o) => (o.rot ? { t: o.t, x: o.x, y: o.y, rot: o.rot } : { t: o.t, x: o.x, y: o.y })); G.sim.x = Math.round(sim.fx); G.sim.y = Math.round(sim.fy); }
       store().sims = G; try { State.save(); } catch (e) {}
     }
 
@@ -861,7 +861,7 @@
     // Where a Sim is and how it's posed, shared by the 3D renderer and its overlays.
     function entInfo(e) {
       const cur = e.player ? acts[0] : null, A = cur && cur.phase === "use" ? ACTS[cur.type] : null;
-      const info = { e, x: e.fx, y: e.fy, pose: e.pose, hidden: !!e.away, A, cur, player: !!e.player };
+      const info = { e, x: e.fx, y: e.fy, pose: e.pose, hidden: !!e.away, A, cur, player: !!e.player, sleeping: !!(A && A.sleeping) || (!e.player && e.pose === "lie") };
       if (A && cur.target && !cur.target.npc && CAT[cur.target.t]) {
         const o = cur.target, d = CAT[o.t];
         if (d.enter) { info.x = o.x + (d.w - 1) / 2; info.y = o.y; }
@@ -881,7 +881,7 @@
       const hr = G.min / 60 % 24;
       const ents = [sim].concat(npcs).filter(Boolean).map(entInfo);
       let ghost = null;
-      if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk }; }
+      if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk, rot: buyRot }; }
       view3d.render({ dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: mode === "live" ? hover : null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") });
       // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
       const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
@@ -905,7 +905,7 @@
         if (!e.player) { g.font = "700 12px system-ui"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "rgba(0,0,0,.6)"; g.fillText(e.name, fp[0] + 1, fp[1] + 15); g.fillStyle = "#fff"; g.fillText(e.name, fp[0], fp[1] + 14); }
       });
       flash.forEach((f, i) => { g.font = "600 13px system-ui,sans-serif"; const w = g.measureText(f.text).width + 20; g.globalAlpha = Math.min(1, f.t); g.fillStyle = "rgba(20,40,90,.85)"; g.fillRect(W - w - 12, 56 + i * 30, w, 24); g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(f.text, W - w - 2, 68 + i * 30); g.globalAlpha = 1; });
-      if (mode === "buy") { g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, H - 28, W, 28); g.fillStyle = "#fff"; g.font = "700 13px system-ui"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(buyItem ? "Tap a tile to place it · right-click or Esc to cancel" : "BUY MODE — pick an item, or tap an object to sell it (time is paused)", W / 2, H - 14); }
+      if (mode === "buy") { g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, H - 28, W, 28); g.fillStyle = "#fff"; g.font = "700 13px system-ui"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(buyItem ? "Tap a tile to place it · R or ⟳ to turn it · right-click or Esc to cancel" : "BUY MODE — pick an item, or tap an object to sell it (time is paused)", W / 2, H - 14); }
     }
     function draw() {
       if (view3d) { draw3d(); return; }
@@ -1013,6 +1013,7 @@
     function setMode(m) {
       if (m === "menu") { openMenu(); return; }
       mode = m; host.querySelectorAll(".sm-mode").forEach((b) => b.classList.toggle("on", b.dataset.m === m));
+      const tb = host.querySelector(".sm-turnbtn"); if (tb) tb.hidden = !(m === "buy" && view3d);
       if (m === "buy") openCatalog(); else { $(".sm-catalog").hidden = true; buyItem = null; }
     }
     function openMenu() {
@@ -1067,9 +1068,9 @@
       const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
       if (mode === "buy") {
         const c = cellAt(mx, my);
-        if (buyItem) { if (canPlace(buyItem, c.x, c.y)) { G.money -= CAT[buyItem].price; objs.push({ t: buyItem, x: c.x, y: c.y }); notify(`Bought ${CAT[buyItem].name}.`); if (CAT[buyItem].price > G.money) buyItem = null; openCatalog(); save(); } else notify("It doesn't fit there."); return; }
+        if (buyItem) { if (canPlace(buyItem, c.x, c.y)) { G.money -= CAT[buyItem].price; objs.push(Object.assign({ t: buyItem, x: c.x, y: c.y }, view3d && buyRot ? { rot: CAT[buyItem].w > 1 ? (buyRot % 2 ? 2 : buyRot) : buyRot } : {})); notify(`Bought ${CAT[buyItem].name}.`); if (CAT[buyItem].price > G.money) buyItem = null; openCatalog(); save(); } else notify("It doesn't fit there."); return; }
         const h = pick(mx, my);
-        if (h.obj && !CAT[h.obj.t].fixed) { const o = h.obj, v = Math.round(CAT[o.t].price * 0.8); dialog("Sell object?", `<p>Sell the ${esc(CAT[o.t].name)} for §${v}?</p>`, [["Sell", () => { acts = acts.filter((a) => a.target !== o); paintQueue(); objs.splice(objs.indexOf(o), 1); G.money += v; save(); }], ["Cancel"]]); }
+        if (h.obj && !CAT[h.obj.t].fixed) { const o = h.obj, v = Math.round(CAT[o.t].price * 0.8); dialog(CAT[o.t].name, `<p>Sell it for §${v}${view3d ? ", or turn it to face another way" : ""}?</p>`, [["Sell", () => { acts = acts.filter((a) => a.target !== o); paintQueue(); objs.splice(objs.indexOf(o), 1); G.money += v; save(); }]].concat(view3d ? [["Rotate ⟳", () => { const step = CAT[o.t].w > 1 ? 2 : 1; o.rot = ((o.rot != null ? o.rot : Math.round(((view3d.yawOf(o) % (Math.PI * 2)) + Math.PI * 2) / (Math.PI / 2)) % 4) + step) % 4; save(); }]] : []).concat([["Cancel"]])); }
         return;
       }
       const h = pick(mx, my), opts = [];
@@ -1101,10 +1102,13 @@
     cv.addEventListener("contextmenu", (e) => { e.preventDefault(); buyItem = null; if (mode === "buy") openCatalog(); });
     cv.addEventListener("wheel", (e) => { e.preventDefault(); if (view3d) { view3d.zoom(e.deltaY < 0 ? 0.9 : 1.11); return; } const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, z0 = zoom; zoom = clamp(zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.45, 1.8); camX = mx - (mx - camX) * zoom / z0; camY = my - (my - camY) * zoom / z0; userCam = true; }, { passive: false });
     host.querySelectorAll(".sm-mode").forEach((b) => b.onclick = () => setMode(b.dataset.m));
+    $(".sm-portrait").style.cursor = "pointer"; $(".sm-portrait").title = "Center the camera on your Sim";
+    $(".sm-portrait").onclick = () => { if (view3d && sim) view3d.focus(sim.fx + 0.5, sim.fy + 0.5, 9); };
     host.querySelectorAll(".sm-view3d button").forEach((b) => b.onclick = () => {
       const v = b.dataset.v;
       if (v === "2d") { set3D(!view3d); return; }
       if (!view3d) return;
+      if (v === "turn") { buyRot = (buyRot + 1) % 4; return; }
       if (v === "rotL") view3d.rotate(-1); if (v === "rotR") view3d.rotate(1);
       if (v === "zin") view3d.zoom(0.85); if (v === "zout") view3d.zoom(1.18);
       if (v === "walls") { const order = ["cutaway", "up", "down"], nm = { cutaway: "▥ Cutaway", up: "▮ Walls Up", down: "▁ Walls Down" }; const nx = order[(order.indexOf(view3d.wallMode) + 1) % 3]; view3d.setWallMode(nx); b.textContent = nm[nx]; }
@@ -1115,6 +1119,7 @@
       if (!document.body.contains(host) || !host.closest(".win") || dialogOpen) return;
       const a = document.activeElement; if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
       if (!host.contains(a) && a !== document.body) return;
+      if (mode === "buy" && (e.key === "r" || e.key === "R")) { buyRot = (buyRot + 1) % 4; }
       if (view3d && (e.key === "q" || e.key === "Q")) view3d.rotate(-1);
       if (view3d && (e.key === "e" || e.key === "E")) view3d.rotate(1);
       if (e.key === "Escape") { buyItem = null; $(".sm-pie").hidden = true; if (mode === "buy") openCatalog(); }

@@ -33,6 +33,7 @@
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
     const disposables = [];
@@ -58,10 +59,20 @@
       blanket: texture((g, s) => { g.fillStyle = "#3a5a9a"; g.fillRect(0, 0, s, s); g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 3; for (let i = -s; i < s * 2; i += 16) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + s, s); g.stroke(); } }, 128),
     };
 
+    // ---------- environment reflections: a soft sky/ground gradient baked into an env map ----------
+    try {
+      const envScene = new THREE.Scene(); const sg = new THREE.SphereGeometry(10, 24, 12); const cols = [];
+      const top = new THREE.Color(0xbcd8f2), hor = new THREE.Color(0xf2ece0), bot = new THREE.Color(0x5a6a48);
+      for (let i = 0; i < sg.attributes.position.count; i++) { const y = sg.attributes.position.getY(i) / 10; const c = y > 0 ? hor.clone().lerp(top, y) : hor.clone().lerp(bot, -y * 2); cols.push(c.r, c.g, c.b); }
+      sg.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+      envScene.add(new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+      const pm = new THREE.PMREMGenerator(renderer); const envRT = pm.fromScene(envScene, 0.04); scene.environment = envRT.texture; scene.environmentIntensity = 0.55; keep(envRT); pm.dispose(); sg.dispose();
+    } catch (e) {}
+
     // ---------- lights & sky ----------
     const hemi = new THREE.HemisphereLight(0xdfefff, 0x5a7a3a, 0.9); scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xfff2dd, 1.6); sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14; sc.near = 1; sc.far = 60; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
+    sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 60; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun); scene.add(sun.target);
     const lampLights = []; for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffd8a0, 0, 7, 1.6); scene.add(l); lampLights.push(l); }
     const tvLight = new THREE.PointLight(0x8ab8ff, 0, 5, 1.8); scene.add(tvLight);
@@ -170,6 +181,7 @@
     }
     // facing: rotation (yaw) so the piece's front (+z) points into the room
     function facing(o, objs) {
+      if (o.rot != null) return o.rot * Math.PI / 2;
       const d = CAT[o.t], w = d.w || 1;
       const adj = (tt) => objs.find((q) => q !== o && tt.includes(q.t) && Math.abs(q.x - o.x) + Math.abs(q.y - o.y) === 1);
       if (o.t === "chair") { const tgt = adj(["computer", "table", "chess"]); if (tgt) { const dx = tgt.x - o.x, dy = tgt.y - o.y; return Math.atan2(dx, dy); } }
@@ -206,32 +218,124 @@
       return root;
     }
 
+    // ---------- door frames (wall gaps inside the house) ----------
+    const trimM = mat(0xf4f1ea, { roughness: 0.5 }), baseM = mat(0x6a4a30, { roughness: 0.6 });
+    function doorFrame(x, z, horiz) {
+      const g = new THREE.Group();
+      const post = (o) => { const p = new THREE.Mesh(keep(new THREE.BoxGeometry(horiz ? 0.08 : WALL_T + 0.06, 2.15, horiz ? WALL_T + 0.06 : 0.08)), trimM); p.position.set(horiz ? o : 0, 1.075, horiz ? 0 : o); p.castShadow = true; g.add(p); };
+      post(-0.46); post(0.46);
+      const lin = new THREE.Mesh(keep(new THREE.BoxGeometry(horiz ? 1 : WALL_T + 0.06, 0.1, horiz ? WALL_T + 0.06 : 1)), trimM); lin.position.y = 2.15; g.add(lin);
+      const above = new THREE.Mesh(keep(new THREE.BoxGeometry(horiz ? 1 : WALL_T, WALL_H - 2.2, horiz ? WALL_T : 1)), inMat); above.position.y = 2.2 + (WALL_H - 2.2) / 2; g.add(above);
+      g.position.set(x, 0, z); scene.add(g);
+      walls.push({ m: g, mid: new THREE.Vector2(x, z), exterior: false, h: WALL_H, isFrame: true });
+    }
+    for (let y = HOUSE.y0; y <= HOUSE.y1 + 1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (hWall[y] && !hWall[y][x] && hWall[y][x - 1] && hWall[y][x + 1]) doorFrame(x + 0.5, y, true);
+    for (let y = HOUSE.y0; y <= HOUSE.y1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1 + 1; x++) if (vWall[y] && !vWall[y][x] && vWall[y - 1] && vWall[y - 1][x] && vWall[y + 1] && vWall[y + 1][x]) doorFrame(x, y + 0.5, false);
+    // baseboards along every wall
+    walls.slice().forEach((w) => { if (w.isFrame) return; const p = w.m.geometry.parameters; const bb = new THREE.Mesh(keep(new THREE.BoxGeometry(p.width + 0.02, 0.1, p.depth + 0.02)), baseM); bb.position.set(w.m.position.x, 0.05, w.m.position.z); scene.add(bb); });
+    // front door (a real door panel in the front gap)
+    for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (!hWall[HOUSE.y1 + 1][x] && hWall[HOUSE.y1 + 1][x - 1]) { const d = new THREE.Mesh(keep(new THREE.BoxGeometry(0.06, 2.1, 0.86)), mat(0x7a2a1a, { roughness: 0.5 })); d.geometry.translate(0, 1.05, 0); d.position.set(x + 0.08, 0, HOUSE.y1 + 1 + 0.45); d.rotation.y = -0.2; d.castShadow = true; scene.add(d); walls.push({ m: d, mid: new THREE.Vector2(x + 0.5, HOUSE.y1 + 1), exterior: true, h: WALL_H, isFrame: true }); }
+
+    // ---------- rug and paintings ----------
+    const rugT = texture((g, s) => { g.fillStyle = "#8a2a2a"; g.fillRect(0, 0, s, s); g.strokeStyle = "#e8c47a"; g.lineWidth = s / 24; g.strokeRect(s / 12, s / 12, s * 10 / 12, s * 10 / 12); g.strokeStyle = "#2a3a6a"; g.lineWidth = s / 40; g.strokeRect(s / 6, s / 6, s * 4 / 6, s * 4 / 6); for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? "#e8c47a" : "#2a3a6a"; g.beginPath(); g.arc(s / 2, s / 2, s / 4 - i * s / 30, 0, 7); g.fill(); } }, 256);
+    const liv = ROOMS.find((r) => r.id === "liv");
+    if (liv) { const rug = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.6, 1.8)), mat(0xffffff, { map: rugT, roughness: 1 })); rug.rotation.x = -Math.PI / 2; rug.position.set(liv.x0 + 2, 0.016, liv.y0 + 1.9); rug.receiveShadow = true; scene.add(rug); }
+    const art = [
+      (g, s) => { g.fillStyle = "#f3e7c9"; g.fillRect(0, 0, s, s); g.fillStyle = "#e8505b"; g.beginPath(); g.arc(s * 0.35, s * 0.4, s * 0.22, 0, 7); g.fill(); g.fillStyle = "#2a5aa0"; g.fillRect(s * 0.5, s * 0.45, s * 0.35, s * 0.4); g.fillStyle = "#f6b33c"; g.fillRect(s * 0.15, s * 0.7, s * 0.3, s * 0.12); },
+      (g, s) => { const gr = g.createLinearGradient(0, 0, 0, s); gr.addColorStop(0, "#f6a35a"); gr.addColorStop(0.55, "#f3d27a"); gr.addColorStop(0.56, "#3a6a8a"); gr.addColorStop(1, "#1f3a5a"); g.fillStyle = gr; g.fillRect(0, 0, s, s); g.fillStyle = "#fff4c0"; g.beginPath(); g.arc(s * 0.5, s * 0.52, s * 0.12, Math.PI, 0); g.fill(); },
+      (g, s) => { g.fillStyle = "#dfe8d8"; g.fillRect(0, 0, s, s); g.fillStyle = "#4a7a3a"; for (let i = 0; i < 5; i++) { g.beginPath(); g.ellipse(s * 0.5, s * 0.55, s * 0.08, s * 0.3, i * 0.6 - 1.2, 0, 7); g.fill(); } g.fillStyle = "#b4673a"; g.fillRect(s * 0.4, s * 0.75, s * 0.2, s * 0.2); },
+    ];
+    let artI = 0;
+    walls.forEach((w, i) => {
+      if (w.isFrame || w.win || i % 4 !== 2) return;
+      const p = w.m.geometry.parameters, horiz = p.depth === WALL_T; if ((horiz ? p.width : p.depth) < 0.9) return;
+      // hang on the side facing the room the wall belongs to
+      const n = horiz ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+      const side = w.exterior ? (horiz ? (w.mid.y === HOUSE.y0 ? 1 : -1) : (w.mid.x === HOUSE.x0 ? 1 : -1)) : 1;
+      const tx = texture(art[artI++ % art.length], 128);
+      const pic = new THREE.Group(); pic.add(new THREE.Mesh(keep(new THREE.BoxGeometry(0.64, 0.5, 0.03)), mat(0x3a2a1a))); const canvasM = new THREE.Mesh(keep(new THREE.PlaneGeometry(0.56, 0.42)), mat(0xffffff, { map: tx, roughness: 0.9 })); canvasM.position.z = 0.017; pic.add(canvasM);
+      pic.position.set(w.mid.x + n.x * side * (WALL_T / 2 + 0.02), 1.55, w.mid.y + n.z * side * (WALL_T / 2 + 0.02)); pic.lookAt(pic.position.x + n.x * side, 1.55, pic.position.z + n.z * side);
+      scene.add(pic); w.art = pic;
+    });
+
+    // ---------- neighborhood: trees, streetlights, neighbor houses ----------
+    const trunkM = mat(0x6a4a2e, { roughness: 1 }), leafMs = [mat(0x3f7f2e, { roughness: 0.9, flatShading: true }), mat(0x4f8f36, { roughness: 0.9, flatShading: true }), mat(0x356b28, { roughness: 0.9, flatShading: true })];
+    const blobGeo = keep(new THREE.IcosahedronGeometry(1, 1)), trunkGeo = keep(new THREE.CylinderGeometry(0.12, 0.18, 1, 7));
+    function tree(x, z, sz, kind) {
+      const g = new THREE.Group(); sz = sz || 1;
+      const tr = new THREE.Mesh(trunkGeo, trunkM); tr.scale.set(sz, 2.2 * sz, sz); tr.position.y = 1.1 * sz; tr.castShadow = true; g.add(tr);
+      if (kind === "pine") { for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(keep(new THREE.ConeGeometry((1.4 - i * 0.28) * sz, 1.4 * sz, 8)), leafMs[2]); c.position.y = (1.6 + i * 0.75) * sz; c.castShadow = true; g.add(c); } }
+      else for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(blobGeo, leafMs[i % 3]); const a = i * 1.7; b.scale.setScalar((0.75 + (i % 3) * 0.15) * sz); b.position.set(Math.cos(a) * 0.6 * sz, (2.6 + (i % 2) * 0.6) * sz, Math.sin(a) * 0.6 * sz); b.castShadow = true; g.add(b); }
+      g.position.set(x, 0, z); g.rotation.y = x * 1.3; scene.add(g); return g;
+    }
+    [[-1.4, 1.2, 1.1], [LW + 1.4, 2.5, 1.2, "pine"], [LW + 2.2, 9.5, 0.9], [-1.6, 9, 1.15, "pine"], [0.6, LH - 2.7, 0.55], [5, -2.2, 1.3, "pine"], [10.5, -2.6, 1.2], [-6, 4, 1.4], [LW + 6, 6, 1.3, "pine"], [-4, 14, 0.9], [LW + 4, LH - 1, 1]].forEach((t) => tree(t[0], t[1], t[2], t[3]));
+    const bulbs = [];
+    [2, 13].forEach((x) => { const p = new THREE.Group(); p.add(cyl(0.05, 0.07, 3.6, 0x3a3d44, 0, 0, 0)); const arm = box(0.7, 0.06, 0.06, 0x3a3d44, 0.3, 3.55, 0); p.add(arm); const b = new THREE.Mesh(keep(new THREE.SphereGeometry(0.13, 10, 8)), keep(new THREE.MeshStandardMaterial({ color: 0xfff2c0, emissive: 0xffd890, emissiveIntensity: 0 }))); b.position.set(0.6, 3.45, 0); p.add(b); bulbs.push(b); p.position.set(x, 0, LH - 1.1); p.rotation.y = Math.PI / 2; scene.add(p); });
+    // neighbor houses across the street and next door use the house model
+    if (loader) loadModel("house.glb").then((src) => {
+      [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI], [-12, LH / 2 - 1, Math.PI / 2]].forEach(([x, z, ry]) => {
+        const h = src.clone(true); h.scale.setScalar(0.72); h.rotation.y = ry; h.position.set(x, 0, z); scene.add(h);
+        h.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = true; } });
+      });
+      [[LW / 2 - 7, LH + 6], [LW / 2 + 9, LH + 6]].forEach(([x, z]) => plane(1.2, 3.5, mat(0xc4c4bc), x, z, 0.006));
+    }).catch(() => {});
+
     // ---------- Sims ----------
     const simMeshes = new Map();
     function simMat(c) { return keep(new THREE.MeshStandardMaterial({ color: new THREE.Color(c || "#888"), roughness: 0.7 })); }
     function buildSim(e) {
       const g = new THREE.Group(); g.userData.ent = e;
-      const skin = simMat(e.skin), shirt = simMat(e.shirt), pants = simMat(e.pants), hair = simMat(e.hair), shoe = simMat("#2a2a2a");
-      const part = (geo, m, x, y, z) => { const me = new THREE.Mesh(keep(geo), m); me.position.set(x, y, z); me.castShadow = true; me.userData.ent = e; return me; };
+      const F = e.gender === "F";
+      const skin = keep(new THREE.MeshStandardMaterial({ color: new THREE.Color(e.skin || "#e8b48a"), roughness: 0.6, emissive: new THREE.Color(e.skin || "#e8b48a"), emissiveIntensity: 0.16 })), shirt = simMat(e.shirt), pants = simMat(e.pants), hair = keep(new THREE.MeshStandardMaterial({ color: new THREE.Color(e.hair || "#333"), roughness: 0.55 })), shoe = keep(new THREE.MeshStandardMaterial({ color: 0x2a2626, roughness: 0.5 }));
+      const white = simMat("#f8f8f6"), iris = simMat(["#5a3a22", "#3a6a9a", "#4a7a3a", "#6a4a2a"][((e.name || "x").charCodeAt(0) || 0) % 4]), dark = simMat("#141414"), lip = simMat(F ? "#c0625e" : "#a8605a");
+      const part = (geo, m, x, y, z) => { const me = new THREE.Mesh(keep(geo), m); me.position.set(x || 0, y || 0, z || 0); me.castShadow = true; me.userData.ent = e; return me; };
+      const lathe = (pts, seg) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg || 16);
       const hips = new THREE.Group(); hips.position.y = 0.92; g.add(hips);
-      const torso = part(new THREE.CylinderGeometry(0.17, 0.15, 0.5, 10), shirt, 0, 0.27, 0); hips.add(torso);
-      if (e.gender === "F") torso.scale.set(0.95, 1, 0.82);
+      // pelvis + torso (smooth lathe shapes)
+      { const pel = part(lathe(F ? [[0, -0.07], [0.12, -0.065], [0.15, 0.0], [0.145, 0.1], [0, 0.1]] : [[0, -0.07], [0.115, -0.065], [0.14, 0.0], [0.14, 0.1], [0, 0.1]]), pants); pel.scale.z = 0.72; hips.add(pel); }
+      const torsoPts = F ? [[0, 0.08], [0.145, 0.08], [0.13, 0.2], [0.145, 0.3], [0.16, 0.38], [0.15, 0.46], [0.07, 0.53], [0, 0.53]] : [[0, 0.08], [0.15, 0.08], [0.155, 0.22], [0.175, 0.36], [0.19, 0.45], [0.12, 0.52], [0, 0.53]];
+      const torso = part(lathe(torsoPts), shirt); torso.scale.z = F ? 0.78 : 0.72; hips.add(torso);
       const chest = new THREE.Group(); chest.position.y = 0.5; hips.add(chest);
-      chest.add(part(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 8), skin, 0, 0.04, 0));
-      const head = new THREE.Group(); head.position.y = 0.2; chest.add(head);
-      head.add(part(new THREE.SphereGeometry(0.13, 16, 12), skin, 0, 0, 0));
-      const hairM = part(new THREE.SphereGeometry(0.138, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), hair, 0, 0.012, -0.008); head.add(hairM);
-      if (e.gender === "F") { const back = part(new THREE.BoxGeometry(0.24, 0.26, 0.07), hair, 0, -0.1, -0.1); head.add(back); }
-      [[-0.045], [0.045]].forEach(([x]) => head.add(part(new THREE.SphereGeometry(0.016, 6, 6), simMat("#1a1a1a"), x, 0.02, 0.118)));
-      head.add(part(new THREE.BoxGeometry(0.05, 0.012, 0.01), simMat("#8a4a3a"), 0, -0.05, 0.122));
-      const limb = (r, len, m) => { const p = new THREE.Group(); const me = part(new THREE.CylinderGeometry(r, r * 0.85, len, 8), m, 0, -len / 2, 0); p.add(me); return p; };
-      const armL = limb(0.045, 0.32, shirt), armR = limb(0.045, 0.32, shirt);
-      armL.position.set(-0.22, 0.45, 0); armR.position.set(0.22, 0.45, 0); hips.add(armL, armR);
-      const foreL = limb(0.04, 0.3, skin), foreR = limb(0.04, 0.3, skin); foreL.position.y = -0.32; foreR.position.y = -0.32; armL.add(foreL); armR.add(foreR);
-      const legL = limb(0.07, 0.45, pants), legR = limb(0.07, 0.45, pants); legL.position.set(-0.09, 0, 0); legR.position.set(0.09, 0, 0); hips.add(legL, legR);
-      const shinL = limb(0.06, 0.45, pants), shinR = limb(0.06, 0.45, pants); shinL.position.y = -0.45; shinR.position.y = -0.45; legL.add(shinL); legR.add(shinR);
-      [shinL, shinR].forEach((s) => s.add(part(new THREE.BoxGeometry(0.1, 0.06, 0.2), shoe, 0, -0.47, 0.04)));
-      g.userData.rig = { hips, chest, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, torso };
+      chest.add(part(new THREE.CylinderGeometry(0.045, 0.05, 0.1, 10), skin, 0, 0.05, 0));
+      const collar = part(new THREE.TorusGeometry(0.06, 0.018, 6, 14), shirt, 0, 0.02, 0); collar.rotation.x = Math.PI / 2; chest.add(collar);
+      // head
+      const head = new THREE.Group(); head.position.y = 0.21; chest.add(head);
+      const skull = part(new THREE.SphereGeometry(0.115, 20, 16), skin); skull.scale.set(F ? 0.92 : 0.95, 1.08, 1); head.add(skull);
+      const jaw = part(new THREE.SphereGeometry(0.085, 14, 10), skin, 0, -0.055, 0.025); jaw.scale.set(F ? 0.95 : 1.05, 0.8, 0.95); head.add(jaw);
+      { const nose = part(new THREE.SphereGeometry(0.02, 10, 8), skin, 0, -0.012, 0.112); nose.scale.set(0.8, 1.2, 1); head.add(nose); }
+      [-1, 1].forEach((sd) => {
+        { const ear = part(new THREE.SphereGeometry(0.025, 8, 6), skin, sd * 0.108, -0.005, 0); ear.scale.set(0.5, 1, 0.8); head.add(ear); } // ears
+        const eye = part(new THREE.SphereGeometry(0.021, 12, 8), white, sd * 0.042, 0.018, 0.093); eye.scale.z = 0.6; head.add(eye);
+        head.add(part(new THREE.SphereGeometry(0.012, 10, 8), iris, sd * 0.042, 0.018, 0.106));
+        head.add(part(new THREE.SphereGeometry(0.006, 6, 6), dark, sd * 0.042, 0.018, 0.115));
+        const brow = part(new THREE.BoxGeometry(0.04, 0.008, 0.01), hair, sd * 0.042, 0.05, 0.104); brow.rotation.z = sd * (F ? -0.12 : -0.05); head.add(brow);
+      });
+      const lids = new THREE.Group(); [-1, 1].forEach((sd) => { const l = part(new THREE.SphereGeometry(0.023, 10, 8), skin, sd * 0.042, 0.018, 0.097); l.scale.z = 0.62; lids.add(l); }); lids.visible = false; head.add(lids);
+      const mouth = part(new THREE.CapsuleGeometry(0.008, 0.03, 4, 8), lip, 0, -0.058, 0.105); mouth.rotation.z = Math.PI / 2; head.add(mouth);
+      // hair styles
+      const style = ((e.name || "").length + (F ? 3 : 0)) % 3;
+      const cap = part(new THREE.SphereGeometry(0.124, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.3), hair, 0, 0.006, -0.004); cap.scale.set(F ? 0.96 : 0.99, 1.1, 1.04); head.add(cap);
+      const backHair = part(new THREE.SphereGeometry(0.124, 20, 12, Math.PI, Math.PI, 0, Math.PI * (F ? 0.72 : 0.56)), hair, 0, 0.006, -0.006); backHair.scale.set(F ? 0.96 : 0.99, 1.1, 1.06); head.add(backHair);
+      if (F) {
+        if (style === 0) { const back = part(new THREE.CapsuleGeometry(0.1, 0.18, 6, 12), hair, 0, -0.12, -0.05); back.scale.set(1.1, 1, 0.6); head.add(back); }       // long hair
+        else if (style === 1) { const bob = part(new THREE.SphereGeometry(0.135, 18, 12, Math.PI * 0.92, Math.PI * 1.16, 0, Math.PI * 0.74), hair, 0, -0.005, -0.012); bob.scale.set(1.02, 1.05, 1.05); head.add(bob); }  // bob
+        else { const pt = part(new THREE.CapsuleGeometry(0.035, 0.16, 4, 10), hair, 0, -0.07, -0.13); pt.rotation.x = 0.35; head.add(pt); head.add(part(new THREE.SphereGeometry(0.045, 10, 8), hair, 0, 0.03, -0.11)); } // ponytail
+        const fringe = part(new THREE.SphereGeometry(0.125, 16, 6, Math.PI * 0.05, Math.PI * 0.9, Math.PI * 0.18, Math.PI * 0.16), hair, 0, 0.008, 0.004); fringe.scale.set(0.97, 1.1, 1.06); head.add(fringe);
+      } else {
+        if (style === 1) { const quiff = part(new THREE.CapsuleGeometry(0.05, 0.08, 4, 10), hair, 0.01, 0.1, 0.05); quiff.rotation.z = Math.PI / 2; head.add(quiff); }
+        if (style === 2) { [-1, 1].forEach((sd) => head.add(part(new THREE.BoxGeometry(0.02, 0.06, 0.06), hair, sd * 0.112, 0.02, 0.02))); }  // sideburns
+      }
+      // limbs: capsules with elbows/knees, hands and shoes
+      const limb = (r, len, m) => { const p = new THREE.Group(); p.add(part(new THREE.CapsuleGeometry(r, len - r * 2, 4, 10), m, 0, -len / 2, 0)); return p; };
+      const sh = F ? 0.175 : 0.2;
+      const armL = limb(0.045, 0.3, shirt), armR = limb(0.045, 0.3, shirt); armL.position.set(-sh, 0.45, 0); armR.position.set(sh, 0.45, 0); hips.add(armL, armR);
+      const foreL = limb(0.037, 0.28, skin), foreR = limb(0.037, 0.28, skin); foreL.position.y = -0.3; foreR.position.y = -0.3; armL.add(foreL); armR.add(foreR);
+      [foreL, foreR].forEach((f) => { const hand = part(new THREE.SphereGeometry(0.042, 10, 8), skin, 0, -0.3, 0.005); hand.scale.set(0.75, 1.15, 0.5); f.add(hand); });
+      const legL = limb(F ? 0.068 : 0.072, 0.45, pants), legR = limb(F ? 0.068 : 0.072, 0.45, pants); legL.position.set(-0.085, 0, 0); legR.position.set(0.085, 0, 0); hips.add(legL, legR);
+      const shinL = limb(0.055, 0.45, pants), shinR = limb(0.055, 0.45, pants); shinL.position.y = -0.45; shinR.position.y = -0.45; legL.add(shinL); legR.add(shinR);
+      [shinL, shinR].forEach((sn) => { const sho = part(new THREE.CapsuleGeometry(0.045, 0.12, 4, 10), shoe, 0, -0.465, 0.05); sho.rotation.x = Math.PI / 2; sho.scale.set(1, 1, 0.7); sn.add(sho); });
+      g.userData.rig = { hips, chest, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, torso, lids };
+      g.userData.blink = 2 + Math.random() * 3;
       g.userData.look = [e.skin, e.shirt, e.pants, e.hair, e.gender].join("|");
       g.scale.setScalar(e.scale || 1);
       scene.add(g);
@@ -251,13 +355,13 @@
     const car = new THREE.Group(); car.add(box(2.4, 0.7, 1.1, 0xe6c22a, 0, 0.25, 0)); car.add(box(1.4, 0.5, 1, 0x9ad0e6, -0.1, 0.95, 0, { roughness: 0.1 })); [[-0.8, 0.55], [0.8, 0.55], [-0.8, -0.55], [0.8, -0.55]].forEach(([x, z]) => { const wh = cyl(0.25, 0.25, 0.15, 0x222, x, 0.0, z); wh.rotation.x = Math.PI / 2; wh.position.y = 0.25; car.add(wh); }); car.visible = false; scene.add(car);
 
     // ---------- camera control ----------
-    const cam = { tx: houseC.x, tz: houseC.y + 1, yaw: Math.PI / 4, pitch: 0.82, dist: 21, yawTarget: Math.PI / 4 };
+    const cam = { tx: houseC.x, tz: houseC.y + 1, ty: 0.6, yaw: Math.PI / 4, pitch: 0.82, dist: 21, yawTarget: Math.PI / 4 };
     let W = 1, H = 1;
     function placeCamera() {
       cam.yaw += (cam.yawTarget - cam.yaw) * 0.18;
       const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      camera.position.set(cam.tx + Math.sin(cam.yaw) * cp * cam.dist, sp * cam.dist, cam.tz + Math.cos(cam.yaw) * cp * cam.dist);
-      camera.lookAt(cam.tx, 0.6, cam.tz);
+      camera.position.set(cam.tx + Math.sin(cam.yaw) * cp * cam.dist, sp * cam.dist + Math.max(0, Math.min(1, (12 - cam.dist) / 8)) * 0.9, cam.tz + Math.cos(cam.yaw) * cp * cam.dist);
+      const near = Math.max(0, Math.min(1, (12 - cam.dist) / 8)); camera.lookAt(cam.tx, cam.ty + near * 0.8, cam.tz);
     }
     function resize(w, h) { W = Math.max(1, w); H = Math.max(1, h); renderer.setSize(W, H, false); canvas.style.width = W + "px"; canvas.style.height = H + "px"; camera.aspect = W / H; camera.updateProjectionMatrix(); }
     const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tmpV = new THREE.Vector3();
@@ -271,7 +375,8 @@
     }
     function project(x, y, h) { tmpV.set(x, h, y).project(camera); return [(tmpV.x + 1) / 2 * W, (1 - tmpV.y) / 2 * H, tmpV.z < 1]; }
     function pan(dx, dy) { const s = cam.dist / 600; const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw); cam.tx = Math.max(-2, Math.min(LW + 2, cam.tx - dx * s * cy - dy * s * sy * 1.3)); cam.tz = Math.max(-2, Math.min(LH + 2, cam.tz + dx * s * sy - dy * s * cy * 1.3)); }
-    function zoom(f) { cam.dist = Math.max(7, Math.min(40, cam.dist * f)); }
+    function focus(x, z, dist) { cam.tx = x; cam.tz = z; if (dist) { cam.dist = dist; cam.pitch = dist < 8 ? 0.45 : 0.82; } }
+    function zoom(f) { cam.dist = Math.max(3.5, Math.min(40, cam.dist * f)); cam.pitch = Math.max(0.35, Math.min(cam.pitch, 0.35 + (cam.dist - 3.5) / 12)); if (f > 1) cam.pitch = Math.min(0.82, cam.pitch + 0.03); }
     function rotate(dir) { cam.yawTarget += dir * Math.PI / 2; }
     function orbit(dx, dy) { cam.yawTarget -= dx * 0.008; cam.yaw = cam.yawTarget; cam.pitch = Math.max(0.35, Math.min(1.35, cam.pitch + dy * 0.006)); }
     let wallMode = "cutaway";
@@ -290,6 +395,9 @@
       if (pose === "sit" || pose === "bath") { r.hips.position.y = pose === "bath" ? 0.35 : 0.5; r.legL.rotation.x = r.legR.rotation.x = -1.5; r.shinL.rotation.x = r.shinR.rotation.x = 1.5; r.armL.rotation.x = r.armR.rotation.x = -0.5; r.foreL.rotation.x = r.foreR.rotation.x = -0.6; }
       if (pose === "lie") { r.hips.position.y = 0.62; r.hips.rotation.x = -Math.PI / 2; r.armL.rotation.set(0, 0, 0.1); r.armR.rotation.set(0, 0, -0.1); }
       if (pose === "dance") { r.hips.position.y = 0.92 + Math.abs(Math.sin(a)) * 0.08; r.armL.rotation.set(-2.6 + Math.sin(a) * 0.5, 0, 0.3); r.armR.rotation.set(-2.6 - Math.sin(a) * 0.5, 0, -0.3); r.chest.rotation.y = Math.sin(a * 0.5) * 0.4; r.legL.rotation.x = Math.sin(a) * 0.3; r.legR.rotation.x = -Math.sin(a) * 0.3; }
+      // blink every few seconds (eyes closed while sleeping)
+      g.userData.blink -= dt || 0.016; let lid = 0.01; if (g.userData.blink < 0.12) lid = 1; if (g.userData.blink < 0) g.userData.blink = 2 + Math.random() * 4;
+      if (pose === "lie" && info.sleeping) lid = 1; r.lids.visible = lid > 0.5;
       if (info.talking) { r.armR.rotation.x = -0.5 + Math.sin(t * 5) * 0.4; r.foreR.rotation.x = -0.8; r.head.rotation.x = Math.sin(t * 4) * 0.08; }
     }
     let lastObjs = [];
@@ -301,22 +409,22 @@
       const ang = (hr - 6) / 12 * Math.PI;
       sun.position.set(houseC.x + Math.cos(ang) * 18, 4 + Math.max(0, Math.sin(ang)) * 22, houseC.y - 8 + Math.sin(ang) * 4); sun.target.position.set(houseC.x, 0, houseC.y);
       sun.intensity = 0.15 + day * 1.5; sun.color.setHSL(0.1, 0.6, 0.6 + day * 0.35);
-      hemi.intensity = 0.25 + day * 0.7;
+      hemi.intensity = 0.15 + day * 0.45;
       const skyDay = new THREE.Color(0x7fb8e0), skyDusk = new THREE.Color(0xe08a5a), skyNight = new THREE.Color(0x0e1a30);
       const sky = day > 0.25 ? skyDay.clone().lerp(skyDusk, Math.max(0, 0.45 - day)) : skyNight.clone().lerp(skyDusk, day * 3);
       scene.background = sky; scene.fog = scene.fog || new THREE.Fog(sky, 40, 90); scene.fog.color.copy(sky);
-      const night = day < 0.2;
+      const night = day < 0.2; bulbs.forEach((b) => { b.material.emissiveIntensity = night ? 2.2 : 0; });
       // walls: cutaway follows camera direction
       const cd = new THREE.Vector2(Math.sin(cam.yaw), Math.cos(cam.yaw));
       walls.forEach((w) => {
         const rel = w.mid.clone().sub(houseC).dot(cd);
         const want = wallMode === "up" ? WALL_H : wallMode === "down" ? WALL_LOW : (w.exterior ? (rel < 0 ? WALL_H : WALL_LOW) : (rel < -2 ? WALL_H : WALL_LOW));
-        w.h += (want - w.h) * 0.25; w.m.scale.y = w.h; if (w.win) w.win.visible = w.h > 1.9;
+        w.h += (want - w.h) * 0.25; w.m.scale.y = w.isFrame ? w.h / WALL_H : w.h; if (w.win) w.win.visible = w.h > 1.9; if (w.art) w.art.visible = w.h > 1.9;
       });
       // objects: add/remove/rebuild
       const seen = new Set();
       st.objs.forEach((o) => {
-        seen.add(o); const key = o.t + "@" + o.x + "," + o.y;
+        seen.add(o); const key = o.t + "@" + o.x + "," + o.y + "r" + (o.rot != null ? o.rot : "");
         let rec = objMeshes.get(o);
         if (rec && rec.userData.key !== key) { scene.remove(rec); objMeshes.delete(o); rec = null; }
         if (!rec) { rec = buildObject(o, st.objs); if (rec) { rec.userData.key = key; objMeshes.set(o, rec); } }
@@ -359,7 +467,7 @@
       // buy ghost + hover
       if (st.ghost) { const d = CAT[st.ghost.t]; ghostTile.visible = true; ghostTile.material = st.ghost.ok ? ghostOk : ghostBad; ghostTile.scale.set(d.w || 1, 1, 1); ghostTile.position.set(st.ghost.x + (d.w || 1) / 2, 0.03, st.ghost.y + 0.5);
         const gk = st.ghost.t; if (ghostKey !== gk) { if (ghost) scene.remove(ghost); ghost = procedural(gk, d.w || 1); ghost.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.55; disposables.push(m.material); } }); scene.add(ghost); ghostKey = gk; }
-        ghost.visible = true; ghost.position.set(st.ghost.x + (d.w || 1) / 2, 0, st.ghost.y + 0.5);
+        ghost.visible = true; ghost.position.set(st.ghost.x + (d.w || 1) / 2, 0, st.ghost.y + 0.5); ghost.rotation.y = (d.w > 1 ? (st.ghost.rot % 2 ? 2 : st.ghost.rot) : st.ghost.rot || 0) * Math.PI / 2;
       } else { ghostTile.visible = false; if (ghost) ghost.visible = false; }
       if (st.hover && !st.ghost) { hoverTile.visible = true; hoverTile.position.set(st.hover.x + 0.5, 0.025, st.hover.y + 0.5); } else hoverTile.visible = false;
       car.visible = !!st.carpool; if (car.visible) car.position.set(8.5, 0, LH + 0.6);
@@ -370,7 +478,7 @@
       Object.values(TEX).forEach((tx) => tx.dispose());
       canvas.remove();
     }
-    return { canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
+    return { canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, focus, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
   }
   window.Sims3DView = { create, MODELS };
 })();
