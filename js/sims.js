@@ -86,6 +86,7 @@
     deckchair: { name: "Striped Seaside Deck Chair", price: 110, cat: "Seating", w: 1, h: 30, col: "#2a4a8a", room: 1, ints: ["sit"], enter: true, seat: true },
     deckchair2: { name: "Teak Beach Deck Chair", price: 195, cat: "Seating", w: 1, h: 30, col: "#8a5a32", room: 2, ints: ["sit"], enter: true, seat: true },
     porchswing: { name: "Cedar A-Frame Porch Swing", price: 650, cat: "Seating", w: 3, h: 70, col: "#b5794a", room: 3, ints: ["sit"], enter: true, seat: true },
+    santamailbox: { name: "Santa Express Mailbox", price: 180, cat: "Decorative", w: 1, h: 60, col: "#c0283a", room: 3, ints: ["letterSanta"] },
     barrel: { name: "Iron-Hooped Oak Barrel", price: 95, cat: "Decorative", w: 1, h: 30, col: "#8b5a2b", room: 2, ints: [] },
     crib: { name: "Baby Bassinet", price: 0, w: 1, h: 30, col: "#f4e6f0", room: 1, ints: ["feedBaby", "playBaby"], fixed: true },
     plate: { name: "Dirty Plate", price: 0, w: 1, h: 6, col: "#f0ede6", room: -15, ints: ["clean"], fixed: true, mess: true },
@@ -119,6 +120,7 @@
     paint: { label: "Paint", icon: "🎨", dur: 90, gain: { fun: 0.6 }, pose: "stand", skill: "creativity", painting: true },
     speech: { label: "Practice Speech", icon: "🗣️", dur: 50, gain: { fun: -0.1 }, pose: "stand", skill: "charisma" },
     workout: { label: "Work Out", icon: "🏋️", dur: 50, gain: { fun: 0.2, energy: -0.4, hygiene: -0.3 }, pose: "stand", skill: "body" },
+    letterSanta: { label: "Write a Letter to Santa", icon: "🎅", dur: 15, gain: { fun: 0.9, social: 0.3 }, pose: "stand" },
     mail: { label: "Get Mail", icon: "✉️", dur: 4, gain: {}, pose: "stand", mail: true },
     clean: { label: "Clean Up", icon: "🧹", dur: 8, gain: { fun: -0.1 }, pose: "stand", clean: true },
     goto: { label: "Go Here", icon: "👣", dur: 0, gain: {}, pose: "stand" },
@@ -177,6 +179,8 @@
     { what: "Oak barrel", who: "margetacg (CGTrader)", link: "https://www.cgtrader.com/designers/margetacg", license: "CGTrader license", note: "Hoops and staves colored" },
     { what: "Retro CRT TV with doily", who: "nykonni (CGTrader)", link: "https://www.cgtrader.com/designers/nykonni", license: "CGTrader license", note: "Converted from Alembic" },
     { what: "Metal bookshelf with books and vases", who: "ludasachk25 (CGTrader)", link: "https://www.cgtrader.com/designers/ludasachk25", license: "CGTrader license", note: "Recolored" },
+    { what: "Santa's mailbox", who: "katerinabondarenko (CGTrader)", link: "https://www.cgtrader.com/designers/katerinabondarenko", license: "CGTrader license", note: "Converted from Blender 4" },
+    { what: "Mailbox", who: "Poly by Google via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Scaled to 1.35 m" },
     { what: "Sofa collection (36 sofas, loveseats, chaises and armchairs)", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk from 575 MB to 4.8 MB" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}

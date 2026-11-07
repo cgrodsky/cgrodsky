@@ -18,6 +18,8 @@
     deckchair2: { file: "deckchair.glb", yaw: Math.PI / 2 },
     porchswing: { file: "porchswing.glb", yaw: 0, depth: 2.2 },
     barrel: { file: "barrel.glb", yaw: 0 },
+    mailbox: { file: "mailbox-post.glb", yaw: 0, h: 1.35 },
+    santamailbox: { file: "santa-mailbox.glb", yaw: 0, h: 1.25 },
     sofa3: { file: "sofas/sofa-modelo-triplo-pes.glb", yaw: 0 },
     sectional: { file: "sofas/sofa-modelo-triplo-chaise.glb", yaw: 0 },
     papasan: { file: "sofas/sofa-modelo-cadeira-rede.glb", yaw: 0, depth: 1.2 },

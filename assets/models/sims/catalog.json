@@ -36,6 +36,28 @@
   "environment": 1
  },
  {
+  "id": "mailbox-post",
+  "file": "mailbox-post.glb",
+  "name": "Classic Post Mailbox",
+  "kind": "mailbox",
+  "category": "Misc",
+  "price": 0,
+  "default": true,
+  "author": "Poly by Google",
+  "license": "CC-BY"
+ },
+ {
+  "id": "santa-mailbox",
+  "file": "santa-mailbox.glb",
+  "name": "Santa Express Mailbox",
+  "kind": "decor",
+  "category": "Decorative",
+  "price": 180,
+  "environment": 3,
+  "seasonal": "winter",
+  "author": "katerinabondarenko"
+ },
+ {
   "id": "metal-bookshelf",
   "file": "metal-bookshelf.glb",
   "name": "Slim Black Metal Bookshelf",

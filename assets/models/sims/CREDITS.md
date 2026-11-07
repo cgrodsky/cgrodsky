@@ -66,3 +66,10 @@ photo were painted out. The doily's lace holes come from an alpha channel made f
 `metal shelf.FBX`: a 1.9 m styled shelf with books and vases (47k triangles). The textures weren't included, so it uses
 matte black metal, navy, terracotta and sage book covers, cream pages and white ceramic vases. The vases were smoothed
 and the detail was cut to 13k triangles. 0.81 × 1.9 × 0.26 m, 365 KB.
+
+### Santa Express Mailbox (`santa-mailbox.glb`) by **katerinabondarenko** (https://www.cgtrader.com/designers/katerinabondarenko)
+`Santa's Mailbox_Free.blend` (Blender 4.0). The mesh, UVs and packed base-color texture were read straight from the .blend file
+(5k triangles). The 6 MB normal map and 8 MB roughness map were dropped. The texture was cut to 512 px. 1.25 m tall, ~290 KB.
+
+### Classic Post Mailbox (`mailbox-post.glb`) — "Mailbox" by **Poly by Google**, CC-BY, via Poly Pizza (https://poly.pizza/)
+Scaled from 4.5 m to 1.35 m and set on the ground. Used as every house's mailbox.
