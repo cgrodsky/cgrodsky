@@ -162,6 +162,7 @@
     { what: "Curtains", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk for iPad" },
     { what: "Crystal wine glass", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Rebuilt from CAD surfaces" },
     { what: "House", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Recolored" },
+    { what: "Teak beach deck chair", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Converted from Blender" },
     { what: "Sofa collection (36 sofas, loveseats, chaises and armchairs)", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk from 575 MB to 4.8 MB" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}

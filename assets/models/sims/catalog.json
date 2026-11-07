@@ -36,6 +36,17 @@
   "environment": 1
  },
  {
+  "id": "deck-chair",
+  "file": "deckchair.glb",
+  "name": "Teak Beach Deck Chair",
+  "kind": "chair",
+  "category": "Seating",
+  "price": 195,
+  "comfort": 5,
+  "seats": 1,
+  "outdoor": true
+ },
+ {
   "id": "house",
   "file": "house.glb",
   "name": "Suburban Ranch House",
