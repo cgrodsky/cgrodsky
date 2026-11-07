@@ -58,6 +58,19 @@
   "outdoor": true
  },
  {
+  "id": "porch-swing",
+  "file": "porchswing.glb",
+  "name": "Cedar A-Frame Porch Swing",
+  "kind": "swing",
+  "category": "Seating",
+  "price": 650,
+  "comfort": 6,
+  "fun": 2,
+  "seats": 2,
+  "outdoor": true,
+  "author": "masonreloaded"
+ },
+ {
   "id": "house",
   "file": "house.glb",
   "name": "Suburban Ranch House",

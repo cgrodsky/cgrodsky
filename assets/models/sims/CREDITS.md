@@ -45,3 +45,8 @@ leather and suede colors were set by hand. Cut from 28.8k to 5.8k triangles with
 ### Striped seaside deck chair (`deckchair-striped.glb`, from CGTrader, "deck_chair.zip")
 The FBX (1.6k triangles) plus its albedo texture, cut from a 4.6 MB PNG to a 512 px JPEG. The normal, AO, roughness and
 metallic maps were left out to keep it light. Scaled to 0.9 m tall, 82 KB.
+
+### A-frame porch swing (`porchswing.glb`) by **masonreloaded** (https://www.cgtrader.com/designers/masonreloaded)
+`jm_porch_swing.fbx`. The ground plane was removed. The chains alone were 98k triangles, so the whole swing was cut from
+110k to 15k triangles. The textures weren't included, so it uses a cedar wood color and dark steel chains. Scaled to
+2.1 m tall, 372 KB.

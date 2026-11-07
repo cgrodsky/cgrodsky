@@ -164,6 +164,7 @@
     { what: "House", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Recolored" },
     { what: "Teak beach deck chair", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Converted from Blender" },
     { what: "Striped seaside deck chair", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Texture cut to 512 px" },
+    { what: "A-frame porch swing", who: "masonreloaded (CGTrader)", link: "https://www.cgtrader.com/designers/masonreloaded", license: "CGTrader license", note: "Chains cut from 98k to 8k triangles" },
     { what: "Sofa collection (36 sofas, loveseats, chaises and armchairs)", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk from 575 MB to 4.8 MB" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
