@@ -54,4 +54,4 @@ metallic maps were left out to keep it light. Scaled to 0.9 m tall, 82 KB.
 ### Oak barrel (`barrel.glb`) by **margetacg** (https://www.cgtrader.com/designers/margetacg)
 `bure_final-cgtrader.fbx` ("bure" means barrel), 6.5k triangles. The base-color texture wasn't included, so each
 separate part was sorted by shape: the thin rings are the iron hoops, the small parts are the rivets, and everything else
-is the oak staves, lid and plug. Scaled to 0.85 m tall.
+is the oak staves, lid and plug. Smooth shading with crisp edges, cut to 4.6k triangles. Scaled to 0.85 m tall, 108 KB.
