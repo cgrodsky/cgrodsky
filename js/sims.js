@@ -157,9 +157,14 @@
   const CREDITS = [
     { what: "Plumbob model", who: "ordinarycontraptions (Thingiverse)", link: "https://www.thingiverse.com/thing:5275829",
       license: "CC BY-NC-SA", note: "Headband parts removed" },
+    { what: "Table lamp", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk for iPad" },
+    { what: "Cup and saucer", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Smoothed" },
+    { what: "Curtains", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk for iPad" },
+    { what: "Crystal wine glass", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Rebuilt from CAD surfaces" },
+    { what: "House", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Recolored" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
-    <div class="sm-cred-i"><b>Everything else</b> (Sims, furniture, house, textures, sounds) is made in code for this game.</div></div>`;
+    <div class="sm-cred-i"><b>Everything else</b> (the Sims, walls, other furniture, textures and sounds) is made in code for this game.</div></div>`;
 
   function start(body) {
     const store = () => { const S = window.State && State.data; if (!S) return {}; if (!S.appData) S.appData = {}; return S.appData; };
@@ -1085,6 +1090,8 @@
       .sm-sp-h { font: 800 14px system-ui; text-transform: uppercase; letter-spacing: 2px; opacity: .8; margin-bottom: 6px; }
       .sm-cred { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 12.5px; } .sm-cred-i { background: rgba(255,255,255,.12); border-radius: 8px; padding: 6px 10px; }
       .sm-cred-i span { opacity: .8; font-size: 11.5px; } .sm-cred a { color: #9fe8b0; } .sm-dlg .sm-cred-i { background: rgba(47,90,168,.12); } .sm-dlg .sm-cred a { color: #2f5aa8; }
+      .sm-sp-in .sm-cred { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); max-height: 42vh; overflow: auto; padding-right: 4px; }
+      .sm-sp-in { width: min(640px, 92%); }
       .sm-sp-go { margin-top: 14px; border: 2px solid #9fe8b0; background: #2ea84e; color: #fff; border-radius: 10px; padding: 6px 28px; font: 800 15px system-ui; cursor: pointer; }
       .sm-dlg { width: min(520px, 92%); max-height: 88%; overflow: auto; background: linear-gradient(#e8f0ff,#c9dbff); border: 3px solid #2f5aa8; border-radius: 16px; box-shadow: 0 16px 50px rgba(0,0,0,.45); color: #102a5a; }
       .sm-dlg-h { background: linear-gradient(#3e6cc0,#1d3d7a); color: #fff; font: 800 16px system-ui; padding: 8px 14px; border-radius: 12px 12px 0 0; }

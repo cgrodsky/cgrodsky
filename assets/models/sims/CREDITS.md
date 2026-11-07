@@ -14,3 +14,17 @@ Changes made here:
   mirrored, so the bottom has no wire hole or stub.
 
 These derivative files are shared under the same CC BY-NC-SA license.
+
+## From CGTrader (https://www.cgtrader.com/)
+Used under each model's CGTrader license. The original model files are not shared here. Each one was
+converted into a small `.glb` that is only used inside the game.
+
+| File | Model | Changes |
+|---|---|---|
+| `lamp.glb` | Table lamp (Blender OBJ) | Cut from 47k to 4.6k triangles; new materials for the ceramic base and fabric shade; 0.67 m tall |
+| `cupandsaucer.glb` | Cup and saucer (OBJ) | Smooth shading; porcelain and tea materials; 6 cm wide |
+| `curtains.glb` | Curtains (3ds Max FBX) | Stood upright; cut from 235k to 9.4k triangles; the original textures were missing, so it uses plain fabric and sheer materials; 2.6 m tall |
+| `wineglass.glb` | Crystal wine glass (Rhino/MoI 3DM, NURBS only) | Surfaces turned into triangles and the flat untrimmed patches dropped; glass and wine materials; 17 cm tall |
+| `house.glb` | House (3DS) | Stood upright; the black placeholder materials were remapped to roof, siding, trim, glass, floors and counters; double-sided; 1 unit = 1 m |
+
+Author names and links still need to be added for these models.
