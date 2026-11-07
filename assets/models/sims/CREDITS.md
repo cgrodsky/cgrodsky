@@ -55,3 +55,9 @@ metallic maps were left out to keep it light. Scaled to 0.9 m tall, 82 KB.
 `bure_final-cgtrader.fbx` ("bure" means barrel), 6.5k triangles. The base-color texture wasn't included, so each
 separate part was sorted by shape: the thin rings are the iron hoops, the small parts are the rivets, and everything else
 is the oak staves, lid and plug. Smooth shading with crisp edges, cut to 4.6k triangles. Scaled to 0.85 m tall, 108 KB.
+
+### Retro CRT TV with lace doily (`crt-tv.glb`) by **nykonni** (https://www.cgtrader.com/designers/nykonni)
+`TV THT3.abc` (Alembic) plus a front photo texture and a doily texture. Read straight from the Alembic/Ogawa file with a
+small parser (meshes, UVs, transform hierarchy; the power-cord curve was skipped). The real-brand logos in the front
+photo were painted out. The doily's lace holes come from an alpha channel made from its brightness. Textures cut to
+512 px. 0.88 × 0.66 × 0.66 m, 252 KB.

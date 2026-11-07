@@ -36,6 +36,18 @@
   "environment": 1
  },
  {
+  "id": "crt-tv",
+  "file": "crt-tv.glb",
+  "name": "Retro CRT Television with Lace Doily",
+  "kind": "tv",
+  "category": "Electronics",
+  "price": 280,
+  "fun": 4,
+  "surfaceItem": true,
+  "screenMaterial": "tv",
+  "author": "nykonni"
+ },
+ {
   "id": "oak-barrel",
   "file": "barrel.glb",
   "name": "Iron-Hooped Oak Barrel",
