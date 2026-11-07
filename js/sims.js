@@ -237,7 +237,7 @@
     function enable3D() {
       if (view3d || !want3d || !window.THREE || !window.Sims3DView || dead) return;
       try {
-        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: () => fail3D("The 3D view ran out of graphics memory") });
+        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
         host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
       } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
     }
@@ -909,6 +909,7 @@
       const ringEl = $(".sm-ring"), hr0 = host.getBoundingClientRect(), rr = ringEl.getBoundingClientRect();
       ringEl.classList.add("live");
       try { view3d.render({ portrait: { x: rr.left - hr0.left + 4, y: rr.top - hr0.top + 4, w: rr.width - 8, h: rr.height - 8 }, dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
+      if (!view3d) return;
       // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
       const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
       ents.forEach((i) => {

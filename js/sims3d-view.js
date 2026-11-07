@@ -121,7 +121,9 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, powerPreference: "default", failIfMajorPerformanceCaveat: false });
     renderer.setPixelRatio(Math.min(LITE ? 1.5 : 2, window.devicePixelRatio || 1));
     canvas.addEventListener("webglcontextlost", (ev) => { ev.preventDefault(); if (opts.onLost) opts.onLost(); });
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = LITE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    // If a shader fails to compile (some iPad GPUs have tighter limits), drop to a simpler look instead of drawing nothing.
+    let SAFE = false, pendingSafe = false; renderer.debug.onShaderError = () => { pendingSafe = true; };
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
     const scene = new THREE.Scene();
@@ -150,7 +152,7 @@
     };
 
     // ---------- environment reflections: a soft sky/ground gradient baked into an env map ----------
-    try {
+    if (!LITE) try {
       const envScene = new THREE.Scene(); const sg = new THREE.SphereGeometry(10, 24, 12); const cols = [];
       const top = new THREE.Color(0xbcd8f2), hor = new THREE.Color(0xf2ece0), bot = new THREE.Color(0x5a6a48);
       for (let i = 0; i < sg.attributes.position.count; i++) { const y = sg.attributes.position.getY(i) / 10; const c = y > 0 ? hor.clone().lerp(top, y) : hor.clone().lerp(bot, -y * 2); cols.push(c.r, c.g, c.b); }
@@ -164,8 +166,9 @@
     const sun = new THREE.DirectionalLight(0xfff2dd, 1.6); sun.castShadow = true;
     sun.shadow.mapSize.set(LITE ? 768 : 1024, LITE ? 768 : 1024); const sc = sun.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 60; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun); scene.add(sun.target);
-    const lampLights = []; for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffd8a0, 0, 7, 1.6); scene.add(l); lampLights.push(l); }
-    const tvLight = new THREE.PointLight(0x8ab8ff, 0, 5, 1.8); scene.add(tvLight);
+    // Point lights cost a lot per pixel on iPad: lamps there just glow (emissive) instead.
+    const lampLights = []; for (let i = 0; i < (LITE ? 0 : 3); i++) { const l = new THREE.PointLight(0xffd8a0, 0, 7, 1.6); scene.add(l); lampLights.push(l); }
+    const tvLight = new THREE.PointLight(0x8ab8ff, 0, 5, 1.8); if (!LITE) scene.add(tvLight);
 
     // ---------- ground ----------
     const plane = (w, h, m, x, z, y) => { const me = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), m); me.rotation.x = -Math.PI / 2; me.position.set(x, y || 0, z); me.receiveShadow = true; scene.add(me); return me; };
@@ -434,6 +437,29 @@
       if (info.talking) { r.armR.rotation.x = -0.5 + Math.sin(t * 5) * 0.4; r.foreR.rotation.x = -0.8; r.head.rotation.x = Math.sin(t * 4) * 0.08; }
     }
     const pcam = new THREE.PerspectiveCamera(28, 1, 0.05, 5);
+    const lamCache = new Map();
+    function lambertize(root) {
+      root.traverse((m) => {
+        if (!m.isMesh) return;
+        const conv = (mt) => { if (!mt || !mt.isMeshStandardMaterial) return mt; let n = lamCache.get(mt); if (!n) { n = new THREE.MeshLambertMaterial({ color: mt.color, map: mt.map, transparent: mt.transparent, opacity: mt.opacity, side: mt.side, emissive: mt.emissive, emissiveIntensity: mt.emissiveIntensity, alphaTest: mt.alphaTest, vertexColors: mt.vertexColors }); n.name = mt.name; lamCache.set(mt, n); disposables.push(n); } return n; };
+        m.material = Array.isArray(m.material) ? m.material.map(conv) : conv(m.material);
+      });
+    }
+    function enterSafe() {
+      SAFE = true; pendingSafe = false; scene.environment = null;
+      lampLights.forEach((l) => scene.remove(l)); lampLights.length = 0; scene.remove(tvLight);
+      renderer.shadowMap.enabled = false; sun.castShadow = false; lambertize(scene);
+    }
+    // Watchdog: sample a 5x5 grid of pixels right after drawing; if every sample is the same colour, nothing rendered.
+    let frameNo = 0, nextCheck = 20, blankStrikes = 0;
+    function looksBlank() {
+      const gl = renderer.getContext(), w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, px = new Uint8Array(4); let first = null;
+      for (let i = 1; i <= 5; i++) for (let j = 1; j <= 5; j++) {
+        gl.readPixels(Math.floor(w * i / 6), Math.floor(h * j / 6), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        if (!first) first = [px[0], px[1], px[2]]; else if (Math.abs(px[0] - first[0]) + Math.abs(px[1] - first[1]) + Math.abs(px[2] - first[2]) > 3) return false;
+      }
+      return true;
+    }
     let lastObjs = [];
     function render(st) {
       t += st.dt || 0.016; lastObjs = st.objs;
@@ -469,7 +495,7 @@
       tvLight.intensity = 0;
       st.objs.forEach((o) => {
         const g = objMeshes.get(o); if (!g) return; const d = CAT[o.t];
-        if (d.light && li < lampLights.length) { const l = lampLights[li++]; l.position.set(o.x + 0.5, 1.5, o.y + 0.5); l.intensity = night ? 3.2 : 0; g.traverse((m) => { if (m.name === "shade" && m.material && m.material.emissive) m.material.emissiveIntensity = night ? 0.9 : 0; }); }
+        if (d.light) { if (li < lampLights.length) { const l = lampLights[li++]; l.position.set(o.x + 0.5, 1.5, o.y + 0.5); l.intensity = night ? 3.2 : 0; } g.traverse((m) => { if (m.name === "shade" && m.material && m.material.emissive) m.material.emissiveIntensity = night ? 0.9 : 0; }); }
         if (o.t === "tv" && st.tvOn) { tvLight.position.set(o.x + 0.5, 0.9, o.y + 0.9); tvLight.intensity = 1.5 + Math.random() * 0.6; }
         const blanket = g.getObjectByName("blanket"); if (blanket) blanket.visible = true;
       });
@@ -505,7 +531,18 @@
       } else { ghostTile.visible = false; if (ghost) ghost.visible = false; }
       if (st.hover && !st.ghost) { hoverTile.visible = true; hoverTile.position.set(st.hover.x + 0.5, 0.025, st.hover.y + 0.5); } else hoverTile.visible = false;
       car.visible = !!st.carpool; if (car.visible) car.position.set(8.5, 0, LH + 0.6);
+      if (pendingSafe && !SAFE) enterSafe();
+      if (SAFE) { lambertize(scene); }
       renderer.render(scene, camera);
+      frameNo++;
+      if (frameNo >= nextCheck && W > 50 && H > 50) {
+        nextCheck = frameNo + (blankStrikes ? 20 : 600);
+        if (renderer.getContext().isContextLost()) { if (opts.onLost) opts.onLost("The 3D view stopped"); return; }
+        if (looksBlank() || pendingSafe) {
+          blankStrikes++;
+          if (!SAFE) enterSafe(); else if (blankStrikes >= 3 && opts.onLost) { opts.onLost("3D couldn't draw on this device"); return; }
+        } else blankStrikes = 0;
+      }
       if (st.portrait && pl) {
         const g = simMeshes.get(pl.e); const P = st.portrait;
         if (g && P.w > 10) {
@@ -526,7 +563,7 @@
       Object.values(TEX).forEach((tx) => tx.dispose());
       canvas.remove();
     }
-    return { canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, focus, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
+    return { _forceSafe: () => { pendingSafe = true; }, get safe() { return SAFE; }, get lite() { return LITE; }, canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, focus, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
   }
   window.Sims3DView = { create, MODELS, preview };
 })();
