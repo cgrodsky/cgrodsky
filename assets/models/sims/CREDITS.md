@@ -41,3 +41,7 @@ Read straight from the Blender 3.0 file with a small .blend parser (`Sun lounger
 reference meshes, the screws and the bolts were left out. The Z-up axis was changed to Y-up, and the wood, canvas,
 leather and suede colors were set by hand. Cut from 28.8k to 5.8k triangles with sharp edges kept on the wood.
 0.92 × 0.81 × 0.87 m, 123 KB.
+
+### Striped seaside deck chair (`deckchair-striped.glb`, from CGTrader, "deck_chair.zip")
+The FBX (1.6k triangles) plus its albedo texture, cut from a 4.6 MB PNG to a 512 px JPEG. The normal, AO, roughness and
+metallic maps were left out to keep it light. Scaled to 0.9 m tall, 82 KB.

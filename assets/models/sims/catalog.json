@@ -47,6 +47,17 @@
   "outdoor": true
  },
  {
+  "id": "deck-chair-striped",
+  "file": "deckchair-striped.glb",
+  "name": "Striped Seaside Deck Chair",
+  "kind": "chair",
+  "category": "Seating",
+  "price": 110,
+  "comfort": 4,
+  "seats": 1,
+  "outdoor": true
+ },
+ {
   "id": "house",
   "file": "house.glb",
   "name": "Suburban Ranch House",
