@@ -198,11 +198,13 @@
       floorM[r.id] = plane(w, d, mat(0xffffff, { map: tt, roughness: r.floor === "tile" ? 0.35 : 0.8 }), r.x0 + w / 2, r.y0 + d / 2, 0.012);
     });
     // foundation
-    const fnd = CUSTOM ? new THREE.Object3D() : new THREE.Mesh(keep(new THREE.BoxGeometry(HOUSE.x1 - HOUSE.x0 + 1.2, 0.12, HOUSE.y1 - HOUSE.y0 + 1.2)), mat(0x9a948a)); if (!CUSTOM) { fnd.position.set((HOUSE.x0 + HOUSE.x1 + 1) / 2, -0.05, (HOUSE.y0 + HOUSE.y1 + 1) / 2); fnd.receiveShadow = true; scene.add(fnd); }
+    const fnd = CUSTOM ? new THREE.Object3D() : new THREE.Mesh(keep(new THREE.BoxGeometry(HOUSE.x1 - HOUSE.x0 + 1.2, 0.12, HOUSE.y1 - HOUSE.y0 + 1.2)), mat(0x2c2c2f)); if (!CUSTOM) { fnd.position.set((HOUSE.x0 + HOUSE.x1 + 1) / 2, -0.05, (HOUSE.y0 + HOUSE.y1 + 1) / 2); fnd.receiveShadow = true; scene.add(fnd); }
 
     // ---------- walls ----------
     const walls = [];
-    const inMat = mat(0xffffff, { map: TEX.wallpaper }), outMat = mat(0xffffff, { map: TEX.siding }), capMat = mat(0xf4f1ea);
+    const inMat = mat(0xffffff, { map: TEX.wallpaper }), outMat = mat(0xffffff, { map: TEX.siding, roughness: 0.7 }), capMat = mat(0x1a1a1c, { roughness: 0.6 });
+    // Modern exterior (assets/textures/sims/exterior-modern.jpg): very light beige panels over black slat cladding.
+    try { new THREE.TextureLoader().load("assets/textures/sims/exterior-modern.jpg", (tx) => { tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; keep(tx); outMat.map = tx; outMat.needsUpdate = true; }); } catch (e) {}
     const houseC = new THREE.Vector2((HOUSE.x0 + HOUSE.x1 + 1) / 2, (HOUSE.y0 + HOUSE.y1 + 1) / 2);
     function addWall(x0, z0, x1, z1) {
       const horiz = z0 === z1, len = horiz ? x1 - x0 : z1 - z0;
@@ -222,7 +224,7 @@
       if (vWall[y] && vWall[y][x]) addWall(x, y, x, y + 1);
     }
     // windows: glass panes on some exterior segments (front & back)
-    const glassM = mat(0x9ec8e6, { roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.55 }), frameM = mat(0xffffff);
+    const glassM = mat(0x9ec8e6, { roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.55 }), frameM = mat(0x141416, { roughness: 0.5 });
     walls.forEach((w, i) => {
       if (!w.exterior || i % 3 !== 1) return;
       const horiz = w.m.geometry.parameters.depth === WALL_T;
@@ -352,7 +354,7 @@
     // baseboards along every wall
     walls.slice().forEach((w) => { if (w.isFrame) return; const p = w.m.geometry.parameters; const bb = new THREE.Mesh(keep(new THREE.BoxGeometry(p.width + 0.02, 0.1, p.depth + 0.02)), baseM); bb.position.set(w.m.position.x, 0.05, w.m.position.z); scene.add(bb); });
     // front door (a real door panel in the front gap)
-    if (!CUSTOM) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (!hWall[HOUSE.y1 + 1][x] && hWall[HOUSE.y1 + 1][x - 1]) { const d = new THREE.Mesh(keep(new THREE.BoxGeometry(0.06, 2.1, 0.86)), mat(0x7a2a1a, { roughness: 0.5 })); d.geometry.translate(0, 1.05, 0); d.position.set(x + 0.08, 0, HOUSE.y1 + 1 + 0.45); d.rotation.y = -0.2; d.castShadow = true; scene.add(d); walls.push({ m: d, mid: new THREE.Vector2(x + 0.5, HOUSE.y1 + 1), exterior: true, h: WALL_H, isFrame: true }); }
+    if (!CUSTOM) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (!hWall[HOUSE.y1 + 1][x] && hWall[HOUSE.y1 + 1][x - 1]) { const d = new THREE.Mesh(keep(new THREE.BoxGeometry(0.06, 2.1, 0.86)), mat(0x141416, { roughness: 0.45, metalness: 0.2 })); d.geometry.translate(0, 1.05, 0); d.position.set(x + 0.08, 0, HOUSE.y1 + 1 + 0.45); d.rotation.y = -0.2; d.castShadow = true; scene.add(d); walls.push({ m: d, mid: new THREE.Vector2(x + 0.5, HOUSE.y1 + 1), exterior: true, h: WALL_H, isFrame: true }); }
 
     // ---------- rug and paintings ----------
     const rugT = texture((g, s) => { g.fillStyle = "#8a2a2a"; g.fillRect(0, 0, s, s); g.strokeStyle = "#e8c47a"; g.lineWidth = s / 24; g.strokeRect(s / 12, s / 12, s * 10 / 12, s * 10 / 12); g.strokeStyle = "#2a3a6a"; g.lineWidth = s / 40; g.strokeRect(s / 6, s / 6, s * 4 / 6, s * 4 / 6); for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? "#e8c47a" : "#2a3a6a"; g.beginPath(); g.arc(s / 2, s / 2, s / 4 - i * s / 30, 0, 7); g.fill(); } }, 256);
@@ -506,6 +508,10 @@
       // blink every few seconds (eyes closed while sleeping)
       g.userData.blink -= dt || 0.016; let lid = 0.01; if (g.userData.blink < 0.12) lid = 1; if (g.userData.blink < 0) g.userData.blink = 2 + Math.random() * 4;
       if (pose === "lie" && info.sleeping) lid = 1; r.lids.visible = lid > 0.5;
+      if (info.embrace) { // arms around each other, leaning in, heads tilted
+        r.armL.rotation.set(-1.25, 0, 0.55); r.armR.rotation.set(-1.25, 0, -0.55); r.foreL.rotation.set(-0.9, 0, 0); r.foreR.rotation.set(-0.9, 0, 0);
+        r.chest.rotation.x = 0.12; r.head.rotation.set(0.18, 0, 0.22 + Math.sin(t * 1.5) * 0.06);
+      }
       if (info.talking) { r.armR.rotation.x = -0.5 + Math.sin(t * 5) * 0.4; r.foreR.rotation.x = -0.8; r.head.rotation.x = Math.sin(t * 4) * 0.08; }
     }
     const pcam = new THREE.PerspectiveCamera(28, 1, 0.05, 5);

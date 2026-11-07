@@ -139,6 +139,7 @@
     hug: { label: "Hug", icon: "🤗", dur: 8, gain: { social: 3, comfort: 0.5 }, pose: "stand", social: "hug" },
     goodbye: { label: "Say Goodbye", icon: "👋", dur: 4, gain: {}, pose: "stand", social: "bye" },
     flirt: { label: "Flirt", icon: "😘", dur: 10, gain: { social: 2, fun: 0.6 }, pose: "stand", social: "flirt" },
+    makeOut: { label: "Make Out", icon: "💏", dur: 14, gain: { social: 3.2, fun: 1.4, comfort: 0.4 }, pose: "stand", social: "makeout" },
     kiss: { label: "Kiss", icon: "💋", dur: 8, gain: { social: 3, fun: 0.8 }, pose: "stand", social: "kiss" },
     moveIn: { label: "Ask to Move In", icon: "🏡", dur: 10, gain: { social: 2 }, pose: "stand", social: "movein" },
     propose: { label: "Propose", icon: "💍", dur: 12, gain: { social: 3, fun: 1 }, pose: "stand", social: "propose" },
@@ -545,8 +546,17 @@
     function romanceOutcome(A, n) {
       const rv = G.rel[n.name] || 0, kid = n.role === "child";
       const no = (txt, d) => { changeRel(n.name, d); n.say = "😠"; n.sayT = 2.5; notify(txt); };
-      if (A.social === "flirt") { if (kid) return; if (rv >= 20) { changeRel(n.name, 5 + (G.sim.traits.outgoing >= 6 ? 1 : 0)); n.say = "😊"; n.sayT = 2; } else no(`${n.name} wasn't interested in flirting.`, -4); }
-      else if (A.social === "kiss") { if (rv >= 50) { G.romance[n.name] = true; changeRel(n.name, 8); n.say = "😍"; n.sayT = 2.5; if (!G.romanceToldOf) { G.romanceToldOf = true; notify(`💞 ${G.sim.name} and ${n.name} are now romantically involved!`); } } else no(`${n.name} rejected the kiss — not close enough yet.`, -10); }
+      if (A.social === "flirt") { if (kid) return; if (rv >= 20) { changeRom(n.name, 4); changeRel(n.name, 5 + (G.sim.traits.outgoing >= 6 ? 1 : 0)); n.say = "😊"; n.sayT = 2; } else no(`${n.name} wasn't interested in flirting.`, -4); }
+      else if (A.social === "makeout") {
+        if (kid) return;
+        if (G.romance[n.name] || G.married === n.name) {
+          changeRom(n.name, 15); changeRel(n.name, 6); n.say = "😍"; n.sayT = 3; sim.say = "💕"; sim.sayT = 3;
+          G.sim.needs.fun = clamp(G.sim.needs.fun + 8, 0, 100);
+          const r = G.rom[n.name]; if (r >= 100 && !G.soulmate) { G.soulmate = n.name; notify(`💘 ${G.sim.name} and ${n.name} are head over heels — romance maxed out!`); }
+          else notify(`💏 ${G.sim.name} and ${n.name} made out. Romance ${Math.round(r)}/100`);
+        } else no(`${n.name} isn't your partner — try flirting and kissing first.`, -6);
+      }
+      else if (A.social === "kiss") { if (rv >= 50) { G.romance[n.name] = true; changeRom(n.name, 8); changeRel(n.name, 8); n.say = "😍"; n.sayT = 2.5; if (!G.romanceToldOf) { G.romanceToldOf = true; notify(`💞 ${G.sim.name} and ${n.name} are now romantically involved!`); } } else no(`${n.name} rejected the kiss — not close enough yet.`, -10); }
       else if (A.social === "movein") {
         if (G.romance[n.name] && rv >= 70) { addToHousehold(n, false); }
         else no(`${n.name} isn't ready to move in (needs romance and a relationship of 70+).`, -6);
@@ -556,7 +566,7 @@
         else no(`${n.name} said no to the proposal (needs romance and a relationship of 85+).`, -12);
       }
       else if (A.social === "woohoo") {
-        changeRel(n.name, 10); G.romance[n.name] = true;
+        changeRel(n.name, 10); changeRom(n.name, 10); G.romance[n.name] = true;
         if (A.baby) tryForBaby(n); else notify(`💞 ${G.sim.name} and ${n.name} WooHoo'd.`);
       }
     }
@@ -615,6 +625,8 @@
       }
     }
 
+    // Romance meter (0–100), separate from friendship like in Sims 4.
+    function changeRom(name, d) { if (!G.rom) G.rom = {}; G.rom[name] = clamp((G.rom[name] || 0) + d, 0, 100); if (tab === "rel") paintTab(); }
     function changeRel(name, d) { G.rel[name] = clamp((G.rel[name] || 0) + d, -100, 100); if (tab === "rel") paintTab(); }
 
     // ---------------- career ----------------
@@ -975,9 +987,11 @@
         if (o.t === "bed" || (cur.bed && A.bedAct)) { const b = cur.bed || o; info.lie = true; info.x = b.x + 0.85; info.y = b.y + (A.bedAct ? -0.18 : 0); info.lieYaw = Math.PI / 2; info.pose = "lie"; }
         if (o.t === "tub") info.pose = "bath";
       }
-      if (cur && cur.phase === "use" && cur.target && cur.target.npc) { info.face = Math.atan2(cur.target.fx - e.fx, cur.target.fy - e.fy); info.talking = true; }
+      if (cur && cur.phase === "use" && cur.target && cur.target.npc) { info.face = Math.atan2(cur.target.fx - e.fx, cur.target.fy - e.fy); info.talking = true;
+        if (cur.type === "makeOut" || cur.type === "hug" || cur.type === "kiss") { const dx = cur.target.fx - e.fx, dy = cur.target.fy - e.fy, d = Math.hypot(dx, dy) || 1; info.x += dx / d * 0.33; info.y += dy / d * 0.33; info.embrace = true; info.talking = false; } }
       if (!e.player && e.pose === "lie") { const bed = (e.bedTarget) || objs.find((o) => o.t === "bed" && Math.abs(o.x + 0.5 - e.fx) < 1.6 && Math.abs(o.y - e.fy) < 1.1); if (bed) { info.lie = true; info.x = bed.x + 0.85; info.y = bed.y + 0.2; info.lieYaw = Math.PI / 2; } }
-      if (!e.player && e.busy && sim && !e.route) { info.face = Math.atan2(sim.fx - e.fx, sim.fy - e.fy); info.talking = true; }
+      if (!e.player && e.busy && sim && !e.route) { info.face = Math.atan2(sim.fx - e.fx, sim.fy - e.fy); info.talking = true;
+        const pc = acts[0]; if (pc && pc.phase === "use" && pc.target === e && (pc.type === "makeOut" || pc.type === "hug" || pc.type === "kiss")) { const dx = sim.fx - e.fx, dy = sim.fy - e.fy, d = Math.hypot(dx, dy) || 1; info.x += dx / d * 0.33; info.y += dy / d * 0.33; info.embrace = true; info.talking = false; } }
       return info;
     }
     let floorLock = 0, lastLevel = 0;
@@ -1011,6 +1025,7 @@
           const bw = pxH * 0.45, top = hp[1] - pxH * 0.05, bot = fp[1] - (i.pose === "sit" ? pxH * 0.35 : pxH * 0.15), bs = Math.max(4, Math.round(pxH / 9)), seed = Math.floor(t * 6);
           for (let yy = top + pxH * 0.18; yy < bot; yy += bs) for (let xx = hp[0] - bw / 2; xx < hp[0] + bw / 2; xx += bs) { const v = hash(Math.round(xx) * 7 + seed, Math.round(yy) * 3); g.fillStyle = v < 0.55 ? e.skin : v < 0.8 ? "#d9a582" : "#f2d6c2"; g.fillRect(xx, yy, bs, bs); }
         }
+        if (A && A.social === "makeout" && i.cur && i.cur.target) { for (let k = 0; k < 4; k++) { const ph = (t * 0.7 + k / 4) % 1; g.globalAlpha = 1 - ph; g.font = `${Math.round(14 + k * 2)}px system-ui`; g.textAlign = "center"; g.fillStyle = "#e8336e"; g.fillText("❤", hp[0] + Math.sin(k * 2.3 + t) * 18, hp[1] - 20 - ph * 50); } g.globalAlpha = 1; }
         if (A && A.bedAct && i.cur && i.cur.bed) { const b = view3d.project(i.cur.bed.x + 1, i.cur.bed.y + 0.5, 0.9); for (let k = 0; k < 5; k++) { const ph = (t * 0.8 + k / 5) % 1; g.globalAlpha = 1 - ph; g.font = `${Math.round(16 + k * 3)}px system-ui`; g.textAlign = "center"; g.fillStyle = "#e8505b"; g.fillText("❤", b[0] + Math.sin(k * 2.1 + t) * 26, b[1] - ph * 80); } g.globalAlpha = 1; }
         if (A && A.steam) for (let k = 0; k < 6; k++) { const yy = hp[1] + pxH * 0.6 - ((t * 30 + k * 13) % 70); g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.arc(hp[0] + Math.sin(t * 2 + k) * 12, yy, 8, 0, 7); g.fill(); }
         if (A && A.sleeping) { g.fillStyle = "#fff"; g.font = "800 16px system-ui"; g.textAlign = "center"; g.fillText("Z", hp[0] + 14 + Math.sin(t * 2) * 4, hp[1] - 10 - (t * 10 % 16)); }
@@ -1104,7 +1119,7 @@
         b.innerHTML = `<div class="sm-needs">${SKILLS.map((k) => { const v = G.sim.skills[k]; return `<div class="sm-need"><span>${SKILL_LABEL[k]}</span><div class="sm-pips">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.floor(v) ? "on" : i < v ? "half" : ""}"></i>`).join("")}</div></div>`; }).join("")}</div>`;
       } else if (tab === "rel") {
         const names = Object.keys(G.rel);
-        b.innerHTML = names.length ? `<div class="sm-needs">${names.map((n) => { const v = G.rel[n]; const m = member(n), badge = G.married === n ? " 💍" : m && m.role === "child" ? " 👶" : m ? " 🏡" : G.romance[n] ? " 💞" : v >= 50 ? " ❤" : ""; return `<div class="sm-need"><span>${esc(n)}${badge}</span><div class="sm-nb"><div style="width:${(v + 100) / 2}%;background:${v >= 0 ? "#4ad04a" : "#e04a3a"}"></div></div></div>`; }).join("")}</div>` : `<div class="sm-tabtxt">No relationships yet. Use the <b>phone</b> to call a friend or invite a neighbor over.</div>`;
+        b.innerHTML = names.length ? `<div class="sm-needs">${names.map((n) => { const v = G.rel[n]; const m = member(n), badge = G.married === n ? " 💍" : m && m.role === "child" ? " 👶" : m ? " 🏡" : G.romance[n] ? " 💞" : v >= 50 ? " ❤" : ""; const rm = (G.rom || {})[n] || 0; return `<div class="sm-need"><span>${esc(n)}${badge}</span><div class="sm-nb" title="Friendship"><div style="width:${(v + 100) / 2}%;background:${v >= 0 ? "#4ad04a" : "#e04a3a"}"></div></div>${rm > 0 || G.romance[n] ? `<div class="sm-nb sm-rom" title="Romance"><div style="width:${rm}%;background:linear-gradient(90deg,#ff8ab4,#e8336e)"></div></div>` : ""}</div>`; }).join("")}</div>` : `<div class="sm-tabtxt">No relationships yet. Use the <b>phone</b> to call a friend or invite a neighbor over.</div>`;
         if (G.pregnant) b.insertAdjacentHTML("afterbegin", `<div class="sm-tabtxt">🍼 Baby due in ${Math.max(0, Math.ceil((G.pregnant.due - G.min) / 60))} hours</div>`);
         if (G.baby) b.insertAdjacentHTML("afterbegin", `<div class="sm-tabtxt">👶 ${esc(G.baby.name)} — care <b>${Math.round(G.baby.care)}%</b> · grows up in ${Math.max(0, Math.ceil((G.baby.born + 3 * 1440 - G.min) / 60))} h</div>`);
       } else if (tab === "pers") {
@@ -1230,6 +1245,7 @@
           if (rom) {
             if (!n.member) opts.push([ACTS.moveIn.label, () => queueAct("moveIn", n)]);
             if (G.married !== n.name) opts.push([ACTS.propose.label, () => queueAct("propose", n)]);
+            opts.push([ACTS.makeOut.label, () => queueAct("makeOut", n)]);
             opts.push([ACTS.woohoo.label, () => queueAct("woohoo", n)]);
             opts.push([ACTS.tryBaby.label + (n.member ? "" : " (move in first)"), () => queueAct("tryBaby", n)]);
           }
@@ -1412,7 +1428,7 @@
       .sm-pts { font-weight: 700; text-align: right; }
       .sm-jobs { display: flex; flex-direction: column; gap: 6px; } .sm-job { text-align: left; border: 2px solid #5a80c8; background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; color: #102a5a; } .sm-job:hover { background: #fff7c2; } .sm-job span { font-size: 12px; color: #2a6a2a; }
       .sm-diag { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 60; width: min(560px, 88%); background: #fff4f2; color: #6a1a10; border: 2px solid #e05a40; border-radius: 12px; padding: 10px 14px; font: 600 13px system-ui; box-shadow: 0 8px 24px rgba(0,0,0,.35); } .sm-diag small { color: #6a4a40; font-weight: 500; }
-      .sm-house.cur { border-color: #3be36a; } .sm-house span { display: block; font-size: 12px; color: #4a5a74; }
+      .sm-nb.sm-rom { margin-top: 3px; height: 6px; } .sm-house.cur { border-color: #3be36a; } .sm-house span { display: block; font-size: 12px; color: #4a5a74; }
       .sm-row { display: flex; gap: 8px; align-items: center; } .sm-small { font-size: 12px; opacity: .8; }
       @media (max-width: 640px) { .sm-tabs { display: none; } .sm-left { width: 140px; } }
       /* ===== Modern Sims-style HUD (floats over the lot) ===== */
