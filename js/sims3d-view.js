@@ -29,8 +29,12 @@
     const THREE = window.THREE;
     const { LW, LH, HOUSE, ROOMS, hWall, vWall, CAT } = opts;
     const canvas = document.createElement("canvas"); canvas.className = "sm-3d";
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    // iPad/iPhone: Safari kills pages that use too much GPU memory, so render lighter there.
+    const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const LITE = IOS || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, powerPreference: "default", failIfMajorPerformanceCaveat: false });
+    renderer.setPixelRatio(Math.min(LITE ? 1.5 : 2, window.devicePixelRatio || 1));
+    canvas.addEventListener("webglcontextlost", (ev) => { ev.preventDefault(); if (opts.onLost) opts.onLost(); });
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
@@ -72,7 +76,7 @@
     // ---------- lights & sky ----------
     const hemi = new THREE.HemisphereLight(0xdfefff, 0x5a7a3a, 0.9); scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xfff2dd, 1.6); sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024); const sc = sun.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 60; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
+    sun.shadow.mapSize.set(LITE ? 768 : 1024, LITE ? 768 : 1024); const sc = sun.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 60; sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.02;
     scene.add(sun); scene.add(sun.target);
     const lampLights = []; for (let i = 0; i < 3; i++) { const l = new THREE.PointLight(0xffd8a0, 0, 7, 1.6); scene.add(l); lampLights.push(l); }
     const tvLight = new THREE.PointLight(0x8ab8ff, 0, 5, 1.8); scene.add(tvLight);
@@ -273,7 +277,7 @@
     [2, 13].forEach((x) => { const p = new THREE.Group(); p.add(cyl(0.05, 0.07, 3.6, 0x3a3d44, 0, 0, 0)); const arm = box(0.7, 0.06, 0.06, 0x3a3d44, 0.3, 3.55, 0); p.add(arm); const b = new THREE.Mesh(keep(new THREE.SphereGeometry(0.13, 10, 8)), keep(new THREE.MeshStandardMaterial({ color: 0xfff2c0, emissive: 0xffd890, emissiveIntensity: 0 }))); b.position.set(0.6, 3.45, 0); p.add(b); bulbs.push(b); p.position.set(x, 0, LH - 1.1); p.rotation.y = Math.PI / 2; scene.add(p); });
     // neighbor houses across the street and next door use the house model
     if (loader) loadModel("house.glb").then((src) => {
-      [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI], [-12, LH / 2 - 1, Math.PI / 2]].forEach(([x, z, ry]) => {
+      (LITE ? [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI]] : [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI], [-12, LH / 2 - 1, Math.PI / 2]]).forEach(([x, z, ry]) => {
         const h = src.clone(true); h.scale.setScalar(0.72); h.rotation.y = ry; h.position.set(x, 0, z); scene.add(h);
         h.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = true; } });
       });

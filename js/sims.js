@@ -233,9 +233,15 @@
     function enable3D() {
       if (view3d || !want3d || !window.THREE || !window.Sims3DView || dead) return;
       try {
-        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT });
+        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: () => fail3D("The 3D view ran out of graphics memory") });
         host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
       } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
+    }
+    // If 3D can't run on this device, keep playing in 2D instead of breaking the game.
+    function fail3D(why) {
+      if (!view3d) return; try { view3d.dispose(); } catch (e) {} view3d = null; cv.classList.remove("sm-overlay"); fit();
+      const b = $(".sm-2dbtn"); if (b) b.textContent = "3D"; host.querySelectorAll(".sm-view3d button:not(.sm-2dbtn)").forEach((x) => x.hidden = true);
+      notify((why || "3D couldn't start") + " — switched to 2D. Tap 3D to try again.");
     }
     function disable3D() { if (!view3d) return; view3d.dispose(); view3d = null; cv.classList.remove("sm-overlay"); fit(); }
     function set3D(on) {
@@ -882,7 +888,7 @@
       const ents = [sim].concat(npcs).filter(Boolean).map(entInfo);
       let ghost = null;
       if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk, rot: buyRot }; }
-      view3d.render({ dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: mode === "live" ? hover : null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") });
+      try { view3d.render({ dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: mode === "live" ? hover : null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
       // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
       const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
       ents.forEach((i) => {
