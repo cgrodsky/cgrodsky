@@ -31,6 +31,7 @@ Bigger than Minecraft (`js/minecraft.js`).
   - `js/sims3d-models.js` — procedural model factories: `makeSim(look)`,
     `makeObject(type)`, `makeWall`, `makeWindow`, `makeDoor`, `makeTree`, `makeCar`…
   - `js/sims3d.js` — renderer, camera, input, UI (needs panel, pie menus, modes).
+- Asset credits: every outside asset gets a line in `CREDITS` (js/sims.js, `window.SIMS.CREDITS`), shown on the startup screen and in Options → Credits. The 3D game reuses that list.
 - Register as a game: `games.sims3d` in `js/games.js`, a Store entry in `js/data.js`,
   an Xbox tile in `js/xbox.js`, an icon in `js/icons.js`, script tags in `index.html`.
   Keep the 2D Sims available as "The Sims Classic".

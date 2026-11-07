@@ -152,6 +152,15 @@
   }
 
   // =========================================================================
+  /* Credits for every outside asset the Sims games use. Shown on the startup screen and in Options → Credits.
+     Add a line here whenever a new asset comes in. */
+  const CREDITS = [
+    { what: "Plumbob model", who: "ordinarycontraptions (Thingiverse)", link: "https://www.thingiverse.com/thing:5275829",
+      license: "CC BY-NC-SA", note: "Headband parts removed" },
+  ];
+  const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
+    <div class="sm-cred-i"><b>Everything else</b> (Sims, furniture, house, textures, sounds) is made in code for this game.</div></div>`;
+
   function start(body) {
     const store = () => { const S = window.State && State.data; if (!S) return {}; if (!S.appData) S.appData = {}; return S.appData; };
     let G = store().sims || null;
@@ -911,7 +920,7 @@
     }
     function openMenu() {
       dialog("Options", `<label class="sm-row"><input type="checkbox" class="sm-fw" ${G && G.freeWill ? "checked" : ""}> Free will (Sims take care of themselves)</label><p class="sm-small">Your game saves automatically.</p>`,
-        [["Close", (d) => { G.freeWill = d.querySelector(".sm-fw").checked; save(); }], ["New household", () => { setTimeout(() => dialog("Start over?", "<p>This replaces your current household and house.</p>", [["Start over", () => { setTimeout(createASim, 30); }], ["Cancel"]]), 30); }]]);
+        [["Credits", () => { setTimeout(() => dialog("Credits", creditsHTML()), 30); }], ["Close", (d) => { G.freeWill = d.querySelector(".sm-fw").checked; save(); }], ["New household", () => { setTimeout(() => dialog("Start over?", "<p>This replaces your current household and house.</p>", [["Start over", () => { setTimeout(createASim, 30); }], ["Cancel"]]), 30); }]]);
     }
 
     // ---------------- pie menu ----------------
@@ -1009,7 +1018,20 @@
     let ro = null; try { ro = new ResizeObserver(() => { fit(); if (!userCam) centerCam(); }); ro.observe(host); } catch (e) {}
     const win = body.closest(".win"); if (win) win.addEventListener("wm-cleanup", cleanup);
     fit();
-    if (G && G.v === 1) boot(); else { G = null; createASim(); }
+    // Startup screen: title, loading tips and the asset credits. Tap or wait to continue.
+    function splash(next) {
+      const tips = ["Reticulating splines…", "Adding hidden agendas…", "Polishing the plumbob…", "Calibrating personality matrix…"];
+      const sp = document.createElement("div"); sp.className = "sm-splash";
+      sp.innerHTML = `<div class="sm-sp-in"><div class="sm-sp-bob">◆</div><div class="sm-sp-t">The Sims</div><div class="sm-sp-tip">${tips[0]}</div>
+        <div class="sm-sp-bar"><div></div></div><div class="sm-sp-h">Credits</div>${creditsHTML()}<button class="sm-sp-go">Play</button></div>`;
+      host.appendChild(sp);
+      let ti = 0, done = false; const tipT = setInterval(() => { ti = (ti + 1) % tips.length; sp.querySelector(".sm-sp-tip").textContent = tips[ti]; }, 900);
+      const go = () => { if (done) return; done = true; clearInterval(tipT); clearTimeout(auto); sp.remove(); if (!dead) next(); };
+      const auto = setTimeout(go, 4500);
+      sp.querySelector(".sm-sp-go").onclick = go;
+      sp.addEventListener("pointerdown", (e) => { if (!e.target.closest("a")) go(); });
+    }
+    splash(() => { if (G && G.v === 1) boot(); else { G = null; createASim(); } });
     raf = requestAnimationFrame((n) => { last = n; frame(n); });
     host.__sims = { get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
     return { dispose: cleanup };
@@ -1053,6 +1075,17 @@
       .sm-pie-opt { position: absolute; transform: translate(-50%,-50%); white-space: nowrap; background: rgba(255,255,255,.96); border: 2px solid #2f5aa8; color: #1d3d7a; border-radius: 14px; padding: 5px 12px; font: 700 13px system-ui; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
       .sm-pie-opt:hover { background: #ffd23a; }
       .sm-dialog { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: grid; place-items: center; z-index: 30; }
+      .sm-splash { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, #4f8be0, #142c66 75%); color: #fff; font-family: system-ui; overflow: auto; }
+      .sm-sp-in { width: min(440px, 90%); text-align: center; padding: 16px 0; }
+      .sm-sp-bob { font-size: 46px; color: #3be36a; text-shadow: 0 0 18px #3be36a; animation: smbob 1.6s ease-in-out infinite; }
+      @keyframes smbob { 50% { transform: translateY(-8px) rotateY(180deg); } }
+      .sm-sp-t { font: 900 40px system-ui; letter-spacing: 1px; text-shadow: 0 3px 0 #0b1d48; } .sm-sp-tip { font-size: 13px; opacity: .85; margin: 6px 0; min-height: 18px; }
+      .sm-sp-bar { height: 8px; background: #0b1d48; border-radius: 4px; overflow: hidden; margin: 0 30px 14px; } .sm-sp-bar div { height: 100%; width: 0; background: #3be36a; animation: smload 4.5s linear forwards; }
+      @keyframes smload { to { width: 100%; } }
+      .sm-sp-h { font: 800 14px system-ui; text-transform: uppercase; letter-spacing: 2px; opacity: .8; margin-bottom: 6px; }
+      .sm-cred { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 12.5px; } .sm-cred-i { background: rgba(255,255,255,.12); border-radius: 8px; padding: 6px 10px; }
+      .sm-cred-i span { opacity: .8; font-size: 11.5px; } .sm-cred a { color: #9fe8b0; } .sm-dlg .sm-cred-i { background: rgba(47,90,168,.12); } .sm-dlg .sm-cred a { color: #2f5aa8; }
+      .sm-sp-go { margin-top: 14px; border: 2px solid #9fe8b0; background: #2ea84e; color: #fff; border-radius: 10px; padding: 6px 28px; font: 800 15px system-ui; cursor: pointer; }
       .sm-dlg { width: min(520px, 92%); max-height: 88%; overflow: auto; background: linear-gradient(#e8f0ff,#c9dbff); border: 3px solid #2f5aa8; border-radius: 16px; box-shadow: 0 16px 50px rgba(0,0,0,.45); color: #102a5a; }
       .sm-dlg-h { background: linear-gradient(#3e6cc0,#1d3d7a); color: #fff; font: 800 16px system-ui; padding: 8px 14px; border-radius: 12px 12px 0 0; }
       .sm-dlg-b { padding: 10px 16px; font-size: 14px; line-height: 1.45; } .sm-dlg-f { display: flex; gap: 8px; justify-content: flex-end; padding: 0 14px 12px; }
@@ -1070,5 +1103,5 @@
     document.head.appendChild(s);
   }
 
-  window.SIMS = { start, CAT, ACTS };
+  window.SIMS = { start, CAT, ACTS, CREDITS };
 })();
