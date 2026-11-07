@@ -83,7 +83,11 @@
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
+      save.warned = false;
+    } catch (e) {
+      // Don't fail silently: tell the user once that storage is full.
+      if (!save.warned && window.Notify) { save.warned = true; try { Notify.show({ icon: "", title: "Storage is full", body: "Your latest changes couldn't be saved. Delete some big files (photos, videos) to free up space." }); } catch (_) {} }
+    }
   }
 
   function reset(preserveIcons) {

@@ -139,13 +139,62 @@
     screen().appendChild(overlay);
   }
 
+  // ---- Big file contents live in IndexedDB (localStorage is only ~5 MB on iPad Safari).
+  // A file node keeps just { blob: "<id>" }; the bytes are stored here once and shared by copies.
+  let dbp = null;
+  function db() {
+    if (dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      try { const r = indexedDB.open("win12-files", 1); r.onupgradeneeded = () => r.result.createObjectStore("blobs"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); }
+    });
+    return dbp;
+  }
+  function putBlob(blob) {
+    const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    return db().then((d) => new Promise((res, rej) => { const t = d.transaction("blobs", "readwrite"); t.objectStore("blobs").put(blob, id); t.oncomplete = () => res(id); t.onerror = () => rej(t.error); }));
+  }
+  function getBlob(id) {
+    return db().then((d) => new Promise((res, rej) => { const q = d.transaction("blobs").objectStore("blobs").get(id); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }));
+  }
+  // Shrink a photo: returns { blob (max 1600 px JPEG), thumb (small data URL for icons) }.
+  function shrinkImage(file) {
+    return new Promise((res) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const fit = (max) => { const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k)); const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height); return c; };
+        const thumb = fit(240).toDataURL("image/jpeg", 0.7);
+        fit(1600).toBlob((b) => { URL.revokeObjectURL(url); res({ blob: b || file, thumb }); }, "image/jpeg", 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); res({ blob: file, thumb: null }); };
+      img.src = url;
+    });
+  }
+  // Turn a real File into a file node (text stays inline; everything else goes to IndexedDB).
+  function nodeFromFile(file) {
+    const isImg = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|heic|bmp)$/i.test(file.name);
+    const isText = !isImg && (/^text\/|json|javascript|xml/.test(file.type) || /\.(txt|md|csv|js|py|html|css|json)$/i.test(file.name));
+    if (isText && file.size < 400000) return file.text().then((t) => ({ type: "file", kind: "text", content: t, size: file.size, ts: Date.now() }));
+    if (isImg) return shrinkImage(file).then(({ blob, thumb }) => putBlob(blob).then((id) => ({ type: "file", kind: "image", blob: id, src: thumb || undefined, size: blob.size, mime: "image/jpeg", ts: Date.now() })));
+    return putBlob(file).then((id) => ({ type: "file", kind: "other", blob: id, size: file.size, mime: file.type, ts: Date.now() }));
+  }
+
   window.VFS = {
-    ensure, childrenAt, uniqueName, seed,
+    ensure, childrenAt, uniqueName, seed, putBlob, getBlob, nodeFromFile,
     pickFile: (opts, cb) => fileDialog("open", opts, cb),
     pickSave: (opts, cb) => fileDialog("save", opts, cb),
     // Open a file node in the right app.
     openNode(name, node) {
       if (!node || node.type !== "file") return;
+      if (node.blob && !node._loading) {
+        getBlob(node.blob).then((b) => {
+          if (!b) { if (window.Notify) Notify.show({ icon: "", title: name, body: "This file's contents aren't on this device." }); return; }
+          const url = URL.createObjectURL(b);
+          if (node.kind === "image") window.VFS.openNode(name, { type: "file", kind: "image", src: url, _loading: true });
+          else { const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+        });
+        return;
+      }
       if (node.kind === "word" || node.kind === "text") { if (window.Office) window.Office.openWord({ name, node }); }
       else if (node.kind === "pptx") { if (window.Office) window.Office.openPowerPoint({ name, node }); }
       else if (node.kind === "xlsx") { if (window.Office) window.Office.openExcel({ name, node }); }

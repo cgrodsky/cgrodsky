@@ -179,7 +179,15 @@
         tBtn.className = "gc-turnin" + (st.turnedIn ? " un" : "");
         note.textContent = st.turnedIn && !st.grade ? "Your teacher is grading this…  " + (st.savedTo ? "Copies saved to " + st.savedTo : "") : st.turnedIn ? (st.savedTo ? "Turned in " + new Date(st.turnedInAt).toLocaleString() + " · copies saved to " + st.savedTo : "Turned in " + new Date(st.turnedInAt).toLocaleString()) : isSchool() ? "When you turn in, your files are also saved to the Homework folder." : "";
       }
-      function attach(name, node) { st.files.push({ name, node: clone(node) }); save(); render(); }
+      function attach(name, node) {
+        // Big pictures (e.g. from Paint or Snipping Tool) go to IndexedDB so the saved state stays small.
+        if (node.src && /^data:/.test(node.src) && node.src.length > 150000 && VFS.putBlob) {
+          fetch(node.src).then((r) => r.blob()).then((b) => VFS.putBlob(b)).then((id) => { const n = clone(node); delete n.src; n.blob = id; st.files.push({ name, node: n }); save(); render(); })
+            .catch(() => { st.files.push({ name, node: clone(node) }); save(); render(); });
+          return;
+        }
+        st.files.push({ name, node: clone(node) }); save(); render();
+      }
 
       addBtn.onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; };
       body.onclick = () => { const m = body.querySelector(".gc-addmenu"); if (m) m.hidden = true; };
@@ -187,16 +195,13 @@
         e.stopPropagation(); menu.hidden = true; const a = b.dataset.a;
         if (a === "pc" && window.VFS) VFS.pickFile({ title: "Add a file" }, (r) => { if (r && r.node && r.node.type === "file") attach(r.name, r.node); });
         if (a === "upload") {
-          const inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.style.display = "none"; document.body.appendChild(inp);
+          const inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px"; document.body.appendChild(inp);
           inp.onchange = () => {
-            [...inp.files].forEach((file) => {
-              const isImg = /^image\//.test(file.type), isText = /^text\/|json|javascript|xml/.test(file.type) || /\.(txt|md|csv|js|py|html|css|json)$/i.test(file.name);
-              if (!isText && file.size > MAX_UPLOAD) { attach(file.name, { type: "file", kind: "other", content: "", size: file.size, mime: file.type, note: "Too big to keep a copy (" + fmtSize(file.size) + ")", ts: Date.now() }); return; }
-              const r = new FileReader();
-              r.onload = () => attach(file.name, isImg ? { type: "file", kind: "image", src: r.result, size: file.size, ts: Date.now() } : isText ? { type: "file", kind: "text", content: String(r.result || ""), size: file.size, ts: Date.now() } : { type: "file", kind: "other", src: r.result, size: file.size, mime: file.type, ts: Date.now() });
-              if (isText) r.readAsText(file); else r.readAsDataURL(file);
-            });
-            inp.remove();
+            const files = [...inp.files]; inp.remove();
+            if (!files.length) return;
+            note.textContent = "Uploading " + files.length + " file" + (files.length === 1 ? "" : "s") + "…";
+            Promise.all(files.map((file) => VFS.nodeFromFile(file).then((node) => ({ name: file.name.replace(/\.(heic|heif)$/i, ".jpg"), node })).catch(() => null)))
+              .then((list) => { list.filter(Boolean).forEach((x) => st.files.push({ name: x.name, node: x.node })); save(); render(); });
           };
           inp.click();
         }
