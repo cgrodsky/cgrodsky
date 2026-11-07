@@ -194,15 +194,15 @@
       <div class="sm-queue"></div>
       <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="turn" title="Turn the item you're placing (R)" class="sm-turnbtn" hidden>↻ Turn</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
       <div class="sm-hint"></div>
+      <div class="sm-notes"></div>
+      <div class="sm-buyhint" hidden></div>
+      <div class="sm-modes"><button class="sm-mode on" data-m="live" title="Live mode"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg></button><button class="sm-mode" data-m="buy" title="Buy mode"><svg viewBox="0 0 24 24"><path d="M4 12h16v5H4zM6 9h12v3H6zM5 17v2M19 17v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><button class="sm-mode" data-m="menu" title="Options"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
       <div class="sm-bar">
-        <div class="sm-left">
-          <div class="sm-modes"><button class="sm-mode on" data-m="live" title="Live mode">🙂</button><button class="sm-mode" data-m="buy" title="Buy mode">🛒</button><button class="sm-mode" data-m="menu" title="Options">⚙️</button></div>
-          <div class="sm-clock"><b class="sm-time">8:00 AM</b><span class="sm-day">Day 1</span></div>
-          <div class="sm-speeds"><button data-s="0" title="Pause">❚❚</button><button data-s="1" title="Normal">▶</button><button data-s="2" title="Fast">▶▶</button><button data-s="3" title="Ultra">▶▶▶</button></div>
-          <div class="sm-money">§0</div>
+        <div class="sm-hud-left">
+          <div class="sm-tabs"><button class="on" data-t="needs" title="Needs">❤</button><button data-t="job" title="Career">💼</button><button data-t="skills" title="Skills">★</button><button data-t="rel" title="Relationships">👥</button><button data-t="pers" title="Personality">✦</button></div>
+          <div class="sm-face"><div class="sm-ring"><canvas class="sm-portrait" width="72" height="84"></canvas></div><div class="sm-moodchip">Fine</div><div class="sm-mood"><div></div></div><div class="sm-name"></div><div class="sm-money">§0</div></div>
         </div>
-        <div class="sm-face"><canvas class="sm-portrait" width="72" height="84"></canvas><div class="sm-mood"><div></div></div><div class="sm-name"></div></div>
-        <div class="sm-tabs"><button class="on" data-t="needs">Needs</button><button data-t="job">Job</button><button data-t="skills">Skills</button><button data-t="rel">Relationships</button><button data-t="pers">Personality</button></div>
+        <div class="sm-left"><div class="sm-speeds"><button data-s="0" title="Pause">❚❚</button><button data-s="1" title="Normal">▶</button><button data-s="2" title="Fast">▶▶</button><button data-s="3" title="Ultra">▶▶▶</button></div><div class="sm-clock"><b class="sm-time">8:00 AM</b><span class="sm-day">Day 1</span></div></div>
         <div class="sm-tab-body"></div>
       </div>
       <div class="sm-catalog" hidden></div>
@@ -218,7 +218,7 @@
 
     function fit() {
       const r = host.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
-      W = r.width; H = r.height - 124; cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr); cv.style.height = H + "px";
+      W = r.width; H = r.height; cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr); cv.style.height = H + "px";
       if (view3d) view3d.resize(W, H);
       if (!camX && !camY) centerCam();
     }
@@ -239,11 +239,11 @@
     }
     // If 3D can't run on this device, keep playing in 2D instead of breaking the game.
     function fail3D(why) {
-      if (!view3d) return; try { view3d.dispose(); } catch (e) {} view3d = null; cv.classList.remove("sm-overlay"); fit();
+      if (!view3d) return; try { view3d.dispose(); } catch (e) {} view3d = null; cv.classList.remove("sm-overlay"); fit(); const rg = $(".sm-ring"); if (rg) rg.classList.remove("live");
       const b = $(".sm-2dbtn"); if (b) b.textContent = "3D"; host.querySelectorAll(".sm-view3d button:not(.sm-2dbtn)").forEach((x) => x.hidden = true);
       notify((why || "3D couldn't start") + " — switched to 2D. Tap 3D to try again.");
     }
-    function disable3D() { if (!view3d) return; view3d.dispose(); view3d = null; cv.classList.remove("sm-overlay"); fit(); }
+    function disable3D() { if (!view3d) return; const rg = $(".sm-ring"); if (rg) rg.classList.remove("live"); view3d.dispose(); view3d = null; cv.classList.remove("sm-overlay"); fit(); }
     function set3D(on) {
       want3d = on; try { State.data.appData.sims3dView = on; State.save(); } catch (e) {}
       if (on) enable3D(); else disable3D();
@@ -328,14 +328,19 @@
 
     // ---------------- dialogs ----------------
     function dialog(title, html, buttons, onOpen) {
-      const d = $(".sm-dialog"); dialogOpen = true;
+      const d = $(".sm-dialog"); dialogOpen = true; d.className = "sm-dialog";
       d.innerHTML = `<div class="sm-dlg"><div class="sm-dlg-h">${esc(title)}</div><div class="sm-dlg-b">${html}</div><div class="sm-dlg-f"></div></div>`;
       const f = d.querySelector(".sm-dlg-f");
       (buttons || [["OK"]]).forEach(([label, fn]) => { const b = document.createElement("button"); b.textContent = label; b.onclick = () => { const keep = fn && fn(d) === false; if (!keep) { d.hidden = true; dialogOpen = false; } }; f.appendChild(b); });
       d.hidden = false; if (onOpen) onOpen(d);
     }
     const msg = (title, text) => dialog(title, `<p>${esc(text)}</p>`);
-    function notify(text) { flash.push({ text, t: 4 }); }
+    function notify(text) {
+      const box = host && host.querySelector(".sm-notes"); if (!box) { flash.push({ text, t: 4 }); return; }
+      const c = document.createElement("div"); c.className = "sm-note"; c.innerHTML = `<i>${PLUMBOB_SVG}</i><span>${esc(text)}</span>`; box.prepend(c);
+      while (box.children.length > 3) box.lastChild.remove();
+      setTimeout(() => { c.classList.add("out"); setTimeout(() => c.remove(), 400); }, 4200);
+    }
 
     // ---------------- Create-a-Sim ----------------
     function createASim() {
@@ -356,7 +361,16 @@
           G = freshSave(c); save(); boot();
           setTimeout(() => dialog(`Welcome, ${c.name}!`, `<p>The ${esc(c.family)} household has moved in with <b>§6,500</b>.</p><p>Keep ${esc(c.name)}'s needs up, find a job on the computer, learn skills, and make friends. Click objects to see what your Sim can do.</p>`), 50);
         }]], (d) => {
-          const portrait = () => { const cc = d.querySelector(".sm-cas-cv").getContext("2d"); cc.clearRect(0, 0, 120, 150); drawSimFigure(cc, 60, 140, 1.9, { gender: c.gender, skin: c.skin, hair: c.hair, shirt: c.shirt, pants: c.pants }, "stand", 0, 1, false); };
+          let pv = null;
+          if (window.THREE && window.Sims3DView && Sims3DView.preview) {
+            d.classList.add("sm-casmode");
+            const stage = document.createElement("div"); stage.className = "sm-cas-stage"; stage.innerHTML = `<div class="sm-cas-title">Create a Sim</div><div class="sm-cas-arrows"><button data-r="-1">⟲</button><button data-r="1">⟳</button></div>`; d.appendChild(stage);
+            try { pv = Sims3DView.preview(stage); } catch (e) { pv = null; }
+            stage.querySelectorAll("[data-r]").forEach((b) => b.onclick = () => pv && pv.turn(+b.dataset.r));
+            const nameEl = d.querySelector(".sm-fn"), lnEl = d.querySelector(".sm-ln"); const ttl = () => { stage.querySelector(".sm-cas-title").textContent = ((nameEl.value || "") + " " + (lnEl.value || "")).trim() || "Create a Sim"; }; nameEl.addEventListener("input", ttl); lnEl.addEventListener("input", ttl);
+            const ro2 = new ResizeObserver(() => pv && pv.resize()); ro2.observe(stage);
+          }
+          const portrait = () => { if (pv) { pv.set({ gender: c.gender, skin: c.skin, hair: c.hair, shirt: c.shirt, pants: c.pants, name: d.querySelector(".sm-fn").value || "Alex" }); return; } const cc = d.querySelector(".sm-cas-cv").getContext("2d"); cc.clearRect(0, 0, 120, 150); drawSimFigure(cc, 60, 140, 1.9, { gender: c.gender, skin: c.skin, hair: c.hair, shirt: c.shirt, pants: c.pants }, "stand", 0, 1, false); };
           portrait();
           d.querySelectorAll(".sm-gender button").forEach((b) => b.onclick = () => { c.gender = b.dataset.g; d.querySelectorAll(".sm-gender button").forEach((x) => x.classList.toggle("on", x === b)); portrait(); });
           d.querySelectorAll(".sm-sw").forEach((s) => s.querySelectorAll("button").forEach((b) => b.onclick = () => { c[s.dataset.k] = b.dataset.v; s.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); portrait(); }));
@@ -735,7 +749,7 @@
       else col = (x + y) % 2 ? "#e9d48a" : "#d9c27a";
       poly(c, col, "rgba(0,0,0,.08)");
       if (y === LH - 1 && x % 3 === 1) { const a = P(x + 0.3, y + 0.5), b2 = P(x + 0.7, y + 0.5); g.strokeStyle = "#e8d84a"; g.lineWidth = 2 * zoom; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b2[0], b2[1]); g.stroke(); }
-      if (hover && hover.x === x && hover.y === y && mode === "live") poly(c, "rgba(255,255,255,.22)");
+      
     }
     function wallSeg(x0, y0, x1, y1, h, full) {
       const a = P(x0, y0), b = P(x1, y1), a2 = P(x0, y0, h), b2 = P(x1, y1, h);
@@ -888,7 +902,9 @@
       const ents = [sim].concat(npcs).filter(Boolean).map(entInfo);
       let ghost = null;
       if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk, rot: buyRot }; }
-      try { view3d.render({ dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: mode === "live" ? hover : null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
+      const ringEl = $(".sm-ring"), hr0 = host.getBoundingClientRect(), rr = ringEl.getBoundingClientRect();
+      ringEl.classList.add("live");
+      try { view3d.render({ portrait: { x: rr.left - hr0.left + 4, y: rr.top - hr0.top + 4, w: rr.width - 8, h: rr.height - 8 }, dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
       // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
       const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
       ents.forEach((i) => {
@@ -910,8 +926,7 @@
         zoom = saved;
         if (!e.player) { g.font = "700 12px system-ui"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "rgba(0,0,0,.6)"; g.fillText(e.name, fp[0] + 1, fp[1] + 15); g.fillStyle = "#fff"; g.fillText(e.name, fp[0], fp[1] + 14); }
       });
-      flash.forEach((f, i) => { g.font = "600 13px system-ui,sans-serif"; const w = g.measureText(f.text).width + 20; g.globalAlpha = Math.min(1, f.t); g.fillStyle = "rgba(20,40,90,.85)"; g.fillRect(W - w - 12, 56 + i * 30, w, 24); g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(f.text, W - w - 2, 68 + i * 30); g.globalAlpha = 1; });
-      if (mode === "buy") { g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, H - 28, W, 28); g.fillStyle = "#fff"; g.font = "700 13px system-ui"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(buyItem ? "Tap a tile to place it · R or ⟳ to turn it · right-click or Esc to cancel" : "BUY MODE — pick an item, or tap an object to sell it (time is paused)", W / 2, H - 14); }
+
     }
     function draw() {
       if (view3d) { draw3d(); return; }
@@ -952,8 +967,6 @@
         g.globalCompositeOperation = "source-over";
       }
       // notifications
-      flash.forEach((f, i) => { g.font = "600 13px system-ui,sans-serif"; const w = g.measureText(f.text).width + 20; g.globalAlpha = Math.min(1, f.t); g.fillStyle = "rgba(20,40,90,.85)"; g.fillRect(W - w - 12, 12 + i * 30, w, 24); g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(f.text, W - w - 2, 24 + i * 30); g.globalAlpha = 1; });
-      if (mode === "buy") { g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, 0, W, 28); g.fillStyle = "#fff"; g.font = "700 13px system-ui"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(buyItem ? "Click a tile to place it · right-click or Esc to cancel" : "BUY MODE — pick an item, or click an object to sell it (time is paused)", W / 2, 14); }
     }
 
     // ---------------- UI panels ----------------
@@ -974,14 +987,17 @@
       $(".sm-money").textContent = "§" + Math.floor(G.money).toLocaleString();
       host.querySelectorAll(".sm-speeds button").forEach((b) => b.classList.toggle("on", +b.dataset.s === G.speed));
       $(".sm-name").textContent = G.sim.name + " " + G.sim.family;
-      const md = mood(); const m = $(".sm-mood div"); m.style.width = Math.abs(md) / 2 + "%"; m.style.left = md >= 0 ? "50%" : (50 - Math.abs(md) / 2) + "%"; m.style.background = md >= 0 ? "#4ad04a" : "#e04a3a";
+      const md = mood(); const chip = $(".sm-moodchip");
+      if (chip) { const em = md > 55 ? ["Happy", "#ffd23a"] : md > 15 ? ["Fine", "#e8eef2"] : md > -25 ? ["Uncomfortable", "#f2a35a"] : md > -60 ? ["Sad", "#7ab0e8"] : ["Miserable", "#e05a5a"]; chip.textContent = em[0]; chip.style.background = em[1]; }
+      const bh = $(".sm-buyhint"); if (bh) { bh.hidden = mode !== "buy"; bh.textContent = buyItem ? `Placing: ${CAT[buyItem].name} · tap a spot${view3d ? " · R / ↻ to turn" : ""} · Esc to stop` : "Buy Mode — pick an item below, or tap an object to sell or turn it"; }
+      const m = $(".sm-mood div"); m.style.width = Math.abs(md) / 2 + "%"; m.style.left = md >= 0 ? "50%" : (50 - Math.abs(md) / 2) + "%"; m.style.background = md >= 0 ? "#4ad04a" : "#e04a3a";
       const pc = $(".sm-portrait").getContext("2d"); pc.clearRect(0, 0, 72, 84); drawSimFigure(pc, 36, 150, 2.2, G.sim, "stand", 0, 1, false);
       if (tab === "needs") paintTab();
     }
     function paintTab() {
       if (!G) return; const b = $(".sm-tab-body"), N = G.sim.needs;
       if (tab === "needs") {
-        b.innerHTML = `<div class="sm-needs">${NEEDS.map((k) => { const v = N[k], col = v > 60 ? "#4ad04a" : v > 30 ? "#e0c03a" : "#e04a3a"; return `<div class="sm-need"><span>${NEED_LABEL[k]}</span><div class="sm-nb"><div style="width:${v}%;background:${col}"></div></div></div>`; }).join("")}</div>`;
+        b.innerHTML = `<div class="sm-card-h">Needs</div><div class="sm-needs">${NEEDS.map((k) => { const v = N[k], col = v > 60 ? "linear-gradient(#8ee86a,#4cb83a)" : v > 30 ? "linear-gradient(#ffe27a,#e8b52a)" : "linear-gradient(#ff8a7a,#d8402a)"; return `<div class="sm-need"><i>${NEED_ICON[k]}</i><span>${NEED_LABEL[k]}</span><div class="sm-nb"><div style="width:${v}%;background:${col}"></div></div></div>`; }).join("")}</div>`;
       } else if (tab === "job") {
         const C = G.career;
         if (!C) { b.innerHTML = `<div class="sm-tabtxt">${esc(G.sim.name)} is unemployed. Use the <b>computer</b> → <i>Find a Job</i>.</div>`; return; }
@@ -1240,6 +1256,80 @@
       .sm-jobs { display: flex; flex-direction: column; gap: 6px; } .sm-job { text-align: left; border: 2px solid #5a80c8; background: #fff; border-radius: 10px; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; color: #102a5a; } .sm-job:hover { background: #fff7c2; } .sm-job span { font-size: 12px; color: #2a6a2a; }
       .sm-row { display: flex; gap: 8px; align-items: center; } .sm-small { font-size: 12px; opacity: .8; }
       @media (max-width: 640px) { .sm-tabs { display: none; } .sm-left { width: 140px; } }
+      /* ===== Modern Sims-style HUD (floats over the lot) ===== */
+      .sm { font-family: "Nunito", "Segoe UI", system-ui, sans-serif; }
+      .sm-bar { background: none; border: 0; height: auto; top: auto; padding: 0; pointer-events: none; display: block; left: 0; right: 0; bottom: 0; }
+      .sm-bar > * { pointer-events: auto; }
+      .sm-hud-left { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: flex-end; gap: 6px; }
+      .sm-tabs { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
+      .sm-tabs button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); color: #2a5aa0; font: 700 15px system-ui; padding: 0; text-align: center; box-shadow: 0 2px 8px rgba(0,30,80,.3); cursor: pointer; }
+      .sm-tabs button.on { background: #3a7be0; color: #fff; }
+      .sm-face { width: 112px; gap: 3px; align-items: center; }
+      .sm-ring { width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(#d6ecff, #7ab0e8); border: 4px solid #fff; box-shadow: 0 4px 14px rgba(0,30,80,.4), 0 0 0 3px #3be36a; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+      .sm-ring.live { background: transparent; } .sm-ring.live .sm-portrait { visibility: hidden; }
+      .sm-portrait { background: none; border: 0; border-radius: 0; width: 82px; height: 96px; }
+      .sm-moodchip { margin-top: -14px; z-index: 1; padding: 2px 12px; border-radius: 12px; font: 800 12px "Nunito", system-ui; color: #26324a; box-shadow: 0 2px 6px rgba(0,0,0,.3); border: 2px solid #fff; }
+      .sm-mood { display: none; }
+      .sm-name { color: #fff; font: 800 12px "Nunito", system-ui; text-shadow: 0 1px 3px rgba(0,0,0,.8); max-width: 112px; }
+      .sm-money { background: rgba(255,255,255,.92); color: #2a7a3a; border-radius: 12px; padding: 2px 12px; font: 900 14px "Nunito", system-ui; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+      .sm-left { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: auto; flex-direction: row; align-items: center; gap: 10px; background: rgba(255,255,255,.94); border-radius: 26px; padding: 5px 8px 5px 6px; box-shadow: 0 4px 14px rgba(0,30,80,.35); }
+      .sm-speeds { gap: 3px; }
+      .sm-speeds button { flex: none; width: 34px; height: 30px; border-radius: 15px; border: 0; background: transparent; color: #4a6a94; font: 800 11px system-ui; padding: 0; }
+      .sm-speeds button.on { background: #3be36a; color: #fff; border: 0; }
+      .sm-clock { flex-direction: column; align-items: flex-start; gap: 0; color: #26324a; padding-right: 6px; line-height: 1.1; } .sm-clock b { font: 900 14px "Nunito", system-ui; } .sm-clock span { font-size: 11px; color: #6a7a94; }
+      .sm-tab-body { position: absolute; right: 10px; bottom: 10px; width: min(330px, 46vw); max-height: 260px; overflow: auto; background: rgba(255,255,255,.95); color: #26324a; border-radius: 14px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,30,80,.35); }
+      .sm-card-h { font: 900 13px "Nunito", system-ui; color: #2a5aa0; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+      .sm-needs { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px 12px; }
+      .sm-need { font: 700 11.5px "Nunito", system-ui; color: #3a4a64; display: grid; grid-template-columns: 18px 1fr; grid-template-rows: auto auto; column-gap: 4px; align-items: center; }
+      .sm-need i { grid-row: span 2; font-style: normal; font-size: 14px; text-align: center; } .sm-need span { width: auto; }
+      .sm-nb { height: 9px; background: #e3e9f2; border: 0; border-radius: 5px; box-shadow: inset 0 1px 2px rgba(0,0,0,.15); }
+      .sm-nb div { border-radius: 5px; transition: width .4s; }
+      .sm-tabtxt { color: #26324a; } .sm-pips i { background: #e3e9f2; border: 0; } .sm-pips i.on { background: #3be36a; }
+      .sm-modes { position: absolute; right: 10px; top: 10px; z-index: 3; display: flex; gap: 6px; }
+      .sm-modes button { width: 42px; height: 42px; border-radius: 50%; border: 0; background: rgba(255,255,255,.94); color: #2a5aa0; padding: 9px; box-shadow: 0 3px 10px rgba(0,30,80,.35); cursor: pointer; flex: none; }
+      .sm-modes button svg { width: 100%; height: 100%; display: block; }
+      .sm-modes button.on { background: #3a7be0; color: #fff; border: 0; }
+      .sm-view3d { top: 62px; right: 10px; flex-direction: column; align-items: flex-end; gap: 6px; }
+      .sm-view3d button { border: 0; background: rgba(255,255,255,.94); color: #2a5aa0; border-radius: 20px; min-width: 38px; height: 36px; box-shadow: 0 3px 10px rgba(0,30,80,.3); font: 800 15px "Nunito", system-ui; }
+      .sm-view3d .sm-wallbtn, .sm-view3d .sm-2dbtn, .sm-view3d .sm-turnbtn { font-size: 12px; padding: 0 12px; }
+      .sm-queue { top: 12px; left: 12px; gap: 8px; }
+      .sm-q { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; background: rgba(255,255,255,.9); font-size: 20px; box-shadow: 0 3px 10px rgba(0,30,80,.35); }
+      .sm-q.on { width: 54px; height: 54px; font-size: 26px; background: #fff; border-color: #3be36a; transform: none; box-shadow: 0 0 0 3px rgba(59,227,106,.35), 0 3px 10px rgba(0,30,80,.35); }
+      .sm-notes { position: absolute; left: 12px; top: 76px; z-index: 4; display: flex; flex-direction: column; gap: 6px; width: min(300px, 60%); pointer-events: none; }
+      .sm-note { display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,.96); color: #26324a; border-left: 5px solid #3be36a; border-radius: 10px; padding: 7px 10px; font: 700 12.5px "Nunito", system-ui; box-shadow: 0 4px 14px rgba(0,30,80,.3); animation: smnote .35s ease-out; transition: opacity .4s, transform .4s; }
+      .sm-note i { width: 14px; height: 21px; flex: none; } .sm-note i svg { width: 100%; height: 100%; } .sm-note.out { opacity: 0; transform: translateX(-20px); }
+      @keyframes smnote { from { opacity: 0; transform: translateX(-20px); } }
+      .sm-buyhint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 3; background: rgba(255,255,255,.95); color: #2a5aa0; border-radius: 18px; padding: 7px 16px; font: 800 12.5px "Nunito", system-ui; box-shadow: 0 3px 10px rgba(0,30,80,.3); max-width: 60%; text-align: center; }
+      .sm-buyhint[hidden] { display: none; }
+      .sm-catalog { bottom: 64px; left: 140px; right: 10px; background: rgba(255,255,255,.96); border: 0; border-radius: 16px; padding: 10px; box-shadow: 0 8px 26px rgba(0,30,80,.4); flex-direction: row; gap: 10px; z-index: 4; max-height: 40%; }
+      .sm-cats { flex-direction: column; flex-wrap: nowrap; gap: 4px; min-width: 112px; overflow-y: auto; }
+      .sm-cats button { border: 0; background: #eef3fa; color: #2a5aa0; border-radius: 10px; padding: 7px 10px; font: 800 12px "Nunito", system-ui; text-align: left; }
+      .sm-cats button.on { background: #3a7be0; color: #fff; }
+      .sm-items { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; overflow-y: auto; align-content: start; }
+      .sm-item { width: auto; border: 2px solid transparent; background: #f4f7fb; border-radius: 12px; padding: 8px; color: #26324a; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+      .sm-item b { font: 800 12px "Nunito", system-ui; } .sm-item span { color: #2a7a3a; font: 800 12px "Nunito", system-ui; }
+      .sm-item.on { border-color: #3be36a; background: #ecfbef; }
+      .sm-pie-head { border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.35); background: radial-gradient(#d6ecff, #7ab0e8); }
+      .sm-pie-opt { background: rgba(255,255,255,.97); border: 0; color: #26324a; border-radius: 18px; padding: 8px 14px; font: 800 13px "Nunito", system-ui; box-shadow: 0 3px 12px rgba(0,30,80,.35); }
+      .sm-pie-opt:hover { background: #3a7be0; color: #fff; }
+      .sm-dialog { background: rgba(10,25,55,.35); }
+      .sm-dlg { background: #fff; border: 0; border-radius: 16px; box-shadow: 0 18px 50px rgba(0,20,60,.45); color: #26324a; }
+      .sm-dlg-h { background: none; color: #2a5aa0; font: 900 18px "Nunito", system-ui; padding: 16px 18px 4px; }
+      .sm-dlg-b { padding: 8px 18px 12px; font-size: 14px; }
+      .sm-dlg-f { padding: 0 16px 16px; } .sm-dlg-f button, .sm-tabtxt button { border: 0; background: #3a7be0; color: #fff; border-radius: 18px; padding: 7px 18px; font: 800 13px "Nunito", system-ui; box-shadow: 0 2px 6px rgba(0,40,120,.3); }
+      /* ===== Create-a-Sim: full-screen stage with a turning 3D Sim ===== */
+      .sm-dialog.sm-casmode { background: radial-gradient(ellipse at 60% 40%, #bfe6ff 0%, #5aa0e0 45%, #2a5aa8 100%); display: block; }
+      .sm-casmode .sm-dlg { position: absolute; left: 14px; top: 14px; bottom: 14px; width: min(330px, 46%); max-height: none; background: rgba(255,255,255,.93); }
+      .sm-casmode .sm-cas { flex-direction: column; } .sm-casmode .sm-cas-cv { display: none; }
+      .sm-casmode .sm-dlg-f { position: sticky; bottom: 0; background: rgba(255,255,255,.95); padding-top: 10px; }
+      .sm-casmode .sm-dlg-f button { width: 54px; height: 54px; border-radius: 50%; font-size: 0; background: #3be36a url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 12l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/60% no-repeat; }
+      .sm-cas-stage { position: absolute; left: calc(min(330px, 46%) + 28px); right: 0; top: 0; bottom: 0; }
+      .sm-cas-stage canvas { display: block; }
+      .sm-cas-arrows { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 90px; }
+      .sm-cas-arrows button { width: 54px; height: 54px; border-radius: 50%; border: 0; background: rgba(255,255,255,.9); color: #2a5aa0; font: 900 26px system-ui; box-shadow: 0 4px 12px rgba(0,30,80,.35); cursor: pointer; }
+      .sm-cas-title { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); color: #fff; font: 900 22px "Nunito", system-ui; text-shadow: 0 2px 6px rgba(0,30,80,.5); white-space: nowrap; }
+      .sm-casmode .sm-sw button { width: 26px; height: 26px; }
+      @media (max-width: 700px) { .sm-tab-body { width: 52%; } .sm-catalog { left: 10px; } .sm-left { bottom: 140px; } }
     `;
     document.head.appendChild(s);
   }
