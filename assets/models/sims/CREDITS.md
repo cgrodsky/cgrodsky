@@ -82,3 +82,10 @@ slices the walls facing the camera.
 
 ### Chess set (`chessset.glb`) — "Chess Set" by **Pia Leung**, via Poly Pizza (https://poly.pizza/), CC-BY
 Scaled to a 52 cm board and set on top of the game's chess table. Cut from 9.3k to ~5.6k triangles.
+
+### Luxury Home (`lux-0.glb`, `lux-1.glb`, `lux-b.glb`) — "house interiors" by **Gabriele Romagnoli**, via Poly Pizza, CC-BY
+The §80,000 three-floor home (Options → Move House). The model ships its basement, main floor and upstairs side by side; they
+were split apart, scaled 2.6×, turned to face the street and stacked 2.8 m apart. Main floor: open kitchen/dining/living, garage
+and stairs. Upstairs: master bedroom, second bedroom, bathrooms. Basement: family room. Upstairs and basement walls were mapped
+with a 20 cm scan into the game's walking grid; the main floor was laid out by hand. Stairs are walkable links between floors.
+The hot tub (yard) and sauna (basement) are made in code.

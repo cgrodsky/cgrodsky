@@ -48,6 +48,28 @@
   "license": "CC-BY"
  },
  {
+  "id": "luxury-home",
+  "files": [
+   "lux-0.glb",
+   "lux-1.glb",
+   "lux-b.glb"
+  ],
+  "name": "Luxury Home",
+  "kind": "house",
+  "category": "Lots",
+  "price": 80000,
+  "floors": 3,
+  "bedrooms": 2,
+  "bathrooms": 2,
+  "extras": [
+   "hot tub",
+   "sauna",
+   "garage"
+  ],
+  "author": "Gabriele Romagnoli",
+  "license": "CC-BY"
+ },
+ {
   "id": "chess-set",
   "file": "chessset.glb",
   "name": "Chess Set",

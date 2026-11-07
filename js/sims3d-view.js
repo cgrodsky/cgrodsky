@@ -115,7 +115,13 @@
   function create(opts) {
     const THREE = window.THREE;
     const { LW, LH, HOUSE, ROOMS, hWall, vWall, CAT } = opts;
-    const LAY = opts.layout || null, MODEL = LAY && LAY.model;
+    const LAY = opts.layout || null, MODEL = LAY && LAY.model, MULTI = LAY && LAY.floors, CUSTOM = !!(MODEL || MULTI);
+    const FH = (LAY && LAY.FH) || 2.8, OFF = (LAY && LAY.off) || {};
+    // virtual grid → world: each floor of a multi-floor house sits side by side in the game's grid
+    const floorOfX = (x) => { if (!MULTI) return { level: 0, vx0: 0 }; let F = MULTI[0]; MULTI.forEach((f) => { if (x >= f.vx0 - 0.5) F = f; }); return F; };
+    const offAt = (x, y) => { const k = (a, b) => OFF[a + "," + b]; const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0; const a = k(x0, y0) || [0, 0]; const b = fx > 0.001 ? (k(x0 + 1, y0) || [0, 0]) : fy > 0.001 ? (k(x0, y0 + 1) || [0, 0]) : a; const t = fx > 0.001 ? fx : fy; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; };
+    const toW = (x, y) => { const f = floorOfX(Math.round(x)); const o = offAt(x, y); return { x: x - f.vx0 + o[0], y: f.level * FH, z: y + o[1], level: f.level }; };
+    let viewLevel = 0;
     const canvas = document.createElement("canvas"); canvas.className = "sm-3d";
     // iPad/iPhone: Safari kills pages that use too much GPU memory, so render lighter there.
     const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -187,12 +193,12 @@
     [[LW / 2, -0.25, LW + 0.5, 0.5], [-0.25, (LH - 2) / 2, 0.5, LH - 2], [LW + 0.25, (LH - 2) / 2, 0.5, LH - 2]].forEach(([x, z, w, d]) => { const m = new THREE.Mesh(keep(new THREE.BoxGeometry(w, 0.7, d)), hedgeM); m.position.set(x, 0.35, z); m.castShadow = m.receiveShadow = true; scene.add(m); });
     // room floors
     const floorM = {};
-    if (!MODEL) ROOMS.forEach((r) => {
+    if (!CUSTOM) ROOMS.forEach((r) => {
       const w = r.x1 - r.x0 + 1, d = r.y1 - r.y0 + 1, t = TEX[r.floor] || TEX.wood; const tt = t.clone(); tt.needsUpdate = true; tt.repeat.set(w, d); keep(tt);
       floorM[r.id] = plane(w, d, mat(0xffffff, { map: tt, roughness: r.floor === "tile" ? 0.35 : 0.8 }), r.x0 + w / 2, r.y0 + d / 2, 0.012);
     });
     // foundation
-    const fnd = MODEL ? new THREE.Object3D() : new THREE.Mesh(keep(new THREE.BoxGeometry(HOUSE.x1 - HOUSE.x0 + 1.2, 0.12, HOUSE.y1 - HOUSE.y0 + 1.2)), mat(0x9a948a)); if (!MODEL) { fnd.position.set((HOUSE.x0 + HOUSE.x1 + 1) / 2, -0.05, (HOUSE.y0 + HOUSE.y1 + 1) / 2); fnd.receiveShadow = true; scene.add(fnd); }
+    const fnd = CUSTOM ? new THREE.Object3D() : new THREE.Mesh(keep(new THREE.BoxGeometry(HOUSE.x1 - HOUSE.x0 + 1.2, 0.12, HOUSE.y1 - HOUSE.y0 + 1.2)), mat(0x9a948a)); if (!CUSTOM) { fnd.position.set((HOUSE.x0 + HOUSE.x1 + 1) / 2, -0.05, (HOUSE.y0 + HOUSE.y1 + 1) / 2); fnd.receiveShadow = true; scene.add(fnd); }
 
     // ---------- walls ----------
     const walls = [];
@@ -211,7 +217,7 @@
       // a window in long exterior runs
       return w;
     }
-    if (!MODEL) for (let y = 0; y <= LH; y++) for (let x = 0; x <= LW; x++) {
+    if (!CUSTOM) for (let y = 0; y <= LH; y++) for (let x = 0; x <= LW; x++) {
       if (hWall[y] && hWall[y][x]) addWall(x, y, x + 1, y);
       if (vWall[y] && vWall[y][x]) addWall(x, y, x, y + 1);
     }
@@ -266,6 +272,20 @@
         case "trash": g.add(cyl(0.18, 0.15, 0.5, 0x5a6470, 0, 0, 0, 16, { metalness: 0.5, roughness: 0.4 })); break;
         case "mailbox": g.add(box(0.06, 1, 0.06, 0x6a4a2a, 0, 0, 0)); g.add(box(0.22, 0.25, 0.45, 0x3a5aa0, 0, 1, 0, { metalness: 0.3 })); g.add(box(0.02, 0.18, 0.08, 0xd63b2a, 0.12, 1.15, -0.1)); break;
         case "crib": g.add(box(0.8, 0.5, 0.5, 0xf4e6f0, 0, 0.3, 0)); legs(0.8, 0.5, 0.3, 0xd8c0d0); for (let i = 0; i < 7; i++) g.add(box(0.02, 0.4, 0.02, 0xffffff, -0.36 + i * 0.12, 0.8, 0.25)); break;
+        case "hottub": { // acrylic tub in a wood surround with glowing water and jets
+          g.add(box(W + 0.05, 0.62, 0.98, 0x8a5a34, 0, 0, 0, { roughness: 0.8 }));
+          g.add(box(W - 0.16, 0.06, 0.8, 0xf2f6f8, 0, 0.6, 0, { roughness: 0.2 }));
+          const water = new THREE.Mesh(keep(new THREE.BoxGeometry(W - 0.26, 0.04, 0.7)), mat(0x38c6dc, { roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.85, emissive: 0x1a8aa8, emissiveIntensity: 0.5 })); water.position.y = 0.6; g.add(water);
+          [-0.6, -0.2, 0.2, 0.6].forEach((x) => g.add(cyl(0.025, 0.025, 0.02, 0xc0c8d0, x * (W / 2), 0.62, -0.38, 8)));
+          g.add(box(0.5, 0.02, 0.06, 0x2a2a30, W / 2 - 0.35, 0.66, 0.42)); break; }
+        case "sauna": { // small cedar cabin with a glass door and a warm glow inside
+          const cedar = mat(0xc08a52, { roughness: 0.85 }), dark = mat(0x8a5a34);
+          g.add(box(W, 0.06, 0.95, dark, 0, 0, 0));
+          g.add(box(W, 2.05, 0.06, cedar, 0, 0.06, -0.45)); g.add(box(0.06, 2.05, 0.95, cedar, -W / 2 + 0.03, 0.06, 0)); g.add(box(0.06, 2.05, 0.95, cedar, W / 2 - 0.03, 0.06, 0));
+          g.add(box(W, 0.08, 0.95, dark, 0, 2.1, 0));
+          g.add(box(W - 0.7, 2.0, 0.04, cedar, -0.35, 0.06, 0.45)); g.add(box(0.6, 1.9, 0.03, mat(0xffc890, { transparent: true, opacity: 0.35, roughness: 0.05, emissive: 0xff9a40, emissiveIntensity: 0.4 }), W / 2 - 0.36, 0.1, 0.46));
+          g.add(box(W - 0.2, 0.06, 0.4, cedar, 0, 0.45, -0.22)); g.add(box(W - 0.2, 0.06, 0.35, cedar, 0, 0.85, -0.3));
+          g.add(box(0.3, 0.3, 0.3, mat(0x555555, { emissive: 0xff5a20, emissiveIntensity: 0.3 }), W / 2 - 0.3, 0.06, -0.2)); break; }
         case "plate": g.add(cyl(0.14, 0.12, 0.02, 0xf0ede6, 0, 0, 0)); g.add(cyl(0.06, 0.06, 0.015, 0x9a6a3a, 0.02, 0.02, 0)); break;
         case "puddle": { const p = new THREE.Mesh(keep(new THREE.CircleGeometry(0.35, 20)), mat(0xd8e24a, { transparent: true, opacity: 0.7, roughness: 0.05 })); p.rotation.x = -Math.PI / 2; p.position.y = 0.015; g.add(p); } break;
         case "sofa": case "armchair": case "sofa3": case "sectional": case "papasan": case "daybed": g.add(box(W, 0.42, 0.8, 0x6a3a8a, 0, 0, 0)); g.add(box(W, 0.45, 0.2, 0x6a3a8a, 0, 0.42, -0.3)); break;
@@ -294,7 +314,7 @@
       const d = CAT[o.t]; if (!d) return null; const w = d.w || 1;
       const root = new THREE.Group(); root.userData.obj = o;
       const yaw = facing(o, objs);
-      root.position.set(o.x + w / 2, 0, o.y + 0.5);
+      { const p = toW(o.x, o.y); root.position.set(p.x + w / 2, p.y, p.z + 0.5); root.userData.level = p.level; }
       const inner = new THREE.Group(); inner.rotation.y = yaw; root.add(inner);
       if (o.hid) { const pb = new THREE.Mesh(keep(new THREE.BoxGeometry(w * 0.9, 1.2, 0.9)), keep(new THREE.MeshBasicMaterial({ visible: false }))); pb.position.y = 0.6; inner.add(pb); scene.add(root); return root; }
       const proc = procedural(o.t, w); inner.add(proc);
@@ -326,17 +346,17 @@
       g.position.set(x, 0, z); scene.add(g);
       walls.push({ m: g, mid: new THREE.Vector2(x, z), exterior: false, h: WALL_H, isFrame: true });
     }
-    if (!MODEL) for (let y = HOUSE.y0; y <= HOUSE.y1 + 1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (hWall[y] && !hWall[y][x] && hWall[y][x - 1] && hWall[y][x + 1]) doorFrame(x + 0.5, y, true);
-    if (!MODEL) for (let y = HOUSE.y0; y <= HOUSE.y1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1 + 1; x++) if (vWall[y] && !vWall[y][x] && vWall[y - 1] && vWall[y - 1][x] && vWall[y + 1] && vWall[y + 1][x]) doorFrame(x, y + 0.5, false);
+    if (!CUSTOM) for (let y = HOUSE.y0; y <= HOUSE.y1 + 1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (hWall[y] && !hWall[y][x] && hWall[y][x - 1] && hWall[y][x + 1]) doorFrame(x + 0.5, y, true);
+    if (!CUSTOM) for (let y = HOUSE.y0; y <= HOUSE.y1; y++) for (let x = HOUSE.x0; x <= HOUSE.x1 + 1; x++) if (vWall[y] && !vWall[y][x] && vWall[y - 1] && vWall[y - 1][x] && vWall[y + 1] && vWall[y + 1][x]) doorFrame(x, y + 0.5, false);
     // baseboards along every wall
     walls.slice().forEach((w) => { if (w.isFrame) return; const p = w.m.geometry.parameters; const bb = new THREE.Mesh(keep(new THREE.BoxGeometry(p.width + 0.02, 0.1, p.depth + 0.02)), baseM); bb.position.set(w.m.position.x, 0.05, w.m.position.z); scene.add(bb); });
     // front door (a real door panel in the front gap)
-    if (!MODEL) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (!hWall[HOUSE.y1 + 1][x] && hWall[HOUSE.y1 + 1][x - 1]) { const d = new THREE.Mesh(keep(new THREE.BoxGeometry(0.06, 2.1, 0.86)), mat(0x7a2a1a, { roughness: 0.5 })); d.geometry.translate(0, 1.05, 0); d.position.set(x + 0.08, 0, HOUSE.y1 + 1 + 0.45); d.rotation.y = -0.2; d.castShadow = true; scene.add(d); walls.push({ m: d, mid: new THREE.Vector2(x + 0.5, HOUSE.y1 + 1), exterior: true, h: WALL_H, isFrame: true }); }
+    if (!CUSTOM) for (let x = HOUSE.x0; x <= HOUSE.x1; x++) if (!hWall[HOUSE.y1 + 1][x] && hWall[HOUSE.y1 + 1][x - 1]) { const d = new THREE.Mesh(keep(new THREE.BoxGeometry(0.06, 2.1, 0.86)), mat(0x7a2a1a, { roughness: 0.5 })); d.geometry.translate(0, 1.05, 0); d.position.set(x + 0.08, 0, HOUSE.y1 + 1 + 0.45); d.rotation.y = -0.2; d.castShadow = true; scene.add(d); walls.push({ m: d, mid: new THREE.Vector2(x + 0.5, HOUSE.y1 + 1), exterior: true, h: WALL_H, isFrame: true }); }
 
     // ---------- rug and paintings ----------
     const rugT = texture((g, s) => { g.fillStyle = "#8a2a2a"; g.fillRect(0, 0, s, s); g.strokeStyle = "#e8c47a"; g.lineWidth = s / 24; g.strokeRect(s / 12, s / 12, s * 10 / 12, s * 10 / 12); g.strokeStyle = "#2a3a6a"; g.lineWidth = s / 40; g.strokeRect(s / 6, s / 6, s * 4 / 6, s * 4 / 6); for (let i = 0; i < 6; i++) { g.fillStyle = i % 2 ? "#e8c47a" : "#2a3a6a"; g.beginPath(); g.arc(s / 2, s / 2, s / 4 - i * s / 30, 0, 7); g.fill(); } }, 256);
     const liv = ROOMS.find((r) => r.id === "liv");
-    if (liv && !MODEL) { const rug = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.6, 1.8)), mat(0xffffff, { map: rugT, roughness: 1 })); rug.rotation.x = -Math.PI / 2; rug.position.set(liv.x0 + 2, 0.016, liv.y0 + 1.9); rug.receiveShadow = true; scene.add(rug); }
+    if (liv && !CUSTOM) { const rug = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.6, 1.8)), mat(0xffffff, { map: rugT, roughness: 1 })); rug.rotation.x = -Math.PI / 2; rug.position.set(liv.x0 + 2, 0.016, liv.y0 + 1.9); rug.receiveShadow = true; scene.add(rug); }
     const art = [
       (g, s) => { g.fillStyle = "#f3e7c9"; g.fillRect(0, 0, s, s); g.fillStyle = "#e8505b"; g.beginPath(); g.arc(s * 0.35, s * 0.4, s * 0.22, 0, 7); g.fill(); g.fillStyle = "#2a5aa0"; g.fillRect(s * 0.5, s * 0.45, s * 0.35, s * 0.4); g.fillStyle = "#f6b33c"; g.fillRect(s * 0.15, s * 0.7, s * 0.3, s * 0.12); },
       (g, s) => { const gr = g.createLinearGradient(0, 0, 0, s); gr.addColorStop(0, "#f6a35a"); gr.addColorStop(0.55, "#f3d27a"); gr.addColorStop(0.56, "#3a6a8a"); gr.addColorStop(1, "#1f3a5a"); g.fillStyle = gr; g.fillRect(0, 0, s, s); g.fillStyle = "#fff4c0"; g.beginPath(); g.arc(s * 0.5, s * 0.52, s * 0.12, Math.PI, 0); g.fill(); },
@@ -371,12 +391,14 @@
     // neighbor houses across the street and next door use the house model
     if (loader) loadModel("house.glb").then((src) => {
       (LITE ? [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI]] : [[LW / 2 - 7, LH + 12.5, Math.PI], [LW / 2 + 9, LH + 12.5, Math.PI], [-12, LH / 2 - 1, Math.PI / 2]]).forEach(([x, z, ry]) => {
-        const h = src.clone(true); h.scale.setScalar(0.72); h.rotation.y = ry; h.position.set(x, 0, z); scene.add(h);
+        const h = src.clone(true); h.scale.setScalar(0.72); h.rotation.y = ry; h.position.set(x, 0, z); (outdoor || scene).add(h);
         h.traverse((m) => { if (m.isMesh) { m.castShadow = false; m.receiveShadow = true; } });
       });
       [[LW / 2 - 7, LH + 6], [LW / 2 + 9, LH + 6]].forEach(([x, z]) => plane(1.2, 3.5, mat(0xc4c4bc), x, z, 0.006));
     }).catch(() => {});
 
+    let outdoor = null;
+    if (MULTI) { outdoor = new THREE.Group(); const keepIn = new Set([hemi, sun, sun.target, tvLight].concat(lampLights)); scene.children.slice().forEach((c) => { if (!keepIn.has(c) && !c.isLight) { scene.remove(c); outdoor.add(c); } }); scene.add(outdoor); }
     // ---------- a whole house model (e.g. the Family Home) with a sliced cutaway ----------
     const clipTop = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.05), clipFront = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
     let houseModel = null;
@@ -389,7 +411,31 @@
         scene.add(holder); houseModel = holder; if (SAFE) lambertize(holder);
       }).catch(() => {});
     }
+    const floorModels = {}, floorClip = {};
+    if (MULTI && loader) {
+      renderer.localClippingEnabled = true;
+      MULTI.forEach((f) => {
+        floorClip[f.level] = new THREE.Plane(new THREE.Vector3(0, -1, 0), f.level * FH + 1.05);
+        loadModel(f.file).then((src) => {
+          const g = src.clone(true); g.position.y = f.level * FH;
+          g.traverse((m) => { if (m.isMesh) { m.material = (Array.isArray(m.material) ? m.material : [m.material]).map((mt) => { const c = mt.clone(); c.side = THREE.DoubleSide; c.clipShadows = true; disposables.push(c); return c; }); if (m.material.length === 1) m.material = m.material[0]; } });
+          scene.add(g); floorModels[f.level] = g; if (SAFE) lambertize(g);
+        }).catch(() => {});
+      });
+    }
+    function setFloorClip() {
+      const dx = Math.sin(cam.yaw), dz = Math.cos(cam.yaw);
+      clipFront.normal.set(-dx, 0, -dz); clipFront.constant = dx * houseC.x + dz * houseC.y - 0.6;
+      Object.entries(floorModels).forEach(([lv, g]) => {
+        lv = +lv; g.visible = lv <= viewLevel;
+        const planes = lv !== viewLevel || wallMode === "up" ? [] : wallMode === "down" ? [floorClip[lv]] : [floorClip[lv], clipFront];
+        const inter = wallMode === "cutaway" && lv === viewLevel;
+        g.traverse((m) => { if (m.isMesh) (Array.isArray(m.material) ? m.material : [m.material]).forEach((mt) => { if ((mt.clippingPlanes || []).length !== planes.length || (mt.clippingPlanes || [])[0] !== planes[0]) { mt.clippingPlanes = planes; mt.needsUpdate = true; } mt.clipIntersection = inter; }); });
+      });
+      if (outdoor) outdoor.visible = viewLevel >= 0;
+    }
     function setHouseClip() {
+      if (MULTI) { setFloorClip(); return; }
       if (!houseModel) return;
       const planes = wallMode === "up" ? [] : wallMode === "down" ? [clipTop] : [clipTop, clipFront];
       const inter = wallMode === "cutaway";
@@ -421,20 +467,20 @@
     function placeCamera() {
       cam.yaw += (cam.yawTarget - cam.yaw) * 0.18;
       const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      camera.position.set(cam.tx + Math.sin(cam.yaw) * cp * cam.dist, sp * cam.dist + Math.max(0, Math.min(1, (12 - cam.dist) / 8)) * 0.9, cam.tz + Math.cos(cam.yaw) * cp * cam.dist);
-      const near = Math.max(0, Math.min(1, (12 - cam.dist) / 8)); camera.lookAt(cam.tx, cam.ty + near * 0.8, cam.tz);
+      camera.position.set(cam.tx + Math.sin(cam.yaw) * cp * cam.dist, viewLevel * FH + sp * cam.dist + Math.max(0, Math.min(1, (12 - cam.dist) / 8)) * 0.9, cam.tz + Math.cos(cam.yaw) * cp * cam.dist);
+      const near = Math.max(0, Math.min(1, (12 - cam.dist) / 8)); camera.lookAt(cam.tx, cam.ty + viewLevel * FH + near * 0.8, cam.tz);
     }
     function resize(w, h) { W = Math.max(1, w); H = Math.max(1, h); renderer.setSize(W, H, false); canvas.style.width = W + "px"; canvas.style.height = H + "px"; camera.aspect = W / H; camera.updateProjectionMatrix(); }
     const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), tmpV = new THREE.Vector3();
-    function cellAt(mx, my) { ndc.set(mx / W * 2 - 1, -(my / H) * 2 + 1); ray.setFromCamera(ndc, camera); const p = ray.ray.intersectPlane(groundPlane, tmpV); if (!p) return { x: -99, y: -99 }; return { x: Math.floor(p.x), y: Math.floor(p.z) }; }
+    function cellAt(mx, my) { ndc.set(mx / W * 2 - 1, -(my / H) * 2 + 1); ray.setFromCamera(ndc, camera); groundPlane.constant = -viewLevel * FH; const p = ray.ray.intersectPlane(groundPlane, tmpV); if (!p) return { x: -99, y: -99 }; let x = Math.floor(p.x), y = Math.floor(p.z); if (MULTI) { if (x < 0 || x >= 15) return { x: -99, y: -99 }; const f = MULTI.find((q) => q.level === viewLevel) || MULTI[0]; x += f.vx0; } return { x, y }; }
     function pick(mx, my) {
       ndc.set(mx / W * 2 - 1, -(my / H) * 2 + 1); ray.setFromCamera(ndc, camera);
       const targets = []; simMeshes.forEach((g) => { if (g.visible) targets.push(g); }); objMeshes.forEach((g) => targets.push(g));
-      const hits = ray.intersectObjects(targets, true);
+      const vis = (o) => { for (let q = o; q; q = q.parent) if (!q.visible) return false; return true; }; const hits = ray.intersectObjects(targets, true).filter((h) => vis(h.object) || (h.object.material && h.object.material.visible === false && vis(h.object.parent)));
       for (const h of hits) { let o = h.object; while (o && !o.userData.ent && !o.userData.obj) o = o.parent; if (o && o.userData.ent) return { ent: o.userData.ent }; if (o && o.userData.obj) return { obj: o.userData.obj }; }
       return { cell: cellAt(mx, my) };
     }
-    function project(x, y, h) { tmpV.set(x, h, y).project(camera); return [(tmpV.x + 1) / 2 * W, (1 - tmpV.y) / 2 * H, tmpV.z < 1]; }
+    function project(x, y, h) { const wp = toW(x - 0.5, y - 0.5); tmpV.set(wp.x + 0.5, h + wp.y, wp.z + 0.5).project(camera); return [(tmpV.x + 1) / 2 * W, (1 - tmpV.y) / 2 * H, tmpV.z < 1]; }
     function pan(dx, dy) { const s = cam.dist / 600; const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw); cam.tx = Math.max(-2, Math.min(LW + 2, cam.tx - dx * s * cy - dy * s * sy * 1.3)); cam.tz = Math.max(-2, Math.min(LH + 2, cam.tz + dx * s * sy - dy * s * cy * 1.3)); }
     function focus(x, z, dist) { cam.tx = x; cam.tz = z; if (dist) { cam.dist = dist; cam.pitch = dist < 8 ? 0.45 : 0.82; } }
     function zoom(f) { cam.dist = Math.max(3.5, Math.min(40, cam.dist * f)); cam.pitch = Math.max(0.35, Math.min(cam.pitch, 0.35 + (cam.dist - 3.5) / 12)); if (f > 1) cam.pitch = Math.min(0.82, cam.pitch + 0.03); }
@@ -515,7 +561,7 @@
         if (rec && rec.userData.key !== key) { scene.remove(rec); objMeshes.delete(o); rec = null; }
         if (!rec) { rec = buildObject(o, st.objs); if (rec) { rec.userData.key = key; objMeshes.set(o, rec); } }
       });
-      objMeshes.forEach((g, o) => { if (!seen.has(o)) { scene.remove(g); objMeshes.delete(o); } });
+      objMeshes.forEach((g, o) => { if (!seen.has(o)) { scene.remove(g); objMeshes.delete(o); } else if (MULTI) g.visible = (g.userData.level || 0) <= viewLevel; });
       // lamps at night
       let li = 0; lampLights.forEach((l) => { l.intensity = 0; });
       tvLight.intensity = 0;
@@ -535,13 +581,13 @@
         if (!g) { g = buildSim(e); simMeshes.set(e, g); }
         g.visible = !info.hidden;
         if (!g.visible) return;
-        const x = info.x + 0.5, z = info.y + 0.5;
+        const wp = toW(info.x, info.y); const x = wp.x + 0.5, z = wp.z + 0.5; if (MULTI && wp.level > viewLevel) { g.visible = false; return; }
         const px = g.userData.px, pz = g.userData.pz;
         if (px != null && (Math.abs(x - px) + Math.abs(z - pz)) > 0.001) g.userData.yaw = Math.atan2(x - px, z - pz);
         if (info.face != null) g.userData.yaw = info.face;
         g.userData.px = x; g.userData.pz = z;
         const cy = g.rotation.y, ty = g.userData.yaw || 0; let dy = ty - cy; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2; g.rotation.y = cy + dy * 0.25;
-        g.position.set(x, info.lift || 0, z);
+        g.position.set(x, (info.lift || 0) + wp.y, z);
         poseSim(g, e, info, st.dt);
         if (info.lie) { g.rotation.y = info.lieYaw; }
       });
@@ -549,13 +595,13 @@
       // plumbob above the player
       const pl = st.ents.find((i) => i.e.player && !i.hidden);
       bob.visible = !!pl;
-      if (pl) { const g = simMeshes.get(pl.e); const hy = pl.pose === "lie" ? 1.3 : pl.pose === "sit" ? 1.75 : 2.2; bob.position.set(pl.x + 0.5, hy * (pl.e.scale || 1) + Math.sin(t * 2.4) * 0.04, pl.y + 0.5); bob.rotation.y += 0.03; const hue = (st.mood + 100) / 200 * 0.33; bobMat.color.setHSL(hue, 0.85, 0.5); bobMat.emissive.setHSL(hue, 0.9, 0.25); }
+      if (pl) { const g = simMeshes.get(pl.e); const hy = pl.pose === "lie" ? 1.3 : pl.pose === "sit" ? 1.75 : 2.2; const bp = toW(pl.x, pl.y); bob.visible = !MULTI || bp.level <= viewLevel; bob.position.set(bp.x + 0.5, bp.y + hy * (pl.e.scale || 1) + Math.sin(t * 2.4) * 0.04, bp.z + 0.5); bob.rotation.y += 0.03; const hue = (st.mood + 100) / 200 * 0.33; bobMat.color.setHSL(hue, 0.85, 0.5); bobMat.emissive.setHSL(hue, 0.9, 0.25); }
       // buy ghost + hover
-      if (st.ghost) { const d = CAT[st.ghost.t]; ghostTile.visible = true; ghostTile.material = st.ghost.ok ? ghostOk : ghostBad; ghostTile.scale.set(d.w || 1, 1, 1); ghostTile.position.set(st.ghost.x + (d.w || 1) / 2, 0.03, st.ghost.y + 0.5);
+      if (st.ghost) { const d = CAT[st.ghost.t]; ghostTile.visible = true; ghostTile.material = st.ghost.ok ? ghostOk : ghostBad; ghostTile.scale.set(d.w || 1, 1, 1); { const gp = toW(st.ghost.x, st.ghost.y); ghostTile.position.set(gp.x + (d.w || 1) / 2, gp.y + 0.03, gp.z + 0.5); }
         const gk = st.ghost.t; if (ghostKey !== gk) { if (ghost) scene.remove(ghost); ghost = procedural(gk, d.w || 1); ghost.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.55; disposables.push(m.material); } }); scene.add(ghost); ghostKey = gk; }
-        ghost.visible = true; ghost.position.set(st.ghost.x + (d.w || 1) / 2, 0, st.ghost.y + 0.5); ghost.rotation.y = (d.w > 1 ? (st.ghost.rot % 2 ? 2 : st.ghost.rot) : st.ghost.rot || 0) * Math.PI / 2;
+        ghost.visible = true; { const gp = toW(st.ghost.x, st.ghost.y); ghost.position.set(gp.x + (d.w || 1) / 2, gp.y, gp.z + 0.5); } ghost.rotation.y = (d.w > 1 ? (st.ghost.rot % 2 ? 2 : st.ghost.rot) : st.ghost.rot || 0) * Math.PI / 2;
       } else { ghostTile.visible = false; if (ghost) ghost.visible = false; }
-      if (st.hover && !st.ghost) { hoverTile.visible = true; hoverTile.position.set(st.hover.x + 0.5, 0.025, st.hover.y + 0.5); } else hoverTile.visible = false;
+      if (st.hover && !st.ghost) { hoverTile.visible = true; { const hp = toW(st.hover.x, st.hover.y); hoverTile.position.set(hp.x + 0.5, hp.y + 0.025, hp.z + 0.5); } } else hoverTile.visible = false;
       car.visible = !!st.carpool; if (car.visible) car.position.set(8.5, 0, LH + 0.6);
       if (pendingSafe && !SAFE) enterSafe();
       if (SAFE) { lambertize(scene); }
@@ -589,7 +635,7 @@
       Object.values(TEX).forEach((tx) => tx.dispose());
       canvas.remove();
     }
-    return { _forceSafe: () => { pendingSafe = true; }, get safe() { return SAFE; }, get lite() { return LITE; }, canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, focus, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
+    return { setView: (lv) => { viewLevel = lv; }, get viewLevel() { return viewLevel; }, floors: MULTI || null, _forceSafe: () => { pendingSafe = true; }, get safe() { return SAFE; }, get lite() { return LITE; }, canvas, resize, render, pick, yawOf: (o) => facing(o, lastObjs), cellAt, project, pan, zoom, rotate, orbit, focus, setWallMode: (m) => { wallMode = m; }, get wallMode() { return wallMode; }, dispose, scene, camera };
   }
   window.Sims3DView = { create, MODELS, preview };
 })();

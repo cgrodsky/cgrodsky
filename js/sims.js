@@ -9,7 +9,7 @@
   "use strict";
 
   const TW = 64, TH = 32, WALL_H = 92, WALL_LOW = 18;
-  const LW = 15, LH = 14;                       // lot size in tiles
+  const LW0 = 15, LH = 14;                      // lot size in tiles (multi-floor houses use a wider virtual grid)
   const HOUSE0 = { x0: 2, y0: 2, x1: 12, y1: 10 };
   const ROOMS0 = [
     { id: "bed", name: "Bedroom", x0: 2, y0: 2, x1: 6, y1: 6, floor: "carpet" },
@@ -87,6 +87,8 @@
     deckchair: { name: "Striped Seaside Deck Chair", price: 110, cat: "Seating", w: 1, h: 30, col: "#2a4a8a", room: 1, ints: ["sit"], enter: true, seat: true },
     deckchair2: { name: "Teak Beach Deck Chair", price: 195, cat: "Seating", w: 1, h: 30, col: "#8a5a32", room: 2, ints: ["sit"], enter: true, seat: true },
     porchswing: { name: "Cedar A-Frame Porch Swing", price: 650, cat: "Seating", w: 3, h: 70, col: "#b5794a", room: 3, ints: ["sit"], enter: true, seat: true },
+    hottub: { name: "Bubbly Hot Tub", price: 3500, cat: "Outdoor", w: 2, h: 20, col: "#3ab0c8", room: 5, ints: ["soak"], enter: true, seat: true },
+    sauna: { name: "Cedar Sauna", price: 4200, cat: "Outdoor", w: 2, h: 70, col: "#c08a52", room: 4, ints: ["sauna"], enter: true },
     santamailbox: { name: "Santa Express Mailbox", price: 180, cat: "Decorative", w: 1, h: 60, col: "#c0283a", room: 3, ints: ["letterSanta"] },
     barrel: { name: "Iron-Hooped Oak Barrel", price: 95, cat: "Decorative", w: 1, h: 30, col: "#8b5a2b", room: 2, ints: [] },
     crib: { name: "Baby Bassinet", price: 0, w: 1, h: 30, col: "#f4e6f0", room: 1, ints: ["feedBaby", "playBaby"], fixed: true },
@@ -121,6 +123,8 @@
     paint: { label: "Paint", icon: "🎨", dur: 90, gain: { fun: 0.6 }, pose: "stand", skill: "creativity", painting: true },
     speech: { label: "Practice Speech", icon: "🗣️", dur: 50, gain: { fun: -0.1 }, pose: "stand", skill: "charisma" },
     workout: { label: "Work Out", icon: "🏋️", dur: 50, gain: { fun: 0.2, energy: -0.4, hygiene: -0.3 }, pose: "stand", skill: "body" },
+    soak: { label: "Soak in Hot Tub", icon: "♨️", dur: 45, gain: { comfort: 1.6, fun: 1.0, hygiene: 0.5 }, pose: "bath", steam: true },
+    sauna: { label: "Relax in Sauna", icon: "🧖", dur: 40, gain: { comfort: 1.3, hygiene: 0.8, fun: 0.5 }, pose: "sit", steam: true },
     letterSanta: { label: "Write a Letter to Santa", icon: "🎅", dur: 15, gain: { fun: 0.9, social: 0.3 }, pose: "stand" },
     mail: { label: "Get Mail", icon: "✉️", dur: 4, gain: {}, pose: "stand", mail: true },
     clean: { label: "Clean Up", icon: "🧹", dur: 8, gain: { fun: -0.1 }, pose: "stand", clean: true },
@@ -163,6 +167,28 @@
         ["sofa", 5, 6], ["tv", 5, 3], ["phone", 8, 6], ["plant", 11, 3], ["table", 9, 4], ["chair", 9, 5], ["stereo", 7, 3], ["trash", 1, 7], ["lamp", 5, 4],
         ["bed", 1, 9], ["lamp", 3, 9],
         ["mailbox", 13, 11],
+      ].map(([t, x, y, hid]) => (hid ? { t, x, y, hid: 1 } : { t, x, y })),
+    },
+    // Luxury Home: "house interiors" by Gabriele Romagnoli — 3 floors. The virtual grid puts each
+    // floor side by side: x 0–14 = main floor + yard, 15–29 = upstairs, 30–44 = basement; stairs are portals.
+    luxury: { name: "Luxury Home", price: 80000, beds: 2, baths: 2, desc: "Three floors: open kitchen, dining and living room, garage, two bedrooms upstairs, a basement family room with a sauna, and a hot tub in the yard.",
+      HOUSE: { x0: 2, y0: 1, x1: 8, y1: 9 },
+      ROOMS: [{ id: "liv", name: "House", x0: 2, y0: 1, x1: 8, y1: 9, floor: "wood" }],
+      gridW: 45, FH: 2.8,
+      floors: [{ level: 0, vx0: 0, name: "Main", file: "lux-0.glb" }, { level: 1, vx0: 15, name: "Upstairs", file: "lux-1.glb" }, { level: -1, vx0: 30, name: "Basement", file: "lux-b.glb" }],
+      portals: [[8, 4, 23, 8], [6, 6, 38, 4]],
+      layout: {"h": ["0000000000000001111111111111111111111111111110", "0011111110000001111111111111111111111111111110", "0000000000000001110000111111111100001001111110", "0000000000000001111000111111111100001101111110", "0000000000000001101000011111111100000101111110", "0000000000000001111001101111111100100111111110", "0011110000000001111000011111111100000111111110", "0000000000000001110000111111111100000011111110", "0000000000000001100000111111111100000001111110", "0000000000000001100001011111111100000001111110", "0011111010000001111111111111111110000001111110", "0000000000000001111111111111111111111111111110", "0000000000000001111111111111111111111111111110", "0000000000000001111111111111111111111111111110", "0000000000000001111111111111111111111111111110"], "v": ["0000000000000001111111111111111111111111111110", "0010000001000001110001011111111110000001111110", "0010000001000001110000111111111110011101111110", "0010000001000001111100011111111110010111111110", "0010000001000001110000011111111110000001111110", "0010000001000001110000001111111110000111111110", "0010001001000001111000011111111110000011111110", "0010000001000001110000111111111110000001111110", "0010001001000001110000001111111110000001111110", "0010001001000001110010101111111110000001111110", "0000000000000001111111111111111111000001111110", "0000000000000001111111111111111111111111111110", "0000000000000001111111111111111111111111111110", "0000000000000001111111111111111111111111111110", "0000000000000000000000000000000000000000000000"], "b": ["000000000000000111111111111111111111111111111", "000000000000000111000000111111110000000111111", "000100000000000110000011111111110000100111111", "001000010000000110100001111111110000010111111", "000000000000000110000000111111110000000111111", "001010011000000111100000111111110000011111111", "000000011000000111000001111111110000001111111", "000000011000000110000011111111110000000111111", "000000000000000110000000111111110000000111111", "000000000000000110000000111111110000000111111", "000000000000000111111111111111111000000111111", "000000000000000111111111111111111111111111111", "000000000000000111111111111111111111111111111", "000000000000000111111111111111111111111111111"]},
+      off: {"18,1": [0.0, 0.0], "19,1": [0.0, 0.0], "20,1": [0.0, 0.0], "21,1": [0.0, 0.2], "22,1": [0.0, 0.2], "23,1": [0.0, 0.0], "17,2": [0.2, 0.0], "18,2": [0.0, 0.0], "19,2": [0.0, 0.0], "20,2": [0.0, 0.0], "21,2": [0.0, 0.0], "17,3": [0.0, 0.0], "19,3": [0.0, 0.0], "20,3": [0.0, 0.0], "21,3": [0.0, 0.0], "22,3": [0.0, 0.2], "17,4": [0.0, 0.0], "18,4": [0.0, 0.4], "19,4": [0.0, 0.0], "20,4": [0.0, 0.0], "21,4": [0.0, 0.0], "22,4": [0.0, -0.2], "23,4": [0.0, 0.0], "19,5": [0.0, 0.0], "20,5": [0.0, 0.0], "21,5": [0.0, 0.0], "22,5": [0.0, 0.0], "23,5": [0.0, 0.0], "18,6": [0.0, 0.4], "19,6": [0.0, 0.0], "20,6": [0.0, 0.0], "21,6": [0.0, 0.0], "22,6": [-0.2, -0.2], "17,7": [0.0, 0.0], "18,7": [0.0, 0.0], "19,7": [0.0, 0.0], "20,7": [0.0, 0.0], "21,7": [0.0, 0.0], "17,8": [0.0, 0.0], "18,8": [0.0, 0.0], "19,8": [0.0, 0.0], "20,8": [0.0, 0.0], "21,8": [0.0, 0.0], "22,8": [0.0, 0.0], "23,8": [0.0, 0.0], "17,9": [0.0, 0.0], "18,9": [0.0, 0.0], "19,9": [0.0, 0.0], "20,9": [0.4, 0.0], "21,9": [-0.2, 0.2], "22,9": [0.0, 0.0], "23,9": [-0.2, 0.0], "32,1": [0.0, 0.0], "33,1": [0.0, 0.2], "34,1": [0.0, 0.0], "35,1": [0.0, 0.2], "36,1": [0.0, 0.2], "37,1": [0.0, 0.2], "38,1": [0.0, 0.0], "32,2": [0.0, 0.0], "33,2": [0.0, 0.0], "34,2": [0.0, 0.0], "35,2": [0.0, 0.0], "37,2": [0.0, -0.2], "38,2": [0.0, 0.0], "32,3": [0.0, 0.0], "33,3": [0.0, 0.0], "34,3": [0.0, 0.0], "35,3": [0.0, 0.0], "36,3": [-0.2, 0.2], "38,3": [0.4, 0.0], "32,4": [0.0, 0.0], "33,4": [0.0, 0.0], "34,4": [0.0, 0.0], "35,4": [0.0, 0.0], "36,4": [0.0, 0.0], "37,4": [0.0, 0.0], "38,4": [0.0, 0.0], "32,5": [0.0, 0.0], "33,5": [0.0, 0.0], "34,5": [0.0, 0.0], "35,5": [0.0, 0.0], "36,5": [0.0, 0.0], "32,6": [0.0, 0.0], "33,6": [0.0, 0.0], "34,6": [0.0, 0.0], "35,6": [0.0, 0.0], "36,6": [0.0, 0.0], "37,6": [-0.2, 0.0], "32,7": [0.0, 0.0], "33,7": [0.0, 0.0], "34,7": [0.0, 0.0], "35,7": [0.0, 0.0], "36,7": [0.0, 0.0], "37,7": [0.0, 0.0], "38,7": [0.0, 0.0], "32,8": [0.0, 0.0], "33,8": [0.0, 0.0], "34,8": [0.0, 0.0], "35,8": [0.0, 0.0], "36,8": [0.0, 0.0], "37,8": [0.0, 0.0], "38,8": [0.0, 0.0], "32,9": [0.0, 0.0], "33,9": [0.0, 0.0], "34,9": [0.0, 0.0], "35,9": [0.0, 0.0], "36,9": [0.0, 0.0], "37,9": [0.0, 0.0], "38,9": [0.0, 0.0], "33,10": [0.0, -0.4], "34,10": [0.0, -0.4], "35,10": [0.0, -0.4], "36,10": [0.0, -0.4], "37,10": [0.0, -0.4], "38,10": [0.0, -0.4]},
+      path: [7.5, 10, 12],
+      start: [7, 11],
+      objects: () => [
+        ["stove", 2, 4, 1], ["fridge", 3, 5, 1], ["sink", 2, 3, 1], ["sofa", 5, 3, 1], ["armchair", 7, 2, 1],
+        ["tv", 6, 1], ["phone", 8, 1], ["trash", 2, 1], ["toilet", 6, 9], ["plant", 8, 9], ["lamp", 2, 6],
+        ["hottub", 10, 8], ["mailbox", 8, 11],
+        ["btub", 17, 1, 1], ["toilet", 19, 1], ["bed", 17, 5, 1], ["armchair", 21, 1, 1], ["sofa", 21, 4, 1], ["shower", 23, 9, 1],
+        ["computer", 19, 6], ["chair", 20, 6], ["bed", 17, 9], ["bookshelf", 19, 7], ["mirror", 22, 6],
+        ["tv", 34, 2, 1], ["armchair", 35, 2, 1], ["armchair", 35, 3, 1], ["sofa", 36, 4, 1],
+        ["sauna", 32, 8], ["gym", 36, 8], ["stereo", 38, 9], ["chess", 33, 6], ["easel", 37, 7],
       ].map(([t, x, y, hid]) => (hid ? { t, x, y, hid: 1 } : { t, x, y })),
     },
   };
@@ -209,6 +235,7 @@
     { what: "Mailbox", who: "Poly by Google via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Scaled to 1.35 m" },
     { what: "Family Home (house interior)", who: "Gabriele Romagnoli via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Walls mapped to the game grid" },
     { what: "Chess set", who: "Pia Leung via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "On every chess table" },
+    { what: "Luxury Home (house interiors, 3 floors)", who: "Gabriele Romagnoli via Poly Pizza", link: "https://poly.pizza/", license: "CC-BY", note: "Floors stacked, stairs made walkable" },
     { what: "Sofa collection (36 sofas, loveseats, chaises and armchairs)", who: "CGTrader", link: "https://www.cgtrader.com/", license: "CGTrader license", note: "Shrunk from 575 MB to 4.8 MB" },
   ];
   const creditsHTML = () => `<div class="sm-cred">${CREDITS.map((c) => `<div class="sm-cred-i"><b>${c.what}</b> by ${c.who}<br><span>${c.license}${c.note ? " · " + c.note : ""} · <a href="${c.link}" target="_blank" rel="noopener">source</a></span></div>`).join("")}
@@ -224,10 +251,13 @@
     let G = store().sims || null;
     const HKEY = (G && G.house && HOUSES[G.house]) ? G.house : "starter", HDEF = HOUSES[HKEY];
     const HOUSE = HDEF.HOUSE || HOUSE0, ROOMS = HDEF.ROOMS || ROOMS0, LAYOUT = HDEF.layout || null;
+    const LW = HDEF.gridW || LW0;
+    const PORT = HDEF.portals || [];
+    const levelOf = (x) => { const fl = HDEF.floors; if (!fl) return 0; let L = fl[0]; fl.forEach((f) => { if (x >= f.vx0) L = f; }); return L.level; };
     const fixedBlock = (x, y) => !!(LAYOUT && LAYOUT.b[y] && LAYOUT.b[y][x] === "1");
     body.innerHTML = `<div class="sm"><canvas class="sm-cv"></canvas>
       <div class="sm-queue"></div>
-      <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="turn" title="Turn the item you're placing (R)" class="sm-turnbtn" hidden>↻ Turn</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
+      <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="turn" title="Turn the item you're placing (R)" class="sm-turnbtn" hidden>↻ Turn</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="up" class="sm-floorbtn" title="Floor up" hidden>▲</button><button data-v="flname" class="sm-floorbtn sm-flname" hidden>Main</button><button data-v="down" class="sm-floorbtn" title="Floor down" hidden>▼</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
       <div class="sm-hint"></div>
       <div class="sm-notes"></div>
       <div class="sm-buyhint" hidden></div>
@@ -268,7 +298,7 @@
     function enable3D() {
       if (view3d || !want3d || !window.THREE || !window.Sims3DView || dead) return;
       try {
-        view3d = window.Sims3DView.create({ layout: HDEF.model ? { model: HDEF.model, path: HDEF.path } : null, LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
+        view3d = window.Sims3DView.create({ layout: HDEF.model || HDEF.floors ? { model: HDEF.model, path: HDEF.path, floors: HDEF.floors, FH: HDEF.FH, off: HDEF.off, gridW: LW } : null, LW, LH, HOUSE, ROOMS, hWall, vWall, CAT, onLost: (why) => fail3D(why || "The 3D view ran out of graphics memory") });
         host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
       } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
     }
@@ -319,6 +349,7 @@
     }
     // A* over the lot grid (walls + object footprints)
     function path(sx, sy, tx, ty, through) {
+      const startObj = objAt(sx, sy); // a Sim getting up from a bed/sofa may step across its other tiles
       const key = (x, y) => y * LW + x, open = [[sx, sy]], came = {}, gs = { [key(sx, sy)]: 0 };
       const h = (x, y) => Math.abs(x - tx) + Math.abs(y - ty);
       const fs = { [key(sx, sy)]: h(sx, sy) };
@@ -326,11 +357,12 @@
         open.sort((a, b) => fs[key(a[0], a[1])] - fs[key(b[0], b[1])]);
         const [x, y] = open.shift();
         if (x === tx && y === ty) { const out = [[x, y]]; let k = key(x, y); while (came[k] != null) { const c = came[k]; out.unshift([c % LW, (c / LW) | 0]); k = c; } return out; }
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const nx = x + dx, ny = y + dy;
-          if (!canStep(x, y, nx, ny)) continue;
-          if (!(nx === tx && ny === ty) && blockedCell(nx, ny, through)) continue;
-          const ng = gs[key(x, y)] + 1, nk = key(nx, ny);
+        const steps = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy, 1]);
+        PORT.forEach(([ax, ay, bx, by]) => { if (ax === x && ay === y) steps.push([bx, by, 3]); else if (bx === x && by === y) steps.push([ax, ay, 3]); });
+        for (const [nx, ny, cost] of steps) {
+          if (cost === 1 && !canStep(x, y, nx, ny)) continue;
+          if (!(nx === tx && ny === ty) && blockedCell(nx, ny, through) && !(startObj && objAt(nx, ny) === startObj)) continue;
+          const ng = gs[key(x, y)] + cost, nk = key(nx, ny);
           if (gs[nk] == null || ng < gs[nk]) { gs[nk] = ng; fs[nk] = ng + h(nx, ny); came[nk] = key(x, y); if (!open.some(([a, b]) => a === nx && b === ny)) open.push([nx, ny]); }
         }
       }
@@ -709,6 +741,11 @@
       if (!e.route || !e.route.length) { e.route = null; return true; }
       const [tx, ty] = e.route[0], sp = 2.4 * dt;
       const dx = tx - e.fx, dy = ty - e.fy, d = Math.hypot(dx, dy);
+      if (d > 1.6) { // stairs: climb takes a moment, then the Sim is on the other floor
+        e.stairT = (e.stairT || 0) + dt; e.pose = "walk"; e.anim += dt * 9;
+        if (e.stairT < 0.9) return false;
+        e.stairT = 0; e.fx = tx; e.fy = ty; e.x = tx; e.y = ty; e.route.shift(); if (!e.route.length) { e.route = null; e.pose = "stand"; return true; } return false;
+      }
       if (Math.abs(dx - dy) > 0.01) e.dir = (dx - dy) > 0 ? 1 : -1;
       e.pose = "walk"; e.anim += dt * 9;
       if (d <= sp) { e.fx = tx; e.fy = ty; e.x = tx; e.y = ty; e.route.shift(); if (!e.route.length) { e.route = null; e.pose = "stand"; return true; } }
@@ -931,7 +968,15 @@
       if (!e.player && e.busy && sim && !e.route) { info.face = Math.atan2(sim.fx - e.fx, sim.fy - e.fy); info.talking = true; }
       return info;
     }
+    let floorLock = 0, lastLevel = 0;
+    function paintFloor() { if (!view3d || !HDEF.floors) return; const f = HDEF.floors.find((q) => q.level === view3d.viewLevel); const b = host.querySelector(".sm-flname"); if (b && f) b.textContent = f.name; }
     function draw3d() {
+      if (HDEF.floors && sim) { // follow the active Sim to their floor (unless you just picked a floor yourself)
+        const lv = sim.away ? lastLevel : levelOf(Math.round(sim.fx));
+        if (lv !== lastLevel && performance.now() - floorLock > 4000) { view3d.setView(lv); paintFloor(); }
+        lastLevel = lv;
+        host.querySelectorAll(".sm-floorbtn").forEach((b) => b.hidden = false);
+      }
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
       if (!G) return;
       const hr = G.min / 60 % 24;
@@ -1100,7 +1145,7 @@
         const c = d.querySelector(".sm-cheat").value.trim().toLowerCase();
         if (c === "motherlode") { G.money += 50000; notify("Motherlode! +§50,000"); }
         else if (c === "kaching" || c === "rosebud") { G.money += 1000; notify("Kaching! +§1,000"); }
-        else if (c === "freerealestate") { G.freeRealEstate = !G.freeRealEstate; HOUSES.family.price = G.freeRealEstate ? 0 : 40000; notify(G.freeRealEstate ? "Free real estate is ON — houses cost nothing." : "Free real estate is off."); }
+        else if (c === "freerealestate") { G.freeRealEstate = !G.freeRealEstate; Object.values(HOUSES).forEach((h) => { if (h.basePrice == null) h.basePrice = h.price; h.price = G.freeRealEstate ? 0 : h.basePrice; }); notify(G.freeRealEstate ? "Free real estate is ON — houses cost nothing." : "Free real estate is off."); }
         else { notify("That cheat doesn't exist."); }
         save(); paintUI();
       }], ["Close"]], (d) => setTimeout(() => { const i = d.querySelector(".sm-cheat"); if (i) i.focus(); }, 50));
@@ -1198,6 +1243,7 @@
       if (v === "2d") { set3D(!view3d); return; }
       if (!view3d) return;
       if (v === "turn") { buyRot = (buyRot + 1) % 4; return; }
+      if ((v === "up" || v === "down") && HDEF.floors) { const lv = HDEF.floors.map((f) => f.level).sort((a, b) => a - b); const i = lv.indexOf(view3d.viewLevel) + (v === "up" ? 1 : -1); if (i >= 0 && i < lv.length) { view3d.setView(lv[i]); floorLock = performance.now(); paintFloor(); } return; }
       if (v === "rotL") view3d.rotate(-1); if (v === "rotR") view3d.rotate(1);
       if (v === "zin") view3d.zoom(0.85); if (v === "zout") view3d.zoom(1.18);
       if (v === "walls") { const order = ["cutaway", "up", "down"], nm = { cutaway: "▥ Cutaway", up: "▮ Walls Up", down: "▁ Walls Down" }; const nx = order[(order.indexOf(view3d.wallMode) + 1) % 3]; view3d.setWallMode(nx); b.textContent = nm[nx]; }
@@ -1244,10 +1290,10 @@
       sp.querySelector(".sm-sp-go").onclick = go;
       sp.addEventListener("pointerdown", (e) => { if (!e.target.closest("a")) go(); });
     }
-    if (G && G.freeRealEstate) HOUSES.family.price = 0;
+    Object.values(HOUSES).forEach((h) => { if (h.basePrice == null) h.basePrice = h.price; h.price = G && G.freeRealEstate ? 0 : h.basePrice; });
     if (startOpts && startOpts.skipSplash && G && G.v === 1) boot(); else splash(() => { if (G && G.v === 1) boot(); else { G = null; createASim(); } });
     raf = requestAnimationFrame((n) => { last = n; frame(n); });
-    host.__sims = { toast: (t) => notify(t), moveHouse, cheats, HOUSE, get house() { return HKEY; }, fixedBlock, path: (a, b, c, d) => path(a, b, c, d), get view3d() { return view3d; }, set3D, get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
+    host.__sims = { levelOf, get LW() { return LW; },  toast: (t) => notify(t), moveHouse, cheats, HOUSE, get house() { return HKEY; }, fixedBlock, path: (a, b, c, d) => path(a, b, c, d), get view3d() { return view3d; }, set3D, get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
     return { dispose: cleanup };
   }
 
