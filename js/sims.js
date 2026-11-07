@@ -64,7 +64,7 @@
     bed: { name: "Spartan Special Bed", price: 450, cat: "Seating", w: 2, h: 22, col: "#3a5a9a", room: 2, ints: ["sleep", "nap"], enter: true },
     sofa: { name: "Contempto Loveseat", price: 450, cat: "Seating", w: 2, h: 30, col: "#6a3a8a", room: 2, ints: ["sit", "nap"], enter: true, seat: true },
     armchair: { name: "Country Class Armchair", price: 250, cat: "Seating", w: 1, h: 32, col: "#9a5a2a", room: 1, ints: ["sit"], enter: true, seat: true },
-    tv: { name: "Monochrome TV", price: 500, cat: "Electronics", w: 1, h: 40, col: "#2a2a30", room: 1, ints: ["tv"] },
+    tv: { name: "Retro CRT Television", price: 500, cat: "Electronics", w: 1, h: 40, col: "#2a2a30", room: 1, ints: ["tv"] },
     computer: { name: "Moneywell Computer", price: 1000, cat: "Electronics", w: 1, h: 46, col: "#c9c3b0", room: 1, ints: ["games", "job", "surf"] },
     stereo: { name: "Zimantz Stereo", price: 300, cat: "Electronics", w: 1, h: 36, col: "#30343c", room: 1, ints: ["dance", "listen"] },
     phone: { name: "Tricorder Phone", price: 50, cat: "Electronics", w: 1, h: 26, col: "#c9a46a", room: 0, ints: ["call", "invite", "adopt"] },
@@ -78,6 +78,15 @@
     sculpture: { name: "Abstract Sculpture", price: 350, cat: "Decorative", w: 1, h: 54, col: "#c25a3a", room: 6, ints: [] },
     trash: { name: "Trash Can", price: 50, cat: "Misc", w: 1, h: 24, col: "#5a6470", room: 0, ints: [] },
     mailbox: { name: "Mailbox", price: 0, cat: "Misc", w: 1, h: 40, col: "#3a5aa0", room: 0, ints: ["mail"], fixed: true },
+    // 3D-model furniture (models credited on the startup screen)
+    sofa3: { name: "Green Leather Sofa", price: 1590, cat: "Seating", w: 3, h: 30, col: "#1f5a3a", room: 3, ints: ["sit", "nap"], enter: true, seat: true },
+    sectional: { name: "Three-Seat Chaise Sectional", price: 2250, cat: "Seating", w: 3, h: 30, col: "#c9b28a", room: 4, ints: ["sit", "nap"], enter: true, seat: true },
+    daybed: { name: "Classic Leather Daybed", price: 1350, cat: "Seating", w: 2, h: 20, col: "#b8233f", room: 3, ints: ["sit", "nap"], enter: true, seat: true },
+    papasan: { name: "Papasan Hammock Chair", price: 340, cat: "Seating", w: 1, h: 34, col: "#2a3a8a", room: 2, ints: ["sit"], enter: true, seat: true },
+    deckchair: { name: "Striped Seaside Deck Chair", price: 110, cat: "Seating", w: 1, h: 30, col: "#2a4a8a", room: 1, ints: ["sit"], enter: true, seat: true },
+    deckchair2: { name: "Teak Beach Deck Chair", price: 195, cat: "Seating", w: 1, h: 30, col: "#8a5a32", room: 2, ints: ["sit"], enter: true, seat: true },
+    porchswing: { name: "Cedar A-Frame Porch Swing", price: 650, cat: "Seating", w: 3, h: 70, col: "#b5794a", room: 3, ints: ["sit"], enter: true, seat: true },
+    barrel: { name: "Iron-Hooped Oak Barrel", price: 95, cat: "Decorative", w: 1, h: 30, col: "#8b5a2b", room: 2, ints: [] },
     crib: { name: "Baby Bassinet", price: 0, w: 1, h: 30, col: "#f4e6f0", room: 1, ints: ["feedBaby", "playBaby"], fixed: true },
     plate: { name: "Dirty Plate", price: 0, w: 1, h: 6, col: "#f0ede6", room: -15, ints: ["clean"], fixed: true, mess: true },
     puddle: { name: "Puddle", price: 0, w: 1, h: 1, col: "#d8e24a", room: -15, ints: ["clean"], fixed: true, mess: true, walk: true },
@@ -183,6 +192,7 @@
     let G = store().sims || null;
     body.innerHTML = `<div class="sm"><canvas class="sm-cv"></canvas>
       <div class="sm-queue"></div>
+      <div class="sm-view3d" hidden><button data-v="rotL" title="Rotate left (Q)">⟲</button><button data-v="rotR" title="Rotate right (E)">⟳</button><button data-v="zin" title="Zoom in">＋</button><button data-v="zout" title="Zoom out">－</button><button data-v="walls" title="Walls: cutaway / up / down" class="sm-wallbtn">▥ Cutaway</button><button data-v="2d" title="Switch between 3D and the classic 2D view" class="sm-2dbtn">2D</button></div>
       <div class="sm-hint"></div>
       <div class="sm-bar">
         <div class="sm-left">
@@ -209,12 +219,32 @@
     function fit() {
       const r = host.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1);
       W = r.width; H = r.height - 124; cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr); cv.style.height = H + "px";
+      if (view3d) view3d.resize(W, H);
       if (!camX && !camY) centerCam();
     }
     function centerCam() { zoom = clamp(Math.min(W / (LW * TW * 0.92), H / ((LW + LH) * TH * 0.5 + 60)), 0.55, 1.25); const c = P(LW / 2, LH / 2, 0, true); camX = W / 2 - c[0]; camY = H / 2 - c[1] + 10; }
     // iso projection: cell coords → screen
     function P(x, y, z, raw) { const sx = (x - y) * TW / 2 * zoom, sy = ((x + y) * TH / 2 - (z || 0)) * zoom; return raw ? [sx, sy] : [sx + camX, sy + camY]; }
-    function cellAt(mx, my) { const fx = (mx - camX) / (TW / 2 * zoom), fy = (my - camY) / (TH / 2 * zoom); return { x: Math.floor((fy + fx) / 2), y: Math.floor((fy - fx) / 2) }; }
+    function cellAt(mx, my) { if (view3d) return view3d.cellAt(mx, my); const fx = (mx - camX) / (TW / 2 * zoom), fy = (my - camY) / (TH / 2 * zoom); return { x: Math.floor((fy + fx) / 2), y: Math.floor((fy - fx) / 2) }; }
+
+    // ---------------- 3D view (Three.js; falls back to the 2D drawing) ----------------
+    let view3d = null, want3d = true;
+    try { const sv = window.State && State.data && State.data.appData && State.data.appData.sims3dView; if (sv === false) want3d = false; } catch (e) {}
+    function enable3D() {
+      if (view3d || !want3d || !window.THREE || !window.Sims3DView || dead) return;
+      try {
+        view3d = window.Sims3DView.create({ LW, LH, HOUSE, ROOMS, hWall, vWall, CAT });
+        host.insertBefore(view3d.canvas, cv); cv.classList.add("sm-overlay"); $(".sm-view3d").hidden = false; fit();
+      } catch (e) { console.warn("3D view unavailable", e); view3d = null; }
+    }
+    function disable3D() { if (!view3d) return; view3d.dispose(); view3d = null; cv.classList.remove("sm-overlay"); fit(); }
+    function set3D(on) {
+      want3d = on; try { State.data.appData.sims3dView = on; State.save(); } catch (e) {}
+      if (on) enable3D(); else disable3D();
+      $(".sm-2dbtn").textContent = view3d ? "2D" : "3D"; host.querySelectorAll(".sm-view3d button:not(.sm-2dbtn)").forEach((b) => b.hidden = !view3d);
+      $(".sm-view3d").hidden = false;
+    }
+    if (window.THREE) setTimeout(enable3D, 0); else window.addEventListener("three-ready", () => enable3D(), { once: true });
 
     // ---------------- walls ----------------
     const hWall = [], vWall = [];
@@ -828,7 +858,57 @@
       else if (e.player && e.think && !(A && A.sleeping)) bubble(p[0] + 18 * zoom, headY - 30 * zoom, e.think, true);
       if (!e.player) { g.font = `700 ${Math.round(11 * zoom)}px system-ui`; g.textAlign = "center"; g.fillStyle = "rgba(0,0,0,.6)"; g.fillText(e.name, p[0] + 1, p[1] + 14 * zoom + 1); g.fillStyle = "#fff"; g.fillText(e.name, p[0], p[1] + 14 * zoom); }
     }
+    // Where a Sim is and how it's posed, shared by the 3D renderer and its overlays.
+    function entInfo(e) {
+      const cur = e.player ? acts[0] : null, A = cur && cur.phase === "use" ? ACTS[cur.type] : null;
+      const info = { e, x: e.fx, y: e.fy, pose: e.pose, hidden: !!e.away, A, cur, player: !!e.player };
+      if (A && cur.target && !cur.target.npc && CAT[cur.target.t]) {
+        const o = cur.target, d = CAT[o.t];
+        if (d.enter) { info.x = o.x + (d.w - 1) / 2; info.y = o.y; }
+        if (d.seat && view3d) info.face = view3d.yawOf ? view3d.yawOf(o) : null;
+        if (!d.enter) info.face = Math.atan2(o.x + (d.w - 1) / 2 - e.fx, o.y - e.fy);
+        if (o.t === "bed" || (cur.bed && A.bedAct)) { const b = cur.bed || o; info.lie = true; info.x = b.x + 0.85; info.y = b.y + (A.bedAct ? -0.18 : 0); info.lieYaw = Math.PI / 2; info.pose = "lie"; }
+        if (o.t === "tub") info.pose = "bath";
+      }
+      if (cur && cur.phase === "use" && cur.target && cur.target.npc) { info.face = Math.atan2(cur.target.fx - e.fx, cur.target.fy - e.fy); info.talking = true; }
+      if (!e.player && e.pose === "lie") { const bed = (e.bedTarget) || objs.find((o) => o.t === "bed" && Math.abs(o.x + 0.5 - e.fx) < 1.6 && Math.abs(o.y - e.fy) < 1.1); if (bed) { info.lie = true; info.x = bed.x + 0.85; info.y = bed.y + 0.2; info.lieYaw = Math.PI / 2; } }
+      if (!e.player && e.busy && sim && !e.route) { info.face = Math.atan2(sim.fx - e.fx, sim.fy - e.fy); info.talking = true; }
+      return info;
+    }
+    function draw3d() {
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+      if (!G) return;
+      const hr = G.min / 60 % 24;
+      const ents = [sim].concat(npcs).filter(Boolean).map(entInfo);
+      let ghost = null;
+      if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk }; }
+      view3d.render({ dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: mode === "live" ? hover : null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") });
+      // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
+      const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
+      ents.forEach((i) => {
+        if (i.hidden) return; const e = i.e, A = i.A, sc = e.scale || 1;
+        const headH = (i.pose === "lie" || i.pose === "bath" ? 0.9 : i.pose === "sit" ? 1.45 : 1.85) * sc;
+        const hp = view3d.project(i.x + 0.5, i.y + 0.5, headH), fp = view3d.project(i.x + 0.5, i.y + 0.5, 0);
+        if (!hp[2]) return;
+        const pxH = Math.max(20, fp[1] - hp[1]);
+        if (A && A.censor) { // pixelated censor mosaic over the Sim (a clothed body under it — never shown)
+          const bw = pxH * 0.45, top = hp[1] - pxH * 0.05, bot = fp[1] - (i.pose === "sit" ? pxH * 0.35 : pxH * 0.15), bs = Math.max(4, Math.round(pxH / 9)), seed = Math.floor(t * 6);
+          for (let yy = top + pxH * 0.18; yy < bot; yy += bs) for (let xx = hp[0] - bw / 2; xx < hp[0] + bw / 2; xx += bs) { const v = hash(Math.round(xx) * 7 + seed, Math.round(yy) * 3); g.fillStyle = v < 0.55 ? e.skin : v < 0.8 ? "#d9a582" : "#f2d6c2"; g.fillRect(xx, yy, bs, bs); }
+        }
+        if (A && A.bedAct && i.cur && i.cur.bed) { const b = view3d.project(i.cur.bed.x + 1, i.cur.bed.y + 0.5, 0.9); for (let k = 0; k < 5; k++) { const ph = (t * 0.8 + k / 5) % 1; g.globalAlpha = 1 - ph; g.font = `${Math.round(16 + k * 3)}px system-ui`; g.textAlign = "center"; g.fillStyle = "#e8505b"; g.fillText("❤", b[0] + Math.sin(k * 2.1 + t) * 26, b[1] - ph * 80); } g.globalAlpha = 1; }
+        if (A && A.steam) for (let k = 0; k < 6; k++) { const yy = hp[1] + pxH * 0.6 - ((t * 30 + k * 13) % 70); g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.arc(hp[0] + Math.sin(t * 2 + k) * 12, yy, 8, 0, 7); g.fill(); }
+        if (A && A.sleeping) { g.fillStyle = "#fff"; g.font = "800 16px system-ui"; g.textAlign = "center"; g.fillText("Z", hp[0] + 14 + Math.sin(t * 2) * 4, hp[1] - 10 - (t * 10 % 16)); }
+        const saved = zoom; zoom = zs;
+        if (e.sayT > 0) bubble(hp[0], hp[1] - (e.player ? 46 : 14), e.say, false);
+        else if (e.player && e.think && !(A && A.sleeping)) bubble(hp[0] + 22, hp[1] - 40, e.think, true);
+        zoom = saved;
+        if (!e.player) { g.font = "700 12px system-ui"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "rgba(0,0,0,.6)"; g.fillText(e.name, fp[0] + 1, fp[1] + 15); g.fillStyle = "#fff"; g.fillText(e.name, fp[0], fp[1] + 14); }
+      });
+      flash.forEach((f, i) => { g.font = "600 13px system-ui,sans-serif"; const w = g.measureText(f.text).width + 20; g.globalAlpha = Math.min(1, f.t); g.fillStyle = "rgba(20,40,90,.85)"; g.fillRect(W - w - 12, 56 + i * 30, w, 24); g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(f.text, W - w - 2, 68 + i * 30); g.globalAlpha = 1; });
+      if (mode === "buy") { g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(0, H - 28, W, 28); g.fillStyle = "#fff"; g.font = "700 13px system-ui"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(buyItem ? "Tap a tile to place it · right-click or Esc to cancel" : "BUY MODE — pick an item, or tap an object to sell it (time is paused)", W / 2, H - 14); }
+    }
     function draw() {
+      if (view3d) { draw3d(); return; }
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       const hr = (G ? G.min : 480) / 60 % 24, sky = hr < 5 || hr > 21 ? "#0e1a30" : hr < 7 ? "#5a7aa8" : hr > 19 ? "#c07a5a" : "#7fb8e0";
       g.fillStyle = sky; g.fillRect(0, 0, W, H);
@@ -956,6 +1036,7 @@
 
     // ---------------- input ----------------
     function pick(mx, my) {
+      if (view3d) { const h = view3d.pick(mx, my); if (h.ent && h.ent.away) return { cell: view3d.cellAt(mx, my) }; if (h.cell) { const o = objAt(h.cell.x, h.cell.y) || objs.find((q) => CAT[q.t].walk && q.x === h.cell.x && q.y === h.cell.y); if (o) return { obj: o }; } return h; }
       const ents = [sim].concat(npcs).filter((e) => !e.away && e._bb && mx >= e._bb[0] && mx <= e._bb[2] && my >= e._bb[1] && my <= e._bb[3]);
       if (ents.length) return { ent: ents.sort((a, b) => (b.fx + b.fy) - (a.fx + a.fy))[0] };
       const hits = objs.filter((o) => o._bb && mx >= o._bb[0] && mx <= o._bb[2] && my >= o._bb[1] && my <= o._bb[3]).sort((a, b) => (b.x + b.y) - (a.x + a.y));
@@ -964,13 +1045,24 @@
       return { cell: c };
     }
     let drag = null;
-    cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false }; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+    const touches = new Map();
+    cv.addEventListener("pointerdown", (e) => { touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (drag && touches.size >= 2) { drag.moved = true; return; } drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, cx: camX, cy: camY, moved: false, orbit: e.button === 2 || e.altKey || e.ctrlKey }; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+    cv.addEventListener("pointercancel", (e) => { touches.delete(e.pointerId); if (!touches.size) drag = null; });
     cv.addEventListener("pointermove", (e) => {
       const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
       hover = cellAt(mx, my); if (hover.x < 0 || hover.y < 0 || hover.x >= LW || hover.y >= LH) hover = null;
+      if (drag && view3d) {
+        touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (touches.size >= 2) { const [a, b] = [...touches.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x); if (drag.pd) { view3d.zoom(drag.pd / d); view3d.orbit(-(ang - drag.pa) * 120, 0); } drag.pd = d; drag.pa = ang; drag.moved = true; return; }
+        const dx = e.clientX - drag.lx, dy = e.clientY - drag.ly; drag.lx = e.clientX; drag.ly = e.clientY;
+        if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 6) drag.moved = true;
+        if (drag.moved) { if (drag.orbit) view3d.orbit(dx, dy); else view3d.pan(dx, dy); }
+        return;
+      }
       if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true; if (drag.moved) { camX = drag.cx + dx; camY = drag.cy + dy; userCam = true; } }
     });
     cv.addEventListener("pointerup", (e) => {
+      touches.delete(e.pointerId); if (touches.size) return;
       const was = drag; drag = null; if (!was || was.moved || !G || dialogOpen) return;
       const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
       if (mode === "buy") {
@@ -1007,14 +1099,24 @@
       if (opts.length) pie(mx, my, opts);
     });
     cv.addEventListener("contextmenu", (e) => { e.preventDefault(); buyItem = null; if (mode === "buy") openCatalog(); });
-    cv.addEventListener("wheel", (e) => { e.preventDefault(); const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, z0 = zoom; zoom = clamp(zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.45, 1.8); camX = mx - (mx - camX) * zoom / z0; camY = my - (my - camY) * zoom / z0; userCam = true; }, { passive: false });
+    cv.addEventListener("wheel", (e) => { e.preventDefault(); if (view3d) { view3d.zoom(e.deltaY < 0 ? 0.9 : 1.11); return; } const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, z0 = zoom; zoom = clamp(zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.45, 1.8); camX = mx - (mx - camX) * zoom / z0; camY = my - (my - camY) * zoom / z0; userCam = true; }, { passive: false });
     host.querySelectorAll(".sm-mode").forEach((b) => b.onclick = () => setMode(b.dataset.m));
+    host.querySelectorAll(".sm-view3d button").forEach((b) => b.onclick = () => {
+      const v = b.dataset.v;
+      if (v === "2d") { set3D(!view3d); return; }
+      if (!view3d) return;
+      if (v === "rotL") view3d.rotate(-1); if (v === "rotR") view3d.rotate(1);
+      if (v === "zin") view3d.zoom(0.85); if (v === "zout") view3d.zoom(1.18);
+      if (v === "walls") { const order = ["cutaway", "up", "down"], nm = { cutaway: "▥ Cutaway", up: "▮ Walls Up", down: "▁ Walls Down" }; const nx = order[(order.indexOf(view3d.wallMode) + 1) % 3]; view3d.setWallMode(nx); b.textContent = nm[nx]; }
+    });
     host.querySelectorAll(".sm-speeds button").forEach((b) => b.onclick = () => { if (G) { G.speed = +b.dataset.s; paintUI(); } });
     host.querySelectorAll(".sm-tabs button").forEach((b) => b.onclick = () => { tab = b.dataset.t; host.querySelectorAll(".sm-tabs button").forEach((x) => x.classList.toggle("on", x === b)); paintTab(); });
     function onKey(e) {
       if (!document.body.contains(host) || !host.closest(".win") || dialogOpen) return;
       const a = document.activeElement; if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
       if (!host.contains(a) && a !== document.body) return;
+      if (view3d && (e.key === "q" || e.key === "Q")) view3d.rotate(-1);
+      if (view3d && (e.key === "e" || e.key === "E")) view3d.rotate(1);
       if (e.key === "Escape") { buyItem = null; $(".sm-pie").hidden = true; if (mode === "buy") openCatalog(); }
       if (G && ["0", "1", "2", "3"].includes(e.key)) { G.speed = +e.key; paintUI(); }
       if (G && e.key === "p") { G.speed = G.speed ? 0 : 1; paintUI(); }
@@ -1031,7 +1133,7 @@
       uiT += dt; if (uiT > 0.25) { uiT = 0; paintUI(); }
       raf = requestAnimationFrame(frame);
     }
-    function cleanup() { if (dead) return; dead = true; cancelAnimationFrame(raf); save(); document.removeEventListener("keydown", onKey); if (ro) ro.disconnect(); }
+    function cleanup() { if (dead) return; dead = true; cancelAnimationFrame(raf); if (view3d) { try { view3d.dispose(); } catch (e) {} view3d = null; } save(); document.removeEventListener("keydown", onKey); if (ro) ro.disconnect(); }
     let ro = null; try { ro = new ResizeObserver(() => { fit(); if (!userCam) centerCam(); }); ro.observe(host); } catch (e) {}
     const win = body.closest(".win"); if (win) win.addEventListener("wm-cleanup", cleanup);
     fit();
@@ -1050,7 +1152,7 @@
     }
     splash(() => { if (G && G.v === 1) boot(); else { G = null; createASim(); } });
     raf = requestAnimationFrame((n) => { last = n; frame(n); });
-    host.__sims = { get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
+    host.__sims = { get view3d() { return view3d; }, set3D, get G() { return G; }, get sim() { return sim; }, get acts() { return acts; }, get objs() { return objs; }, get npcs() { return npcs; }, queue: (type, target) => queueAct(type, target), step: (s) => { const sp = G.speed; G.speed = 1; for (let i = 0; i < s * 10; i++) update(0.1); G.speed = sp; }, mood, pick, P: (x, y, z) => P(x, y, z), get dialogOpen() { return dialogOpen; }, familyTick: (m) => familyTick(m), spawnNeighbor: (name) => { const nb = NEIGHBORS.find((x) => x.name === name); const e = makeSimEntity({ ...nb, x: 6, y: 9 }, false); e.npc = true; e.leaveAt = G.min + 9999; e.wanderT = 999; npcs.push(e); return e; } };
     return { dispose: cleanup };
   }
 
@@ -1061,7 +1163,13 @@
       .sm-dialog[hidden], .sm-catalog[hidden], .sm-pie[hidden] { display: none !important; }
       .sm { position: relative; width: 100%; height: 100%; overflow: hidden; background: #7fb8e0; font-family: "Trebuchet MS", system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
       .sm-cv { display: block; width: 100%; touch-action: none; cursor: pointer; }
-      .sm-queue { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; }
+      .sm-queue { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; z-index: 2; }
+      .sm-3d { position: absolute; left: 0; top: 0; display: block; }
+      .sm-cv.sm-overlay { position: absolute; left: 0; top: 0; background: transparent; }
+      .sm-view3d { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; z-index: 2; }
+      .sm-view3d[hidden], .sm-view3d button[hidden] { display: none; }
+      .sm-view3d button { min-width: 38px; height: 36px; border-radius: 10px; border: 2px solid #1d3d7a; background: rgba(232,240,255,.92); font: 700 15px system-ui; color: #1d3d7a; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.3); padding: 0 8px; }
+      .sm-view3d .sm-wallbtn, .sm-view3d .sm-2dbtn { font-size: 13px; }
       .sm-q { width: 40px; height: 40px; border-radius: 10px; border: 2px solid #1d3d7a; background: #e8f0ff; font-size: 20px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
       .sm-q.on { background: #fff7c2; border-color: #c9a01a; transform: scale(1.12); }
       .sm-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 124px; background: linear-gradient(#2f5aa8, #1d3d7a); border-top: 3px solid #8fb4ef; display: flex; gap: 10px; padding: 8px 10px; box-sizing: border-box; color: #fff; }
