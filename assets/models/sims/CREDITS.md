@@ -50,3 +50,8 @@ metallic maps were left out to keep it light. Scaled to 0.9 m tall, 82 KB.
 `jm_porch_swing.fbx`. The ground plane was removed. The chains alone were 98k triangles, so the whole swing was cut from
 110k to 15k triangles. The textures weren't included, so it uses a cedar wood color and dark steel chains. Scaled to
 2.1 m tall, 372 KB.
+
+### Oak barrel (`barrel.glb`) by **margetacg** (https://www.cgtrader.com/designers/margetacg)
+`bure_final-cgtrader.fbx` ("bure" means barrel), 6.5k triangles. The base-color texture wasn't included, so each
+separate part was sorted by shape: the thin rings are the iron hoops, the small parts are the rivets, and everything else
+is the oak staves, lid and plug. Scaled to 0.85 m tall.

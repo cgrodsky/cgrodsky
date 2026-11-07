@@ -36,6 +36,17 @@
   "environment": 1
  },
  {
+  "id": "oak-barrel",
+  "file": "barrel.glb",
+  "name": "Iron-Hooped Oak Barrel",
+  "kind": "decor",
+  "category": "Decorative",
+  "price": 95,
+  "environment": 2,
+  "surface": true,
+  "author": "margetacg"
+ },
+ {
   "id": "deck-chair",
   "file": "deckchair.glb",
   "name": "Teak Beach Deck Chair",
