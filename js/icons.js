@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "13";
+  const ICONV = "14";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -263,9 +263,9 @@
     <path d="M80 44 H108 M80 60 H108 M80 76 H108 M80 92 H100" stroke="#2b579a" stroke-width="4" stroke-linecap="round"/>
   </svg>`);
 
-  // Start button: the Windows 11 logo (transparent PNG).
+  // Start button: the Windows 12 logo (transparent PNG). The Windows 11 logo is only used on the boot screen.
   alias("browser", "edge");   // the generic browser app shows the Edge icon (it was falling back to "ED" initials)
-  register("winflag", `<img src="assets/win11_start.png?v=1" alt="" style="width:100%;height:100%;object-fit:contain">`);
+  register("winflag", `<img src="assets/win12_logo.png?v=1" alt="" style="width:100%;height:100%;object-fit:contain">`);
 
   register("searchglass", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="sgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f0ff"/><stop offset="1" stop-color="#7fd9ff"/></linearGradient></defs>

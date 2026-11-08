@@ -134,8 +134,8 @@ html, body {
 /* Modern "Windows 12" gradient wordmark boot screen */
 .w12-boot { color: #fff; }
 .w12-mark { display: flex; align-items: center; gap: 22px; }
-.w12-flag { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 5px; width: 54px; height: 54px; }
-.w12-flag i { display: block; border-radius: 4px; background: linear-gradient(135deg, #ff2fb0, #7b5cff 55%, #2f6bff); }
+.w12-flag { display: inline-block; width: 54px; height: 54px; background: url("../assets/win12_logo.png?v=1") center / contain no-repeat; }
+.w12-flag i { display: none; }
 .w12-word { font: 300 46px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .5px;
   background: linear-gradient(90deg, #ff4fc3, #8a6cff 55%, #2f8bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .w12-word b { font-weight: 600; margin-left: 10px; }
