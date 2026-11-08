@@ -148,15 +148,15 @@
     const { body } = cw({ title: "Settings", icon: Icon.mini("settings", "Settings"), width: 760, height: 540, appId: "settings" });
     body.innerHTML = `<div class="settings">
       <div class="settings-nav">
-        <div class="nav active" data-p="personal">Personalization</div>
-        <div class="nav" data-p="network">Network &amp; internet</div>
-        <div class="nav" data-p="devices">Bluetooth &amp; devices</div>
-        <div class="nav" data-p="access">Accessibility</div>
-        <div class="nav" data-p="account">Account</div>
-        <div class="nav" data-p="time">Time & language</div>
-        <div class="nav" data-p="icons">Personalize icons</div>
-        <div class="nav" data-p="update">Windows Update</div>
-        <div class="nav" data-p="system">System</div>
+        <div class="nav active" data-p="personal"><span class="nav-ic">${Icon.mini("personalization")}</span>Personalization</div>
+        <div class="nav" data-p="network"><span class="nav-ic">${Icon.mini("wifi")}</span>Network &amp; internet</div>
+        <div class="nav" data-p="devices"><span class="nav-ic">${Icon.mini("mouse")}</span>Bluetooth &amp; devices</div>
+        <div class="nav" data-p="access"><span class="nav-ic">${Icon.mini("accessibility")}</span>Accessibility</div>
+        <div class="nav" data-p="account"><span class="nav-ic">${Icon.mini("user")}</span>Account</div>
+        <div class="nav" data-p="time"><span class="nav-ic">${Icon.mini("clock")}</span>Time & language</div>
+        <div class="nav" data-p="icons"><span class="nav-ic">${Icon.mini("colorpicker")}</span>Personalize icons</div>
+        <div class="nav" data-p="update"><span class="nav-ic">${Icon.mini("winupdate")}</span>Windows Update</div>
+        <div class="nav" data-p="system"><span class="nav-ic">${Icon.mini("opt_monitor")}</span>System</div>
       </div>
       <div class="settings-body"></div></div>`;
     const sb = body.querySelector(".settings-body");

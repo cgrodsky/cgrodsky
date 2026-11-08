@@ -1225,7 +1225,7 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 
 /* Settings */
 .settings { display: flex; height: 100%; }
-.settings-nav { width: 200px; background: var(--bg-elev); padding: 12px; }
+.settings-nav { width: 224px; background: var(--bg-elev); padding: 12px; }
 .settings-nav .nav { padding: 10px 12px; border-radius: 6px; cursor: pointer; }
 .settings-nav .nav:hover, .settings-nav .nav.active { background: rgba(0,103,192,0.14); }
 .settings-body { flex: 1; padding: 24px; overflow: auto; }
@@ -1892,7 +1892,14 @@ body.xp-theme .browser-bar .bb-menu { font-weight: 700; }
 .ms-return { color: #aeb8d2; font-size: .9rem; margin-bottom: 6px; }
 .pw-wrap { display: flex; align-items: center; border-bottom: 2px solid rgba(255,255,255,.28); }
 .pw-wrap input { flex: 1; border: 0 !important; border-bottom: 0 !important; }
-.pw-eye { background: none; border: 0; color: #aeb8d2; cursor: pointer; font-size: .95rem; padding: 4px 6px; }
+.pw-eye { background: none; border: 0; color: #aeb8d2; cursor: pointer; font-size: .95rem; padding: 4px 6px; display: inline-flex; align-items: center; }
+.pw-eye-ic { display: inline-block; width: 18px; height: 11px; background: currentColor; -webkit-mask: url("../assets/pw_eye.png?v=1") center/contain no-repeat; mask: url("../assets/pw_eye.png?v=1") center/contain no-repeat; }
+button.pw-eye-btn { all: unset; box-sizing: border-box; position: absolute; z-index: 2; width: 30px; height: 26px; display: none; align-items: center; justify-content: center; border-radius: 4px; background: transparent; cursor: pointer; opacity: .75; padding: 0; margin: 0; }
+button.pw-eye-btn:hover { opacity: 1; background: rgba(128,128,128,.18); }
+button.pw-eye-btn.on { opacity: 1; background: rgba(128,128,128,.28); }
+.settings-nav .nav { display: flex; align-items: center; gap: 10px; }
+.settings-nav .nav-ic { display: inline-flex; width: 20px; height: 20px; flex: none; }
+.settings-nav .nav-ic .ico-wrap { width: 20px !important; height: 20px !important; box-shadow: none !important; background: transparent !important; }
 
 /* just a moment */
 .oobe-moment { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; width: 100%; min-height: 260px; }

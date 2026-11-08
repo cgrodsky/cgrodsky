@@ -490,6 +490,43 @@
   setInterval(() => refreshDynamic(true), 1000);   // tick the clock every second
   setInterval(() => refreshDynamic(false), 30000); // roll over calendar / other dynamic icons
 
+  // Settings sidebar glyphs (Windows 11 style)
+  register("accessibility", `<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0f6cbd"/><circle cx="12" cy="6.6" r="1.7" fill="#fff"/><path d="M6.5 9.2l5.5 1.2 5.5-1.2M12 10.4v4.2m0 0l-2.4 4.6m2.4-4.6l2.4 4.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`);
+  register("winupdate", `<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><path d="M19.4 9.2A7.8 7.8 0 0 0 5.6 7.4M4.6 14.8a7.8 7.8 0 0 0 13.8 1.8" stroke="#0f6cbd" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M20.6 4.6v5.2h-5.2zM3.4 19.4v-5.2h5.2z" fill="#0f6cbd"/></svg>`);
+
+  // Windows-style "reveal password" eye: added to every password box automatically.
+  function attachPwEye(inp) {
+    if (inp.dataset.pwEye || inp.dataset.noEye != null || inp.closest(".pw-wrap") || !inp.parentElement) return;
+    inp.dataset.pwEye = "1";
+    // The eye is an absolutely-positioned sibling laid over the right end of the box,
+    // so it never changes the page's layout (flex rows, site forms, etc.).
+    const b = document.createElement("button"); b.type = "button"; b.className = "pw-eye-btn"; b.title = "Show password"; b.setAttribute("aria-label", "Show password");
+    b.innerHTML = `<i class="pw-eye-ic"></i>`;
+    inp.insertAdjacentElement("afterend", b);
+    const place = () => {
+      if (!b.isConnected || !inp.isConnected) return;
+      const show = !!inp.value && inp.offsetParent != null && !inp.disabled;
+      b.style.display = show ? "inline-flex" : "none"; if (!show) return;
+      const cs = getComputedStyle(inp);
+      if (cs.boxSizing === "border-box" && (parseFloat(cs.paddingRight) || 0) < 36) inp.style.paddingRight = "36px";
+      b.style.color = cs.color;
+      // offsetLeft/Top of the input and the button share the same offsetParent
+      b.style.left = (inp.offsetLeft + inp.offsetWidth - 34) + "px";
+      b.style.top = (inp.offsetTop + (inp.offsetHeight - 26) / 2) + "px";
+    };
+    inp.addEventListener("input", place); inp.addEventListener("focus", place);
+    if (window.ResizeObserver) new ResizeObserver(place).observe(inp);
+    requestAnimationFrame(place);
+    b.addEventListener("mousedown", (e) => e.preventDefault());   // keep focus in the box
+    b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); const show = inp.type === "password"; inp.type = show ? "text" : "password"; b.classList.toggle("on", show); b.title = show ? "Hide password" : "Show password"; inp.focus(); place(); });
+  }
+  function scanPw(root) { (root.querySelectorAll ? root.querySelectorAll('input[type="password"]') : []).forEach(attachPwEye); if (root.matches && root.matches('input[type="password"]')) attachPwEye(root); }
+  function startPwEyes() {
+    scanPw(document.body);
+    new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) scanPw(n); }))).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) startPwEyes(); else document.addEventListener("DOMContentLoaded", startPwEyes);
+
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
     md: (key, label) => box(key, label, 40),

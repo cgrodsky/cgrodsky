@@ -478,7 +478,7 @@
     menu.appendChild(pasteBtn);
     menu.appendChild(mkItem(iconRow(ICN.refresh, "Refresh"), () => renderDesktopIcons()));
     menu.appendChild(el(`<div class="dctx-sep"></div>`));
-    menu.appendChild(mkItem(iconRow(ICN.brush, "Personalize"), () => open("settings")));
+    menu.appendChild(mkItem(iconRow(`<img src="assets/personalization.png?v=1" alt="" style="width:17px;height:17px">`, "Personalize"), () => open("settings")));
     menu.appendChild(mkItem(iconRow(ICN.display, "Display settings"), () => open("settings")));
     function openSub(anchor, items) {
       document.querySelectorAll(".desk-submenu").forEach((m) => m.remove());

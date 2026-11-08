@@ -400,7 +400,7 @@
     function createView() {
       stage.innerHTML = `
         <div class="field"><label>Create account</label><input type="email" id="cemail" placeholder="someone@example.com"></div>
-        <div class="field"><div class="pw-wrap"><input type="password" id="cpw" placeholder="Create a password"><button class="pw-eye" id="ceye">&#128065;</button></div></div>
+        <div class="field"><div class="pw-wrap"><input type="password" id="cpw" placeholder="Create a password"><button class="pw-eye" id="ceye"><i class="pw-eye-ic"></i></button></div></div>
         <div class="field"><input type="password" id="cpw2" placeholder="Confirm password"></div>
         <div class="error-msg" id="cerr"></div>
         <div class="oobe-actions spread"><button class="btn-text" id="cback">Back to sign in</button><button class="btn-primary" id="ccreate">Create account</button></div>`;
@@ -420,7 +420,7 @@
       stage.innerHTML = `
         <div class="ms-return">&#8592; ${escapeHtml(email)}</div>
         <div class="field"><label>Enter Password</label>
-          <div class="pw-wrap"><input type="password" id="pw" placeholder="Password"><button class="pw-eye" id="eye">&#128065;</button></div></div>
+          <div class="pw-wrap"><input type="password" id="pw" placeholder="Password"><button class="pw-eye" id="eye"><i class="pw-eye-ic"></i></button></div></div>
         <p class="ms-links"><span class="link-blue">Forgot password?</span><span class="link-blue">Email code to ${escapeHtml(email)}</span></p>
         <div class="oobe-actions spread"><button class="btn-text" id="back2">Back</button><button class="btn-primary" id="signin">Next</button></div>`;
       const pw = stage.querySelector("#pw");
@@ -496,7 +496,7 @@
     const node = el(`<div>
       <h1>Set up a PIN</h1>
       <p class="sub">A Windows Hello PIN is a fast, secure way to sign in to your device, Apps and services.</p>
-      <div class="field"><div class="pw-wrap"><input type="password" id="pin" placeholder="New PIN" inputmode="numeric"><button class="pw-eye" id="eye">&#128065;</button></div></div>
+      <div class="field"><div class="pw-wrap"><input type="password" id="pin" placeholder="New PIN" inputmode="numeric"><button class="pw-eye" id="eye"><i class="pw-eye-ic"></i></button></div></div>
       <div class="field"><input type="password" id="pin2" placeholder="Confirm PIN" inputmode="numeric"></div>
       <div class="field row" style="gap:8px;align-items:center"><input type="checkbox" id="letters" style="width:auto"><label for="letters" style="margin:0">Include letters and symbols</label></div>
       <div class="error-msg" id="err"></div>
