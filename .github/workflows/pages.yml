@@ -30,10 +30,10 @@ jobs:
         with:
           enablement: true
 
-      - name: Upload windows12 as artifact
+      - name: Upload site as artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: windows12
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment

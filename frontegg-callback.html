@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Signing you in…</title></head>
+<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#444">
+<p>Signing you in… you can close this window.</p>
+<script>
+  // Frontegg hosted-login popup lands here; hand the auth code back to the app.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var msg = { type: "fe_auth", code: p.get("code"), state: p.get("state"), error: p.get("error_description") || p.get("error") };
+    if (window.opener) { try { window.opener.postMessage(msg, location.origin); } catch (e) {} }
+    setTimeout(function () { window.close(); }, 400);
+  })();
+</script>
+</body>
+</html>
