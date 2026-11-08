@@ -87,7 +87,7 @@
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
   // Bump when a mc_*.png texture changes — images aren't covered by index.html's ?v=
-  const TEXV = "6";
+  const TEXV = "7";
   // Dyed blocks (wool, concrete, stained glass) share one grey texture tinted by the block colour.
   const tintCss = (b) => `background:${b.color} url(assets/mc_${b.tex}.png?v=${TEXV}) center/cover;background-blend-mode:multiply;image-rendering:pixelated;display:inline-block`;
   const ITEMS = {
@@ -101,7 +101,10 @@
     207: { name: "Iron Ingot", color: "#d8d8d8", item: true, tex: "iron_ingot" },
     208: { name: "Gold Ingot", color: "#f2d24a", item: true, tex: "gold_ingot" },
     209: { name: "Stone Sword", color: "#9a9a9a", item: true, tex: "stone_sword" },
+    210: { name: "Apple", color: "#d8262a", item: true, tex: "apple", food: 4 },
+    211: { name: "Golden Apple", color: "#f5c21a", item: true, tex: "golden_apple", food: 4, golden: true },
   };
+  const APPLE = 210, GOLDEN_APPLE = 211;
   // Tools: mining-speed multiplier + attack damage.
   const TOOLS = {
     202: { kind: "pickaxe", mult: 3, atk: 3 }, 203: { kind: "pickaxe", mult: 5, atk: 4 },
@@ -122,6 +125,7 @@
     { out: [205, 1], shape: [[7], [7], [201]] },
     { out: [209, 1], shape: [[17], [17], [201]] },
     { out: [8, 1], shapeless: [6] },
+    { out: [211, 1], shape: [[208, 208, 208], [208, 210, 208], [208, 208, 208]] },   // golden apple: 8 gold ingots around an apple
   ];
   // Furnace smelting: input id -> output id. Fuel: id -> items it can smelt.
   const SMELT = { 13: 207, 14: 208, 6: 8, 17: 3, 3: 46 };
@@ -228,7 +232,7 @@
   AppRegistry.minecraft = function (opts) {
     // Minecraft for Windows opens on a generic app-window icon while it loads,
     // then swaps to the Minecraft icon after 2 seconds.
-    const ref = cw({ title: "Mincraft", icon: Icon.mini("appwindow", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
+    const ref = cw({ title: "Mincraft", icon: Icon.mini("mclauncher", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
     setTimeout(() => { if (window.WM && window.WM.setWindowIcon) window.WM.setWindowIcon(ref.win, Icon.mini("minecraft", "Mincraft")); }, 2000);
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
     const toMenu = () => menu(ref.body, ref);
@@ -811,7 +815,7 @@
       if (heightAt(x, z) > SEA + 1 && !nearTree()) { spawnX = x + 0.5; spawnZ = z + 0.5; break search; } }
     const spawnY = heightAt(Math.floor(spawnX), Math.floor(spawnZ)) + 1;
     const player = { pos: new THREE.Vector3(spawnX, spawnY + 0.1, spawnZ), vel: new THREE.Vector3(), yaw: 0, pitch: 0, onGround: false, hp: 20, dead: false, fallStart: null, hurtCd: 0 };
-    body.__mc = { player, lookDir: () => lookDir(), getBlock, setBlock, currentTarget: () => currentTarget(), get hotbar() { return hotbar; }, get inv() { return inv; }, BLOCKS, get underwater() { return underwaterView; }, SEA };   // test hook
+    body.__mc = { player, lookDir: () => lookDir(), getBlock, setBlock, currentTarget: () => currentTarget(), get hotbar() { return hotbar; }, get inv() { return inv; }, BLOCKS, get underwater() { return underwaterView; }, SEA, addItem: (id, n) => addItem(id, n), eat: (id) => eat(id), matchRecipe };   // test hook
 
     const inv = {};
     let hotbar = [], selected = 0;
@@ -819,7 +823,7 @@
     // survival: start with an empty inventory (no items)
     const meta = (id) => BLOCKS[id] || ITEMS[id] || null;
     const hbEl = body.querySelector(".mc-hotbar");
-    function addItem(id, n) { if (!id) return; inv[id] = (inv[id] === Infinity ? Infinity : (inv[id] || 0) + n); if (!hotbar.includes(id) && hotbar.length < 9) hotbar.push(id); drawHotbar(); }
+    function addItem(id, n) { if (!id) return; inv[id] = (inv[id] === Infinity ? Infinity : (inv[id] || 0) + n); if (!hotbar.includes(id)) { const free = hotbar.findIndex((h) => !h); if (free >= 0) hotbar[free] = id; else if (hotbar.length < 9) hotbar.push(id); } drawHotbar(); }
     function slotHtml(id, cnt, i, sel) {
       const b = id ? meta(id) : null;
       const sw = b ? (b.tex && b.tint ? `<span class="mc-slot-sw mc-slot-tex" style="${tintCss(b)}"></span>` : b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png?v=${TEXV}" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "";
@@ -827,6 +831,7 @@
     }
     function drawHotbar() {
       hbEl.innerHTML = "";
+      for (let i = 0; i < hotbar.length; i++) if (hotbar[i] && !(inv[hotbar[i]] > 0)) hotbar[i] = 0;   // used up → slot empties, like the real game
       for (let i = 0; i < 9; i++) {
         const id = hotbar[i], cnt = id ? inv[id] : 0;
         const slot = el(slotHtml(id, cnt, i, selected));
@@ -863,7 +868,8 @@
       const moving = Math.abs(player.vel.x) + Math.abs(player.vel.z) > 0.5;
       hungerAcc += dt * (moving ? 1.5 : 0.5);
       if (hungerAcc > 9000 && player.hunger > 0) { player.hunger--; hungerAcc = 0; drawHunger(); }
-      if (player.hunger >= 18 && player.hp < 20) { regenAcc += dt; if (regenAcc > 3000) { player.hp = Math.min(20, player.hp + 1); regenAcc = 0; drawHearts(); } }
+      if (player.regenUntil > performance.now() && player.hp < 20) { regenAcc += dt; if (regenAcc > 1250) { player.hp = Math.min(20, player.hp + 1); regenAcc = 0; drawHearts(); } }
+      else if (player.hunger >= 18 && player.hp < 20) { regenAcc += dt; if (regenAcc > 3000) { player.hp = Math.min(20, player.hp + 1); regenAcc = 0; drawHearts(); } }
       else if (player.hunger === 0) { regenAcc += dt; if (regenAcc > 4000) { player.hp = Math.max(1, player.hp - 1); regenAcc = 0; drawHearts(); } }
     }
 
@@ -903,6 +909,15 @@
     function currentTarget() { return raycastVoxel(eyePos(), lookDir(), 6); }
 
     function teleportTo(x, y, z) { player.pos.set(x, y, z); player.vel.set(0, 0, 0); player.onGround = false; player.fallStart = null; playSfx(TELEPORT_SFX); }
+    // Eating: apples refill hunger; a golden apple also heals and gives a burst of Regeneration.
+    function eat(id) {
+      const it = ITEMS[id]; if (player.dead || !it || !(inv[id] > 0)) return;
+      if (!it.golden && !creative && player.hunger >= 20) return;   // not hungry — like the real game
+      if (!creative) { player.hunger = Math.min(20, player.hunger + it.food); drawHunger(); }
+      if (it.golden) { player.hp = Math.min(20, player.hp + 4); player.regenUntil = performance.now() + 5000; drawHearts(); }
+      if (inv[id] !== Infinity) { inv[id]--; drawHotbar(); }
+      playSfx("SFX_023"); swing();
+    }
     function throwPearl() {
       if (player.dead || !(inv[ENDER_PEARL] > 0)) return;
       const hit = raycastVoxel(eyePos(), lookDir(), 28);
@@ -1105,7 +1120,7 @@
       const aim = currentTarget();
       if (aim) { const tb = BLOCKS[getBlock(aim.x, aim.y, aim.z)]; if (tb && tb.interact === "craft") { openContainer("table"); return; } if (tb && tb.interact === "furnace") { openContainer("furnace", { x: aim.x, y: aim.y, z: aim.z }); return; } }
       const heldId = hotbar[selected];
-      if (heldId && ITEMS[heldId]) { if (heldId === ENDER_PEARL) throwPearl(); return; }
+      if (heldId && ITEMS[heldId]) { if (heldId === ENDER_PEARL) throwPearl(); else if (ITEMS[heldId].food) eat(heldId); return; }
       const hit = currentTarget();
       if (!hit || !hit.prev) return;
       const { x, y, z } = hit.prev;
@@ -1125,6 +1140,7 @@
       if (!b || (!b.solid && !b.plant) || b.hardness === Infinity) return;
       setBlock(x, y, z, 0);
       if (b.drop) addItem(b.drop, 1);
+      if (id === 5 && Math.random() < 0.08) addItem(APPLE, 1);   // leaves sometimes drop an apple
       if (ORE_XP[id]) addXp(ORE_XP[id]);
       mining = null;
       if (window.Achievements) window.Achievements.bump("miner", 1);
