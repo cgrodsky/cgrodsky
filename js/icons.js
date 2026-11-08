@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "11";
+  const ICONV = "12";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -466,7 +466,8 @@
 
   // The Sims — the green plumbob.
   // Grand Theft Auto VI — the "VI" icon (assets/gta6.png is the taskbar/window/Start icon).
-  register("gta", `<img src="assets/gta6.png?v=2" alt="" style="width:100%;height:100%;object-fit:contain">`);
+  register("gta", `<img src="assets/gta6.png?v=3" alt="" style="width:100%;height:100%;object-fit:contain">`);
+  register("gta6", `<img src="assets/gta6.png?v=3" alt="" style="width:100%;height:100%;object-fit:contain">`);
   register("sims", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="smB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ab4ff"/><stop offset="1" stop-color="#1d3d7a"/></linearGradient><linearGradient id="smP" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8ff9a"/><stop offset=".5" stop-color="#3ad04a"/><stop offset="1" stop-color="#0f7a24"/></linearGradient></defs><rect width="128" height="128" rx="26" fill="url(#smB)"/><path d="M64 14 92 60 64 114 36 60Z" fill="url(#smP)" stroke="#0a4a18" stroke-width="3"/><path d="M64 14 64 114M36 60 92 60" stroke="rgba(255,255,255,.45)" stroke-width="2"/></svg>`);
   // Stardew Valley — a parsnip on a sunny field.
   register("stardew", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="128" height="128" rx="26" fill="#7cc8f0"/><rect y="78" width="128" height="50" rx="0" fill="#5aa83a"/><rect y="100" width="128" height="28" fill="#8a5a2c"/><circle cx="98" cy="30" r="14" fill="#ffe066"/><path d="M64 104c-9-18-14-38-10-52 2-7 18-7 20 0 4 14-1 34-10 52z" fill="#f2e2b0" stroke="#a88a50" stroke-width="3"/><path d="M58 52c-8-14-18-16-24-12 8 2 14 8 18 14M66 50c2-16 10-24 18-24-4 6-8 14-10 24M62 50c-2-14 0-24 4-30 2 8 2 18 0 30" fill="#4ab03a" stroke="#2a7a2a" stroke-width="2"/></svg>`);
