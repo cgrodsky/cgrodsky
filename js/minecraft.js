@@ -17,7 +17,7 @@
     5:  { name: "Leaves", color: "#3e9b3e", solid: true, hardness: 0.2, drop: 5, tex: "leaves", cutout: true },
     6:  { name: "Sand", color: "#e3d59b", solid: true, hardness: 0.5, drop: 6, tex: "sand" },
     7:  { name: "Planks", color: "#b08243", solid: true, hardness: 2, drop: 7, tex: "planks" },
-    8:  { name: "Glass", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 8, tex: "glass", alpha: 0.5 },
+    8:  { name: "Glass", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 8, tex: "glass", alpha: 0.999, cutout: true },
     9:  { name: "Brick", color: "#9e4636", solid: true, hardness: 2, drop: 9, tex: "brick" },
     12: { name: "Coal Ore", color: "#5a5a5a", solid: true, hardness: 2.5, drop: 206, tex: "coal_ore" },
     13: { name: "Iron Ore", color: "#caa472", solid: true, hardness: 3, drop: 13, tex: "iron_ore" },
@@ -25,8 +25,8 @@
     15: { name: "Diamond Ore", color: "#4fe0d6", solid: true, hardness: 4, drop: 15, tex: "diamond_ore" },
     16: { name: "Bedrock", color: "#33333a", solid: true, hardness: Infinity, drop: 0, tex: "bedrock" },
     17: { name: "Cobblestone", color: "#7d7d7d", solid: true, hardness: 1.8, drop: 17, tex: "cobblestone" },
-    18: { name: "Blue Concrete", color: "#2c39c4", solid: true, hardness: 1.8, drop: 18, tex: "blue_concrete" },
-    19: { name: "Purple Concrete", color: "#7e2bc0", solid: true, hardness: 1.8, drop: 19, tex: "purple_concrete" },
+    18: { name: "Blue Concrete", color: "#2c39c4", solid: true, hardness: 1.8, drop: 18, tex: "concrete", tint: true },
+    19: { name: "Purple Concrete", color: "#7e2bc0", solid: true, hardness: 1.8, drop: 19, tex: "concrete", tint: true },
     20: { name: "Poppy", color: "#e74c4c", solid: false, plant: true, hardness: 0.05, drop: 20, tex: "poppy" },
     21: { name: "Daisy", color: "#ffffff", solid: false, plant: true, hardness: 0.05, drop: 21, tex: "daisy" },
     22: { name: "Dandelion", color: "#ffd34e", solid: false, plant: true, hardness: 0.05, drop: 22, tex: "yellow_flower" },
@@ -36,52 +36,60 @@
     26: { name: "Ancient Debris", color: "#5a3434", solid: true, hardness: 30, drop: 26, tex: "ancient_debris" },
     27: { name: "Stripped Log", color: "#c6a06a", solid: true, hardness: 2, drop: 27, tex: "stripped_log" },
     28: { name: "Deepslate Diamond Ore", color: "#3b6f70", solid: true, hardness: 5, drop: 28, tex: "deepslate_diamond_ore" },
-    30: { name: "White Wool", color: "#f9f9f9", solid: true, hardness: 0.8, drop: 30 },
-    31: { name: "Light Gray Wool", color: "#9c9d97", solid: true, hardness: 0.8, drop: 31 },
-    32: { name: "Gray Wool", color: "#474f52", solid: true, hardness: 0.8, drop: 32 },
-    33: { name: "Black Wool", color: "#1d1d21", solid: true, hardness: 0.8, drop: 33 },
-    34: { name: "Brown Wool", color: "#835432", solid: true, hardness: 0.8, drop: 34 },
-    35: { name: "Red Wool", color: "#b02e26", solid: true, hardness: 0.8, drop: 35 },
-    36: { name: "Orange Wool", color: "#f9801d", solid: true, hardness: 0.8, drop: 36 },
-    37: { name: "Yellow Wool", color: "#fed83d", solid: true, hardness: 0.8, drop: 37 },
-    38: { name: "Lime Wool", color: "#80c71f", solid: true, hardness: 0.8, drop: 38 },
-    39: { name: "Green Wool", color: "#5e7c16", solid: true, hardness: 0.8, drop: 39 },
-    40: { name: "Cyan Wool", color: "#169c9c", solid: true, hardness: 0.8, drop: 40 },
-    41: { name: "Light Blue Wool", color: "#3ab3da", solid: true, hardness: 0.8, drop: 41 },
-    42: { name: "Blue Wool", color: "#3c44aa", solid: true, hardness: 0.8, drop: 42 },
-    43: { name: "Purple Wool", color: "#8932b8", solid: true, hardness: 0.8, drop: 43 },
-    44: { name: "Magenta Wool", color: "#c74ebd", solid: true, hardness: 0.8, drop: 44 },
-    45: { name: "Pink Wool", color: "#f38baa", solid: true, hardness: 0.8, drop: 45 },
-    46: { name: "Smooth Stone", color: "#a8a8a8", solid: true, hardness: 2, drop: 46 },
-    47: { name: "Crying Obsidian", color: "#22075e", solid: true, hardness: 35, drop: 47 },
-    48: { name: "Copper Ore", color: "#c87f5a", solid: true, hardness: 3, drop: 48 },
-    49: { name: "Deepslate Iron Ore", color: "#6e5b3b", solid: true, hardness: 4.5, drop: 49 },
-    50: { name: "Redstone Block", color: "#aa0000", solid: true, hardness: 5, drop: 50 },
-    51: { name: "Amethyst Block", color: "#8a5cc5", solid: true, hardness: 1.5, drop: 51 },
-    52: { name: "Torch Flower", color: "#f5b800", solid: false, plant: true, hardness: 0.05, drop: 52 },
-    53: { name: "Shulker Box", color: "#897691", solid: true, hardness: 2, drop: 53 },
-    54: { name: "Glass Pane", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 54, alpha: 0.45 },
-    55: { name: "Barrel", color: "#7a532b", solid: true, hardness: 2.5, drop: 55 },
-    56: { name: "Portal", color: "#7b3aff", solid: false, liquid: true, alpha: 0.65, danger: true },
-    60: { name: "White Stained Glass",  color: "#f9f9f9", solid: true, hardness: 0.3, drop: 60, alpha: 0.5 },
-    61: { name: "Red Stained Glass",    color: "#b02e26", solid: true, hardness: 0.3, drop: 61, alpha: 0.5 },
-    62: { name: "Orange Stained Glass", color: "#f9801d", solid: true, hardness: 0.3, drop: 62, alpha: 0.5 },
-    63: { name: "Yellow Stained Glass", color: "#fed83d", solid: true, hardness: 0.3, drop: 63, alpha: 0.5 },
-    64: { name: "Green Stained Glass",  color: "#5e7c16", solid: true, hardness: 0.3, drop: 64, alpha: 0.5 },
-    65: { name: "Blue Stained Glass",   color: "#3c44aa", solid: true, hardness: 0.3, drop: 65, alpha: 0.5 },
-    66: { name: "Purple Stained Glass", color: "#8932b8", solid: true, hardness: 0.3, drop: 66, alpha: 0.5 },
-    67: { name: "Black Stained Glass",  color: "#1d1d21", solid: true, hardness: 0.3, drop: 67, alpha: 0.5 },
+    30: { name: "White Wool", color: "#f9f9f9", solid: true, hardness: 0.8, drop: 30, tex: "wool", tint: true },
+    31: { name: "Light Gray Wool", color: "#9c9d97", solid: true, hardness: 0.8, drop: 31, tex: "wool", tint: true },
+    32: { name: "Gray Wool", color: "#474f52", solid: true, hardness: 0.8, drop: 32, tex: "wool", tint: true },
+    33: { name: "Black Wool", color: "#1d1d21", solid: true, hardness: 0.8, drop: 33, tex: "wool", tint: true },
+    34: { name: "Brown Wool", color: "#835432", solid: true, hardness: 0.8, drop: 34, tex: "wool", tint: true },
+    35: { name: "Red Wool", color: "#b02e26", solid: true, hardness: 0.8, drop: 35, tex: "wool", tint: true },
+    36: { name: "Orange Wool", color: "#f9801d", solid: true, hardness: 0.8, drop: 36, tex: "wool", tint: true },
+    37: { name: "Yellow Wool", color: "#fed83d", solid: true, hardness: 0.8, drop: 37, tex: "wool", tint: true },
+    38: { name: "Lime Wool", color: "#80c71f", solid: true, hardness: 0.8, drop: 38, tex: "wool", tint: true },
+    39: { name: "Green Wool", color: "#5e7c16", solid: true, hardness: 0.8, drop: 39, tex: "wool", tint: true },
+    40: { name: "Cyan Wool", color: "#169c9c", solid: true, hardness: 0.8, drop: 40, tex: "wool", tint: true },
+    41: { name: "Light Blue Wool", color: "#3ab3da", solid: true, hardness: 0.8, drop: 41, tex: "wool", tint: true },
+    42: { name: "Blue Wool", color: "#3c44aa", solid: true, hardness: 0.8, drop: 42, tex: "wool", tint: true },
+    43: { name: "Purple Wool", color: "#8932b8", solid: true, hardness: 0.8, drop: 43, tex: "wool", tint: true },
+    44: { name: "Magenta Wool", color: "#c74ebd", solid: true, hardness: 0.8, drop: 44, tex: "wool", tint: true },
+    45: { name: "Pink Wool", color: "#f38baa", solid: true, hardness: 0.8, drop: 45, tex: "wool", tint: true },
+    46: { name: "Smooth Stone", color: "#a8a8a8", solid: true, hardness: 2, drop: 46, tex: "smooth_stone" },
+    47: { name: "Crying Obsidian", color: "#22075e", solid: true, hardness: 35, drop: 47, tex: "crying_obsidian" },
+    48: { name: "Copper Ore", color: "#c87f5a", solid: true, hardness: 3, drop: 48, tex: "copper_ore" },
+    49: { name: "Deepslate Iron Ore", color: "#6e5b3b", solid: true, hardness: 4.5, drop: 49, tex: "deepslate_iron_ore" },
+    50: { name: "Redstone Block", color: "#aa0000", solid: true, hardness: 5, drop: 50, tex: "redstone_block" },
+    51: { name: "Amethyst Block", color: "#8a5cc5", solid: true, hardness: 1.5, drop: 51, tex: "amethyst" },
+    52: { name: "Torch Flower", color: "#f5b800", solid: false, plant: true, hardness: 0.05, drop: 52, tex: "torchflower" },
+    53: { name: "Shulker Box", color: "#897691", solid: true, hardness: 2, drop: 53, tex: "shulker" },
+    54: { name: "Glass Pane", color: "#bfe8f5", solid: true, hardness: 0.3, drop: 54, tex: "glass", alpha: 0.999, cutout: true },
+    55: { name: "Barrel", color: "#7a532b", solid: true, hardness: 2.5, drop: 55, tex: "barrel", texTop: "barrel_top", texBottom: "barrel_top" },
+    56: { name: "Portal", color: "#7b3aff", solid: false, liquid: true, alpha: 0.65, danger: true, tex: "portal" },
+    60: { name: "White Stained Glass",  color: "#f9f9f9", solid: true, hardness: 0.3, drop: 60, alpha: 0.5, tex: "stained_glass", tint: true },
+    61: { name: "Red Stained Glass",    color: "#b02e26", solid: true, hardness: 0.3, drop: 61, alpha: 0.5, tex: "stained_glass", tint: true },
+    62: { name: "Orange Stained Glass", color: "#f9801d", solid: true, hardness: 0.3, drop: 62, alpha: 0.5, tex: "stained_glass", tint: true },
+    63: { name: "Yellow Stained Glass", color: "#fed83d", solid: true, hardness: 0.3, drop: 63, alpha: 0.5, tex: "stained_glass", tint: true },
+    64: { name: "Green Stained Glass",  color: "#5e7c16", solid: true, hardness: 0.3, drop: 64, alpha: 0.5, tex: "stained_glass", tint: true },
+    65: { name: "Blue Stained Glass",   color: "#3c44aa", solid: true, hardness: 0.3, drop: 65, alpha: 0.5, tex: "stained_glass", tint: true },
+    66: { name: "Purple Stained Glass", color: "#8932b8", solid: true, hardness: 0.3, drop: 66, alpha: 0.5, tex: "stained_glass", tint: true },
+    67: { name: "Black Stained Glass",  color: "#1d1d21", solid: true, hardness: 0.3, drop: 67, alpha: 0.5, tex: "stained_glass", tint: true },
+    10: { name: "Water", color: "#3366d6", solid: false, liquid: true, alpha: 0.72, tex: "water" },
+    11: { name: "Gravel", color: "#857d7a", solid: true, hardness: 0.6, drop: 11, tex: "gravel" },
+    29: { name: "Deepslate", color: "#4d4d52", solid: true, hardness: 3, drop: 29, tex: "deepslate" },
+    69: { name: "Obsidian", color: "#140f1e", solid: true, hardness: 40, drop: 69, tex: "obsidian" },
+    70: { name: "Snow Block", color: "#f4f9fb", solid: true, hardness: 0.3, drop: 70, tex: "snow" },
+    71: { name: "Redstone Ore", color: "#8a5a5a", solid: true, hardness: 3, drop: 50, tex: "redstone_ore" },
     // Craftable blocks
-    57: { name: "Crafting Table", color: "#9a6b3f", solid: true, hardness: 2.5, drop: 57, tex: "crafting_table", interact: "craft" },
-    58: { name: "Furnace", color: "#6f6f6f", solid: true, hardness: 3.5, drop: 58, tex: "furnace", interact: "furnace" },
+    57: { name: "Crafting Table", color: "#9a6b3f", solid: true, hardness: 2.5, drop: 57, interact: "craft", tex: "crafting_table", texTop: "crafting_table_top", texBottom: "planks" },
+    58: { name: "Furnace", color: "#6f6f6f", solid: true, hardness: 3.5, drop: 58, interact: "furnace", tex: "furnace_side", texFront: "furnace", texTop: "furnace_top", texBottom: "furnace_top" },
     59: { name: "Torch", color: "#ffcf4a", solid: false, plant: true, hardness: 0.05, drop: 59, tex: "torch", light: true },
-    68: { name: "Chest", color: "#8a5a2b", solid: true, hardness: 2.5, drop: 68, tex: "chest" },
+    68: { name: "Chest", color: "#8a5a2b", solid: true, hardness: 2.5, drop: 68, tex: "chest_side", texFront: "chest", texTop: "chest_top", texBottom: "chest_top" },
   };
 
   // Non-block items live in a separate map so they don't get "placed" as blocks.
   const ENDER_PEARL = 200;
   // Bump when a mc_*.png texture changes — images aren't covered by index.html's ?v=
-  const TEXV = "3";
+  const TEXV = "6";
+  // Dyed blocks (wool, concrete, stained glass) share one grey texture tinted by the block colour.
+  const tintCss = (b) => `background:${b.color} url(assets/mc_${b.tex}.png?v=${TEXV}) center/cover;background-blend-mode:multiply;image-rendering:pixelated;display:inline-block`;
   const ITEMS = {
     200: { name: "Ender Pearl", color: "#14c7a8", item: true, tex: "ender_pearl" },
     201: { name: "Stick", color: "#b08a52", item: true, tex: "stick" },
@@ -433,6 +441,7 @@
 
     const cfg = S().appData.minecraft;
     const CH = 16, H = 48, RENDER = 3;          // chunk size, world height, chunk render radius
+    const SEA = 17, SNOW = 31;                  // sea level, snow line
     const seed = hashSeed(seedStr);
     const rng = mulberry32(seed);
     const p1 = rng() * 6.28, p2 = rng() * 6.28, p3 = rng() * 6.28, p4 = rng() * 6.28;
@@ -475,12 +484,40 @@
     scene.fog = new THREE.Fog(SKY, CH * (RENDER - 1), CH * RENDER + 6);
     const camera = new THREE.PerspectiveCamera(75, 1, 0.05, 260);
     scene.add(camera);                          // camera in graph so the held-hand child renders
-    scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.95); scene.add(ambient);
+    const sun = new THREE.DirectionalLight(0xfff4e0, 0.28);
     sun.position.set(0.5, 1, 0.3); scene.add(sun);
 
+    // ---------- sky: drifting blocky clouds and a 20-minute day/night cycle ----------
+    const clouds = (function () {
+      const n = 46, mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, fog: false, depthWrite: false }), n), o = new THREE.Object3D(), r = mulberry32(seed ^ 0xC10D);
+      for (let i = 0; i < n; i++) { o.position.set((r() - 0.5) * 220, 0, (r() - 0.5) * 220); o.scale.set(8 + r() * 18, 2, 6 + r() * 14); o.updateMatrix(); mesh.setMatrixAt(i, o.matrix); }
+      mesh.position.y = H + 14; mesh.frustumCulled = false; scene.add(mesh); return mesh;
+    })();
+    const skyDay = new THREE.Color(SKY), skyDusk = new THREE.Color(0xe8a070), skyNight = new THREE.Color(0x0b1430), skyNow = new THREE.Color(), waterFog = new THREE.Color(0x1d3f8f);
+    const DAY_MS = 20 * 60 * 1000; let dayClock = DAY_MS * 0.3;          // start mid-morning
+    function updateSky(dt, px, pz) {
+      dayClock = (dayClock + dt) % DAY_MS;
+      const a = dayClock / DAY_MS * Math.PI * 2, el = Math.sin(a);                    // sun elevation −1..1
+      const light = Math.max(0, Math.min(1, el * 2.2 + 0.35));
+      skyNow.copy(skyNight).lerp(skyDay, light);
+      if (Math.abs(el) < 0.25) skyNow.lerp(skyDusk, (1 - Math.abs(el) / 0.25) * 0.45);
+      ambient.intensity = 0.3 + 0.65 * light; sun.intensity = 0.28 * light;
+      sun.position.set(Math.cos(a), Math.max(0.15, el), 0.3);
+      clouds.position.x = px - ((dayClock * 0.0012) % 220) + 110 * 0; clouds.position.z = pz;
+      clouds.material.color.setScalar(0.35 + 0.65 * light);
+      if (underwaterView) { scene.background = waterFog; scene.fog.color.copy(waterFog); scene.fog.near = 0.5; scene.fog.far = 14; }
+      else { scene.background = skyNow; scene.fog.color.copy(skyNow); scene.fog.near = CH * (RENDER - 1); scene.fog.far = CH * RENDER + 6; }
+      return light;
+    }
+
     // ---------- geometry & materials ----------
-    const cube = new THREE.BoxGeometry(1, 1, 1);
+    // Block cube with Minecraft-style face shading baked in: top 100%, east/west 80%, north/south 65%, bottom 50%.
+    const cube = (function () {
+      const g = new THREE.BoxGeometry(1, 1, 1), shadeF = [0.8, 0.8, 1.0, 0.5, 0.65, 0.65], col = [];
+      for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) col.push(shadeF[f], shadeF[f], shadeF[f]);
+      g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); return g;
+    })();
     const crossGeo = (function () {
       const g = new THREE.BufferGeometry();
       const a = -0.5, b = 0.5;
@@ -496,6 +533,7 @@
       ];
       g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
       g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      g.setAttribute("color", new THREE.Float32BufferAttribute(new Array(12 * 3).fill(1), 3));
       g.computeVertexNormals();
       return g;
     })();
@@ -505,15 +543,17 @@
     function makeFaceMat(b, texKey) {
       const m = new THREE.MeshLambertMaterial({
         color: new THREE.Color(b.color || "#ffffff"),
-        transparent: !!b.alpha || !!b.plant || !!b.cutout,
-        opacity: b.alpha != null ? b.alpha : 1,
-        alphaTest: (b.plant || b.cutout) ? 0.5 : 0,
-        side: b.plant ? THREE.DoubleSide : THREE.FrontSide,
+        vertexColors: true,                                   // per-face shade baked into the cube geometry
+        transparent: (!!b.alpha && !b.cutout) || !!b.liquid,
+        opacity: b.alpha != null && !b.cutout ? b.alpha : 1,
+        alphaTest: (b.plant || b.cutout) ? 0.1 : 0,
+        depthWrite: !b.liquid,
+        side: b.plant || b.cutout || b.liquid ? THREE.DoubleSide : THREE.FrontSide,
       });
       if (texKey) {
         new THREE.TextureLoader().load("assets/mc_" + texKey + ".png?v=" + TEXV, (tex) => {
-          tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
-          textures[texKey] = tex; m.map = tex; m.color.setHex(0xffffff); m.needsUpdate = true;
+          tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.colorSpace = THREE.SRGBColorSpace;
+          textures[texKey] = tex; m.map = tex; if (!b.tint) m.color.setHex(0xffffff); m.needsUpdate = true;
         }, undefined, () => {});
       }
       return m;
@@ -534,7 +574,7 @@
         const c = document.createElement("canvas"); c.width = rect[2]; c.height = rect[3];
         c.getContext("2d").drawImage(img, rect[0], rect[1], rect[2], rect[3], 0, 0, rect[2], rect[3]);
         const t = new THREE.CanvasTexture(c);
-        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+        t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.colorSpace = THREE.SRGBColorSpace;
         m.map = t; m.color.setHex(0xffffff); m.userData.base.setHex(0xffffff); m.needsUpdate = true;
       });
       return m;
@@ -543,9 +583,10 @@
     function materialFor(id) {
       if (materials[id]) return materials[id];
       const b = BLOCKS[id];
-      if (b.texTop || b.texBottom || b.texSide) {
-        const side = b.texSide || b.tex, top = b.texTop || b.tex, bot = b.texBottom || b.tex;
-        materials[id] = [makeFaceMat(b, side), makeFaceMat(b, side), makeFaceMat(b, top), makeFaceMat(b, bot), makeFaceMat(b, side), makeFaceMat(b, side)];
+      if (b.texTop || b.texBottom || b.texSide || b.texFront) {
+        const side = b.texSide || b.tex, top = b.texTop || b.tex, bot = b.texBottom || b.tex, front = b.texFront || side;
+        const ms = makeFaceMat(b, side);
+        materials[id] = [ms, ms, makeFaceMat(b, top), makeFaceMat(b, bot), makeFaceMat(b, front), ms];
       } else {
         materials[id] = makeFaceMat(b, b.tex);
       }
@@ -568,9 +609,10 @@
       h = Math.round(h);
       return Math.max(4, Math.min(H - 8, h));
     }
-    const villageHere = (cx, cz) => cell(seed ^ 0x5EED, cx, cz) < 0.02;
+    const villageHere = (cx, cz) => cell(seed ^ 0x5EED, cx, cz) < 0.02 && heightAt(cx * CH + 7, cz * CH + 7) > SEA + 1;
     function treeAt(x, z) {
       if (cell(seed ^ 0xBEEF, x, z) >= 0.018) return false;
+      const th = heightAt(x, z); if (th <= SEA + 1 || th >= SNOW) return false;
       return true;
     }
     function genChunk(cx, cz) {
@@ -578,21 +620,24 @@
       const X0 = cx * CH, Z0 = cz * CH;
       for (let lz = 0; lz < CH; lz++) for (let lx = 0; lx < CH; lx++) {
         const X = X0 + lx, Z = Z0 + lz, h = heightAt(X, Z);
+        const beach = h <= SEA + 1, gravelBed = h < SEA - 3 && cell(seed ^ 0x6A7E, X >> 2, Z >> 2) < 0.4;
         for (let y = 0; y <= h; y++) {
           let id;
-          if (y === 0) id = 16;
-          else if (y === h) id = 1;
-          else if (y >= h - 3) id = 2;
+          if (y === 0 || (y === 1 && cell(seed ^ 0xBED, X, Z) < 0.5)) id = 16;
+          else if (y === h) id = gravelBed ? 11 : beach ? 6 : h >= SNOW ? 70 : 1;
+          else if (y >= h - 3) id = beach ? 6 : 2;
           else {
-            id = 3;
-            const r = cell(seed, X + y * 17, Z + y * 31);
-            if (y < h - 8) { if (r < 0.012) id = 15; else if (r < 0.026) id = 14; }
-            if (id === 3) { if (r < 0.05) id = 13; else if (r < 0.11) id = 12; }
+            const r = cell(seed, X + y * 17, Z + y * 31), deepZone = y < 9;
+            id = deepZone ? 29 : 3;
+            if (y < h - 8) { if (r < 0.012) id = deepZone ? 28 : 15; else if (r < 0.026) id = 14; else if (r < 0.034 && y < 14) id = 71; }
+            if (id === 3) { if (r < 0.05) id = 13; else if (r < 0.11) id = 12; else if (r < 0.125) id = 48; else if (r < 0.14) id = 11; }
+            if (id === 29 && r > 0.95) id = 49;
           }
           blocks[lidx(lx, y, lz)] = id;
         }
+        for (let y = h + 1; y <= SEA; y++) blocks[lidx(lx, y, lz)] = 10;   // oceans and lakes
         // flowers / mushrooms on grass
-        if (h + 1 < H && blocks[lidx(lx, h, lz)] === 1) {
+        if (h + 1 < H && h > SEA && blocks[lidx(lx, h, lz)] === 1) {
           const r = cell(seed ^ 0xF10E, X, Z);
           if (r < 0.05) blocks[lidx(lx, h + 1, lz)] = [20, 21, 22][Math.floor(cell(seed ^ 0xAAAA, X, Z) * 3)];
           else if (r < 0.065) blocks[lidx(lx, h + 1, lz)] = 23 + Math.floor(cell(seed ^ 0xBBBB, X, Z) * 2);
@@ -669,11 +714,15 @@
 
     // ---------- chunk meshing ----------
     const dummyObj = new THREE.Object3D();
+    function opaque(x, y, z) { const b = BLOCKS[getBlock(x, y, z)]; return !!(b && b.solid && !b.alpha && !b.cutout && !b.plant); }
     function isExposed(x, y, z) {
-      const b = BLOCKS[getBlock(x, y, z)];
+      const id = getBlock(x, y, z), b = BLOCKS[id];
       if (!b) return false;
       if (b.plant) return true;
-      return !solid(x + 1, y, z) || !solid(x - 1, y, z) || !solid(x, y + 1, z) || !solid(x, y - 1, z) || !solid(x, y, z + 1) || !solid(x, y, z - 1);
+      const hides = b.liquid || b.alpha || b.cutout
+        ? (nx, ny, nz) => { const n = getBlock(nx, ny, nz); return n === id || opaque(nx, ny, nz); }   // water next to water, glass next to glass
+        : opaque;
+      return !hides(x + 1, y, z) || !hides(x - 1, y, z) || !hides(x, y + 1, z) || !hides(x, y - 1, z) || !hides(x, y, z + 1) || !hides(x, y, z - 1);
     }
     function buildChunkMesh(cx, cz, c) {
       Object.values(c.meshes).forEach((m) => scene.remove(m));
@@ -756,9 +805,13 @@
     }
 
     // ---------- player ----------
-    const spawnX = 0.5, spawnZ = 0.5, spawnY = heightAt(0, 0) + 1;
+    // spawn on dry land: spiral out from the origin until a column above sea level
+    let spawnX = 0.5, spawnZ = 0.5;
+    search: for (let r = 0; r < 120; r += 2) for (let a = 0; a < 16; a++) { const x = Math.round(Math.cos(a / 16 * 6.283) * r), z = Math.round(Math.sin(a / 16 * 6.283) * r); const nearTree = () => { for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (treeAt(x + dx, z + dz)) return true; return false; };
+      if (heightAt(x, z) > SEA + 1 && !nearTree()) { spawnX = x + 0.5; spawnZ = z + 0.5; break search; } }
+    const spawnY = heightAt(Math.floor(spawnX), Math.floor(spawnZ)) + 1;
     const player = { pos: new THREE.Vector3(spawnX, spawnY + 0.1, spawnZ), vel: new THREE.Vector3(), yaw: 0, pitch: 0, onGround: false, hp: 20, dead: false, fallStart: null, hurtCd: 0 };
-    body.__mc = { player, lookDir: () => lookDir() };   // test hook (read-only use)
+    body.__mc = { player, lookDir: () => lookDir(), getBlock, setBlock, currentTarget: () => currentTarget(), get hotbar() { return hotbar; }, get inv() { return inv; }, BLOCKS, get underwater() { return underwaterView; }, SEA };   // test hook
 
     const inv = {};
     let hotbar = [], selected = 0;
@@ -769,7 +822,7 @@
     function addItem(id, n) { if (!id) return; inv[id] = (inv[id] === Infinity ? Infinity : (inv[id] || 0) + n); if (!hotbar.includes(id) && hotbar.length < 9) hotbar.push(id); drawHotbar(); }
     function slotHtml(id, cnt, i, sel) {
       const b = id ? meta(id) : null;
-      const sw = b ? (b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png?v=${TEXV}" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "";
+      const sw = b ? (b.tex && b.tint ? `<span class="mc-slot-sw mc-slot-tex" style="${tintCss(b)}"></span>` : b.tex ? `<img class="mc-slot-sw mc-slot-tex" src="assets/mc_${b.tex}.png?v=${TEXV}" alt="" onerror="this.outerHTML='<span class=\\'mc-slot-sw\\' style=\\'background:${b.color || "#888"}\\'></span>'">` : `<span class="mc-slot-sw ${b.item ? "mc-slot-item" : ""}" style="background:${b.color || "#888"}"></span>`) : "";
       return `<div class="mc-slot ${i === sel ? "sel" : ""}" data-i="${i}" title="${b ? b.name : ""}">${sw}${b && cnt !== Infinity ? `<span class="mc-slot-c">${cnt}</span>` : ""}<span class="mc-slot-n">${i + 1}</span></div>`;
     }
     function drawHotbar() {
@@ -836,7 +889,8 @@
       let tx = nextT(origin.x, dir.x, x), ty = nextT(origin.y, dir.y, y), tz = nextT(origin.z, dir.z, z);
       let px = x, py = y, pz = z;
       for (let i = 0; i < 90; i++) {
-        if (solid(x, y, z)) return { x, y, z, prev: { x: px, y: py, z: pz } };
+        const rb = BLOCKS[getBlock(x, y, z)];
+        if (rb && rb.name !== "Air" && !rb.liquid) return { x, y, z, prev: { x: px, y: py, z: pz } };
         px = x; py = y; pz = z;
         if (tx < ty && tx < tz) { if (tx > maxDist) return null; x += dx; tx += tdx; }
         else if (ty < tz) { if (ty > maxDist) return null; y += dy; ty += tdy; }
@@ -916,6 +970,7 @@
       const def = MOB[type];
       const sy = surfaceY(Math.floor(x), Math.floor(z));
       if (sy <= 1 || sy >= H - 2) return;
+      { const wb = BLOCKS[getBlock(Math.floor(x), sy, Math.floor(z))]; if (wb && wb.liquid) return; }   // no spawning in the sea
       const { g, mats } = makeMobMesh(def);
       g.position.set(x, sy, z);
       scene.add(g);
@@ -992,7 +1047,9 @@
         const nz = m.pos.z + tz * spd * s + m.vel.z * s;
         const curFeet = feetY(m.pos.x, m.pos.z, m.pos.y + 2);
         const newFeet = feetY(nx, nz, m.pos.y + 2);
-        if (newFeet - Math.floor(m.pos.y) <= 1) { m.pos.x = nx; m.pos.z = nz; }
+        const wet = BLOCKS[getBlock(Math.floor(nx), newFeet, Math.floor(nz))];
+        if (wet && wet.liquid && !(m.def.hostile && player.pos.y < newFeet + 1)) { m.yaw += Math.PI; m.wanderT = 1.5; }   // walk away from water
+        else if (newFeet - Math.floor(m.pos.y) <= 1) { m.pos.x = nx; m.pos.z = nz; }
         m.vel.x *= 0.8; m.vel.z *= 0.8;
         // gravity + ground snap
         m.vel.y -= 22 * s;
@@ -1052,7 +1109,7 @@
       const hit = currentTarget();
       if (!hit || !hit.prev) return;
       const { x, y, z } = hit.prev;
-      if (getBlock(x, y, z) !== 0) return;
+      { const cur = getBlock(x, y, z); if (cur !== 0 && !(BLOCKS[cur] && BLOCKS[cur].liquid)) return; }
       const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
       const py0 = Math.floor(player.pos.y), py1 = Math.floor(player.pos.y + 1.7);
       if (x === px && z === pz && y >= py0 && y <= py1) return;
@@ -1101,6 +1158,7 @@
 
     function swatchEl(id) {
       const b = meta(id);
+      if (b && b.tex && b.tint) { const s = document.createElement("span"); s.className = "mci-sw"; s.style.cssText = tintCss(b); return s; }
       if (b && b.tex) { const img = document.createElement("img"); img.className = "mci-sw"; img.src = "assets/mc_" + b.tex + ".png?v=" + TEXV; img.onerror = () => { const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = b.color || "#888"; img.replaceWith(s); }; return img; }
       const s = document.createElement("span"); s.className = "mci-sw"; s.style.background = (b && b.color) || "#888"; return s;
     }
@@ -1307,7 +1365,10 @@
     });
     function nowMs() { return performance && performance.now ? performance.now() : 0; }
 
-    body.querySelector(".mc3-jump").onclick = () => { if (player.onGround && !player.dead) { player.vel.y = 8.5; player.onGround = false; } };
+    let swimUp = false, underwaterView = false;
+    const jumpBtn = body.querySelector(".mc3-jump");
+    jumpBtn.onclick = () => { if (player.onGround && !player.dead) { player.vel.y = 8.5; player.onGround = false; } };
+    jumpBtn.addEventListener("pointerdown", () => { swimUp = true; }); ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => jumpBtn.addEventListener(ev, () => { swimUp = false; }));
     body.querySelector(".mc3-place").onclick = () => tryPlace();
     body.querySelector(".mc3-inv").onclick = () => toggleInv();
 
@@ -1322,7 +1383,10 @@
         portalCd = 2000; const rx = fbx + (Math.floor(Math.random() * 40) - 20), rz = fbz + (Math.floor(Math.random() * 40) - 20);
         teleportTo(rx + 0.5, surfaceY(rx, rz) + 0.1, rz + 0.5); return;
       }
-      const speed = 4.2, grav = 22, jumpVel = 8.5;
+      const inWater = BLOCKS[getBlock(fbx, Math.floor(player.pos.y + 0.4), fbz)] && BLOCKS[getBlock(fbx, Math.floor(player.pos.y + 0.4), fbz)].liquid;
+      const headWater = BLOCKS[getBlock(fbx, Math.floor(player.pos.y + 1.6), fbz)] && BLOCKS[getBlock(fbx, Math.floor(player.pos.y + 1.6), fbz)].liquid;
+      underwaterView = !!headWater;
+      const speed = inWater ? 2.4 : 4.2, grav = inWater ? 5 : 22, jumpVel = 8.5;
       let fx = 0, fz = 0;
       if (keys["w"] || keys["arrowup"]) fz -= 1;
       if (keys["s"] || keys["arrowdown"]) fz += 1;
@@ -1335,8 +1399,10 @@
       // (forward = (-sin, -cos), right = (cos, -sin)), so W always walks where you look.
       player.vel.x = (fx * cy + fz * sy) * speed;
       player.vel.z = (-fx * sy + fz * cy) * speed;
-      if (keys[" "] && player.onGround) { player.vel.y = jumpVel; player.onGround = false; }
-      player.vel.y -= grav * dt / 1000; if (player.vel.y < -40) player.vel.y = -40;
+      if (inWater && (keys[" "] || swimUp)) { player.vel.y = Math.min(player.vel.y + 18 * dt / 1000, 3.2); player.onGround = false; }
+      else if (keys[" "] && player.onGround) { player.vel.y = jumpVel; player.onGround = false; }
+      player.vel.y -= grav * dt / 1000; if (player.vel.y < (inWater ? -3 : -40)) player.vel.y = inWater ? -3 : -40;
+      if (inWater) player.fallStart = null;
       if (player.onGround) player.fallStart = null; else if (player.fallStart === null) player.fallStart = player.pos.y;
       const wasGround = player.onGround;
       moveAxis("x", player.vel.x * dt / 1000);
@@ -1372,13 +1438,13 @@
       if (player.hp <= 0) die(msg || "You died.");
     }
     function die(msg) { player.dead = true; body.querySelector("#deathmsg").textContent = msg; deathEl.style.display = "flex"; if (document.pointerLockElement === canvas) document.exitPointerLock(); }
-    function respawn() { player.pos.set(spawnX, heightAt(0, 0) + 1.1, spawnZ); player.vel.set(0, 0, 0); player.hp = 20; player.dead = false; player.fallStart = null; drawHearts(); deathEl.style.display = "none"; }
+    function respawn() { player.pos.set(spawnX, heightAt(Math.floor(spawnX), Math.floor(spawnZ)) + 1.1, spawnZ); player.vel.set(0, 0, 0); player.hp = 20; player.dead = false; player.fallStart = null; drawHearts(); deathEl.style.display = "none"; }
     body.querySelector("#respawn").onclick = respawn;
     body.querySelector("#toMenu").onclick = () => { cleanup(); menu(body, ref); };
 
     // initial chunks + starting mobs, then drop the player onto the surface
     updateChunks(64);
-    player.pos.y = surfaceY(0, 0) + 0.2;
+    player.pos.y = surfaceY(Math.floor(spawnX), Math.floor(spawnZ)) + 0.2;
     for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28, d = 8 + Math.random() * 14; const pool = ["pig", "cow", "sheep", "zombie", "creeper", "chicken"]; spawnMob(pool[Math.floor(Math.random() * pool.length)], player.pos.x + Math.sin(a) * d, player.pos.z + Math.cos(a) * d); }
 
     // ---------- main loop ----------
@@ -1406,6 +1472,7 @@
 
       const r = canvas.getBoundingClientRect();
       if (Math.abs(canvas.width - r.width * renderer.getPixelRatio()) > 1) { renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+      updateSky(dt, player.pos.x, player.pos.z);
       renderer.render(scene, camera);
       if (cfg.showFps) { frames++; fpsT += dt; if (fpsT > 500) { fpsEl.textContent = Math.round(frames / (fpsT / 1000)) + " fps"; frames = 0; fpsT = 0; } }
       raf = requestAnimationFrame(loop);
