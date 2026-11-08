@@ -1098,6 +1098,13 @@
     </div>`);
     screen().appendChild(taskbar);
     taskbar.querySelector(".start").onclick = toggleStart;
+    // Touch feedback on taskbar icons: press-in on touch, highlight that fades 2 s after the tap.
+    taskbar.addEventListener("pointerdown", (e) => {
+      const b = e.target.closest(".tb-btn, .tb-copilot"); if (!b) return;
+      b.classList.add("tb-pressed");
+      if (e.pointerType !== "mouse") { b.classList.add("tb-touched"); clearTimeout(b.__tbT); b.__tbT = setTimeout(() => b.classList.remove("tb-touched"), 2000); }
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => taskbar.addEventListener(ev, (e) => { const b = e.target.closest && e.target.closest(".tb-btn, .tb-copilot"); if (b) b.classList.remove("tb-pressed"); }, true));
     taskbar.querySelector(".tb-search").onclick = (e) => { e.stopPropagation(); toggleSearch(); };
     taskbar.querySelector(".tb-qs").onclick = toggleQuickSettings;
     taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
