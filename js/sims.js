@@ -1142,6 +1142,7 @@
       return true;
     }
     function setMode(m) {
+      if (!G || !sim) return; // nothing to buy or change until a household is loaded
       if (m === "menu") { openMenu(); return; }
       mode = m; host.querySelectorAll(".sm-mode").forEach((b) => b.classList.toggle("on", b.dataset.m === m));
       const tb = host.querySelector(".sm-turnbtn"); if (tb) tb.hidden = !(m === "buy" && view3d);
@@ -1150,6 +1151,7 @@
     // Move to another house. Furniture you bought comes with you as cash (sold at full price);
     // the new house comes furnished.
     function moveHouse() {
+      if (!G || !sim) return;
       const cur = G.house || "starter";
       const bought = objs.filter((o) => !o.hid && !CAT[o.t].fixed && !(HOUSES[cur].objects ? HOUSES[cur].objects() : starterObjects()).some((q) => q.t === o.t && q.x === o.x && q.y === o.y));
       const refund = bought.reduce((a, o) => a + CAT[o.t].price, 0);
@@ -1168,6 +1170,7 @@
       });
     }
     function cheats() {
+      if (!G) return;
       dialog("Cheats", `<p>Type a cheat code:</p><input class="sm-in sm-cheat" placeholder="motherlode" autocomplete="off"><p class="sm-small">motherlode · kaching · rosebud · freerealestate</p>`, [["Enter", (d) => {
         const c = d.querySelector(".sm-cheat").value.trim().toLowerCase();
         if (c === "motherlode") { G.money += 50000; notify("Motherlode! +§50,000"); }

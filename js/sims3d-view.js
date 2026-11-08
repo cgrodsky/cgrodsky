@@ -181,7 +181,13 @@
     // ---------- ground ----------
     const plane = (w, h, m, x, z, y) => { const me = new THREE.Mesh(keep(new THREE.PlaneGeometry(w, h)), m); me.rotation.x = -Math.PI / 2; me.position.set(x, y || 0, z); me.receiveShadow = true; scene.add(me); return me; };
     const grassT = TEX.grass.clone(); grassT.needsUpdate = true; grassT.repeat.set(40, 40); keep(grassT);
-    plane(80, 80, mat(0xffffff, { map: grassT, roughness: 1 }), LW / 2, LH / 2, -0.02);
+    { const grassM = mat(0xffffff, { map: grassT, roughness: 1 });
+      if (!MULTI) plane(80, 80, grassM, LW / 2, LH / 2, -0.02);
+      else { // leave a hole under the house so its basement (and the stairwell down) isn't covered by lawn
+        const hx0 = HOUSE.x0, hx1 = HOUSE.x1 + 1, hz0 = HOUSE.y0, hz1 = HOUSE.y1 + 1.4, cx = LW / 2, cz = LH / 2, R = 40;
+        plane(80, cz + R - hz1, grassM, cx, (hz1 + cz + R) / 2, -0.02); plane(80, hz0 - (cz - R), grassM, cx, (cz - R + hz0) / 2, -0.02);
+        plane(hx0 - (cx - R), hz1 - hz0, grassM, (cx - R + hx0) / 2, (hz0 + hz1) / 2, -0.02); plane(cx + R - hx1, hz1 - hz0, grassM, (hx1 + cx + R) / 2, (hz0 + hz1) / 2, -0.02);
+      } }
     const swT = TEX.sidewalk.clone(); swT.needsUpdate = true; swT.repeat.set(30, 1); keep(swT);
     plane(30, 1, mat(0xffffff, { map: swT }), LW / 2, LH - 1.5, 0.005);
     const rdT = TEX.road.clone(); rdT.needsUpdate = true; rdT.repeat.set(30, 1); keep(rdT);

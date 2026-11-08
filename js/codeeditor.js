@@ -9,7 +9,7 @@
 
   const DEFAULT_HTML = '<h1>Hello, world!</h1>\n<p>Edit me, then tap <b>Run</b>.</p>\n<button id="b">Click me</button>';
   const DEFAULT_CSS  = 'body { font-family: system-ui, sans-serif; padding: 20px; color: #222; }\nh1 { color: #0067c0; }\nbutton { padding: 8px 16px; border: 0; border-radius: 8px; background: #0067c0; color: #fff; cursor: pointer; }';
-  const DEFAULT_JS   = 'document.getElementById("b").onclick = () => {\n  console.log("Hello from script.js!");\n  alert("Clicked!");\n};';
+  const DEFAULT_JS   = 'const btn = document.getElementById("b");\nif (btn) btn.onclick = () => {\n  console.log("Hello from script.js!");\n  alert("Clicked!");\n};';
 
   AppRegistry.codeeditor = function () {
     const ref = cw({ title: "Code Editor", icon: Icon.mini("codeeditor", "Code"), width: 920, height: 600, appId: "codeeditor" });

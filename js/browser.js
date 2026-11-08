@@ -57,7 +57,7 @@
       t.onclick = () => ctx.navigate(b.url);
       tiles.appendChild(t);
     });
-    page.querySelector(".edge-search-form").onsubmit = (e) => { e.preventDefault(); const q = page.querySelector(".edge-q").value.trim(); if (q) ctx.navigate("https://www.bing.com/search?q=" + encodeURIComponent(q)); };
+    page.querySelector(".edge-search-form").onsubmit = (e) => { e.preventDefault(); const q = page.querySelector(".edge-q").value.trim(); if (q) ctx.navigate("search:" + q); };
     const cards = page.querySelector(".edge-cards");
     EDGE_NEWS.forEach((n) => cards.appendChild(el(`<div class="edge-card"><div class="edge-card-img" style="background:${n.img}"></div><div class="edge-card-body"><div class="edge-card-cat">${esc(n.cat)}</div><div class="edge-card-title">${esc(n.title)}</div><div class="edge-card-src">${esc(n.src)}</div></div></div>`)));
     ctx.page.appendChild(page);
@@ -68,8 +68,8 @@
     const letters = "Google".split("").map((ch, i) => `<span style="color:${colors[i]}">${ch}</span>`).join("");
     const page = el(`<div class="google-home">
       <div class="google-top">
-        <a class="g-top-link" data-url="https://mail.google.com">Gmail</a>
-        <a class="g-top-link" data-url="https://www.google.com/imghp">Images</a>
+        <a class="g-top-link" data-url="app:gmail">Gmail</a>
+        <a class="g-top-link" data-url="images:">Images</a>
         <button class="g-apps" title="Google apps"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="5" r="1.8"/><circle cx="12" cy="5" r="1.8"/><circle cx="19" cy="5" r="1.8"/><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="12" cy="19" r="1.8"/><circle cx="19" cy="19" r="1.8"/></svg></button>
       </div>
       <div class="google-logo">${letters}</div>
@@ -108,7 +108,7 @@
       } catch (_) { input.focus(); }
     };
     // Top links + Google apps grid (waffle).
-    page.querySelectorAll(".g-top-link").forEach((a) => a.onclick = () => ctx.navigate(a.dataset.url));
+    page.querySelectorAll(".g-top-link").forEach((a) => a.onclick = () => { const u = a.dataset.url; if (u.startsWith("app:")) { if (window.WM) WM.open(u.slice(4)); } else ctx.navigate(u); });
     const G_APPS = [
       { n: "Classroom", img: "assets/gapp_classroom.png" }, { n: "Gmail", img: "assets/gapp_gmail.png" }, { n: "Meet", img: "assets/gapp_meet.png" },
       { n: "Calendar", img: "assets/gapp_calendar.png" }, { n: "Drive", img: "assets/gapp_drive.png" }, { n: "Maps", img: "assets/gapp_maps.png" },
@@ -188,16 +188,58 @@
         Sites[special](ctx);
       } else {
         lock.textContent = "";
-        const final = /^https?:\/\//.test(url) ? url
-          : /\.[a-z]{2,}$/i.test(url.trim()) ? "https://" + url.trim()
-          : "https://www.google.com/search?q=" + encodeURIComponent(url);
-        const frame = el(`<iframe class="embed-frame" src="${final}"></iframe>`);
-        const fallback = el(`<div class="site"><p class="muted">If the page below is blank, that site blocks being embedded. Try one of the bookmarks above.</p></div>`);
-        page.appendChild(fallback);
-        page.appendChild(frame);
+        const isUrl = /^https?:\/\//.test(url) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/i.test(url.trim());
+        if (/^(search|images):/i.test(url) || !isUrl) { // in-app search results (Google/Bing refuse to load inside a window)
+          const m = url.match(/^(search|images):(.*)$/i); const mode = m ? m[1].toLowerCase() : "search", q = m ? m[2] : url.trim();
+          urlInput.value = q; renderSearch(ctx, q, mode); addHistory(q, mode + ":" + q); return;
+        }
+        const final = /^https?:\/\//.test(url) ? url : "https://" + url.trim();
+        const frame = el(`<iframe class="embed-frame" src="${esc(final)}"></iframe>`);
+        const bar = el(`<div class="frame-bar"><span>Some sites won't show inside an app window — if this one stays blank, open it in a real tab.</span><a href="${esc(final)}" target="_blank" rel="noopener">Open in a real tab ↗</a></div>`);
+        page.appendChild(bar);
+        page.appendChild(frame); addHistory(final, final);
       }
     }
 
+    // ---- in-app search: quick answers (built-in sites, dictionary) + Wikipedia results / Wikimedia images ----
+    function renderSearch(ctx, q, mode) {
+      const site = el(`<div class="site srch">
+        <div class="srch-top"><b class="srch-logo">Search</b><input class="srch-q" value="${esc(q)}"><button class="srch-go">🔍</button></div>
+        <div class="srch-tabs"><button data-m="search" class="${mode === "search" ? "on" : ""}">All</button><button data-m="images" class="${mode === "images" ? "on" : ""}">Images</button></div>
+        <div class="srch-quick"></div><div class="srch-res"><p class="muted">Searching…</p></div></div>`);
+      page.appendChild(site);
+      const go = (m) => navigate((m || mode) + ":" + site.querySelector(".srch-q").value.trim());
+      site.querySelector(".srch-go").onclick = () => go();
+      site.querySelector(".srch-q").onkeydown = (e) => { if (e.key === "Enter") go(); };
+      site.querySelectorAll(".srch-tabs button").forEach((b) => b.onclick = () => go(b.dataset.m));
+      const quick = site.querySelector(".srch-quick"), res = site.querySelector(".srch-res"), ql = q.toLowerCase();
+      // built-in sites that match
+      Object.keys(SPECIAL).filter((k) => !k.includes(".") && (ql.includes(k) || k.includes(ql)) && ql.length > 2).slice(0, 3).forEach((k) => {
+        const a = el(`<button class="srch-site">🌐 <b>${esc(k[0].toUpperCase() + k.slice(1))}</b><span>${esc(k)}.com</span></button>`); a.onclick = () => navigate(k); quick.appendChild(a);
+      });
+      const word = ql.replace(/^(define|meaning of|what does)\s+/, "").replace(/\s+mean\??$/, "").trim();
+      const d = window.DICTIONARY && window.DICTIONARY[word];
+      if (d) quick.appendChild(el(`<div class="srch-card"><b>${esc(word)}</b> <i>${esc(d.pos)}</i><p>${esc(d.def)}</p></div>`));
+      if (!q) { res.innerHTML = ""; return; }
+      const W = "https://en.wikipedia.org/w/api.php?origin=*&format=json&";
+      if (mode === "images") {
+        fetch(W.replace("en.wikipedia.org", "commons.wikimedia.org") + "action=query&generator=search&gsrnamespace=6&gsrlimit=24&prop=imageinfo&iiprop=url&iiurlwidth=240&gsrsearch=" + encodeURIComponent(q))
+          .then((r) => r.json()).then((j) => {
+            const pages = Object.values((j.query && j.query.pages) || {}).filter((p) => p.imageinfo && p.imageinfo[0].thumburl);
+            res.innerHTML = pages.length ? `<div class="srch-imgs">${pages.map((p) => `<a href="${esc(p.imageinfo[0].descriptionurl || p.imageinfo[0].url)}" target="_blank" rel="noopener"><img src="${esc(p.imageinfo[0].thumburl)}" alt="${esc(p.title.replace(/^File:/, ""))}" loading="lazy"></a>`).join("")}</div><p class="muted srch-src">Images from Wikimedia Commons</p>` : `<p class="muted">No images found for “${esc(q)}”.</p>`;
+          }).catch(() => { res.innerHTML = `<p class="muted">Couldn't load images — check your connection.</p>`; });
+        return;
+      }
+      fetch(W + "action=query&list=search&srlimit=10&srsearch=" + encodeURIComponent(q)).then((r) => r.json()).then((j) => {
+        const hits = (j.query && j.query.search) || [];
+        res.innerHTML = hits.length ? hits.map((h) => `<div class="srch-hit"><button class="srch-title" data-t="${esc(h.title)}">${esc(h.title)}</button><div class="srch-url">en.wikipedia.org › wiki › ${esc(h.title.replace(/ /g, "_"))}</div><p>${String(h.snippet || "").replace(/<(?!\/?span)[^>]*>/g, "")}…</p></div>`).join("") + `<p class="muted srch-src">Results from Wikipedia</p>` : `<p class="muted">No results for “${esc(q)}”.</p>`;
+        res.querySelectorAll(".srch-title").forEach((b) => b.onclick = () => navigate("https://en.wikipedia.org/wiki/" + encodeURIComponent(b.dataset.t.replace(/ /g, "_"))));
+      }).catch(() => { res.innerHTML = `<p class="muted">Couldn't reach the search service — check your connection and try again.</p>`; });
+    }
+    // ---- browsing history, favorites (Collections) and settings, saved per user ----
+    const bstore = () => { const d = (window.State && State.data) || {}; d.appData = d.appData || {}; d.appData.browser = d.appData.browser || { history: [], favs: [], settings: { bookmarks: true } }; return d.appData.browser; };
+    function addHistory(label, url) { const b = bstore(); b.history = b.history.filter((h) => h.url !== url); b.history.unshift({ label: String(label).slice(0, 120), url, ts: Date.now() }); b.history = b.history.slice(0, 100); if (window.State) State.save(); }
+    if (!bstore().settings.bookmarks) bmBar.style.display = "none";
     urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") navigate(urlInput.value); });
     body.querySelector(".reload").onclick = () => navigate(urlInput.value, false);
     body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev != null) { forward.push(urlInput.value || "home"); navigate(prev, false); } };
@@ -217,11 +259,45 @@
     };
     // Favorites — toggle the star.
     const favBtn = body.querySelector(".bb-fav");
-    favBtn.onclick = () => { favBtn.classList.toggle("on"); notify(favBtn.classList.contains("on") ? "Added to favorites." : "Removed from favorites."); };
-    body.querySelector(".bb-collections").onclick = () => notify("Collections are coming soon.");
+    const curUrl = () => urlInput.value.trim() || "home";
+    const isFav = () => bstore().favs.some((f) => f.url === curUrl());
+    favBtn.onclick = () => {
+      const b = bstore(), u = curUrl(); if (u === "home") { notify("Open a page first, then star it."); return; }
+      const i = b.favs.findIndex((f) => f.url === u);
+      if (i >= 0) { b.favs.splice(i, 1); notify("Removed from favorites."); } else { b.favs.unshift({ url: u, label: u.replace(/^https?:\/\//, "").slice(0, 60), ts: Date.now() }); notify("Added to favorites — find it under Collections."); }
+      favBtn.classList.toggle("on", isFav()); if (window.State) State.save();
+    };
+    function panel(title, html, onOpen) {
+      body.querySelectorAll(".bb-panel").forEach((m) => m.remove());
+      const m = el(`<div class="bb-panel"><div class="bb-panel-h"><b>${esc(title)}</b><button class="bb-panel-x">✕</button></div><div class="bb-panel-b">${html}</div></div>`);
+      m.querySelector(".bb-panel-x").onclick = () => m.remove(); body.querySelector(".browser-bar").appendChild(m); if (onOpen) onOpen(m);
+      setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!m.isConnected) { document.removeEventListener("pointerdown", h); return; } if (!m.contains(x.target) && !x.target.closest(".bb-collections")) { m.remove(); document.removeEventListener("pointerdown", h); } }), 0);
+      return m;
+    }
+    function collections() {
+      const b = bstore();
+      panel("Collections", `<div class="bb-sec">⭐ Favorites</div>${b.favs.length ? b.favs.map((f, i) => `<div class="bb-row"><button data-go="${i}">${esc(f.label)}</button><button class="bb-del" data-del="${i}">✕</button></div>`).join("") : `<p class="muted">No favorites yet — tap ☆ on a page.</p>`}
+        <div class="bb-sec">🕘 Recent</div>${b.history.slice(0, 12).map((h, i) => `<div class="bb-row"><button data-h="${i}">${esc(h.label)}</button></div>`).join("") || `<p class="muted">Nothing yet.</p>`}`, (m) => {
+        m.querySelectorAll("[data-go]").forEach((x) => x.onclick = () => { m.remove(); navigate(b.favs[+x.dataset.go].url); });
+        m.querySelectorAll("[data-del]").forEach((x) => x.onclick = () => { b.favs.splice(+x.dataset.del, 1); if (window.State) State.save(); collections(); favBtn.classList.toggle("on", isFav()); });
+        m.querySelectorAll("[data-h]").forEach((x) => x.onclick = () => { m.remove(); navigate(b.history[+x.dataset.h].url); });
+      });
+    }
+    function settings() {
+      const b = bstore();
+      panel("Settings", `<label class="bb-row"><input type="checkbox" class="bb-set-bm" ${b.settings.bookmarks ? "checked" : ""}> Show the bookmarks bar</label>
+        <div class="bb-row"><button class="bb-set-hist">Clear browsing history (${b.history.length})</button></div>
+        <div class="bb-row"><button class="bb-set-favs">Remove all favorites (${b.favs.length})</button></div>
+        <p class="muted">Searches show results from Wikipedia inside the app; images come from Wikimedia Commons.</p>`, (m) => {
+        m.querySelector(".bb-set-bm").onchange = (e) => { b.settings.bookmarks = e.target.checked; bmBar.style.display = e.target.checked ? "" : "none"; if (window.State) State.save(); };
+        m.querySelector(".bb-set-hist").onclick = () => { b.history = []; history.length = 0; forward.length = 0; if (window.State) State.save(); notify("Browsing history cleared."); settings(); };
+        m.querySelector(".bb-set-favs").onclick = () => { b.favs = []; if (window.State) State.save(); favBtn.classList.remove("on"); notify("Favorites removed."); settings(); };
+      });
+    }
+    body.querySelector(".bb-collections").onclick = collections;
     // Settings and more (…) menu.
     body.querySelector(".bb-menu").onclick = (ev) => {
-      body.querySelectorAll(".bb-menu-pop").forEach((m) => m.remove());
+      body.querySelectorAll(".bb-menu-pop, .bb-panel").forEach((m) => m.remove());
       const m = el(`<div class="bb-menu-pop">
         <button data-a="newtab">New tab</button><button data-a="reload">Reload</button>
         <button data-a="read">Read aloud</button><button data-a="fav">Favorites</button>
@@ -233,7 +309,7 @@
         else if (a === "reload") navigate(urlInput.value, false);
         else if (a === "read") body.querySelector(".bb-read").click();
         else if (a === "fav") favBtn.click();
-        else notify("Settings are coming soon.");
+        else settings();
       });
       body.querySelector(".browser-bar").appendChild(m);
       setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!m.contains(x.target)) { m.remove(); document.removeEventListener("pointerdown", h); } }), 0);

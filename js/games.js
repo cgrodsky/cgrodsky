@@ -9,7 +9,7 @@
     const life = app.game === "sims" || app.game === "stardew";
     const { body } = createWindow({ title: app.name, icon: Icon.mini(app.id, app.name), width: doom ? 800 : life ? 1000 : big ? 900 : 460, height: doom ? 636 : life ? 680 : big ? 600 : 540, appId: app.id });
     const fn = games[app.game];
-    if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>Coming soon.</p>";
+    if (fn) fn(body); else body.innerHTML = "<p style='padding:20px'>This game couldn't start. Close the window and try again — if it keeps happening, reload the page.</p>";
   }
 
   const wrap = (body, title) => {
