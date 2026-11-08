@@ -49,15 +49,30 @@
       const skull = part(new THREE.SphereGeometry(0.115, 24, 18), skin); skull.scale.set(F ? 0.9 : 0.94, 1.14, 0.98); head.add(skull);
       
       { const nose = part(new THREE.SphereGeometry(0.02, 10, 8), skin, 0, -0.012, 0.112); nose.scale.set(0.8, 1.2, 1); head.add(nose); }
+      const brows = [];
       [-1, 1].forEach((sd) => {
         { const ear = part(new THREE.SphereGeometry(0.025, 8, 6), skin, sd * 0.108, -0.005, 0); ear.scale.set(0.5, 1, 0.8); head.add(ear); } // ears
         const eye = part(new THREE.SphereGeometry(0.021, 12, 8), white, sd * 0.042, 0.018, 0.093); eye.scale.z = 0.6; head.add(eye);
         head.add(part(new THREE.SphereGeometry(0.012, 10, 8), iris, sd * 0.042, 0.018, 0.106));
         head.add(part(new THREE.SphereGeometry(0.006, 6, 6), dark, sd * 0.042, 0.018, 0.115));
-        const brow = part(new THREE.BoxGeometry(0.04, 0.008, 0.01), hair, sd * 0.042, 0.05, 0.104); brow.rotation.z = sd * (F ? -0.12 : -0.05); head.add(brow);
+        const brow = part(new THREE.BoxGeometry(0.04, 0.008, 0.01), hair, sd * 0.042, 0.05, 0.104); brow.rotation.z = sd * (F ? -0.12 : -0.05); brow.userData.sd = sd; brow.userData.rz = brow.rotation.z; head.add(brow); brows.push(brow);
       });
       const lids = new THREE.Group(); [-1, 1].forEach((sd) => { const l = part(new THREE.SphereGeometry(0.023, 10, 8), skin, sd * 0.042, 0.018, 0.097); l.scale.z = 0.62; lids.add(l); }); lids.visible = false; head.add(lids);
+      // mouths for expressions: flat, smile (arc opening up), frown (arc opening down), open "o" (surprised/embarrassed)
       const mouth = part(new THREE.CapsuleGeometry(0.008, 0.03, 4, 8), lip, 0, -0.058, 0.105); mouth.rotation.z = Math.PI / 2; head.add(mouth);
+      const smile = part(new THREE.TorusGeometry(0.024, 0.006, 6, 14, Math.PI), lip, 0, -0.05, 0.106); smile.rotation.z = Math.PI; smile.scale.set(1.1, 0.42, 1); smile.visible = false; head.add(smile);
+      const frown = part(new THREE.TorusGeometry(0.02, 0.006, 6, 14, Math.PI), lip, 0, -0.068, 0.105); frown.scale.set(1, 0.45, 1); frown.visible = false; head.add(frown);
+      const ohm = part(new THREE.SphereGeometry(0.012, 10, 8), simMat("#5a2020"), 0, -0.06, 0.106); ohm.scale.set(1, 1.3, 0.5); ohm.visible = false; head.add(ohm);
+      // things a Sim can hold (in the right hand)
+      const props = {
+        plate: (() => { const p = new THREE.Group(); p.add(part(new THREE.CylinderGeometry(0.1, 0.08, 0.015, 16), simMat("#f6f4ee"))); p.add(part(new THREE.SphereGeometry(0.045, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), simMat("#c8742a"), 0, 0.008, 0)); return p; })(),
+        pizza: (() => { const p = new THREE.Group(); const s = part(new THREE.CylinderGeometry(0.1, 0.1, 0.012, 3, 1, false, 0, Math.PI / 3), simMat("#f2c14e")); p.add(s); return p; })(),
+        book: (() => { const p = new THREE.Group(); p.add(part(new THREE.BoxGeometry(0.16, 0.22, 0.03), simMat(["#c0283a", "#2a5aa0", "#2e8a4a"][((e.name || "x").length) % 3]))); p.add(part(new THREE.BoxGeometry(0.15, 0.2, 0.032), simMat("#f4f0e2"), 0.006, 0, 0)); return p; })(),
+        phone: part(new THREE.BoxGeometry(0.05, 0.1, 0.012), simMat("#1a1a1e")),
+        spatula: (() => { const p = new THREE.Group(); p.add(part(new THREE.CylinderGeometry(0.008, 0.008, 0.22, 6), simMat("#3a2a1a"), 0, 0.1, 0)); p.add(part(new THREE.BoxGeometry(0.06, 0.08, 0.008), simMat("#9aa0a6"), 0, 0.24, 0)); return p; })(),
+      };
+      Object.values(props).forEach((p) => { p.visible = false; p.position.set(0, -0.3, 0.06); });
+      props.plate.position.set(0, -0.28, 0.1); props.pizza.position.set(0, -0.28, 0.1); props.book.position.set(0.05, -0.3, 0.08); props.phone.position.set(0, -0.3, 0.05);
       // hair styles
       const style = ((e.name || "").length + (F ? 3 : 0)) % 3;
       const cap = part(new THREE.SphereGeometry(0.124, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.3), hair, 0, 0.006, -0.004); cap.scale.set(F ? 0.96 : 0.99, 1.1, 1.04); head.add(cap);
@@ -78,10 +93,11 @@
       const armL = limb(0.05, 0.27, shirt), armR = limb(0.05, 0.27, shirt); armL.position.set(-sh, 0.45, 0); armR.position.set(sh, 0.45, 0); hips.add(armL, armR);
       const foreL = limb(0.038, 0.24, skin), foreR = limb(0.038, 0.24, skin); foreL.position.y = -0.27; foreR.position.y = -0.27; armL.add(foreL); armR.add(foreR);
       [foreL, foreR].forEach((f) => { const hand = part(new THREE.SphereGeometry(0.042, 10, 8), skin, 0, -0.26, 0.005); hand.scale.set(0.75, 1.15, 0.5); f.add(hand); });
+      Object.values(props).forEach((p) => foreR.add(p));
       const legL = limb(F ? 0.085 : 0.09, 0.41, pants), legR = limb(F ? 0.085 : 0.09, 0.41, pants); legL.position.set(-0.085, 0, 0); legR.position.set(0.085, 0, 0); hips.add(legL, legR);
       const shinL = limb(0.066, 0.4, pants), shinR = limb(0.066, 0.4, pants); shinL.position.y = -0.41; shinR.position.y = -0.41; legL.add(shinL); legR.add(shinR);
       [shinL, shinR].forEach((sn) => { const sho = part(new THREE.CapsuleGeometry(0.052, 0.13, 4, 10), shoe, 0, -0.405, 0.05); sho.rotation.x = Math.PI / 2; sho.scale.set(1, 1, 0.7); sn.add(sho); });
-      g.userData.rig = { hips, chest, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, torso, lids };
+      g.userData.rig = { hips, chest, head, armL, armR, foreL, foreR, legL, legR, shinL, shinR, torso, lids, mouth, smile, frown, ohm, brows, props };
       g.userData.blink = 2 + Math.random() * 3;
       g.userData.look = [e.skin, e.shirt, e.pants, e.hair, e.gender].join("|");
       g.scale.setScalar(e.scale || 1);
@@ -318,6 +334,40 @@
       if (vWall[y] && vWall[y][x2]) return -Math.PI / 2;                                // wall east → face -x
       return 0;
     }
+    // ---------- live object effects (shown only while the object is in use) ----------
+    const steamMat = keep(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
+    const waterMat = keep(new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.55, depthWrite: false }));
+    const puffGeo = keep(new THREE.SphereGeometry(0.06, 8, 6)), dropGeo = keep(new THREE.BoxGeometry(0.012, 0.16, 0.012));
+    function addFx(t, inner, w) {
+      const fx = new THREE.Group(); fx.name = "fx"; fx.visible = false; inner.add(fx);
+      if (t === "tv") {   // screen that flickers with "show" colours while watched
+        const scr = new THREE.Mesh(keep(new THREE.PlaneGeometry(0.5, 0.36)), keep(new THREE.MeshBasicMaterial({ color: 0x6ab0ff }))); scr.name = "screen"; scr.position.set(0, 0.86, 0.33); fx.add(scr);
+      } else if (t === "computer") {
+        const scr = new THREE.Mesh(keep(new THREE.PlaneGeometry(0.32, 0.23)), keep(new THREE.MeshBasicMaterial({ color: 0x9ad0ff }))); scr.name = "screen"; scr.position.set(0, 0.945, 0.012); fx.add(scr);
+      } else if (t === "stove") {   // a pan on the front-left burner with rising steam
+        fx.add(cyl(0.13, 0.11, 0.05, 0x2a2a2e, -0.2, 0.93, 0.07, 16, { metalness: 0.6, roughness: 0.4 }));
+        const handle = box(0.2, 0.02, 0.03, 0x1a1a1a, -0.2 - 0.2, 0.96, 0.07); fx.add(handle);
+        fx.add(cyl(0.1, 0.1, 0.01, 0xd8a24a, -0.2, 0.975, 0.07));   // food in the pan
+        for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(puffGeo, steamMat); s.userData.steam = i; s.position.set(-0.2, 1.05, 0.07); fx.add(s); }
+      } else if (t === "shower") {   // falling water from the shower head
+        for (let i = 0; i < 18; i++) { const d = new THREE.Mesh(dropGeo, waterMat); d.userData.drop = i; d.userData.ox = (Math.sin(i * 2.3) * 0.18); d.userData.oz = -0.3 + (Math.cos(i * 1.7) * 0.18) + 0.22; fx.add(d); }
+        for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(puffGeo, steamMat); s.userData.steam = i; s.scale.setScalar(2.2); fx.add(s); }
+      } else if (t === "bed") {   // covers pulled up over whoever is lying here
+        const cover = box(w * 0.66, 0.16, 0.9, mat(0xffffff, { map: TEX.blanket }), w * 0.13, 0.6, 0); cover.name = "cover"; fx.add(cover);
+      } else if (t === "hottub") {
+        for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(puffGeo, steamMat); s.userData.steam = i; s.scale.setScalar(1.6); fx.add(s); }
+      }
+    }
+    const SHOWS = [0x6ab0ff, 0xffd26a, 0x7ae08a, 0xff8aa0, 0xb08aff, 0xffffff];
+    function animateFx(g, type, used) {
+      const fx = g.getObjectByName("fx"); if (!fx) return;
+      fx.visible = !!used; if (!used) return;
+      fx.children.forEach((c) => {
+        if (c.name === "screen") { if (Math.random() < 0.06) c.material.color.setHex(SHOWS[(Math.random() * SHOWS.length) | 0]); }
+        if (c.userData.steam != null) { const ph = (t * 0.45 + c.userData.steam / 5) % 1; const base = type === "stove" ? [-0.2, 1.0, 0.07] : type === "shower" ? [0, 1.4, -0.1] : [0, 0.75, 0]; c.position.set(base[0] + Math.sin(c.userData.steam * 2 + t) * 0.08, base[1] + ph * 0.7, base[2] + Math.cos(c.userData.steam * 3) * 0.08); c.material.opacity = 0.35; c.scale.setScalar((type === "stove" ? 1 : 2) * (0.6 + ph)); }
+        if (c.userData.drop != null) { const ph = (t * 2.4 + c.userData.drop / 18) % 1; c.position.set(c.userData.ox, 1.9 - ph * 1.8, c.userData.oz); }
+      });
+    }
     const objMeshes = new Map(); // obj → {group, key}
     function buildObject(o, objs) {
       const d = CAT[o.t]; if (!d) return null; const w = d.w || 1;
@@ -327,6 +377,7 @@
       const inner = new THREE.Group(); inner.rotation.y = yaw; root.add(inner);
       if (o.hid) { const pb = new THREE.Mesh(keep(new THREE.BoxGeometry(w * 0.9, 1.2, 0.9)), keep(new THREE.MeshBasicMaterial({ visible: false }))); pb.position.y = 0.6; inner.add(pb); scene.add(root); return root; }
       const proc = procedural(o.t, w); inner.add(proc);
+      addFx(o.t, inner, w);
       const M = MODELS[o.t];
       if (M) loadModel(M.file).then((src) => {
         if (!root.parent && !objMeshes.has(o)) return;
@@ -519,6 +570,28 @@
         r.chest.rotation.x = 0.12; r.head.rotation.set(0.18, 0, 0.22 + Math.sin(t * 1.5) * 0.06);
       }
       if (info.talking) { r.armR.rotation.x = -0.5 + Math.sin(t * 5) * 0.4; r.foreR.rotation.x = -0.8; r.head.rotation.x = Math.sin(t * 4) * 0.08; }
+      // ---- props in hand ----
+      if (r.props) {
+        Object.entries(r.props).forEach(([k, p]) => { p.visible = info.prop === k; });
+        if (info.prop === "book") { r.armR.rotation.set(-0.7, 0, -0.25); r.foreR.rotation.set(-1.25, 0, 0); r.armL.rotation.set(-0.7, 0, 0.25); r.foreL.rotation.set(-1.25, 0, 0); r.head.rotation.x = 0.28; }
+        if (info.prop === "phone") { r.armR.rotation.set(-0.35, 0, -0.15); r.foreR.rotation.set(-2.2, 0, 0); r.head.rotation.z = -0.12; }
+        if (info.prop === "plate" || info.prop === "pizza") { r.armL.rotation.set(-0.55, 0, 0.1); r.foreL.rotation.set(-1.2, 0, 0); r.armR.rotation.set(-0.5 + Math.max(0, Math.sin(t * 3)) * -0.6, 0, -0.1); r.foreR.rotation.set(-1.4, 0, 0); }
+        if (info.prop === "spatula") { r.armR.rotation.set(-0.9, 0, -0.1); r.foreR.rotation.set(-0.7 + Math.sin(t * 7) * 0.25, 0, 0); }
+      }
+      // ---- facial expression & body language from emotion ----
+      if (r.smile) {
+        const em = info.emo || "fine", pos = ["happy", "flirty", "playful", "confident", "energized", "inspired"].includes(em), neg = ["sad", "uncomfortable", "bored"].includes(em);
+        r.smile.visible = !!(pos && !info.talking); r.frown.visible = !!neg; r.ohm.visible = !!(em === "embarrassed" || em === "tense" || (info.talking && Math.sin(t * 12) > 0));
+        r.mouth.visible = !r.smile.visible && !r.frown.visible && !r.ohm.visible;
+        r.brows.forEach((b) => { const sd = b.userData.sd; b.rotation.z = em === "angry" ? sd * 0.38 : (em === "sad" || em === "uncomfortable") ? -sd * 0.3 : em === "tense" || em === "embarrassed" ? b.userData.rz + sd * 0.12 : b.userData.rz; b.position.y = em === "angry" ? 0.044 : em === "tense" || em === "embarrassed" ? 0.056 : 0.05; });
+        if (pose !== "lie" && pose !== "bath" && !info.embrace && !info.prop) {
+          if (em === "sad" || em === "bored" || em === "uncomfortable") { r.chest.rotation.x += 0.16; r.head.rotation.x += 0.22; }
+          if (em === "confident" || em === "energized") { r.chest.rotation.x -= 0.06; r.head.rotation.x -= 0.08; }
+          if (em === "angry" && pose === "stand") { r.armL.rotation.set(0.12, 0, -0.6); r.armR.rotation.set(0.12, 0, 0.6); r.foreL.rotation.set(0, 0, 1.5); r.foreR.rotation.set(0, 0, -1.5); }   // hands on hips
+          if (em === "flirty") r.head.rotation.z = 0.18 + Math.sin(t * 1.4) * 0.05;
+          if (em === "playful" && pose === "stand") r.hips.position.y += Math.abs(Math.sin(t * 4)) * 0.025;
+        }
+      }
     }
     const pcam = new THREE.PerspectiveCamera(28, 1, 0.05, 5);
     const lamCache = new Map();
@@ -583,6 +656,8 @@
         if (d.light) { if (li < lampLights.length) { const l = lampLights[li++]; l.position.set(o.x + 0.5, 1.5, o.y + 0.5); l.intensity = night ? 3.2 : 0; } g.traverse((m) => { if (m.name === "shade" && m.material && m.material.emissive) m.material.emissiveIntensity = night ? 0.9 : 0; }); }
         if (o.t === "tv" && st.tvOn) { tvLight.position.set(o.x + 0.5, 0.9, o.y + 0.9); tvLight.intensity = 1.5 + Math.random() * 0.6; }
         const blanket = g.getObjectByName("blanket"); if (blanket) blanket.visible = true;
+        const use = (st.uses || []).find((u) => u.o === o);
+        animateFx(g, o.t, use && (o.t !== "bed" || use.type === "sleep") ? use : null);
       });
       // sims
       const seenE = new Set();

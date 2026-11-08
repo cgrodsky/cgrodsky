@@ -268,7 +268,7 @@
       <div class="sm-modes"><button class="sm-mode on" data-m="live" title="Live mode"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg></button><button class="sm-mode" data-m="buy" title="Buy mode"><svg viewBox="0 0 24 24"><path d="M4 12h16v5H4zM6 9h12v3H6zM5 17v2M19 17v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><button class="sm-mode" data-m="menu" title="Options"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
       <div class="sm-bar">
         <div class="sm-hud-left">
-          <div class="sm-tabs"><button class="on" data-t="needs" title="Needs">❤</button><button data-t="job" title="Career">💼</button><button data-t="skills" title="Skills">★</button><button data-t="rel" title="Relationships">👥</button><button data-t="pers" title="Personality">✦</button><button class="sm-cellbtn" title="Phone">📱</button></div>
+          <div class="sm-tabs"><button class="on" data-t="needs" title="Needs">❤</button><button data-t="emo" title="Emotions">😊</button><button data-t="job" title="Career">💼</button><button data-t="skills" title="Skills">★</button><button data-t="rel" title="Relationships">👥</button><button data-t="pers" title="Personality">✦</button><button class="sm-cellbtn" title="Phone">📱</button></div>
           <div class="sm-face"><div class="sm-ring"><canvas class="sm-portrait" width="72" height="84"></canvas></div><div class="sm-moodchip">Fine</div><div class="sm-mood"><div></div></div><div class="sm-name"></div><div class="sm-money">§0</div></div>
         </div>
         <div class="sm-left"><div class="sm-speeds"><button data-s="0" title="Pause">❚❚</button><button data-s="1" title="Normal">▶</button><button data-s="2" title="Fast">▶▶</button><button data-s="3" title="Ultra">▶▶▶</button></div><div class="sm-clock"><b class="sm-time">8:00 AM</b><span class="sm-day">Day 1</span></div></div>
@@ -355,16 +355,23 @@
     function path(sx, sy, tx, ty, through) {
       const startObj = objAt(sx, sy); // a Sim getting up from a bed/sofa may step across its other tiles
       const key = (x, y) => y * LW + x, open = [[sx, sy]], came = {}, gs = { [key(sx, sy)]: 0 };
-      const h = (x, y) => Math.abs(x - tx) + Math.abs(y - ty);
+      const h = (x, y) => { const dx = Math.abs(x - tx), dy = Math.abs(y - ty); return Math.max(dx, dy) + 0.414 * Math.min(dx, dy); };
       const fs = { [key(sx, sy)]: h(sx, sy) };
+      const free = (cx, cy) => !blockedCell(cx, cy, through) || (startObj && objAt(cx, cy) === startObj);
       for (let guard = 0; open.length && guard < 4000; guard++) {
         open.sort((a, b) => fs[key(a[0], a[1])] - fs[key(b[0], b[1])]);
         const [x, y] = open.shift();
         if (x === tx && y === ty) { const out = [[x, y]]; let k = key(x, y); while (came[k] != null) { const c = came[k]; out.unshift([c % LW, (c / LW) | 0]); k = c; } return out; }
         const steps = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy, 1]);
+        // Diagonal steps (smoother, more natural walking) — only when both corners around the cut are open.
+        for (const [dx, dy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+          const ax = x + dx, ay = y + dy;
+          if (canStep(x, y, ax, y) && canStep(ax, y, ax, ay) && canStep(x, y, x, ay) && canStep(x, ay, ax, ay) && free(ax, y) && free(x, ay)) steps.push([ax, ay, 1.414]);
+        }
         PORT.forEach(([ax, ay, bx, by]) => { if (ax === x && ay === y) steps.push([bx, by, 3]); else if (bx === x && by === y) steps.push([ax, ay, 3]); });
         for (const [nx, ny, cost] of steps) {
           if (cost === 1 && !canStep(x, y, nx, ny)) continue;
+          if (cost === 1.414 && blockedCell(nx, ny, through) && !(nx === tx && ny === ty) && !(startObj && objAt(nx, ny) === startObj)) continue;
           if (!(nx === tx && ny === ty) && blockedCell(nx, ny, through) && !(startObj && objAt(nx, ny) === startObj)) continue;
           const ng = gs[key(x, y)] + cost, nk = key(nx, ny);
           if (gs[nk] == null || ng < gs[nk]) { gs[nk] = ng; fs[nk] = ng + h(nx, ny); came[nk] = key(x, y); if (!open.some(([a, b]) => a === nx && b === ny)) open.push([nx, ny]); }
@@ -468,6 +475,70 @@
       NEEDS.forEach((k) => { const v = n[k], wt = v < 25 ? 2.2 : 1; s += (v - 50) * wt; w += wt; });
       return clamp(s / w * 2, -100, 100);
     }
+    // ---------------- emotions & moodlets (Sims 4 style) ----------------
+    // Moodlets push an emotion with a weight for a while; the strongest emotion wins.
+    const EMO = {
+      fine: { name: "Fine", icon: "🙂", col: "#e8eef2" }, happy: { name: "Happy", icon: "😄", col: "#ffd23a" },
+      flirty: { name: "Flirty", icon: "😘", col: "#ff8ab4" }, energized: { name: "Energized", icon: "⚡", col: "#ffa23a" },
+      focused: { name: "Focused", icon: "🧠", col: "#8a7ae8" }, playful: { name: "Playful", icon: "🤪", col: "#7ad0f0" },
+      confident: { name: "Confident", icon: "😎", col: "#4ad0a0" }, inspired: { name: "Inspired", icon: "💡", col: "#5ac8ff" },
+      tense: { name: "Tense", icon: "😬", col: "#e8c44a" }, sad: { name: "Sad", icon: "😢", col: "#7ab0e8" },
+      angry: { name: "Angry", icon: "😠", col: "#e05a5a" }, embarrassed: { name: "Embarrassed", icon: "😳", col: "#f28ab0" },
+      bored: { name: "Bored", icon: "😑", col: "#b4b4bc" }, uncomfortable: { name: "Uncomfortable", icon: "😣", col: "#f2a35a" },
+    };
+    // what finishing an interaction feels like: [emotion, weight, moodlet label, game minutes]
+    let rejected = false;   // set when a social interaction is turned down (no positive moodlet then)
+    const ACT_MOOD = {
+      shower: ["energized", 2, "Refreshing Shower", 240], bath: ["happy", 2, "Relaxing Bath", 240], workout: ["energized", 2, "Pumped", 180],
+      dance: ["playful", 2, "Dance Party", 180], tv: ["happy", 1, "Watched a Good Show", 120], games: ["playful", 2, "Gamer Mode", 180],
+      read: ["focused", 1, "Engrossed in a Book", 180], studyCooking: ["focused", 2, "Studious", 180], studyMechanical: ["focused", 2, "Studious", 180],
+      chess: ["focused", 2, "Mind Games", 180], paint: ["inspired", 2, "Creative Spark", 240], speech: ["confident", 2, "Rehearsed Well", 240],
+      snack: ["happy", 1, "Tasty Snack", 120], meal: ["happy", 2, "Home Cooking", 240], eatPizza: ["happy", 1, "Pizza Night", 180],
+      listen: ["happy", 1, "Good Tunes", 120], sleep: ["energized", 1, "Well Rested", 300], soak: ["happy", 3, "Hot Tub Bliss", 300],
+      sauna: ["happy", 2, "Steamed and Soothed", 240], letterSanta: ["happy", 1, "Holiday Spirit", 240], surf: ["focused", 1, "Down the Rabbit Hole", 90],
+      hug: ["happy", 1, "Warm Hug", 120], compliment: ["confident", 1, "Kind Words", 120], talk: ["happy", 1, "Good Conversation", 90],
+      flirt: ["flirty", 2, "Flirty Feelings", 180], kiss: ["flirty", 2, "Smooch", 240], makeOut: ["flirty", 3, "Made Out", 300],
+      woohoo: ["happy", 3, "WooHoo!", 480], tryBaby: ["happy", 3, "WooHoo!", 480],
+    };
+    function addMoodlet(id, emo, w, label, minutes) {
+      if (!G.moodlets) G.moodlets = [];
+      G.moodlets = G.moodlets.filter((m) => m.id !== id);
+      G.moodlets.push({ id, emo, w, label, until: G.min + minutes });
+    }
+    // moodlets from needs and surroundings, recalculated live
+    function needMoodlets() {
+      const n = G.sim.needs, out = [];
+      if (n.hunger < 25) out.push({ emo: "uncomfortable", w: n.hunger < 10 ? 3 : 2, label: n.hunger < 10 ? "Starving" : "Hungry" });
+      if (n.bladder < 20) out.push({ emo: "uncomfortable", w: 3, label: "Need to Pee" });
+      if (n.energy < 20) out.push({ emo: "uncomfortable", w: 2, label: "Tired" });
+      if (n.hygiene < 20) out.push({ emo: "embarrassed", w: 2, label: "Stinky" });
+      if (n.comfort < 20) out.push({ emo: "uncomfortable", w: 1, label: "Sore" });
+      if (n.social < 20) out.push({ emo: "sad", w: 2, label: "Lonely" });
+      if (n.fun < 20) out.push({ emo: "bored", w: 2, label: "Bored" });
+      if (n.room < 20) out.push({ emo: "tense", w: 1, label: "Messy Surroundings" }); else if (n.room > 80) out.push({ emo: "happy", w: 1, label: "Lovely Home" });
+      if (NEEDS.every((k) => n[k] > 70)) out.push({ emo: "happy", w: 2, label: "Fulfilled" });
+      if (G.money < 0) out.push({ emo: "tense", w: 2, label: "Broke" });
+      return out;
+    }
+    function moodlets() {
+      if (!G) return [];
+      if (G.moodlets) G.moodlets = G.moodlets.filter((m) => m.until > G.min);
+      return (G.moodlets || []).concat(needMoodlets());
+    }
+    function emotion() {
+      const tally = {}; moodlets().forEach((m) => { tally[m.emo] = (tally[m.emo] || 0) + m.w; });
+      let best = "fine", bw = 0; Object.entries(tally).forEach(([k, w]) => { if (w > bw) { best = k; bw = w; } });
+      if (bw < 1) return { id: "fine", w: 0 };
+      return { id: best, w: bw };
+    }
+    const emoName = (e) => (e.w >= 5 ? "Very " : "") + EMO[e.id].name;
+    // emotions change how well a Sim does things
+    function emoSkillMult(skill) {
+      const e = emotion().id;
+      const boost = { focused: ["logic", "cooking", "mechanical"], energized: ["body"], inspired: ["creativity", "cooking"], confident: ["charisma"], playful: ["creativity"] }[e] || [];
+      if (boost.includes(skill)) return 1.6;
+      return ["sad", "angry", "tense", "uncomfortable", "bored"].includes(e) ? 0.75 : 1;
+    }
     function roomScore(x, y) {
       const r = roomOf(x, y); let s = insideHouse(x, y) ? 40 : 55;
       objs.forEach((o) => { const d = CAT[o.t]; if ((r && roomOf(o.x, o.y) === r) || (!r && !insideHouse(o.x, o.y) && Math.abs(o.x - x) + Math.abs(o.y - y) < 4)) s += d.room * 4; });
@@ -507,13 +578,24 @@
       } else spots = useSpots(a.target);
       if (A.dur === 0) spots = [[a.target.x, a.target.y]];
       let best = null;
-      spots.forEach(([x, y]) => { const p = (x === sim.x && y === sim.y) ? [[x, y]] : path(sim.x, sim.y, x, y, a.target && !a.target.npc ? a.target : null); if (p && (!best || p.length < best.length)) best = p; });
+      // Watching TV: settle onto a nearby sofa/armchair facing the screen, like real Sims do.
+      if (a.type === "tv" && a.target && !a.target.npc) {
+        const seat = tvSeat(a.target);
+        if (seat) { cells(seat).forEach(([x, y]) => { const p = (x === sim.x && y === sim.y) ? [[x, y]] : path(sim.x, sim.y, x, y, seat); if (p && (!best || p.length < best.length)) best = p; }); if (best) a.seat = seat; }
+      }
+      if (!best) spots.forEach(([x, y]) => { const p = (x === sim.x && y === sim.y) ? [[x, y]] : path(sim.x, sim.y, x, y, a.target && !a.target.npc ? a.target : null); if (p && (!best || p.length < best.length)) best = p; });
       if (!best) { failAct(a, `${G.sim.name} can't reach the ${a.target.npc ? a.target.name : CAT[a.target.t].name}.`); return; }
       sim.route = best.slice(1); a.phase = "walk";
     }
+    const TV_SEATS = ["sofa", "armchair", "sofa3", "sectional", "daybed", "papasan"];
+    function tvSeat(tv) {
+      return objs.filter((o) => TV_SEATS.includes(o.t) && !npcs.some((n) => n.pose === "sit" && Math.round(n.fx) >= o.x && Math.round(n.fx) < o.x + CAT[o.t].w && Math.round(n.fy) === o.y))
+        .map((o) => ({ o, d: Math.abs(o.x + (CAT[o.t].w - 1) / 2 - tv.x) + Math.abs(o.y - tv.y) }))
+        .filter((c) => c.d >= 2 && c.d <= 6).sort((a, b) => a.d - b.d).map((c) => c.o)[0] || null;
+    }
     function failAct(a, why) { if (a.target && a.target.npc) a.target.busy = false; acts.splice(acts.indexOf(a), 1); if (why) { sim.say = "?"; sim.sayT = 2; notify(why); } paintQueue(); }
     function beginUse(a) {
-      const A = ACTS[a.type]; a.phase = "use"; a.t = 0; sim.pose = A.pose;
+      const A = ACTS[a.type]; a.phase = "use"; a.t = 0; sim.pose = a.seat ? "sit" : A.pose;
       if (a.target && !a.target.npc && CAT[a.target.t]) { const tc = cells(a.target); const [cx, cy] = tc.reduce((m, c2) => (Math.hypot(c2[0] - sim.fx, c2[1] - sim.fy) < Math.hypot(m[0] - sim.fx, m[1] - sim.fy) ? c2 : m), tc[0]); sim.dir = (cx - cy) >= (sim.fx - sim.fy) ? 1 : -1; }
       if (a.target && a.target.npc) { a.target.busy = true; a.target.pose = "stand"; sim.dir = (a.target.x - a.target.y) >= (sim.x - sim.y) ? 1 : -1; a.target.dir = -sim.dir; sim.say = SIMLISH[(Math.random() * SIMLISH.length) | 0]; sim.sayT = 2.5; }
       if (A.job) { a.phase = "done"; openJobs(); }
@@ -521,12 +603,12 @@
       if (A.mail) getMail();
       if (A.social === "bye") { const n = a.target; n.say = "Dag dag!"; n.sayT = 2; n.leaving = true; }
       if (A.bedAct) { sim.pose = "lie"; a.target.say = "😊"; a.target.sayT = 2; return; }
-      if (A.social === "hug" && (G.rel[a.target.name] || 0) < 30) { a.target.say = "😠"; a.target.sayT = 2.5; changeRel(a.target.name, -6); notify(`${a.target.name} rejected the hug — they don't know ${G.sim.name} well enough.`); a.phase = "done"; }
+      if (A.social === "hug" && (G.rel[a.target.name] || 0) < 30) { a.target.say = "😠"; a.target.sayT = 2.5; changeRel(a.target.name, -6); addMoodlet("rejected", "embarrassed", 2, "Rejected", 180); notify(`${a.target.name} rejected the hug — they don't know ${G.sim.name} well enough.`); a.phase = "done"; }
     }
     function finishAct(a) {
       const A = ACTS[a.type];
       if (A.plate) { const spot = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [sim.x + dx, sim.y + dy]).find(([x, y]) => x >= 0 && y >= 0 && x < LW && y < LH - 2 && !objAt(x, y) && !fixedBlock(x, y) && !objs.some((o) => o.x === x && o.y === y) && (canStep(sim.x, sim.y, x, sim.y) || canStep(sim.x, sim.y, sim.x, y))); if (spot) objs.push({ t: "plate", x: spot[0], y: spot[1] }); }
-      if (A.painting) { const v = 20 + Math.round(G.sim.skills.creativity * 16 + Math.random() * 20); G.money += v; notify(`${G.sim.name} sold a painting for §${v}.`); }
+      if (A.painting) { const v = Math.round((20 + G.sim.skills.creativity * 16 + Math.random() * 20) * (emotion().id === "inspired" ? 1.5 : 1)); G.money += v; notify(`${G.sim.name} sold a painting for §${v}.`); }
       if (A.clean && a.target) { const i = objs.indexOf(a.target); if (i >= 0) objs.splice(i, 1); }
       if (A.babyCare && G.baby) { G.baby.care = clamp(G.baby.care + A.babyCare, 0, 100); G.baby.neglect = 0; }
       if (A.adopt) adoptBaby();
@@ -535,17 +617,21 @@
       if (a.target && a.target.npc) {
         const n = a.target; n.busy = false; if (n.bedTarget) { n.bedTarget = null; n.pose = "stand"; }
         if (typeof A.social === "number") changeRel(n.name, A.social + (G.sim.traits.nice >= 6 ? 1 : 0));
-        if (A.social === "joke") { const ok = Math.random() < 0.45 + G.sim.traits.playful * 0.05; changeRel(n.name, ok ? 5 : -4); n.say = ok ? "😆" : "😒"; n.sayT = 2; }
+        if (A.social === "joke") { const ok = Math.random() < 0.45 + G.sim.traits.playful * 0.05 + (emotion().id === "playful" ? 0.25 : 0); changeRel(n.name, ok ? 5 : -4); n.say = ok ? "😆" : "😒"; n.sayT = 2;
+          if (ok) addMoodlet("joke", "playful", 2, "Hilarious", 180); else { addMoodlet("jokefail", "embarrassed", 2, "Joke Fell Flat", 120); rejected = true; } }
         if (A.social === "hug") { changeRel(n.name, 7); n.say = "🥰"; n.sayT = 2; }
-        romanceOutcome(A, n);
+        rejected = false; romanceOutcome(A, n);
       }
+      if (!rejected && ACT_MOOD[a.type] && !(A.social === "joke")) { const [em, w, label, mins] = ACT_MOOD[a.type]; addMoodlet(a.type, em, w, label, mins); }
+      rejected = false;
       sim.pose = "stand";
       acts.splice(acts.indexOf(a), 1); paintQueue();
     }
     // ---------------- romance, marriage & family ----------------
     function romanceOutcome(A, n) {
       const rv = G.rel[n.name] || 0, kid = n.role === "child";
-      const no = (txt, d) => { changeRel(n.name, d); n.say = "😠"; n.sayT = 2.5; notify(txt); };
+      const no = (txt, d) => { changeRel(n.name, d); n.say = "😠"; n.sayT = 2.5; notify(txt); rejected = true;
+        if (A.social === "propose") addMoodlet("heartbreak", "sad", 3, "Proposal Rejected", 720); else addMoodlet("rejected", "embarrassed", 2, "Rejected", 180); };
       if (A.social === "flirt") { if (kid) return; if (rv >= 20) { changeRom(n.name, 4); changeRel(n.name, 5 + (G.sim.traits.outgoing >= 6 ? 1 : 0)); n.say = "😊"; n.sayT = 2; } else no(`${n.name} wasn't interested in flirting.`, -4); }
       else if (A.social === "makeout") {
         if (kid) return;
@@ -574,6 +660,7 @@
       const src = NEIGHBORS.find((x) => x.name === n.name) || n;
       const m = { name: n.name, gender: src.gender, skin: src.skin, hair: src.hair, shirt: src.shirt, pants: src.pants, role: "partner" };
       G.household.push(m); n.member = true; n.leaving = false; n.role = "partner"; save();
+      addMoodlet(married ? "married" : "movein", "happy", married ? 4 : 3, married ? "Just Married" : "Moving In Together", married ? 1440 : 720);
       msg(married ? "Just married!" : "Moving in!", married ? `${G.sim.name} and ${n.name} are now married! 💍 ${n.name} has moved in with the ${G.sim.family} family.` : `${n.name} has moved in with ${G.sim.name}! 🏡`);
     }
     function tryForBaby(n) {
@@ -626,7 +713,7 @@
     }
 
     // Romance meter (0–100), separate from friendship like in Sims 4.
-    function changeRom(name, d) { if (!G.rom) G.rom = {}; G.rom[name] = clamp((G.rom[name] || 0) + d, 0, 100); if (tab === "rel") paintTab(); }
+    function changeRom(name, d) { if (!G.rom) G.rom = {}; if (d > 0 && emotion().id === "flirty") d *= 1.5; G.rom[name] = clamp((G.rom[name] || 0) + d, 0, 100); if (tab === "rel") paintTab(); }
     function changeRel(name, d) { G.rel[name] = clamp((G.rel[name] || 0) + d, -100, 100); if (tab === "rel") paintTab(); }
 
     // ---------------- career ----------------
@@ -756,7 +843,8 @@
     // ---------------- per-tick update ----------------
     function walk(e, dt) {
       if (!e.route || !e.route.length) { e.route = null; return true; }
-      const [tx, ty] = e.route[0], sp = 2.4 * dt;
+      const em = e.player && G ? emotion().id : null;
+      const [tx, ty] = e.route[0], sp = 2.4 * dt * (em === "sad" || em === "uncomfortable" ? 0.8 : em === "energized" ? 1.2 : 1);
       const dx = tx - e.fx, dy = ty - e.fy, d = Math.hypot(dx, dy);
       if (d > 1.6) { // stairs: climb takes a moment, then the Sim is on the other floor
         e.stairT = (e.stairT || 0) + dt; e.pose = "walk"; e.anim += dt * 9;
@@ -792,7 +880,7 @@
         if (!(A && (A.pose === "sit" || A.pose === "lie" || A.pose === "bath"))) N.comfort = clamp(N.comfort - 0.12 * gm, 0, 100);
         N.room = clamp(N.room + (roomScore(sim.x, sim.y) - N.room) * Math.min(1, gm * 0.05), 0, 100);
         if (A) for (const k in A.gain) N[k] = clamp(N[k] + A.gain[k] * gm * (k === "hunger" && A.skill === "cooking" ? 1 + G.sim.skills.cooking * 0.06 : 1), 0, 100);
-        if (A && A.skill) { const lvl = G.sim.skills[A.skill]; if (lvl < 10) G.sim.skills[A.skill] = Math.min(10, lvl + gm / (40 + lvl * 18)); }
+        if (A && A.skill) { const lvl = G.sim.skills[A.skill]; if (lvl < 10) G.sim.skills[A.skill] = Math.min(10, lvl + gm * emoSkillMult(A.skill) / (40 + lvl * 18)); }
         // failures
         if (N.bladder <= 0 && !(A && A.type === "toilet")) { N.bladder = 60; N.hygiene = clamp(N.hygiene - 40, 0, 100); if (!objAt(sim.x, sim.y) && !objs.some((o) => o.t === "puddle" && o.x === sim.x && o.y === sim.y)) objs.push({ t: "puddle", x: sim.x, y: sim.y }); sim.say = "😳"; sim.sayT = 3; notify(`${G.sim.name} couldn't hold it!`); }
         if (N.energy <= 0 && !(A && A.sleeping)) { acts.length = 0; sim.route = null; acts.push({ type: "nap", target: null, phase: "use", t: 0, floor: true }); sim.pose = "lie"; notify(`${G.sim.name} passed out from exhaustion!`); paintQueue(); }
@@ -986,13 +1074,32 @@
         if (!d.enter) info.face = Math.atan2(o.x + (d.w - 1) / 2 - e.fx, o.y - e.fy);
         if (o.t === "bed" || (cur.bed && A.bedAct)) { const b = cur.bed || o; info.lie = true; info.x = b.x + 0.85; info.y = b.y + (A.bedAct ? -0.18 : 0); info.lieYaw = Math.PI / 2; info.pose = "lie"; }
         if (o.t === "tub") info.pose = "bath";
+        if (cur.seat) { const sd = CAT[cur.seat.t]; info.x = cur.seat.x + (sd.w - 1) / 2; info.y = cur.seat.y; info.pose = "sit"; info.face = Math.atan2(o.x - info.x, o.y - info.y); }
       }
       if (cur && cur.phase === "use" && cur.target && cur.target.npc) { info.face = Math.atan2(cur.target.fx - e.fx, cur.target.fy - e.fy); info.talking = true;
         if (cur.type === "makeOut" || cur.type === "hug" || cur.type === "kiss") { const dx = cur.target.fx - e.fx, dy = cur.target.fy - e.fy, d = Math.hypot(dx, dy) || 1; info.x += dx / d * 0.33; info.y += dy / d * 0.33; info.embrace = true; info.talking = false; } }
       if (!e.player && e.pose === "lie") { const bed = (e.bedTarget) || objs.find((o) => o.t === "bed" && Math.abs(o.x + 0.5 - e.fx) < 1.6 && Math.abs(o.y - e.fy) < 1.1); if (bed) { info.lie = true; info.x = bed.x + 0.85; info.y = bed.y + 0.2; info.lieYaw = Math.PI / 2; } }
       if (!e.player && e.busy && sim && !e.route) { info.face = Math.atan2(sim.fx - e.fx, sim.fy - e.fy); info.talking = true;
         const pc = acts[0]; if (pc && pc.phase === "use" && pc.target === e && (pc.type === "makeOut" || pc.type === "hug" || pc.type === "kiss")) { const dx = sim.fx - e.fx, dy = sim.fy - e.fy, d = Math.hypot(dx, dy) || 1; info.x += dx / d * 0.33; info.y += dy / d * 0.33; info.embrace = true; info.talking = false; } }
+      // facial expression + what's in hand
+      if (e.player) info.emo = emotion().id;
+      else { const s = e.sayT > 0 ? e.say : ""; info.emo = /😠|😒/.test(s) ? "angry" : /😳/.test(s) ? "embarrassed" : /😍|🥰|😘|💕/.test(s) ? "flirty" : /😊|😆|😄/.test(s) ? "happy" : (G.rel[e.name] || 0) < -20 ? "angry" : "fine"; }
+      if (A && cur) {
+        if (A.pose === "eat") info.prop = cur.type === "eatPizza" ? "pizza" : "plate";
+        else if (/^(read|studyCooking|studyMechanical)$/.test(cur.type)) info.prop = "book";
+        else if (cur.cell) info.prop = "phone";
+        else if (cur.type === "call" || cur.type === "invite" || cur.type === "adopt" || cur.type === "pizza") info.prop = "phone";
+        else if (A.pose === "cook") info.prop = "spatula";
+      }
       return info;
+    }
+    // objects in use this frame (for TV glow, computer screen, cooking, shower water, blankets)
+    function usesNow(ents) {
+      const u = [];
+      const c = acts[0]; if (c && c.phase === "use" && c.target && !c.target.npc) u.push({ o: c.target, type: c.type });
+      if (c && c.phase === "use" && c.bed && ACTS[c.type].bedAct) u.push({ o: c.bed, type: "sleep" });   // under the covers
+      ents.forEach((i) => { if (i.lie && i.sleeping) { const b = objs.find((o) => o.t === "bed" && Math.abs(o.x + 0.85 - i.x) < 0.6 && Math.abs(o.y - Math.round(i.y)) < 1); if (b && !u.some((q) => q.o === b)) u.push({ o: b, type: "sleep" }); } });
+      return u;
     }
     let floorLock = 0, lastLevel = 0;
     function paintFloor() { if (!view3d || !HDEF.floors) return; const f = HDEF.floors.find((q) => q.level === view3d.viewLevel); const b = host.querySelector(".sm-flname"); if (b && f) b.textContent = f.name; }
@@ -1011,7 +1118,7 @@
       if (mode === "buy" && buyItem && hover) { ghostOk = canPlace(buyItem, hover.x, hover.y); ghost = { t: buyItem, x: hover.x, y: hover.y, ok: ghostOk, rot: buyRot }; }
       const ringEl = $(".sm-ring"), hr0 = host.getBoundingClientRect(), rr = ringEl.getBoundingClientRect();
       ringEl.classList.add("live");
-      try { view3d.render({ portrait: { x: rr.left - hr0.left + 4, y: rr.top - hr0.top + 4, w: rr.width - 8, h: rr.height - 8 }, dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: null, carpool: !!carpool, tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
+      try { view3d.render({ portrait: { x: rr.left - hr0.left + 4, y: rr.top - hr0.top + 4, w: rr.width - 8, h: rr.height - 8 }, dt: 1 / 60, hour: hr, objs, ents, mood: mood(), ghost, hover: null, carpool: !!carpool, uses: usesNow(ents), tvOn: !!(acts[0] && acts[0].type === "tv" && acts[0].phase === "use") }); } catch (err) { console.warn("3D render failed", err); fail3D("3D had a problem"); return; }
       if (!view3d) return;
       // overlays: speech/thought bubbles, censor mosaic, Zzz, steam, hearts, names
       const zs = Math.max(0.7, Math.min(1.3, 18 / 21));
@@ -1097,16 +1204,21 @@
       host.querySelectorAll(".sm-speeds button").forEach((b) => b.classList.toggle("on", +b.dataset.s === G.speed));
       $(".sm-name").textContent = G.sim.name + " " + G.sim.family;
       const md = mood(); const chip = $(".sm-moodchip");
-      if (chip) { const em = md > 55 ? ["Happy", "#ffd23a"] : md > 15 ? ["Fine", "#e8eef2"] : md > -25 ? ["Uncomfortable", "#f2a35a"] : md > -60 ? ["Sad", "#7ab0e8"] : ["Miserable", "#e05a5a"]; chip.textContent = em[0]; chip.style.background = em[1]; }
+      if (chip) { const e = emotion(); chip.textContent = EMO[e.id].icon + " " + emoName(e); chip.style.background = EMO[e.id].col; chip.title = "Tap for this Sim's moodlets"; chip.onclick = () => { tab = "emo"; host.querySelectorAll(".sm-tabs button[data-t]").forEach((x) => x.classList.toggle("on", x.dataset.t === "emo")); paintTab(); }; }
       const bh = $(".sm-buyhint"); if (bh) { bh.hidden = mode !== "buy"; bh.textContent = buyItem ? `Placing: ${CAT[buyItem].name} · tap a spot${view3d ? " · R / ↻ to turn" : ""} · Esc to stop` : "Buy Mode — pick an item below, or tap an object to sell or turn it"; }
       const m = $(".sm-mood div"); m.style.width = Math.abs(md) / 2 + "%"; m.style.left = md >= 0 ? "50%" : (50 - Math.abs(md) / 2) + "%"; m.style.background = md >= 0 ? "#4ad04a" : "#e04a3a";
       const pc = $(".sm-portrait").getContext("2d"); pc.clearRect(0, 0, 72, 84); drawSimFigure(pc, 36, 150, 2.2, G.sim, "stand", 0, 1, false);
-      if (tab === "needs") paintTab();
+      if (tab === "needs" || tab === "emo") paintTab();
     }
     function paintTab() {
       if (!G) return; const b = $(".sm-tab-body"), N = G.sim.needs;
       if (tab === "needs") {
         b.innerHTML = `<div class="sm-card-h">Needs</div><div class="sm-needs">${NEEDS.map((k) => { const v = N[k], col = v > 60 ? "linear-gradient(#8ee86a,#4cb83a)" : v > 30 ? "linear-gradient(#ffe27a,#e8b52a)" : "linear-gradient(#ff8a7a,#d8402a)"; return `<div class="sm-need"><i>${NEED_ICON[k]}</i><span>${NEED_LABEL[k]}</span><div class="sm-nb"><div style="width:${v}%;background:${col}"></div></div></div>`; }).join("")}</div>`;
+      } else if (tab === "emo") {
+        const e = emotion(), list = moodlets().slice().sort((p, q) => q.w - p.w);
+        const effect = { focused: "Learns logic, cooking and mechanical faster", energized: "Builds body skill faster", inspired: "Paints better and sells art for more", confident: "Learns charisma faster", playful: "Jokes land more often", flirty: "Romance grows faster", sad: "Learns skills slower", angry: "Learns skills slower", tense: "Learns skills slower", uncomfortable: "Learns skills slower", bored: "Learns skills slower" }[e.id];
+        b.innerHTML = `<div class="sm-card-h">${EMO[e.id].icon} ${esc(emoName(e))}</div>${effect ? `<div class="sm-emo-fx">${esc(effect)}</div>` : ""}
+          <div class="sm-moodlets">${list.length ? list.map((m) => `<div class="sm-moodlet" style="--mc:${EMO[m.emo].col}"><i>${EMO[m.emo].icon}</i><span><b>${esc(m.label)}</b><small>+${m.w} ${EMO[m.emo].name}${m.until ? " · " + Math.max(1, Math.round((m.until - G.min) / 60)) + "h left" : ""}</small></span></div>`).join("") : `<div class="sm-tabtxt">No moodlets right now — ${esc(G.sim.name)} feels fine.</div>`}</div>`;
       } else if (tab === "job") {
         const C = G.career;
         if (!C) { b.innerHTML = `<div class="sm-tabtxt">${esc(G.sim.name)} is unemployed. Use the <b>computer</b> → <i>Find a Job</i>.</div>`; return; }
@@ -1447,7 +1559,11 @@
       .sm-ring { width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(#d6ecff, #7ab0e8); border: 4px solid #fff; box-shadow: 0 4px 14px rgba(0,30,80,.4), 0 0 0 3px #3be36a; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
       .sm-ring.live { background: transparent; } .sm-ring.live .sm-portrait { visibility: hidden; }
       .sm-portrait { background: none; border: 0; border-radius: 0; width: 82px; height: 96px; }
-      .sm-moodchip { margin-top: -14px; z-index: 1; padding: 2px 12px; border-radius: 12px; font: 800 12px "Nunito", system-ui; color: #26324a; box-shadow: 0 2px 6px rgba(0,0,0,.3); border: 2px solid #fff; }
+      .sm-moodchip { margin-top: -14px; z-index: 1; padding: 2px 12px; border-radius: 12px; font: 800 12px "Nunito", system-ui; color: #26324a; box-shadow: 0 2px 6px rgba(0,0,0,.3); border: 2px solid #fff; cursor: pointer; white-space: nowrap; transition: background .4s; }
+      .sm-emo-fx { font: 700 11.5px "Nunito", system-ui; color: #5a6a84; margin: -2px 0 8px; }
+      .sm-moodlets { display: flex; flex-direction: column; gap: 6px; }
+      .sm-moodlet { display: flex; gap: 8px; align-items: center; background: #f4f7fb; border-left: 4px solid var(--mc); border-radius: 8px; padding: 5px 8px; }
+      .sm-moodlet i { font-style: normal; font-size: 18px; } .sm-moodlet span { display: flex; flex-direction: column; } .sm-moodlet b { font: 800 12.5px "Nunito", system-ui; color: #26324a; } .sm-moodlet small { font: 700 11px "Nunito", system-ui; color: #6a7a94; }
       .sm-mood { display: none; }
       .sm-name { color: #fff; font: 800 12px "Nunito", system-ui; text-shadow: 0 1px 3px rgba(0,0,0,.8); max-width: 112px; }
       .sm-money { background: rgba(255,255,255,.92); color: #2a7a3a; border-radius: 12px; padding: 2px 12px; font: 900 14px "Nunito", system-ui; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
