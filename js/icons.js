@@ -265,6 +265,7 @@
 
   // Start button: the Windows 12 logo (transparent PNG). The Windows 11 logo is only used on the boot screen.
   alias("browser", "edge");   // the generic browser app shows the Edge icon (it was falling back to "ED" initials)
+  alias("minecraft", "mclauncher");   // there is no minecraft.png: use the launcher creeper everywhere (Store, window, taskbar)
   register("winflag", `<img src="assets/win12_logo.png?v=1" alt="" style="width:100%;height:100%;object-fit:contain">`);
 
   register("searchglass", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">

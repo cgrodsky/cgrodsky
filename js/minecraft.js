@@ -233,7 +233,7 @@
     // Minecraft for Windows opens on a generic app-window icon while it loads,
     // then swaps to the Minecraft icon after 2 seconds.
     const ref = cw({ title: "Mincraft", icon: Icon.mini("mclauncher", "Mincraft"), width: 900, height: 640, appId: "minecraft" });
-    setTimeout(() => { if (window.WM && window.WM.setWindowIcon) window.WM.setWindowIcon(ref.win, Icon.mini("minecraft", "Mincraft")); }, 2000);
+    setTimeout(() => { if (window.WM && window.WM.setWindowIcon) window.WM.setWindowIcon(ref.win, Icon.mini("mclauncher", "Mincraft")); }, 2000);
     if (S().appData.minecraft == null) S().appData.minecraft = { sound: true, fullscreen: false, showFps: false };
     const toMenu = () => menu(ref.body, ref);
     if (opts && opts.skipIntro) toMenu();

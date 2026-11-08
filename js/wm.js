@@ -619,6 +619,8 @@
     };
     ic.addEventListener("mousedown", onDown);
     ic.addEventListener("touchstart", onDown, { passive: true });
+    // Mouse double-click opens the app straight away, like real Windows (tap → select → menu still works on touch).
+    ic.addEventListener("dblclick", (e) => { e.preventDefault(); document.querySelectorAll(".desk-ctx").forEach((m) => m.remove()); clearDeskSel(); launchDeskItem(s); });
     ic.addEventListener("contextmenu", (e) => { e.preventDefault(); if (!deskSel.has(s.key)) { clearDeskSel(); deskSel.add(s.key); ic.classList.add("selected"); } deskIconMenu(s, ic); });
   }
 
