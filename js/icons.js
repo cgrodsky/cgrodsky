@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "12";
+  const ICONV = "13";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -263,15 +263,9 @@
     <path d="M80 44 H108 M80 60 H108 M80 76 H108 M80 92 H100" stroke="#2b579a" stroke-width="4" stroke-linecap="round"/>
   </svg>`);
 
-  register("winflag", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="wfg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3b82f6"/><stop offset=".5" stop-color="#a855f7"/><stop offset="1" stop-color="#e879f9"/>
-    </linearGradient></defs>
-    <rect x="1" y="1" width="19" height="19" rx="5" fill="url(#wfg)"/>
-    <rect x="24" y="1" width="19" height="19" rx="5" fill="url(#wfg)"/>
-    <rect x="1" y="24" width="19" height="19" rx="5" fill="url(#wfg)"/>
-    <rect x="24" y="24" width="19" height="19" rx="5" fill="url(#wfg)"/>
-  </svg>`);
+  // Start button: the Windows 11 logo (transparent PNG).
+  alias("browser", "edge");   // the generic browser app shows the Edge icon (it was falling back to "ED" initials)
+  register("winflag", `<img src="assets/win11_start.png?v=1" alt="" style="width:100%;height:100%;object-fit:contain">`);
 
   register("searchglass", `<svg viewBox="0 0 44 44" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     <defs><linearGradient id="sgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f0ff"/><stop offset="1" stop-color="#7fd9ff"/></linearGradient></defs>

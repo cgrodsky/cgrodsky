@@ -1081,7 +1081,7 @@
         <div class="tb-apps">
           <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "winflag", "Windows")}</div>
           <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
-          <div class="tb-btn" data-open="browser" title="Edge">${Icon.mini("browser", "Edge")}</div>
+          <div class="tb-btn" data-open="edge" title="Microsoft Edge">${Icon.mini("edge", "Microsoft Edge")}</div>
           <div class="tb-btn" data-open="fileexplorer" title="File Explorer">${Icon.mini("fileexplorer", "File Explorer")}</div>
           <div class="tb-btn" data-open="photos" title="Photos">${Icon.mini("photos", "Photos")}</div>
         </div>
