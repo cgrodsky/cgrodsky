@@ -136,7 +136,7 @@
   // ---------- sections ----------
   const NAV = [
     { id: "system", name: "System", ic: "opt_monitor" },
-    { id: "devices", name: "Bluetooth & devices", ic: "mouse" },
+    { id: "devices", name: "Bluetooth & devices", ic: "set_bluetooth" },
     { id: "network", name: "Network & internet", ic: "wifi" },
     { id: "personal", name: "Personalization", ic: "personalization" },
     { id: "apps", name: "Apps", ic: "store__" },
