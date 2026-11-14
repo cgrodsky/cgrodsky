@@ -507,6 +507,8 @@
     const place = () => {
       if (!b.isConnected || !inp.isConnected) return;
       const show = !!inp.value && inp.offsetParent != null && !inp.disabled;
+      // An emptied box (cleared after a wrong password, etc.) goes back to hidden dots, like Windows.
+      if (!inp.value && inp.type === "text") { inp.type = "password"; b.classList.remove("on"); b.title = "Show password"; }
       b.style.display = show ? "inline-flex" : "none"; if (!show) return;
       const cs = getComputedStyle(inp);
       if (cs.boxSizing === "border-box" && (parseFloat(cs.paddingRight) || 0) < 36) inp.style.paddingRight = "36px";
@@ -516,6 +518,8 @@
       b.style.top = (inp.offsetTop + (inp.offsetHeight - 26) / 2) + "px";
     };
     inp.addEventListener("input", place); inp.addEventListener("focus", place);
+    // pages often clear the box in code after a submit, which fires no "input" event
+    if (inp.form) { inp.form.addEventListener("submit", () => setTimeout(place, 0)); inp.form.addEventListener("reset", () => setTimeout(place, 0)); }
     if (window.ResizeObserver) new ResizeObserver(place).observe(inp);
     requestAnimationFrame(place);
     b.addEventListener("mousedown", (e) => e.preventDefault());   // keep focus in the box

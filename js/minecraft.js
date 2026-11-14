@@ -1239,9 +1239,9 @@
       const wrap = document.createElement("div");
       const owned = Object.keys(inv).filter((id) => inv[id] > 0 && !hotbar.includes(+id));
       const main = document.createElement("div"); main.className = "mci-main";
-      for (let i = 0; i < 27; i++) { const id = +owned[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); if (id) n.onclick = () => clickInvItem(id); main.appendChild(n); }
+      for (let i = 0; i < 27; i++) { const id = +owned[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); n.onclick = () => clickInvItem(id || 0); main.appendChild(n); }
       const hot = document.createElement("div"); hot.className = "mci-hotrow";
-      for (let i = 0; i < 9; i++) { const id = hotbar[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); if (id) n.onclick = () => clickInvItem(id); hot.appendChild(n); }
+      for (let i = 0; i < 9; i++) { const id = hotbar[i]; const n = slotNode(id ? { id, count: inv[id] } : 0); n.onclick = () => clickInvItem(id || 0); hot.appendChild(n); }
       wrap.append(main, hot); return wrap;
     }
     function buildCraft(panel) {
