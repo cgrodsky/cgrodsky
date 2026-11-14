@@ -20,7 +20,7 @@
 
     // 3-second Office-style splash (with Microsoft logo), then the start menu.
     body.innerHTML = `<div class="wd-splash">
-      <img class="wd-splash-ic" src="assets/word.png" alt="">
+      <img class="wd-splash-ic" src="assets/word.png?v=15" alt="">
       <div class="wd-splash-name">Word</div>
       <div class="wd-splash-bar"><span></span></div>
       <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>
@@ -56,7 +56,7 @@
       const docs = listDocs();
       body.innerHTML = `<div class="wd-start">
         <div class="wd-start-side">
-          <div class="wd-start-brand"><img src="assets/word.png" class="wd-start-logo" alt="">Word</div>
+          <div class="wd-start-brand"><img src="assets/word.png?v=15" class="wd-start-logo" alt="">Word</div>
           <button class="wd-start-btn primary" id="sNew">New blank document</button>
           <button class="wd-start-btn" id="sOpen">Open from Files…</button>
           <button class="wd-start-btn" id="sDevice">Open from this device…</button>
@@ -72,7 +72,7 @@
       </div>`;
       const rec = body.querySelector(".wd-start-recent");
       if (!docs.length) rec.innerHTML = `<div class="muted" style="padding:14px">No recent documents yet. Create a new one to get started.</div>`;
-      docs.forEach((d) => { const row = el(`<button class="wd-recent-row"><img src="assets/word.png" class="wd-recent-ic" alt=""><span class="wd-recent-nm">${escapeHtml(d.name)}</span><span class="wd-recent-loc muted">${d.path.join(" › ") || "This PC"}</span></button>`); row.onclick = () => buildWord(d); rec.appendChild(row); });
+      docs.forEach((d) => { const row = el(`<button class="wd-recent-row"><img src="assets/word.png?v=15" class="wd-recent-ic" alt=""><span class="wd-recent-nm">${escapeHtml(d.name)}</span><span class="wd-recent-loc muted">${d.path.join(" › ") || "This PC"}</span></button>`); row.onclick = () => buildWord(d); rec.appendChild(row); });
       body.querySelector("#sNew").onclick = () => buildWord(null);
       body.querySelector("#cNew").onclick = () => buildWord(null);
       body.querySelector("#sOpen").onclick = () => window.VFS.pickFile({ title: "Open document", accept: ["word", "text"] }, (res) => buildWord(res));
@@ -242,7 +242,7 @@
     else if (S().appData.excel) { cells = S().appData.excel.cells || {}; styles = S().appData.excel.styles || {}; }
 
     body.innerHTML = `<div class="wd-splash xl-splash">
-      <img class="wd-splash-ic" src="assets/excel.png" onerror="this.style.display='none'" alt="">
+      <img class="wd-splash-ic" src="assets/excel.png?v=15" onerror="this.style.display='none'" alt="">
       <div class="wd-splash-name" style="color:#217346">Excel</div>
       <div class="wd-splash-bar"><span style="background:#217346"></span></div>
       <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>
@@ -504,7 +504,7 @@
     let mode = "edit";
 
     body.innerHTML = `<div class="wd-splash fm-splash">
-      <img class="wd-splash-ic" src="assets/forms.png" onerror="this.style.display='none'" alt="">
+      <img class="wd-splash-ic" src="assets/forms.png?v=15" onerror="this.style.display='none'" alt="">
       <div class="wd-splash-name" style="color:#1a8a8f">Forms</div>
       <div class="wd-splash-bar"><span style="background:#1a8a8f"></span></div>
       <div class="wd-splash-ms"><span class="w12-flag"><i></i><i></i><i></i><i></i></span> Microsoft</div>

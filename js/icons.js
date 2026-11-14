@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "14";
+  const ICONV = "15";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -252,8 +252,8 @@
     <path fill="#e50914" d="M44 22 L44 106 C49.5 105.3 55 104.7 60.5 104.3 L60.5 62 L78 106 C84 106 90 106.4 96 107 L96 22 L80 22 L80 60 L64.5 22 Z"/>
   </svg>`);
 
-  // Calculator uses an animated gif; box() tries assets/calculator.png first,
-  // fails (none), then falls back to this registered markup.
+  // Calculator: box() uses assets/calculator.png (Windows 12 style); this animated
+  // gif is only the fallback if that picture can't load.
   register("calculator", `<img src="assets/calculator.gif" alt="" style="width:100%;height:100%;object-fit:contain;border-radius:6px">`);
 
   register("word", `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -436,8 +436,8 @@
   // Calendar tile that shows today's date — re-generated on every render.
   function calendarSVG(day) {
     return `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="cal_body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26a3e8"/><stop offset="1" stop-color="#0e86d4"/></linearGradient></defs>
-      <rect x="12" y="18" width="104" height="98" rx="18" fill="#0568ba"/>
+      <defs><linearGradient id="cal_body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a35be0"/><stop offset="1" stop-color="#4f7cf0"/></linearGradient></defs>
+      <rect x="12" y="18" width="104" height="98" rx="18" fill="#5a2fb8"/>
       <rect x="12" y="40" width="104" height="76" rx="14" fill="url(#cal_body)"/>
       <rect x="36" y="9" width="9" height="21" rx="4.5" fill="#c3ccd4"/>
       <rect x="83" y="9" width="9" height="21" rx="4.5" fill="#c3ccd4"/>
@@ -453,9 +453,10 @@
     const hand = (len, deg, w, col) => { const a = (deg - 90) * Math.PI / 180; return `<line x1="64" y1="64" x2="${(64 + Math.cos(a) * len).toFixed(1)}" y2="${(64 + Math.sin(a) * len).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
     let ticks = ""; for (let i = 0; i < 12; i++) { const a = (i * 30 - 90) * Math.PI / 180; ticks += `<line x1="${(64 + Math.cos(a) * 48).toFixed(1)}" y1="${(64 + Math.sin(a) * 48).toFixed(1)}" x2="${(64 + Math.cos(a) * 54).toFixed(1)}" y2="${(64 + Math.sin(a) * 54).toFixed(1)}" stroke="#8a97a6" stroke-width="${i % 3 === 0 ? 3 : 1.6}"/>`; }
     return `<svg viewBox="0 0 128 128" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">` +
-      `<circle cx="64" cy="64" r="60" fill="#ffffff" stroke="#c9d2dc" stroke-width="4"/>${ticks}` +
-      hand(30, ha, 5, "#1f2a37") + hand(44, ma, 3.4, "#1f2a37") + hand(50, sa, 1.5, "#e5484d") +
-      `<circle cx="64" cy="64" r="4.5" fill="#e5484d"/></svg>`;
+      `<defs><linearGradient id="clk_ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a35be0"/><stop offset="1" stop-color="#4f7cf0"/></linearGradient></defs>` +
+      `<circle cx="64" cy="64" r="60" fill="#ffffff" stroke="url(#clk_ring)" stroke-width="5"/>${ticks}` +
+      hand(30, ha, 5, "#2a2140") + hand(44, ma, 3.4, "#2a2140") + hand(50, sa, 1.5, "#8b5cf6") +
+      `<circle cx="64" cy="64" r="4.5" fill="#8b5cf6"/></svg>`;
   }
   register("clock", () => clockSVG());
 

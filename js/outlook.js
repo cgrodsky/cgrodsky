@@ -151,8 +151,8 @@
   const AV_COLORS = ["#0f6cbd", "#c239b3", "#d83b01", "#107c10", "#5c2e91", "#008272", "#ca5010", "#8764b8"];
   // Known brand senders — logo avatar and/or a verified badge next to the name.
   const BRANDS = {
-    "xbox": { img: "assets/xbox.png", verified: true },
-    "xbox game pass": { img: "assets/xbox.png", verified: true },
+    "xbox": { img: "assets/xbox.png?v=15", verified: true },
+    "xbox game pass": { img: "assets/xbox.png?v=15", verified: true },
     "linkedin": { img: "assets/linkedin.png", verified: true },
     "microsoft account team": { verified: true },
     "microsoft store": { verified: true },

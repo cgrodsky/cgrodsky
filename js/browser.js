@@ -39,7 +39,7 @@
         <div class="edge-hero-top"><span class="edge-weather">🌤 72°F</span><span class="grow"></span><button class="edge-gear" title="Page settings">⚙</button></div>
         <form class="edge-search-form">
           <div class="edge-search">
-            <img class="edge-bing" src="assets/bing.png?v=1" alt="Bing">
+            <img class="edge-bing" src="assets/bing.png?v=15" alt="Bing">
             <input class="edge-q" placeholder="Search the web" autofocus>
             <button type="submit" class="edge-go" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
           </div>
@@ -170,7 +170,7 @@
 
     // Edge gets a Copilot button on the toolbar (like real Edge's Copilot).
     if (opts.edge) {
-      const cp = el(`<button class="bb-ic bb-copilot" title="Copilot"><img src="assets/copilot.png?v=1" alt="Copilot" onerror="this.replaceWith(document.createTextNode('◈'))"></button>`);
+      const cp = el(`<button class="bb-ic bb-copilot" title="Copilot"><img src="assets/copilot.png?v=15" alt="Copilot" onerror="this.replaceWith(document.createTextNode('◈'))"></button>`);
       cp.onclick = () => { if (window.WM) WM.open("copilot"); };
       body.querySelector(".bb-menu").before(cp);
     }

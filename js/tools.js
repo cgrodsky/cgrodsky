@@ -79,7 +79,7 @@
     const ref = cw({ title: "Run", icon: window.Icon ? Icon.mini("run", "Run") : "", width: 420, height: 210, appId: "run", noMax: true });
     const body = ref.body; body.classList.add("run-host");
     body.innerHTML = `<div class="run">
-      <div class="run-top"><img class="run-ic" src="assets/run.png?v=1" alt=""><p>Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.</p></div>
+      <div class="run-top"><img class="run-ic" src="assets/run.png?v=15" alt=""><p>Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.</p></div>
       <div class="run-field"><label>Open:</label><input class="run-in" spellcheck="false" autocomplete="off"></div>
       <div class="run-btns"><button class="run-ok">OK</button><button class="run-cancel">Cancel</button><button class="run-browse">Browse…</button></div>
     </div>`;
