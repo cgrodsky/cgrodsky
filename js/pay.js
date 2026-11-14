@@ -21,7 +21,7 @@
             Tap “Use fake test card” below.
           </div>
           <div class="payment--options">
-            <button type="button" title="Apple Pay (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#111">Pay</text></svg></button>
+            <button type="button" class="pay-apple" title="Apple Pay — opens Apple's official demo"><svg viewBox="0 0 44 18" width="44" height="18" aria-label="Apple Pay"><path fill="#111" d="M8.6 4.1c-.5.6-1.3 1-2 1-.1-.8.3-1.6.7-2.1.5-.6 1.3-1 2-1 .1.8-.2 1.6-.7 2.1zm.7 1.1c-1.1-.1-2.1.6-2.6.6s-1.4-.6-2.3-.6C3.2 5.3 2.1 6 1.5 7.1.3 9.2 1.2 12.3 2.4 14c.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5 1.5-.8 2.1-1.7c.6-.9.9-1.8.9-1.9 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.4-2.6-.8-1.2-2-1.3-2.4-1.3z"/><text x="13.5" y="14.2" font-size="12.5" font-weight="600" fill="#111" font-family="-apple-system,system-ui,sans-serif">Pay</text></svg></button>
             <button type="button" title="Google Pay (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#111">G Pay</text></svg></button>
             <button type="button" title="PayPal (fake)"><svg viewBox="0 0 24 24" width="34" height="18"><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="#003087">PayPal</text></svg></button>
             <button type="button" title="Amazon Pay (fake)"><img src="assets/amazon_pay.png" alt="Amazon Pay" style="height:16px;width:auto;display:block"></button>
@@ -78,6 +78,28 @@
     };
 
     overlay.querySelector("#pcCancel").onclick = () => overlay.remove();
+
+    // Apple Pay: Apple's official demo opens in a real tab (it won't load inside a page).
+    // When you come back, finish the pretend purchase with "Apple Pay".
+    overlay.querySelector(".pay-apple").onclick = () => {
+      try { window.open("https://applepaydemo.apple.com/", "_blank", "noopener"); } catch (_) {}
+      const form = overlay.querySelector(".form");
+      overlay.querySelectorAll(".apay-step").forEach((x) => x.remove());
+      const step = el(`<div class="apay-step">
+        <div class="apay-logo"><svg viewBox="0 0 44 18" width="66" height="27"><path fill="currentColor" d="M8.6 4.1c-.5.6-1.3 1-2 1-.1-.8.3-1.6.7-2.1.5-.6 1.3-1 2-1 .1.8-.2 1.6-.7 2.1zm.7 1.1c-1.1-.1-2.1.6-2.6.6s-1.4-.6-2.3-.6C3.2 5.3 2.1 6 1.5 7.1.3 9.2 1.2 12.3 2.4 14c.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5 1.5-.8 2.1-1.7c.6-.9.9-1.8.9-1.9 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.4-2.6-.8-1.2-2-1.3-2.4-1.3z"/><text x="13.5" y="14.2" font-size="12.5" font-weight="600" fill="currentColor" font-family="-apple-system,system-ui,sans-serif">Pay</text></svg></div>
+        <p>Apple's <b>Apple Pay demo</b> opened in a new tab. It's Apple's official test page — nothing is charged.</p>
+        <p class="apay-small">Didn't open? <a href="https://applepaydemo.apple.com/" target="_blank" rel="noopener">Open the Apple Pay demo</a></p>
+        <button type="button" class="apay-done">Finish with Apple Pay</button>
+        <button type="button" class="pay-cancel apay-back">Back</button>
+      </div>`);
+      step.querySelector(".apay-done").onclick = () => {
+        S().appData.cardOnFile = { last4: "Pay", name: "Apple Pay", wallet: "applepay" };
+        State.save(); overlay.remove(); cb();
+      };
+      step.querySelector(".apay-back").onclick = () => { step.remove(); form.style.display = ""; };
+      form.style.display = "none";
+      form.after(step);
+    };
 
     overlay.querySelector("#pcPay").onclick = () => {
       const digits = num.value.replace(/\D/g, "");

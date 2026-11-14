@@ -5015,6 +5015,14 @@ body.dark .fx12-pop button:hover:not(:disabled){background:rgba(255,255,255,.08)
 .fx12-check{margin-left:auto;color:#6a6fd6}
 @media (max-width:760px){.fx12-side{display:none}.fx12-search{width:40%}.fx12-tb span{display:none}.fx12-row{grid-template-columns:24px minmax(0,1fr) 70px}.fx12-row-d,.fx12-row-t{display:none}}
 
+/* Apple Pay step in the payment window */
+.apay-step{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:18px 20px 12px;color:#111}
+.apay-logo{color:#000}
+.apay-step p{margin:0;font-size:.9rem;line-height:1.4;max-width:300px}
+.apay-small{font-size:.78rem!important;opacity:.7}
+.apay-done{all:unset;cursor:pointer;width:100%;max-width:300px;box-sizing:border-box;text-align:center;padding:11px 14px;border-radius:10px;background:#000;color:#fff;font-weight:600}
+.apay-done:hover{background:#222}
+
 /* ===== Start menu — Windows 12 style ===== */
 .start-menu.sm12{width:min(1000px,96vw);height:min(660px,calc(100vh - 110px));max-height:none;flex-direction:row;gap:18px;overflow:visible;
   background:linear-gradient(140deg,rgba(236,222,250,.95),rgba(214,222,250,.95) 55%,rgba(196,216,250,.95));backdrop-filter:blur(40px) saturate(1.3);border:1px solid rgba(255,255,255,.55);border-radius:22px;box-shadow:0 20px 60px rgba(40,30,90,.28);color:#111;padding:18px 18px 18px 22px;box-sizing:border-box}

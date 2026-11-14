@@ -132,6 +132,23 @@
     ctx.page.appendChild(page);
   }
 
+  // What to show in Chrome's Google frame for something typed in the address bar (or null for a normal site).
+  function googleTarget(url, isUrl) {
+    const t = String(url || "").trim();
+    let m = t.match(/^(search|images):(.*)$/i);
+    let q = null, images = false;
+    if (m) { q = m[2].trim(); images = m[1].toLowerCase() === "images"; }
+    else if (!isUrl) q = t;
+    else {
+      const u = (() => { try { return new URL(/^https?:\/\//.test(t) ? t : "https://" + t); } catch (_) { return null; } })();
+      if (!u || !/(^|\.)google\.[a-z.]+$/i.test(u.hostname) || !/^(www\.)?google\./i.test(u.hostname)) return null;
+      if (u.pathname === "/search") { q = u.searchParams.get("q") || ""; images = u.searchParams.get("tbm") === "isch"; }
+      else return { src: "https://www.google.com/webhp?igu=1", q: "" };
+    }
+    if (!q) return { src: images ? "https://www.google.com/imghp?igu=1" : "https://www.google.com/webhp?igu=1", q: "" };
+    return { src: "https://www.google.com/search?igu=1&q=" + encodeURIComponent(q) + (images ? "&tbm=isch" : ""), q, images };
+  }
+
   function openBrowser(createWindow, startUrl, opts) {
     opts = opts || {};
     const { body, win } = createWindow({ title: opts.title || "Edge", icon: opts.icon || Icon.mini("browser", "Edge"), width: 920, height: 620, appId: opts.appId || "browser" });
@@ -189,6 +206,19 @@
       } else {
         lock.textContent = "";
         const isUrl = /^https?:\/\//.test(url) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/i.test(url.trim());
+        // Chrome shows real Google. Google normally refuses to load inside a frame, but
+        // "igu=1" makes it allow embedding (the same trick other Windows 12 web demos use).
+        if (opts.appId === "chrome") {
+          const g = googleTarget(url, isUrl);
+          if (g) {
+            urlInput.value = g.q || "google.com";
+            const frame = el(`<iframe class="embed-frame g-frame" src="${esc(g.src)}" referrerpolicy="no-referrer-when-downgrade" allow="clipboard-write; microphone"></iframe>`);
+            page.appendChild(frame);
+            lock.textContent = "Secure"; body.querySelector(".addr").classList.add("locked-site");
+            addHistory(g.q || "google.com", g.q ? (g.images ? "images:" : "search:") + g.q : "https://www.google.com");
+            return;
+          }
+        }
         if (/^(search|images):/i.test(url) || !isUrl) { // in-app search results (Google/Bing refuse to load inside a window)
           const m = url.match(/^(search|images):(.*)$/i); const mode = m ? m[1].toLowerCase() : "search", q = m ? m[2] : url.trim();
           urlInput.value = q; renderSearch(ctx, q, mode); addHistory(q, mode + ":" + q); return;
