@@ -1329,6 +1329,7 @@
   }
   function imageGrid(host, q, n, more) {
     const seq = ++spImgSeq;
+    if (window.SafeSearch && SafeSearch.on() && SafeSearch.isAdultText(q)) { host.appendChild(el(`<div class="sp-empty">🛡 SafeSearch is on — pictures for this search are hidden.</div>`)); return; }
     const grid = el(`<div class="sp-imgs"><div class="sp-empty">Finding pictures of “${q.replace(/</g, "&lt;")}”…</div></div>`);
     host.appendChild(grid);
     clearTimeout(imageGrid.t);

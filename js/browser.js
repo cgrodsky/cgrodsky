@@ -135,31 +135,68 @@
   // ---- Site safety: adult-content and suspicious-address warnings ----
   const SAFE_TLDS = ["com", "net", "org", "io", "gov", "edu", "local"];
   const ADULT_HOSTS = ["pornhub", "xvideos", "xnxx", "xhamster", "redtube", "youporn", "onlyfans", "chaturbate", "brazzers", "spankbang", "stripchat", "livejasmin", "bongacams", "cam4", "fansly", "rule34", "e-hentai", "nhentai", "hentaihaven", "motherless", "tube8", "eporner", "porntrex", "manyvids", "camsoda", "myfreecams"];
-  const ADULT_WORDS = /(^|[^a-z])(porn|porno|xxx|nsfw|hentai|sex|sexy|nude|nudes|naked|erotic|camgirl|milf|fetish|escort)([^a-z]|$)|porn|xxx/i;
+  // Every website owned by Aylo (formerly MindGeek) counts as adult content, including the company's own site.
+  const AYLO_HOSTS = ["aylo", "mindgeek", "pornhub", "youporn", "redtube", "tube8", "thumbzilla", "pornmd", "xtube", "modelhub", "brazzers", "realitykings", "digitalplayground", "mofos", "twistys", "babes", "men", "seancody", "bangbros", "spicevids", "transangels", "fakehub", "sexyhub", "whynotbi", "biempire", "noirmale", "iconmale", "trueamateurs", "propertysex", "lookathernow", "doghousedigital", "erito", "squirted", "bromo", "milehighmedia", "realityjunkies", "dancingbear", "metrohd", "devianthardcore", "familyhookups", "transharder", "trans500", "gaywire"];
+  const ADULT_WORDS = /(^|[^a-z])(porn|porno|xxx|nsfw|hentai|sex|sexy|nude|nudes|naked|erotic|camgirl|milf|fetish|escort|boobs|tits|onlyfans|rule34)([^a-z]|$)|porn|xxx/i;
   function hostOf(url) { try { return new URL(/^https?:\/\//i.test(url) ? url : "https://" + url).hostname.toLowerCase(); } catch (_) { return ""; } }
+  const hostIs = (bare, list) => list.some((h) => bare === h || bare.startsWith(h + ".") || bare.endsWith("." + h + ".com") || bare.includes("." + h + "."));
+  function isAdultSite(url) {
+    const host = hostOf(url); const bare = host.replace(/^www\./, "");
+    if (hostIs(bare, ["men"]) ) return /^(www\.)?men\.com$/.test(host);   // "men" only means men.com
+    return !!host && (hostIs(bare, ADULT_HOSTS) || hostIs(bare, AYLO_HOSTS.filter((h) => h !== "men")) || ADULT_WORDS.test(bare.replace(/[.-]/g, " ")) || /\/(porn|xxx|nsfw|hentai)(\/|$)/i.test(url));
+  }
+  const isAdultText = (q) => ADULT_WORDS.test(String(q || "")) || ADULT_HOSTS.concat(AYLO_HOSTS.filter((h) => h !== "men" && h !== "babes")).some((h) => new RegExp("(^|\\W)" + h + "(\\W|$)", "i").test(String(q || "")));
   function siteWarning(url) {
     const host = hostOf(url); if (!host) return null;
-    const bare = host.replace(/^www\./, "");
-    if (ADULT_HOSTS.some((h) => bare === h || bare.startsWith(h + ".") || bare.includes("." + h + ".")) || ADULT_WORDS.test(bare.replace(/[.-]/g, " ")) || /\/(porn|xxx|nsfw|hentai)(\/|$)/i.test(url)) return { kind: "adult", host };
+    if (isAdultSite(url)) return { kind: "adult", host };
     if (/^\d+(\.\d+){3}$/.test(host)) return { kind: "suspicious", host, why: "This address is just numbers (an IP address), not a normal website name." };
     const tld = host.split(".").pop();
     if (!SAFE_TLDS.includes(tld)) return { kind: "suspicious", host, why: `Its address ends in <b>.${esc(tld)}</b>. Most trusted websites end in <b>.com</b>, <b>.net</b>, <b>.org</b> or <b>.io</b>.` };
+    // https:// is fine; plain http:// isn't encrypted
+    if (/^http:\/\//i.test(url) && tld !== "local") return { kind: "insecure", host, why: "This site uses <b>http://</b>, not <b>https://</b>, so what you type or see here isn't private — others on the network could read or change it." };
     return null;
   }
+
+  // ---- SafeSearch: asked once (age check). Under 18 → SafeSearch is locked on. ----
+  function safety() { const d = State.data; d.appData = d.appData || {}; return d.appData.safety || (d.appData.safety = { asked: false, adult: false, safeSearch: true, locked: false }); }
+  const safeOn = () => { const s = safety(); return s.locked || s.safeSearch !== false; };
+  window.SafeSearch = { on: safeOn, isAdultText, isAdultSite };
+
   const allowedHosts = new Set();   // hosts the user chose to continue to (this session)
   function renderWarning(ctx, w, final, onContinue) {
-    const adult = w.kind === "adult";
+    const adult = w.kind === "adult", blocked = adult && safeOn();
+    const title = adult ? (blocked ? "Blocked by SafeSearch" : "Adult content warning") : w.kind === "insecure" ? "Not secure" : "Suspicious website";
+    const msg = adult
+      ? (blocked ? (safety().locked ? "This website has <b>adult content</b>. SafeSearch is locked on because you said you're under 18, so it can't be opened." : "This website has <b>adult content</b>. SafeSearch is on — turn it off in the browser's <b>Settings</b> if you're 18 or older.") : "This website may show <b>adult content</b> that isn't suitable for kids. You must be 18 or older to continue.")
+      : w.kind === "insecure" ? w.why + " Don't type passwords or personal info on it."
+      : "This website could be <b>unsafe</b>. " + w.why + " Sites like this are sometimes used for scams or to steal passwords.";
     const page = el(`<div class="bw-warn ${adult ? "bw-adult" : "bw-sus"}">
       <div class="bw-card">
-        <div class="bw-ic">${adult ? "18+" : "!"}</div>
-        <h2>${adult ? "Adult content warning" : "Suspicious website"}</h2>
+        <div class="bw-ic">${adult ? (blocked ? "🛡" : "18+") : w.kind === "insecure" ? "🔓" : "!"}</div>
+        <h2>${title}</h2>
         <p class="bw-host">${esc(w.host)}</p>
-        <p>${adult ? "This website may show <b>adult content</b> that isn't suitable for kids. You must be 18 or older to continue." : "This website could be <b>unsafe</b>. " + w.why + " Sites like this are sometimes used for scams or to steal passwords."}</p>
-        <div class="bw-btns"><button class="bw-back">Go back (recommended)</button><button class="bw-go">${adult ? "I'm 18 or older — continue" : "Continue anyway"}</button></div>
+        <p>${msg}</p>
+        <div class="bw-btns"><button class="bw-back">Go back${blocked ? "" : " (recommended)"}</button>${blocked ? "" : `<button class="bw-go">${adult ? "I'm 18 or older — continue" : "Continue anyway"}</button>`}</div>
       </div></div>`);
     page.querySelector(".bw-back").onclick = () => ctx.goBack();
-    page.querySelector(".bw-go").onclick = () => { allowedHosts.add(w.host); onContinue(); };
+    const go = page.querySelector(".bw-go"); if (go) go.onclick = () => { allowedHosts.add(w.host); onContinue(); };
     ctx.page.appendChild(page);
+  }
+  function renderSafeBlocked(ctx, q) {
+    ctx.page.appendChild(el(`<div class="bw-warn bw-adult"><div class="bw-card"><div class="bw-ic">🛡</div><h2>SafeSearch is on</h2><p class="bw-host">${esc(q)}</p>
+      <p>Results for this search are hidden because they may include adult content.${safety().locked ? " SafeSearch is locked on because you said you're under 18." : " You can turn SafeSearch off in the browser's <b>Settings</b> if you're 18 or older."}</p></div></div>`));
+  }
+  // The age check shown the first time Edge or Chrome opens.
+  function ageGate(page, done) {
+    const g = el(`<div class="bw-warn bw-age"><div class="bw-card">
+      <div class="bw-ic">🛡</div><h2>Before you browse</h2>
+      <p><b>Are you 18 or older?</b></p>
+      <p class="bw-small">If you're under 18, <b>SafeSearch</b> stays on: adult websites and searches are blocked, and it can't be turned off.</p>
+      <div class="bw-btns"><button class="bw-no">No, I'm under 18</button><button class="bw-yes">Yes, I'm 18 or older</button></div>
+    </div></div>`);
+    g.querySelector(".bw-no").onclick = () => { Object.assign(safety(), { asked: true, adult: false, safeSearch: true, locked: true }); State.save(); g.remove(); done(); };
+    g.querySelector(".bw-yes").onclick = () => { Object.assign(safety(), { asked: true, adult: true, safeSearch: true, locked: false }); State.save(); g.remove(); done(); };
+    page.appendChild(g);
   }
 
   // What to show in Chrome's Google frame for something typed in the address bar (or null for a normal site).
@@ -218,6 +255,7 @@
     });
 
     function navigate(url, pushHistory = true) {
+      if (!safety().asked) { urlInput.value = ""; return; }   // answer the age question first
       if (pushHistory && here != null && here !== url) { history.push(here); forward.length = 0; }
       here = url;
       urlInput.value = url;
@@ -244,6 +282,8 @@
           const g = googleTarget(url, isUrl);
           if (g) {
             urlInput.value = g.q || "google.com";
+            if (g.q && safeOn() && isAdultText(g.q)) { renderSafeBlocked(ctx, g.q); return; }
+            if (safeOn()) g.src += (g.src.includes("?") ? "&" : "?") + "safe=active";   // Google's own SafeSearch
             const frame = el(`<iframe class="embed-frame g-frame" src="${esc(g.src)}" referrerpolicy="no-referrer-when-downgrade" allow="clipboard-write; microphone"></iframe>`);
             page.appendChild(frame);
             lock.textContent = "Secure"; body.querySelector(".addr").classList.add("locked-site");
@@ -253,15 +293,18 @@
         }
         if (/^(search|images):/i.test(url) || !isUrl) { // in-app search results (Google/Bing refuse to load inside a window)
           const m = url.match(/^(search|images):(.*)$/i); const mode = m ? m[1].toLowerCase() : "search", q = m ? m[2] : url.trim();
-          urlInput.value = q; renderSearch(ctx, q, mode); addHistory(q, mode + ":" + q); return;
+          urlInput.value = q;
+          if (safeOn() && isAdultText(q)) { renderSafeBlocked(ctx, q); return; }
+          renderSearch(ctx, q, mode); addHistory(q, mode + ":" + q); return;
         }
         const final = /^https?:\/\//.test(url) ? url : "https://" + url.trim();
         const warn = siteWarning(final);
-        if (warn && !allowedHosts.has(warn.host)) {
+        if (warn && (!allowedHosts.has(warn.host) || (warn.kind === "adult" && safeOn()))) {
           lock.textContent = ""; body.querySelector(".addr").classList.remove("locked-site");
           renderWarning(Object.assign({}, ctx, { goBack: () => body.querySelector(".back").click() }), warn, final, () => navigate(final, false));
           return;
         }
+        if (/^http:\/\//i.test(final)) lock.textContent = "Not secure";
         const frame = el(`<iframe class="embed-frame" src="${esc(final)}"></iframe>`);
         const bar = el(`<div class="frame-bar"><span>Some sites won't show inside an app window — if this one stays blank, open it in a real tab.</span><a href="${esc(final)}" target="_blank" rel="noopener">Open in a real tab ↗</a></div>`);
         page.appendChild(bar);
@@ -398,11 +441,15 @@
       });
     }
     function settings() {
-      const b = bstore();
-      panel("Settings", `<label class="bb-row"><input type="checkbox" class="bb-set-bm" ${b.settings.bookmarks ? "checked" : ""}> Show the bookmarks bar</label>
+      const b = bstore(), sf = safety();
+      panel("Settings", `<div class="bb-sec">🛡 SafeSearch</div>
+        <label class="bb-row bb-safe"><input type="checkbox" class="bb-set-safe" ${safeOn() ? "checked" : ""} ${sf.locked || !sf.asked ? "disabled" : ""}> Block adult websites and searches</label>
+        <p class="muted" style="margin:0 0 8px">${sf.locked ? "🔒 Locked on — you said you're under 18." : safeOn() ? "On. Adult sites are blocked and Google uses SafeSearch." : "Off. Adult sites show a warning first."}</p>
+        <label class="bb-row"><input type="checkbox" class="bb-set-bm" ${b.settings.bookmarks ? "checked" : ""}> Show the bookmarks bar</label>
         <div class="bb-row"><button class="bb-set-hist">Clear browsing history (${b.history.length})</button></div>
         <div class="bb-row"><button class="bb-set-favs">Remove all favorites (${b.favs.length})</button></div>
         <p class="muted">Searches show results from Wikipedia inside the app; images come from Wikimedia Commons.</p>`, (m) => {
+        m.querySelector(".bb-set-safe").onchange = (e) => { if (sf.locked) { e.target.checked = true; return; } sf.safeSearch = e.target.checked; State.save(); notify("SafeSearch is " + (sf.safeSearch ? "on." : "off.")); settings(); };
         m.querySelector(".bb-set-bm").onchange = (e) => { b.settings.bookmarks = e.target.checked; bmBar.style.display = e.target.checked ? "" : "none"; if (window.State) State.save(); };
         m.querySelector(".bb-set-hist").onclick = () => { b.history = []; history.length = 0; forward.length = 0; if (window.State) State.save(); notify("Browsing history cleared."); settings(); };
         m.querySelector(".bb-set-favs").onclick = () => { b.favs = []; if (window.State) State.save(); favBtn.classList.remove("on"); notify("Favorites removed."); settings(); };
@@ -429,7 +476,9 @@
       setTimeout(() => document.addEventListener("pointerdown", function h(x) { if (!m.contains(x.target)) { m.remove(); document.removeEventListener("pointerdown", h); } }), 0);
     };
 
-    navigate(startUrl || "home", false);
+    // First time Edge or Chrome opens: ask the user's age (sets SafeSearch).
+    if (!safety().asked) ageGate(page, () => navigate(startUrl || "home", false));
+    else navigate(startUrl || "home", false);
     return { navigate };
   }
 

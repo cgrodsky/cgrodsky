@@ -5069,6 +5069,13 @@ body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08
 .bw-btns button{font:inherit;padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid rgba(0,0,0,.15);background:#fff}
 .bw-btns .bw-back{background:#2563eb;color:#fff;border:0;font-weight:600}
 .bw-btns .bw-go{color:#555;font-size:.88rem}
+.bw-age{background:linear-gradient(140deg,#efe3fa,#cfdcfb)}
+.bw-age .bw-ic{background:linear-gradient(135deg,#a35be0,#4f7cf0);font-size:1.7rem}
+.bw-age .bw-btns{flex-direction:row}
+.bw-age .bw-btns button{flex:1;font-weight:600}
+.bw-age .bw-yes{background:linear-gradient(100deg,#9b6fd8,#5b7fe6);color:#fff;border:0}
+.bw-small{font-size:.84rem;opacity:.75}
+.bb-safe input:disabled{opacity:.6}
 
 /* Apple Pay step in the payment window */
 .apay-step{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:18px 20px 12px;color:#111}
