@@ -46,8 +46,8 @@
           // Some apps run a fake installer (terminal -> installer) or a UAC prompt first.
           if (window.Installer && window.Installer.hasFlow(a.id)) {
             const go = () => window.Installer.install(a, doInstall);
-            if (a.price) Pay.ensureCard(go); else go();
-          } else if (a.price) Pay.ensureCard(doInstall); else doInstall();
+            if (a.price) Pay.ensureCard(go, { item: a.name, amount: a.price }); else go();
+          } else if (a.price) Pay.ensureCard(doInstall, { item: a.name, amount: a.price }); else doInstall();
         };
         grid.appendChild(card);
       });

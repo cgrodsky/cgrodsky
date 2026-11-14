@@ -7,12 +7,43 @@
   const S = () => State.data;
 
   // Run `cb` once a card is on file. Shows the modal only the first time.
-  function ensureCard(cb) {
+  // `info` (optional): { item, amount } — shown on the Apple Pay sheet.
+  function ensureCard(cb, info) {
     if (S().appData.cardOnFile) { cb(); return; }
-    openModal(cb);
+    openModal(cb, info);
   }
 
-  function openModal(cb) {
+  const APPLE_LOGO = `<svg viewBox="0 0 14 17" width="15" height="18"><path fill="currentColor" d="M8.6 3.1c-.5.6-1.3 1-2 1-.1-.8.3-1.6.7-2.1.5-.6 1.3-1 2-1 .1.8-.2 1.6-.7 2.1zm.7 1.1c-1.1-.1-2.1.6-2.6.6s-1.4-.6-2.3-.6C3.2 4.3 2.1 5 1.5 6.1.3 8.2 1.2 11.3 2.4 13c.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5 1.5-.8 2.1-1.7c.6-.9.9-1.8.9-1.9 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.4-2.6-.8-1.2-2-1.3-2.4-1.3z"/></svg>`;
+  // The Apple Pay sheet (slides up from the bottom, like on iPhone/iPad).
+  function appleSheet(info, onPaid) {
+    const pr = (S().profile || {});
+    const amount = info && typeof info.amount === "number" ? "$" + info.amount.toFixed(2) : null;
+    const sheet = el(`<div class="apay-mask"><div class="apay-sheet">
+      <div class="apay-top"><span class="apay-brand">${APPLE_LOGO}<b>Pay</b></span><button class="apay-x">Cancel</button></div>
+      <div class="apay-row apay-card"><span class="apay-cardart"></span><div><b>Pretend Card</b><span>•••• 4242</span></div><span class="apay-chev">›</span></div>
+      <div class="apay-row"><span class="apay-k">Contact</span><span class="apay-v">${(pr.username || "You").replace(/</g, "&lt;")}</span></div>
+      <div class="apay-row"><span class="apay-k">Pay</span><span class="apay-v">${info && info.item ? String(info.item).replace(/</g, "&lt;") : "Windows 12"}</span><b class="apay-amt">${amount || ""}</b></div>
+      <div class="apay-note">Pretend purchase — no real card, nothing is charged.</div>
+      <button class="apay-go"><span class="apay-touch"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 4.5A9 9 0 0 1 20.5 11M3.5 9.5A9 9 0 0 1 5 7M3.5 14a9 9 0 0 0 .5 2M9 20.5c-1.5-2-2.5-4.5-2.5-7.5a5.5 5.5 0 0 1 11 0v1M12 13v1.5c0 2.5 1 4.6 2.5 6.5M9.5 13a2.5 2.5 0 0 1 5 0v1.5c0 1.5.4 3 1.2 4.2M17.5 17.5c.6-1 1-2.2 1-3.5"/></svg></span><span class="apay-go-t">Pay with Touch ID</span></button>
+    </div></div>`);
+    const close = () => { sheet.classList.add("closing"); setTimeout(() => sheet.remove(), 220); };
+    sheet.querySelector(".apay-x").onclick = close;
+    sheet.onclick = (e) => { if (e.target === sheet) close(); };
+    const go = sheet.querySelector(".apay-go");
+    go.onclick = () => {
+      if (go.disabled) return; go.disabled = true;
+      go.classList.add("scanning"); sheet.querySelector(".apay-go-t").textContent = "Processing…";
+      setTimeout(() => {
+        go.classList.remove("scanning"); go.classList.add("done");
+        go.querySelector(".apay-touch").innerHTML = `<svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>`;
+        sheet.querySelector(".apay-go-t").textContent = "Done";
+        setTimeout(() => { close(); onPaid(); }, 750);
+      }, 1100);
+    };
+    document.getElementById("screen").appendChild(sheet);
+  }
+
+  function openModal(cb, info) {
     const overlay = el(`<div class="pay-mask">
       <div class="modal pay-modal">
         <form class="form" onsubmit="return false">
@@ -79,26 +110,14 @@
 
     overlay.querySelector("#pcCancel").onclick = () => overlay.remove();
 
-    // Apple Pay: Apple's official demo opens in a real tab (it won't load inside a page).
-    // When you come back, finish the pretend purchase with "Apple Pay".
+    // Apple Pay: an Apple Pay-style sheet right here in the app (nothing opens).
+    // Real Apple Pay needs an Apple merchant account and a server, which a static
+    // GitHub Pages site can't have — so this is a pretend wallet with a pretend card.
     overlay.querySelector(".pay-apple").onclick = () => {
-      try { window.open("https://applepaydemo.apple.com/", "_blank", "noopener"); } catch (_) {}
-      const form = overlay.querySelector(".form");
-      overlay.querySelectorAll(".apay-step").forEach((x) => x.remove());
-      const step = el(`<div class="apay-step">
-        <div class="apay-logo"><svg viewBox="0 0 44 18" width="66" height="27"><path fill="currentColor" d="M8.6 4.1c-.5.6-1.3 1-2 1-.1-.8.3-1.6.7-2.1.5-.6 1.3-1 2-1 .1.8-.2 1.6-.7 2.1zm.7 1.1c-1.1-.1-2.1.6-2.6.6s-1.4-.6-2.3-.6C3.2 5.3 2.1 6 1.5 7.1.3 9.2 1.2 12.3 2.4 14c.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5 1.5-.8 2.1-1.7c.6-.9.9-1.8.9-1.9 0 0-1.8-.7-1.8-2.7 0-1.7 1.4-2.5 1.4-2.6-.8-1.2-2-1.3-2.4-1.3z"/><text x="13.5" y="14.2" font-size="12.5" font-weight="600" fill="currentColor" font-family="-apple-system,system-ui,sans-serif">Pay</text></svg></div>
-        <p>Apple's <b>Apple Pay demo</b> opened in a new tab. It's Apple's official test page — nothing is charged.</p>
-        <p class="apay-small">Didn't open? <a href="https://applepaydemo.apple.com/" target="_blank" rel="noopener">Open the Apple Pay demo</a></p>
-        <button type="button" class="apay-done">Finish with Apple Pay</button>
-        <button type="button" class="pay-cancel apay-back">Back</button>
-      </div>`);
-      step.querySelector(".apay-done").onclick = () => {
+      appleSheet(info, () => {
         S().appData.cardOnFile = { last4: "Pay", name: "Apple Pay", wallet: "applepay" };
         State.save(); overlay.remove(); cb();
-      };
-      step.querySelector(".apay-back").onclick = () => { step.remove(); form.style.display = ""; };
-      form.style.display = "none";
-      form.after(step);
+      });
     };
 
     overlay.querySelector("#pcPay").onclick = () => {
@@ -118,5 +137,5 @@
     setTimeout(() => name.focus(), 50);
   }
 
-  window.Pay = { ensureCard };
+  window.Pay = { ensureCard, appleSheet };
 })();

@@ -479,6 +479,7 @@
     menu.appendChild(mkItem(iconRow(ICN.refresh, "Refresh"), () => renderDesktopIcons()));
     menu.appendChild(el(`<div class="dctx-sep"></div>`));
     menu.appendChild(mkItem(iconRow(`<img src="assets/personalization.png?v=1" alt="" style="width:17px;height:17px">`, "Personalize"), () => { window.SettingsStartPage = "personal"; open("settings"); }));
+    if (spState().hidden) menu.appendChild(mkItem(iconRow(`<svg viewBox="0 0 24 24" width="17" height="17"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>`, "Show Spotify widget"), () => { const w = desktop.querySelector(".spw"); if (w && w._show) w._show(); }));
     menu.appendChild(mkItem(iconRow(ICN.display, "Display settings"), () => open("settings")));
     function openSub(anchor, items) {
       document.querySelectorAll(".desk-submenu").forEach((m) => m.remove());
@@ -769,6 +770,7 @@
     enableMarquee();
     applyWallpaper();
     renderDesktopIcons();
+    buildSpotifyWidget();
     buildTaskbar();
     startClock();
   }
@@ -784,6 +786,73 @@
     }
   }
   window.applyWallpaper = applyWallpaper;
+
+  // ---------------- Spotify side widget ----------------
+  // Real music through Spotify's embed player (no Spotify app). It remembers what you
+  // play here as "Recent". Logged in to Spotify in this browser = full songs; otherwise
+  // Spotify plays 30-second previews. Built once, so music keeps playing.
+  const SPOTIFY_DEFAULT = { type: "playlist", id: "37i9dQZF1DXcBWIGoYBM5M", title: "Today's Top Hits" };
+  function spState() { const d = S().desktop || (S().desktop = {}); return d.spotify || (d.spotify = { hidden: false, pos: null, recent: [SPOTIFY_DEFAULT] }); }
+  function parseSpotify(t) {
+    const s = String(t || "").trim();
+    let m = s.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]{22})/i) || s.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]{22})$/i);
+    return m ? { type: m[1].toLowerCase(), id: m[2] } : null;
+  }
+  function buildSpotifyWidget() {
+    if (!desktop || desktop.querySelector(".spw")) return;
+    const st = spState();
+    const cur = st.recent[0] || SPOTIFY_DEFAULT;
+    const w = el(`<div class="spw ${st.hidden ? "spw-hidden" : ""}">
+      <div class="spw-head"><span class="dag-grip">${dagGripSvg()}</span><svg class="spw-logo" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg><b>Spotify</b><span class="grow"></span><button class="spw-btn spw-add" title="Play a Spotify link">＋</button><button class="spw-btn spw-x" title="Hide widget">×</button></div>
+      <div class="spw-paste" hidden><input placeholder="Paste a Spotify song, album or playlist link" spellcheck="false"><button>Play</button><div class="spw-err"></div></div>
+      <iframe class="spw-frame" title="Spotify player" src="https://open.spotify.com/embed/${cur.type}/${cur.id}?utm_source=generator" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      <div class="spw-recent-h">Recent listens</div>
+      <div class="spw-recent"></div>
+    </div>`);
+    const frame = w.querySelector(".spw-frame"), paste = w.querySelector(".spw-paste"), inp = paste.querySelector("input"), err = paste.querySelector(".spw-err");
+    function play(item) {
+      const r = spState().recent.filter((x) => x.id !== item.id); r.unshift(item); spState().recent = r.slice(0, 6); State.save();
+      frame.src = `https://open.spotify.com/embed/${item.type}/${item.id}?utm_source=generator`;
+      paintRecent();
+      if (!item.title) fetch("https://open.spotify.com/oembed?url=" + encodeURIComponent(`https://open.spotify.com/${item.type}/${item.id}`)).then((x) => x.json()).then((j) => {
+        const it = spState().recent.find((x) => x.id === item.id); if (it && j && j.title) { it.title = j.title; it.thumb = j.thumbnail_url; State.save(); paintRecent(); }
+      }).catch(() => {});
+    }
+    function paintRecent() {
+      const box = w.querySelector(".spw-recent"); box.innerHTML = "";
+      spState().recent.forEach((it, i) => {
+        const b = el(`<button class="spw-chip ${i === 0 ? "on" : ""}" title="${escAttr(it.title || it.type)}">${it.thumb ? `<img src="${escAttr(it.thumb)}" alt="">` : `<span class="spw-chip-ic">♫</span>`}<span>${escAttr(it.title || (it.type[0].toUpperCase() + it.type.slice(1)))}</span></button>`);
+        b.onclick = () => play(it);
+        box.appendChild(b);
+      });
+    }
+    paintRecent();
+    st.recent.filter((x) => !x.thumb).slice(0, 6).forEach((it) => fetch("https://open.spotify.com/oembed?url=" + encodeURIComponent(`https://open.spotify.com/${it.type}/${it.id}`)).then((x) => x.json()).then((j) => { if (j && j.thumbnail_url) { it.thumb = j.thumbnail_url; if (j.title) it.title = j.title; State.save(); paintRecent(); } }).catch(() => {}));
+    w.querySelector(".spw-add").onclick = () => { paste.hidden = !paste.hidden; err.textContent = ""; if (!paste.hidden) inp.focus(); };
+    const go = () => { const p = parseSpotify(inp.value); if (!p) { err.textContent = "That isn't a Spotify link. In Spotify, tap Share → Copy link."; return; } inp.value = ""; paste.hidden = true; play(p); };
+    paste.querySelector("button").onclick = go;
+    inp.onkeydown = (e) => { if (e.key === "Enter") go(); if (e.key === "Escape") paste.hidden = true; };
+    w.querySelector(".spw-x").onclick = () => {
+      spState().hidden = true; State.save(); w.classList.add("spw-hidden");
+      frame.src = "about:blank";   // stop the music when hidden
+      if (window.Notify) Notify.show({ icon: `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>`, title: "Spotify widget hidden", body: "Right-click the desktop → Show Spotify widget to bring it back." });
+    };
+    // drag by the header
+    if (st.pos) { w.style.left = st.pos.x + "px"; w.style.top = st.pos.y + "px"; w.style.right = "auto"; w.style.bottom = "auto"; }
+    const head = w.querySelector(".spw-head");
+    head.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      const r = w.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      head.setPointerCapture(e.pointerId); w.classList.add("dragging");
+      const move = (ev) => { const x = Math.max(0, Math.min(window.innerWidth - r.width, ev.clientX - dx)), y = Math.max(0, Math.min(window.innerHeight - 60, ev.clientY - dy)); w.style.left = x + "px"; w.style.top = y + "px"; w.style.right = "auto"; w.style.bottom = "auto"; };
+      const up = () => { head.removeEventListener("pointermove", move); head.removeEventListener("pointerup", up); w.classList.remove("dragging"); const b = w.getBoundingClientRect(); spState().pos = { x: Math.round(b.left), y: Math.round(b.top) }; State.save(); };
+      head.addEventListener("pointermove", move); head.addEventListener("pointerup", up);
+    });
+    w.addEventListener("click", (e) => e.stopPropagation());
+    w.addEventListener("contextmenu", (e) => e.stopPropagation());
+    desktop.appendChild(w);
+    w._show = () => { spState().hidden = false; State.save(); w.classList.remove("spw-hidden"); const c = spState().recent[0] || SPOTIFY_DEFAULT; if (frame.src === "about:blank") frame.src = `https://open.spotify.com/embed/${c.type}/${c.id}?utm_source=generator`; };
+  }
 
   // ---------------- Widgets ----------------
   const wxImg = (f, alt) => `<img class="wg-wx-img" src="assets/${f}.png?v=2" width="22" height="22" alt="${alt}" style="object-fit:contain;vertical-align:middle">`;
