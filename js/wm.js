@@ -1213,35 +1213,66 @@
 
   // ---------------- Start menu ("Meet the new Start") ----------------
   function buildStartMenu() {
-    startMenu = el(`<div class="start-menu">
-      <div class="start-search"><span class="start-search-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><input class="search" placeholder="${I18n.t("search_apps")}"></div>
-      <div class="start-scroll">
-        <div class="start-sec">
-          <div class="start-sec-head"><span>Pinned</span></div>
-          <div class="app-grid pinned-grid"></div>
-        </div>
-        <div class="start-sec recents-sec">
-          <div class="start-sec-head"><span>Recommended</span></div>
-          <div class="recents-row"></div>
-        </div>
+    const IC = (d, w) => `<svg viewBox="0 0 24 24" width="${w || 18}" height="${w || 18}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    startMenu = el(`<div class="start-menu sm12">
+      <div class="sm12-left">
+        <button class="sm12-ava start-user" title="Your account"><span class="start-ava"></span></button>
+        <div class="sm12-name start-uname"></div>
+        <label class="sm12-search">${IC('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 17)}<input class="search" placeholder="Search for apps, settings and files" spellcheck="false"></label>
+        <div class="sm12-list"></div>
       </div>
-      <div class="start-foot">
-        <button class="start-user"><span class="start-ava"></span><span class="start-uname"></span></button>
-        <button class="start-power" title="Power">&#9211;</button>
+      <div class="sm12-right">
+        <div class="sm12-toprow">
+          <div class="sm12-card sm12-folders"></div>
+          <div class="sm12-clockbox">
+            <div class="sm12-time"></div><div class="sm12-date"></div>
+            <div class="sm12-clock-btns"><button class="sm12-ib sm12-expand" title="Expand">${IC('<path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/>')}</button><button class="sm12-ib start-power" title="Power">${IC('<path d="M12 4v8"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/>', 20)}</button></div>
+          </div>
+        </div>
+        <div class="sm12-card sm12-pins"><div class="sm12-head"><b class="sm12-pins-t">Pinned</b><button class="sm12-pill sm12-all">All <span>›</span></button></div><div class="sm12-grid pinned-grid"></div></div>
+        <div class="sm12-card sm12-sugg recents-sec"><div class="sm12-head"><b>Suggested files</b><button class="sm12-pill sm12-more">More <span>›</span></button></div><div class="sm12-files recents-row"></div></div>
       </div>
     </div>`);
     screen().appendChild(startMenu);
     const search = startMenu.querySelector(".search");
     search.oninput = () => renderStartApps(search.value);
+    search.onkeydown = (e) => { if (e.key === "Enter") { const f = startMenu.querySelector(".sm12-list .sm12-app"); if (f) f.click(); } if (e.key === "Escape") startMenu.classList.remove("open"); };
     updateStartUser();
-    startMenu.querySelector(".start-user").onclick = () => { startMenu.classList.remove("open"); open("settings"); };
+    startMenu.querySelector(".start-user").onclick = () => { startMenu.classList.remove("open"); window.SettingsStartPage = "yourinfo"; open("settings"); };
     startMenu.querySelector(".start-power").onclick = (e) => { e.stopPropagation(); showPowerMenu(); };
+    startMenu.querySelector(".sm12-expand").onclick = () => startMenu.classList.toggle("sm12-big");
+    startMenu.querySelector(".sm12-all").onclick = () => { startMenu.classList.toggle("sm12-showall"); renderStartApps(search.value); };
+    startMenu.querySelector(".sm12-more").onclick = () => { startMenu.classList.remove("open"); window.FilesStartPath = "quick"; open("fileexplorer"); };
     renderStartApps("");
+    setInterval(() => { if (startMenu.classList.contains("open")) paintStartClock(); }, 1000);
     document.addEventListener("click", (e) => {
-      if (startMenu.classList.contains("open") && !startMenu.contains(e.target) && !e.target.closest(".start")) {
+      if (startMenu.classList.contains("open") && !startMenu.contains(e.target) && !e.target.closest(".start") && !e.target.closest(".start-ctx")) {
         startMenu.classList.remove("open");
       }
     });
+  }
+  function paintStartClock() {
+    const d = State.now ? State.now() : new Date();
+    const h24 = !!(S().clock && S().clock.format24);
+    const parts = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: !h24 }).formatToParts(d);
+    const main = parts.filter((p) => p.type !== "dayPeriod").map((p) => p.value).join("").trim();
+    const per = (parts.find((p) => p.type === "dayPeriod") || {}).value || "";
+    startMenu.querySelector(".sm12-time").innerHTML = main + (per ? `<small>${per}</small>` : "");
+    startMenu.querySelector(".sm12-date").textContent = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  }
+  const START_PIN_DEFAULT = ["calculator", "camera", "settings", "store__", "edge", "fileexplorer", "notepad", "copilot", "xbox", "minecraft", "word", "photos", "clock", "outlook", "excel", "powerpoint", "calendar", "weather"];
+  function startPins() {
+    if (!S().appData) S().appData = {};
+    return S().appData.startPins || (S().appData.startPins = START_PIN_DEFAULT.slice());
+  }
+  function startAppMenu(a, e) {
+    document.querySelectorAll(".start-ctx").forEach((m) => m.remove());
+    const pins = startPins(), pinned = pins.includes(a.id);
+    const menu = el(`<div class="start-ctx"><div class="jl-head">${a.name}</div><button data-a="open">Open</button><button data-a="pin">${pinned ? "Unpin from Start" : "Pin to Start"}</button>${pinned && pins.indexOf(a.id) > 0 ? '<button data-a="first">Move to front</button>' : ""}</div>`);
+    menu.querySelector('[data-a="open"]').onclick = () => { menu.remove(); startMenu.classList.remove("open"); open(a.id); };
+    menu.querySelector('[data-a="pin"]').onclick = () => { menu.remove(); if (pinned) pins.splice(pins.indexOf(a.id), 1); else pins.push(a.id); State.save(); renderStartApps(startMenu.querySelector(".search").value); };
+    const f = menu.querySelector('[data-a="first"]'); if (f) f.onclick = () => { menu.remove(); pins.splice(pins.indexOf(a.id), 1); pins.unshift(a.id); State.save(); renderStartApps(""); };
+    placeCtx(menu, e);
   }
 
   // ---------------- Taskbar search (Windows Search) ----------------
@@ -1334,7 +1365,7 @@
     if (!startMenu) return;
     const pr = S().profile || {};
     const ava = startMenu.querySelector(".start-ava");
-    ava.innerHTML = pr.picture ? `<img src="${pr.picture}" alt="">` : Icon.mini("user", pr.username || "User");
+    ava.innerHTML = pr.picture ? `<img src="${pr.picture}" alt="">` : `<svg viewBox="0 0 40 40" width="100%" height="100%"><defs><linearGradient id="sm12-avg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b061d6"/><stop offset="1" stop-color="#3b7fd8"/></linearGradient></defs><circle cx="20" cy="14" r="7.5" fill="url(#sm12-avg)"/><path d="M6 34c1-7.5 6.5-11 14-11s13 3.5 14 11z" fill="url(#sm12-avg)" opacity=".9"/></svg>`;
     startMenu.querySelector(".start-uname").textContent = pr.username || "User";
   }
 
@@ -1405,19 +1436,73 @@
   }
 
   function renderStartApps(filter) {
-    const pinnedGrid = startMenu.querySelector(".pinned-grid");
-    const recentsSec = startMenu.querySelector(".recents-sec");
-    const recentsRow = startMenu.querySelector(".recents-row");
-    pinnedGrid.innerHTML = "";
-    const f = (filter || "").toLowerCase();
-    const list = allInstalledApps();
-    list.filter((a) => a.name.toLowerCase().includes(f)).forEach((a) => pinnedGrid.appendChild(appTile(a)));
-    const recents = (S().appData.recentApps || []).map((id) => list.find((a) => a.id === id)).filter(Boolean);
-    if (f || !recents.length) { recentsSec.style.display = "none"; }
-    else {
-      recentsSec.style.display = "";
-      recentsRow.innerHTML = "";
-      recents.slice(0, 6).forEach((a) => recentsRow.appendChild(appTile(a, true)));
+    const f = (filter || "").trim().toLowerCase();
+    const list = allInstalledApps().slice().sort((x, y) => x.name.localeCompare(y.name));
+    const ikey = (a) => (a.id === "duolingo" ? duoIconKey(true) : a.id);
+    const escq = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    // ---- left: every app, A–Z (or search results) ----
+    const left = startMenu.querySelector(".sm12-list"); left.innerHTML = "";
+    const shown = f ? list.filter((a) => a.name.toLowerCase().includes(f)).sort((x, y) => (y.name.toLowerCase().startsWith(f) ? 1 : 0) - (x.name.toLowerCase().startsWith(f) ? 1 : 0)) : list;
+    let letter = "";
+    if (f && shown.length) left.appendChild(el(`<div class="sm12-letter">Best match</div>`));
+    shown.forEach((a, i) => {
+      if (!f) { const L = /[a-z]/i.test(a.name[0]) ? a.name[0].toUpperCase() : "#"; if (L !== letter) { letter = L; left.appendChild(el(`<div class="sm12-letter">${L}</div>`)); } }
+      else if (i === 1) left.appendChild(el(`<div class="sm12-letter">Apps</div>`));
+      const row = el(`<button class="sm12-app"><span class="sm12-app-ic">${Icon.mini(ikey(a), a.name)}</span><span>${a.name}</span></button>`);
+      row.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
+      row.oncontextmenu = (e) => { e.preventDefault(); startAppMenu(a, e); };
+      left.appendChild(row);
+    });
+    if (f) {   // matching files too, then the web
+      const files = (window.FilesHelper ? FilesHelper.recent(400) : []).filter((x) => x.name.toLowerCase().includes(f)).slice(0, 4);
+      if (files.length) {
+        left.appendChild(el(`<div class="sm12-letter">Files</div>`));
+        files.forEach((x) => { const r = el(`<button class="sm12-app"><span class="sm12-app-ic">${FilesHelper.glyph(x.name, x.node, 22)}</span><span>${escq(x.name)}</span></button>`); r.onclick = () => { startMenu.classList.remove("open"); if (window.VFS) VFS.openNode(x.name, x.node); }; left.appendChild(r); });
+      }
+      if (!shown.length && !files.length) left.appendChild(el(`<div class="sm12-letter">No apps found</div>`));
+      const web = el(`<button class="sm12-app"><span class="sm12-app-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></span><span>Search the web for “${escq(filter.trim())}”</span></button>`);
+      web.onclick = () => { startMenu.classList.remove("open"); if (window.Browser) window.Browser.openTo("https://www.bing.com/search?q=" + encodeURIComponent(filter.trim())); };
+      left.appendChild(web);
+    }
+    // ---- right top: folders ----
+    const folders = startMenu.querySelector(".sm12-folders");
+    if (!folders.childElementCount) {
+      [["Documents", "assets/documentsfolder.png"], ["Pictures", "assets/picturesfolder.png"], ["Music", "assets/musicfolder.png"]].forEach(([n, src]) => {
+        const b = el(`<button class="sm12-folder"><img src="${src}?v=7" alt=""><span>${n}</span></button>`);
+        b.onclick = () => { startMenu.classList.remove("open"); window.FilesStartPath = [n]; open("fileexplorer"); };
+        folders.appendChild(b);
+      });
+    }
+    paintStartClock();
+    // ---- pinned (or all apps) ----
+    const all = startMenu.classList.contains("sm12-showall");
+    startMenu.querySelector(".sm12-pins-t").textContent = all ? "All apps" : "Pinned";
+    startMenu.querySelector(".sm12-all").innerHTML = all ? "<span>‹</span> Back" : "All <span>›</span>";
+    const grid = startMenu.querySelector(".pinned-grid"); grid.innerHTML = "";
+    const pins = all ? list : startPins().map((id) => list.find((a) => a.id === id)).filter(Boolean);
+    pins.forEach((a) => {
+      const t = el(`<button class="sm12-tile"><span class="sm12-tile-ic">${Icon.md(ikey(a), a.name)}</span><span class="sm12-tile-n">${a.name}</span></button>`);
+      t.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
+      t.oncontextmenu = (e) => { e.preventDefault(); startAppMenu(a, e); };
+      grid.appendChild(t);
+    });
+    if (!pins.length) grid.appendChild(el(`<div class="sm12-empty">Right-click an app and choose “Pin to Start”.</div>`));
+    // ---- suggested files (falls back to recently opened apps) ----
+    const box = startMenu.querySelector(".sm12-files"); box.innerHTML = "";
+    const recent = window.FilesHelper ? FilesHelper.recent(6) : [];
+    const head = startMenu.querySelector(".sm12-sugg b");
+    if (recent.length) {
+      head.textContent = "Suggested files";
+      recent.forEach((x) => {
+        const r = el(`<button class="sm12-file"><span class="sm12-file-ic">${FilesHelper.glyph(x.name, x.node, 34)}</span><span class="sm12-file-tx"><b>${escq(x.name)}</b><span>${FilesHelper.ago(x.node.ts)}</span></span></button>`);
+        r.onclick = () => { startMenu.classList.remove("open"); if (window.VFS) VFS.openNode(x.name, x.node); };
+        box.appendChild(r);
+      });
+    } else {
+      head.textContent = "Recently opened";
+      const rec = (S().appData.recentApps || []).map((id) => list.find((a) => a.id === id)).filter(Boolean).slice(0, 6);
+      if (!rec.length) box.appendChild(el(`<div class="sm12-empty">Apps and files you open will show up here.</div>`));
+      rec.forEach((a) => { const r = el(`<button class="sm12-file"><span class="sm12-file-ic">${Icon.mini(ikey(a), a.name)}</span><span class="sm12-file-tx"><b>${a.name}</b><span>App</span></span></button>`); r.onclick = () => { startMenu.classList.remove("open"); open(a.id); }; box.appendChild(r); });
     }
   }
 
