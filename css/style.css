@@ -5111,6 +5111,7 @@ body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08
 .spw-c-btns button{font:inherit;font-size:.78rem;padding:6px 12px;border-radius:999px;border:0;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .spw-c-btns .spw-c-go{background:#1ed760;color:#000;font-weight:700}
 .spw-none{font-size:.76rem;opacity:.7}
+.w12s-card[hidden],.lock-touchid[hidden]{display:none!important}
 .w12s-fp-btns{display:flex;gap:8px}
 .w12s-fp-btns:empty{display:none}
 
@@ -5142,6 +5143,10 @@ body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08
 .apay-go.scanning .apay-touch{animation:apayPulse .6s ease-in-out infinite alternate}
 .apay-go.done,.apay-go.done .apay-touch{color:#30c048}
 .apay-go-t{color:#111}
+.apay-go.apay-plain{background:#000;border-radius:12px;padding:13px 0;width:100%;box-sizing:border-box}
+.apay-go.apay-plain .apay-go-t{color:#fff;font-weight:600;font-size:1.05rem}
+.apay-go.apay-plain .apay-touch:empty{display:none}
+.apay-go.apay-plain.done{background:#30c048}
 @keyframes apayPulse{to{transform:scale(1.12);opacity:.6}}
 
 /* ===== Start menu — Windows 12 style ===== */

@@ -349,6 +349,7 @@
       const dev = (name, sub, status, ok, extra) => { const c = card(`<div class="w12s-row-t">${name}</div><table class="w12s-spec">${sub}</table><div class="w12s-row-s" style="color:${ok ? "#2a8a3e" : "#a35a00"}">${status}</div>`); if (extra) c.appendChild(extra); h.appendChild(c); };
       const fpBox = el(`<div></div>`); h.appendChild(fpBox);
       if (window.TouchID) TouchID.available().then((ok) => {
+        if (!ok) return;   // no sensor → nothing to list
         const i = TouchID.driverInfo();
         const set = el(`<div style="display:flex;gap:8px"></div>`);
         if (ok) { const b = el(`<button class="w12s-btn">${TouchID.enrolled() ? "Sign-in options" : "Set up fingerprint"}</button>`); b.onclick = () => openSubRef("signin"); set.appendChild(b); }
@@ -410,13 +411,14 @@
       const pr = profile(), isPin = pr.authType === "pin";
       // Fingerprint (real Touch ID / Windows Hello sensor through the browser)
       const fp = card(`<div class="w12s-row-t">Fingerprint recognition (${window.TouchID ? TouchID.sensorName() : "Touch ID"})</div><div class="w12s-row-s w12s-fp-s">Checking for a sensor…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
-      h.appendChild(fp);
+      h.appendChild(fp); fp.hidden = true;
       const fs = fp.querySelector(".w12s-fp-s"), fb = fp.querySelector(".w12s-fp-btns"), fe = fp.querySelector(".w12s-err");
       const paintFp = () => {
-        if (!window.TouchID) { fs.textContent = "Not supported in this browser."; return; }
+        if (!window.TouchID) { fp.remove(); return; }
         TouchID.available().then((ok) => {
           fb.innerHTML = ""; fe.textContent = "";
-          if (!ok) { fs.textContent = "No fingerprint sensor was found on this device. The lock screen's Touch ID button uses a pretend scan."; return; }
+          if (!ok) { fp.remove(); return; }   // no sensor → no fingerprint option at all
+          fp.hidden = false;
           if (TouchID.enrolled()) {
             fs.textContent = "On — you can unlock and pay with your fingerprint.";
             const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => note("Fingerprint recognized ✓")).catch(() => { fe.textContent = "Not recognized — try again."; });

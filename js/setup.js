@@ -524,6 +524,11 @@
 
   // ---- Fingerprint (intro → scanning %) ----
   function oobeFingerprintIntro() {
+    // No fingerprint sensor on this device → no fingerprint step at all.
+    if (!window.TouchID) { oobeWelcomeBack(); return; }
+    TouchID.available().then((ok) => (ok ? oobeFingerprintIntroShow() : oobeWelcomeBack()));
+  }
+  function oobeFingerprintIntroShow() {
     const node = el(`<div>
       <h1>Windows Hello</h1>
       <p class="sub">Set up a fingerprint so you can sign in with a touch. This is optional.</p>
@@ -552,33 +557,12 @@
       realP.then((res) => {
         if (left) return;
         if (res === true) { bg.querySelector("#pct").textContent = "100%"; bg.querySelector(".oobe-fp-status b").textContent = "All set — your fingerprint works"; const f = bg.querySelector("#fp"); if (f) f.style.filter = "drop-shadow(0 0 12px #6cf)"; setTimeout(oobeWelcomeBack, 900); }
-        else if (res === null) { left = true; oobeFingerprintSim(); }   // no sensor on this device → pretend scan
+        else if (res === null) { left = true; oobeWelcomeBack(); }   // no sensor on this device → skip
         else { bg.querySelector(".oobe-fp-status b").textContent = "Couldn't read your fingerprint"; bg.querySelector("#pct").textContent = ""; const t = el(`<button class="btn-primary" id="again" style="margin-right:8px">Try again</button>`); t.onclick = oobeFingerprintScan; bg.querySelector(".oobe-actions").prepend(t); }
       });
       return;
     }
-    oobeFingerprintSim();
-  }
-  // Pretend scan for devices without a fingerprint sensor.
-  function oobeFingerprintSim() {
-    const node = el(`<div>
-      <h1>Fingerprint</h1>
-      <p class="oobe-fp-status"><b>Fingerprint in progress</b></p>
-      <p class="sub">No fingerprint sensor was found, so this is a pretend scan. Place your finger on the screen.</p>
-      <div class="oobe-fp-pct" id="pct">0%</div>
-      <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
-    </div>`);
-    const illus = `<div class="fp-anim" id="fp">${ILLUS.finger}</div>`;
-    oobe(node, { illustration: illus, back: oobeFingerprintIntro });
-    const pctEl = bg.querySelector("#pct"), fp = bg.querySelector("#fp");
-    let pct = 0;
-    const iv = setInterval(() => {
-      pct = Math.min(100, pct + 5 + Math.floor(Math.random() * 8));
-      pctEl.textContent = pct + "%";
-      if (fp) fp.style.filter = `drop-shadow(0 0 ${pct / 8}px #6cf)`;
-      if (pct >= 100) { clearInterval(iv); S().profile = Object.assign({}, S().profile, { fingerprint: true }); State.save(); setTimeout(oobeWelcomeBack, 500); }
-    }, 260);
-    bg.querySelector("#skip").onclick = () => { clearInterval(iv); oobeWelcomeBack(); };
+    oobeWelcomeBack();   // no fingerprint support in this browser
   }
 
   // ---- Welcome back / Restore ----

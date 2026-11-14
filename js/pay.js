@@ -26,6 +26,10 @@
       <div class="apay-note">Pretend purchase — no real card, nothing is charged.</div>
       <button class="apay-go"><span class="apay-touch"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 4.5A9 9 0 0 1 20.5 11M3.5 9.5A9 9 0 0 1 5 7M3.5 14a9 9 0 0 0 .5 2M9 20.5c-1.5-2-2.5-4.5-2.5-7.5a5.5 5.5 0 0 1 11 0v1M12 13v1.5c0 2.5 1 4.6 2.5 6.5M9.5 13a2.5 2.5 0 0 1 5 0v1.5c0 1.5.4 3 1.2 4.2M17.5 17.5c.6-1 1-2.2 1-3.5"/></svg></span><span class="apay-go-t">Pay with Touch ID</span></button>
     </div></div>`);
+    // Touch ID only when this device has a sensor and it's set up; otherwise a plain Pay button.
+    let useTouch = !!(window.TouchID && TouchID.enrolled());
+    const plain = () => { useTouch = false; const g = sheet.querySelector(".apay-go"); g.classList.add("apay-plain"); g.querySelector(".apay-touch").innerHTML = ""; g.querySelector(".apay-go-t").textContent = "Pay"; };
+    if (!useTouch) plain(); else TouchID.available().then((ok) => { if (!ok) plain(); });
     const close = () => { sheet.classList.add("closing"); setTimeout(() => sheet.remove(), 220); };
     sheet.querySelector(".apay-x").onclick = close;
     sheet.onclick = (e) => { if (e.target === sheet) close(); };
@@ -33,8 +37,8 @@
     go.onclick = () => {
       if (go.disabled) return; go.disabled = true;
       go.classList.add("scanning"); sheet.querySelector(".apay-go-t").textContent = "Processing…";
-      // Real Touch ID when it's set up on this device; otherwise a pretend confirmation.
-      const confirm = (window.TouchID && TouchID.enrolled()) ? TouchID.verify() : new Promise((r) => setTimeout(r, 1100));
+      // Real Touch ID when it's set up on this device; otherwise just the Pay button.
+      const confirm = useTouch ? TouchID.verify() : new Promise((r) => setTimeout(r, 700));
       confirm.then(() => finish()).catch(() => { go.disabled = false; go.classList.remove("scanning"); sheet.querySelector(".apay-go-t").textContent = "Not recognized — try again"; });
       const finish = () => setTimeout(() => {
         go.classList.remove("scanning"); go.classList.add("done");

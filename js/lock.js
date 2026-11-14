@@ -19,7 +19,7 @@
           <button type="submit" class="lock-go" title="Sign in">&#8594;</button>
         </form>
         <div class="lock-err"></div>
-        ${pr.fingerprint ? `<button type="button" class="lock-touchid" title="Unlock with Touch ID"><img src="assets/touchid.png?v=1" alt="Touch ID"><span>Touch ID</span></button>` : ""}
+        ${pr.touchId ? `<button type="button" class="lock-touchid" hidden title="Unlock with Touch ID"><img src="assets/touchid.png?v=1" alt="Touch ID"><span>Touch ID</span></button>` : ""}
         <div class="lock-actions"><button type="button" class="btn-text lock-forgot">Forgot PIN?</button><button type="button" class="btn-text lock-skip">Skip (test mode)</button></div>
       </div>
     </div>`);
@@ -51,13 +51,13 @@
     };
     layer.querySelector(".lock-skip").onclick = unlock;
     const tid = layer.querySelector(".lock-touchid");
+    // Touch ID only when this device really has a sensor and this account set it up.
+    if (tid && window.TouchID) TouchID.available().then((ok) => { if (ok && TouchID.enrolled()) tid.hidden = false; else tid.remove(); });
+    else if (tid) tid.remove();
     if (tid) tid.onclick = () => {
       tid.classList.add("scanning");
-      // Real Touch ID when this account registered the device's sensor; otherwise the pretend scan.
-      if (window.TouchID && TouchID.enrolled()) {
-        TouchID.verify().then(() => { tid.classList.remove("scanning"); unlock(); })
-          .catch(() => { tid.classList.remove("scanning"); err.textContent = "Fingerprint not recognized — try again or use your " + (pr.authType === "pin" ? "PIN" : "password") + "."; });
-      } else setTimeout(unlock, 550);
+      TouchID.verify().then(() => { tid.classList.remove("scanning"); unlock(); })
+        .catch(() => { tid.classList.remove("scanning"); err.textContent = "Fingerprint not recognized — try again or use your " + (pr.authType === "pin" ? "PIN" : "password") + "."; });
     };
     // Forgot PIN/password — set a new one without the old (personal sim).
     layer.querySelector(".lock-forgot").onclick = () => {
