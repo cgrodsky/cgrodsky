@@ -341,7 +341,8 @@
         <tr><td>Installed RAM</td><td>16.0 GB</td></tr><tr><td>System type</td><td>64-bit operating system</td></tr></table>`));
       h.appendChild(card(`<div class="w12s-row-t">Windows specifications</div><table class="w12s-spec">
         <tr><td>Edition</td><td>Windows 12 Home</td></tr><tr><td>Version</td><td>26H1 (simulation)</td></tr><tr><td>Registered to</td><td>${esc(userName())}</td></tr></table>
-        <p class="w12s-row-s" style="margin-top:8px">A pretend computer made for fun. Not affiliated with Microsoft.</p>`));
+        <p class="w12s-row-s" style="margin-top:8px">A pretend computer made for fun. Not affiliated with Microsoft.</p>
+        <p class="w12s-row-s">Some app icons by <a class="w12s-link" style="font-size:inherit" href="https://icons8.com" target="_blank" rel="noopener">Icons8</a>.</p>`));
     } },
     mouse: { title: "Mouse", parent: "devices", build(h) {
       const d = S().appData.mouse || (S().appData.mouse = { speed: 6, primary: "left", scroll: 3 });

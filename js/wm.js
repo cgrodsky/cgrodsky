@@ -1280,12 +1280,14 @@
   function buildSearchPanel() {
     if (searchPanel) return;
     searchPanel = el(`<div class="search-panel">
-      <div class="sp-bar"><span class="sp-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><input class="sp-input" placeholder="Search for apps and the web" spellcheck="false"></div>
+      <div class="sp-bar"><span class="sp-ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span><input class="sp-input" placeholder="Search for apps, the web and images" spellcheck="false"></div>
+      <div class="sp-tabs"><button data-m="all" class="on">All</button><button data-m="apps">Apps</button><button data-m="images">Images</button></div>
       <div class="sp-body"></div>
     </div>`);
     screen().appendChild(searchPanel);
     const input = searchPanel.querySelector(".sp-input");
     input.oninput = () => renderSearch(input.value);
+    searchPanel.querySelectorAll(".sp-tabs button").forEach((b) => b.onclick = () => { setSearchMode(b.dataset.m); renderSearch(input.value); input.focus(); });
     input.onkeydown = (e) => {
       if (e.key === "Enter") { const first = searchPanel.querySelector(".sp-row"); if (first) first.click(); }
       if (e.key === "Escape") closeSearch();
@@ -1315,10 +1317,62 @@
     { keys: ["doordash", "door dash"], name: "DoorDash", img: "assets/brand_doordash.png", desc: "On-demand food and grocery delivery from local restaurants and stores.", url: "https://www.doordash.com" },
   ];
   function knowledgeFor(q) { const s = q.toLowerCase(); return SEARCH_KNOWLEDGE.find((k) => k.keys.some((key) => key === s || (s.length >= 2 && key.startsWith(s)))); }
+  // ---- Images search (Wikimedia Commons: free pictures, no key needed) ----
+  let spMode = "all", spImgSeq = 0;
+  function setSearchMode(m) { spMode = m; searchPanel.querySelectorAll(".sp-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.m === m)); }
+  function fetchImages(q, n) {
+    const u = "https://commons.wikimedia.org/w/api.php?origin=*&format=json&action=query&generator=search&gsrnamespace=6&gsrlimit=" + n +
+      "&prop=imageinfo&iiprop=url|mime&iiurlwidth=1024&gsrsearch=" + encodeURIComponent(q + " filetype:bitmap");
+    return fetch(u).then((r) => r.json()).then((j) => Object.values((j.query && j.query.pages) || {}).sort((a, b) => (a.index || 0) - (b.index || 0))
+      .filter((p) => p.imageinfo && p.imageinfo[0].thumburl && /image\/(jpeg|png|gif|webp)/.test(p.imageinfo[0].mime || ""))
+      .map((p) => ({ title: p.title.replace(/^File:/, "").replace(/\.[a-z0-9]+$/i, ""), file: p.title.replace(/^File:/, ""), big: p.imageinfo[0].thumburl, thumb: p.imageinfo[0].thumburl.replace(/\/(\d+)px-/, "/240px-"), page: p.imageinfo[0].descriptionurl })));
+  }
+  function imageGrid(host, q, n, more) {
+    const seq = ++spImgSeq;
+    const grid = el(`<div class="sp-imgs"><div class="sp-empty">Finding pictures of “${q.replace(/</g, "&lt;")}”…</div></div>`);
+    host.appendChild(grid);
+    clearTimeout(imageGrid.t);
+    imageGrid.t = setTimeout(() => fetchImages(q, n).then((list) => {
+      if (seq !== spImgSeq) return;
+      grid.innerHTML = "";
+      if (!list.length) { grid.innerHTML = `<div class="sp-empty">No pictures found for “${q.replace(/</g, "&lt;")}”.</div>`; return; }
+      list.forEach((im) => { const t = el(`<button class="sp-img" title="${im.title.replace(/"/g, "&quot;")}"><img src="${im.thumb}" alt="" loading="lazy" onerror="this.src='${im.big}'"></button>`); t.onclick = () => showImage(im); grid.appendChild(t); });
+      if (more) { const m = el(`<button class="sp-more">See more images ›</button>`); m.onclick = () => { setSearchMode("images"); renderSearch(q); }; host.appendChild(m); }
+    }).catch(() => { if (seq === spImgSeq) grid.innerHTML = `<div class="sp-empty">Couldn't load pictures. Check your connection.</div>`; }), 280);
+  }
+  function showImage(im) {
+    document.querySelectorAll(".sp-light").forEach((x) => x.remove());
+    const ov = el(`<div class="sp-light"><div class="sp-light-box"><img src="${im.big}" alt=""><div class="sp-light-bar"><b>${im.title.replace(/</g, "&lt;")}</b><span class="grow"></span><button class="sp-l-save">Save to Pictures</button><button class="sp-l-open">Open page</button><button class="sp-l-x">Close</button></div><div class="sp-light-src">From Wikimedia Commons — check the page for the picture's license.</div></div></div>`);
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    ov.querySelector(".sp-l-x").onclick = () => ov.remove();
+    ov.querySelector(".sp-l-open").onclick = () => { ov.remove(); closeSearch(); if (window.Browser) Browser.openTo(im.page); };
+    ov.querySelector(".sp-l-save").onclick = (e) => {
+      const b = e.currentTarget; b.disabled = true; b.textContent = "Saving…";
+      fetch(im.big).then((r) => r.blob()).then((blob) => {
+        if (!window.VFS || !VFS.nodeFromFile) throw new Error("no vfs");
+        const name = im.file.replace(/[\\/:*?"<>|]/g, "_");
+        return VFS.nodeFromFile(new File([blob], name, { type: blob.type || "image/jpeg" })).then((node) => {
+          if (!S().appData.files && window.FilesParts) S().appData.files = { root: FilesParts.FILE_SEED() };
+          const root = S().appData.files.root; if (!root.Pictures) root.Pictures = { type: "folder", children: {} };
+          const kids = root.Pictures.children; let nm = name, i = 2; while (kids[nm]) nm = name.replace(/(\.[^.]+)?$/, " (" + (i++) + ")$1");
+          kids[nm] = node; State.save();
+          b.textContent = "Saved ✓"; if (window.Notify) Notify.show({ icon: "", title: "Saved to Pictures", body: nm, onClick: () => { window.FilesStartPath = ["Pictures"]; open("fileexplorer"); } });
+        });
+      }).catch(() => { b.disabled = false; b.textContent = "Couldn't save — try again"; });
+    };
+    screen().appendChild(ov);
+  }
+
   function renderSearch(q) {
     const body = searchPanel.querySelector(".sp-body");
     body.innerHTML = "";
     const query = (q || "").trim();
+    if (spMode === "images") {
+      if (!query) { body.appendChild(el(`<div class="sp-empty">Type something to search for pictures — like “cats”, “mountains” or “space”.</div>`)); return; }
+      body.appendChild(el(`<div class="sp-head">Images</div>`));
+      imageGrid(body, query, 30, false);
+      return;
+    }
     const apps = allInstalledApps();
     const matches = query ? apps.filter((a) => a.name.toLowerCase().includes(query.toLowerCase())) : apps.slice(0, 8);
     const know = query ? knowledgeFor(query) : null;
@@ -1343,6 +1397,12 @@
       body.appendChild(el(`<div class="sp-head">Apps</div>`));
       body.appendChild(el(`<div class="sp-empty">No apps found for “${query.replace(/</g, "&lt;")}”</div>`));
     }
+    if (spMode === "apps") return;
+    if (query && query.length > 1) {
+      body.appendChild(el(`<div class="sp-head">Images</div>`));
+      const sec = el(`<div class="sp-img-sec"></div>`); body.appendChild(sec);
+      imageGrid(sec, query, 8, true);
+    }
     if (query) {
       body.appendChild(el(`<div class="sp-head">Search the web</div>`));
       const web = el(`<div class="sp-list"></div>`);
@@ -1354,6 +1414,7 @@
   function openSearch() {
     if (!searchPanel) buildSearchPanel();
     if (startMenu) startMenu.classList.remove("open");
+    setSearchMode("all");
     renderSearch("");
     searchPanel.classList.add("open");
     const input = searchPanel.querySelector(".sp-input"); input.value = ""; setTimeout(() => input.focus(), 30);

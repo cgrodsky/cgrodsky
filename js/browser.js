@@ -132,6 +132,36 @@
     ctx.page.appendChild(page);
   }
 
+  // ---- Site safety: adult-content and suspicious-address warnings ----
+  const SAFE_TLDS = ["com", "net", "org", "io", "gov", "edu", "local"];
+  const ADULT_HOSTS = ["pornhub", "xvideos", "xnxx", "xhamster", "redtube", "youporn", "onlyfans", "chaturbate", "brazzers", "spankbang", "stripchat", "livejasmin", "bongacams", "cam4", "fansly", "rule34", "e-hentai", "nhentai", "hentaihaven", "motherless", "tube8", "eporner", "porntrex", "manyvids", "camsoda", "myfreecams"];
+  const ADULT_WORDS = /(^|[^a-z])(porn|porno|xxx|nsfw|hentai|sex|sexy|nude|nudes|naked|erotic|camgirl|milf|fetish|escort)([^a-z]|$)|porn|xxx/i;
+  function hostOf(url) { try { return new URL(/^https?:\/\//i.test(url) ? url : "https://" + url).hostname.toLowerCase(); } catch (_) { return ""; } }
+  function siteWarning(url) {
+    const host = hostOf(url); if (!host) return null;
+    const bare = host.replace(/^www\./, "");
+    if (ADULT_HOSTS.some((h) => bare === h || bare.startsWith(h + ".") || bare.includes("." + h + ".")) || ADULT_WORDS.test(bare.replace(/[.-]/g, " ")) || /\/(porn|xxx|nsfw|hentai)(\/|$)/i.test(url)) return { kind: "adult", host };
+    if (/^\d+(\.\d+){3}$/.test(host)) return { kind: "suspicious", host, why: "This address is just numbers (an IP address), not a normal website name." };
+    const tld = host.split(".").pop();
+    if (!SAFE_TLDS.includes(tld)) return { kind: "suspicious", host, why: `Its address ends in <b>.${esc(tld)}</b>. Most trusted websites end in <b>.com</b>, <b>.net</b>, <b>.org</b> or <b>.io</b>.` };
+    return null;
+  }
+  const allowedHosts = new Set();   // hosts the user chose to continue to (this session)
+  function renderWarning(ctx, w, final, onContinue) {
+    const adult = w.kind === "adult";
+    const page = el(`<div class="bw-warn ${adult ? "bw-adult" : "bw-sus"}">
+      <div class="bw-card">
+        <div class="bw-ic">${adult ? "18+" : "!"}</div>
+        <h2>${adult ? "Adult content warning" : "Suspicious website"}</h2>
+        <p class="bw-host">${esc(w.host)}</p>
+        <p>${adult ? "This website may show <b>adult content</b> that isn't suitable for kids. You must be 18 or older to continue." : "This website could be <b>unsafe</b>. " + w.why + " Sites like this are sometimes used for scams or to steal passwords."}</p>
+        <div class="bw-btns"><button class="bw-back">Go back (recommended)</button><button class="bw-go">${adult ? "I'm 18 or older — continue" : "Continue anyway"}</button></div>
+      </div></div>`);
+    page.querySelector(".bw-back").onclick = () => ctx.goBack();
+    page.querySelector(".bw-go").onclick = () => { allowedHosts.add(w.host); onContinue(); };
+    ctx.page.appendChild(page);
+  }
+
   // What to show in Chrome's Google frame for something typed in the address bar (or null for a normal site).
   function googleTarget(url, isUrl) {
     const t = String(url || "").trim();
@@ -179,6 +209,7 @@
     const lock = body.querySelector(".lock");
     const bmBar = body.querySelector(".bookmark-bar");
     const history = [], forward = [];
+    let here = null;   // the page actually showing (the address bar may hold half-typed text)
 
     Catalog.bookmarks.forEach((b) => {
       const bm = el(`<div class="bm">${b.label}</div>`);
@@ -187,7 +218,8 @@
     });
 
     function navigate(url, pushHistory = true) {
-      if (pushHistory) { history.push(urlInput.value || "home"); forward.length = 0; }
+      if (pushHistory && here != null && here !== url) { history.push(here); forward.length = 0; }
+      here = url;
       urlInput.value = url;
       page.innerHTML = "";
       const special = resolveSpecial(url);
@@ -224,6 +256,12 @@
           urlInput.value = q; renderSearch(ctx, q, mode); addHistory(q, mode + ":" + q); return;
         }
         const final = /^https?:\/\//.test(url) ? url : "https://" + url.trim();
+        const warn = siteWarning(final);
+        if (warn && !allowedHosts.has(warn.host)) {
+          lock.textContent = ""; body.querySelector(".addr").classList.remove("locked-site");
+          renderWarning(Object.assign({}, ctx, { goBack: () => body.querySelector(".back").click() }), warn, final, () => navigate(final, false));
+          return;
+        }
         const frame = el(`<iframe class="embed-frame" src="${esc(final)}"></iframe>`);
         const bar = el(`<div class="frame-bar"><span>Some sites won't show inside an app window — if this one stays blank, open it in a real tab.</span><a href="${esc(final)}" target="_blank" rel="noopener">Open in a real tab ↗</a></div>`);
         page.appendChild(bar);
@@ -270,10 +308,56 @@
     const bstore = () => { const d = (window.State && State.data) || {}; d.appData = d.appData || {}; d.appData.browser = d.appData.browser || { history: [], favs: [], settings: { bookmarks: true } }; return d.appData.browser; };
     function addHistory(label, url) { const b = bstore(); b.history = b.history.filter((h) => h.url !== url); b.history.unshift({ label: String(label).slice(0, 120), url, ts: Date.now() }); b.history = b.history.slice(0, 100); if (window.State) State.save(); }
     if (!bstore().settings.bookmarks) bmBar.style.display = "none";
-    urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") navigate(urlInput.value); });
-    body.querySelector(".reload").onclick = () => navigate(urlInput.value, false);
-    body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev != null) { forward.push(urlInput.value || "home"); navigate(prev, false); } };
-    body.querySelector(".fwd").onclick = () => { const nxt = forward.pop(); if (nxt != null) { history.push(urlInput.value || "home"); navigate(nxt, false); } };
+
+    // ---- address-bar dropdown: instant answer, search history, visited sites, bookmarks ----
+    const sugg = el(`<div class="bb-suggest" hidden></div>`);
+    body.querySelector(".addr").appendChild(sugg);
+    let sIdx = -1, sItems = [];
+    const isUrlLike = (t) => /^https?:\/\//i.test(t) || /^[\w-]+(\.[\w-]+)+(\/.*)?$/i.test(t);
+    const searchHistory = () => bstore().history.filter((h) => /^(search|images):/.test(h.url));
+    function hideSugg() { sugg.hidden = true; sIdx = -1; }
+    function paintSugg() {
+      const t = urlInput.value.trim(), tl = t.toLowerCase();
+      const rows = []; sugg.innerHTML = ""; sItems = [];
+      const add = (html, go, cls, del) => { const r = el(`<div class="bb-s-row ${cls || ""}">${html}${del ? '<button class="bb-s-del" title="Remove">✕</button>' : ""}</div>`); r.onmousedown = (e) => { e.preventDefault(); if (e.target.closest(".bb-s-del")) { del(); paintSugg(); urlInput.focus(); return; } hideSugg(); go(); }; sugg.appendChild(r); sItems.push({ r, go }); };
+      const IC = { clock: "🕘", search: "🔍", globe: "🌐", star: "⭐", img: "🖼️" };
+      if (t && !isUrlLike(t) && window.Brain) {
+        const a = Brain.answer(t);
+        if (a && a.confident && a.source !== "fallback") {
+          const txt = a.text.replace(/```[\s\S]*?```/g, "[code]").replace(/\*\*|__|`/g, "").replace(/\*([^*]+)\*/g, "$1").replace(/\n+/g, " ").trim();
+          const card = el(`<div class="bb-s-answer"><div class="bb-s-ans-h">${(window.Icon ? Icon.mini("copilot", "Copilot") : "")}<b>Quick answer</b></div><div class="bb-s-ans-t">${esc(txt.length > 260 ? txt.slice(0, 257) + "…" : txt)}</div></div>`);
+          card.onmousedown = (e) => { e.preventDefault(); hideSugg(); if (window.WM) { WM.open("copilot"); } };
+          sugg.appendChild(card);
+        }
+      }
+      if (t) add(`<span class="bb-s-ic">${isUrlLike(t) ? IC.globe : IC.search}</span><span class="bb-s-t">${isUrlLike(t) ? esc(t) : "Search for <b>" + esc(t) + "</b>"}</span>`, () => navigate(t));
+      const hist = searchHistory().filter((h) => !t || h.label.toLowerCase().includes(tl)).filter((h) => h.label.toLowerCase() !== tl).slice(0, t ? 4 : 8);
+      if (!t && hist.length) sugg.appendChild(el(`<div class="bb-s-head"><span>Recent searches</span><button class="bb-s-clear">Clear</button></div>`));
+      hist.forEach((h) => add(`<span class="bb-s-ic">${h.url.startsWith("images:") ? IC.img : IC.clock}</span><span class="bb-s-t">${esc(h.label)}</span>`, () => navigate(h.url), "bb-s-hist", () => { const b = bstore(); b.history = b.history.filter((x) => x !== h); if (window.State) State.save(); }));
+      if (t) {
+        const seen = new Set();
+        bstore().history.filter((h) => !/^(search|images):/.test(h.url) && (h.label + " " + h.url).toLowerCase().includes(tl)).slice(0, 3).forEach((h) => { if (seen.has(h.url)) return; seen.add(h.url); add(`<span class="bb-s-ic">${IC.globe}</span><span class="bb-s-t">${esc(h.label)}<small>${esc(h.url.replace(/^https?:\/\//, ""))}</small></span>`, () => navigate(h.url)); });
+        (Catalog.bookmarks || []).filter((b) => (b.label + " " + b.url).toLowerCase().includes(tl)).slice(0, 3).forEach((b) => add(`<span class="bb-s-ic">${IC.star}</span><span class="bb-s-t">${esc(b.label)}<small>${esc(String(b.url).replace(/^https?:\/\//, ""))}</small></span>`, () => navigate(b.url)));
+        if (!isUrlLike(t)) add(`<span class="bb-s-ic">${IC.img}</span><span class="bb-s-t">Images of <b>${esc(t)}</b></span>`, () => navigate("images:" + t));
+      }
+      const clr = sugg.querySelector(".bb-s-clear");
+      if (clr) clr.onmousedown = (e) => { e.preventDefault(); const b = bstore(); b.history = b.history.filter((h) => !/^(search|images):/.test(h.url)); if (window.State) State.save(); paintSugg(); };
+      sugg.hidden = !sugg.childElementCount; sIdx = -1;
+    }
+    urlInput.addEventListener("focus", () => { urlInput.select(); paintSugg(); });
+    urlInput.addEventListener("input", paintSugg);
+    urlInput.addEventListener("blur", () => setTimeout(hideSugg, 120));
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (sugg.hidden || !sItems.length) return; e.preventDefault();
+        sIdx = (sIdx + (e.key === "ArrowDown" ? 1 : -1) + sItems.length) % sItems.length;
+        sItems.forEach((s, i) => s.r.classList.toggle("on", i === sIdx));
+      } else if (e.key === "Escape") hideSugg();
+      else if (e.key === "Enter") { e.preventDefault(); const pick = sIdx >= 0 && sItems[sIdx]; hideSugg(); urlInput.blur(); if (pick) pick.go(); else navigate(urlInput.value); }
+    });
+    body.querySelector(".reload").onclick = () => navigate(here || "home", false);
+    body.querySelector(".back").onclick = () => { const prev = history.pop(); if (prev != null) { forward.push(here || "home"); navigate(prev, false); } };
+    body.querySelector(".fwd").onclick = () => { const nxt = forward.pop(); if (nxt != null) { history.push(here || "home"); navigate(nxt, false); } };
     body.querySelector(".home-btn").onclick = () => navigate("home");
     const notify = (msg) => { if (window.Notify) Notify.show({ icon: opts.icon || "", title: opts.title || "Edge", body: msg }); };
     // Read aloud — TTS of the visible page text (toggle).

@@ -5015,6 +5015,61 @@ body.dark .fx12-pop button:hover:not(:disabled){background:rgba(255,255,255,.08)
 .fx12-check{margin-left:auto;color:#6a6fd6}
 @media (max-width:760px){.fx12-side{display:none}.fx12-search{width:40%}.fx12-tb span{display:none}.fx12-row{grid-template-columns:24px minmax(0,1fr) 70px}.fx12-row-d,.fx12-row-t{display:none}}
 
+/* Taskbar search: tabs + images */
+.sp-tabs{display:flex;gap:6px;padding:0 14px 8px}
+.sp-tabs button{font:inherit;font-size:.82rem;padding:4px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.55);color:inherit;cursor:pointer}
+body.dark .sp-tabs button{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+.sp-tabs button.on{background:linear-gradient(100deg,#9b6fd8,#5b7fe6);color:#fff;border-color:transparent}
+.sp-imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:2px 2px 4px}
+.sp-imgs .sp-empty{grid-column:1/-1}
+.sp-img{all:unset;cursor:pointer;aspect-ratio:1;border-radius:8px;overflow:hidden;background:rgba(0,0,0,.06)}
+.sp-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.sp-img:hover img{transform:scale(1.06)}
+.sp-more{all:unset;cursor:pointer;display:block;margin:4px 2px 8px;font-size:.84rem;color:#5b6be6}
+.sp-light{position:fixed;inset:0;z-index:100001;background:rgba(10,8,20,.72);display:grid;place-items:center;padding:20px;backdrop-filter:blur(6px)}
+.sp-light-box{max-width:min(960px,94vw);background:#fff;color:#111;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.sp-light-box img{display:block;max-width:100%;max-height:70vh;margin:auto;background:#111}
+.sp-light-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.sp-light-bar b{font-weight:500;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-light-bar button{font:inherit;font-size:.86rem;padding:6px 12px;border-radius:7px;border:1px solid rgba(0,0,0,.12);background:#f4f4f7;cursor:pointer}
+.sp-light-bar .sp-l-save{background:linear-gradient(100deg,#9b6fd8,#5b7fe6);color:#fff;border:0}
+.sp-light-src{font-size:.74rem;opacity:.6;padding:0 14px 10px}
+
+/* Browser address-bar dropdown */
+.browser-bar .addr{position:relative}
+.bb-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:50;background:var(--window-bg,#fff);color:var(--text,#111);border:1px solid rgba(0,0,0,.1);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;max-height:420px;overflow:auto;text-align:left}
+.bb-suggest[hidden]{display:none}
+.bb-s-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:.9rem}
+.bb-s-row:hover,.bb-s-row.on{background:rgba(0,0,0,.06)}
+body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08)}
+.bb-s-ic{width:20px;text-align:center;flex:none;font-size:.95rem}
+.bb-s-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bb-s-t small{margin-left:8px;opacity:.55}
+.bb-s-del{all:unset;opacity:0;padding:2px 6px;border-radius:4px;cursor:pointer;font-size:.8rem}
+.bb-s-row:hover .bb-s-del{opacity:.6}
+.bb-s-del:hover{opacity:1!important;background:rgba(0,0,0,.08)}
+.bb-s-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 4px;font-size:.76rem;opacity:.65}
+.bb-s-clear{all:unset;cursor:pointer;color:#5b6be6}
+.bb-s-answer{margin:2px 2px 6px;padding:10px 12px;border-radius:10px;background:linear-gradient(120deg,rgba(163,91,224,.12),rgba(79,124,240,.12));cursor:pointer}
+.bb-s-ans-h{display:flex;align-items:center;gap:6px;font-size:.78rem;margin-bottom:4px}
+.bb-s-ans-h .ico-wrap{width:16px!important;height:16px!important}
+.bb-s-ans-t{font-size:.9rem;line-height:1.4}
+/* Browser safety warnings */
+.bw-warn{height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box;overflow:auto}
+.bw-adult{background:linear-gradient(160deg,#2a1530,#160f24)}
+.bw-sus{background:linear-gradient(160deg,#a51d1d,#6d1010)}
+.bw-card{max-width:520px;background:rgba(255,255,255,.97);color:#1b1b1f;border-radius:16px;padding:28px 30px;box-shadow:0 20px 50px rgba(0,0,0,.35);text-align:center}
+.bw-ic{width:64px;height:64px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.5rem;color:#fff}
+.bw-adult .bw-ic{background:#8b2fc9}
+.bw-sus .bw-ic{background:#c42b1c;font-size:2rem}
+.bw-card h2{margin:0 0 4px;font-weight:600}
+.bw-host{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;opacity:.7;margin:0 0 12px;word-break:break-all}
+.bw-card p{line-height:1.5}
+.bw-btns{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.bw-btns button{font:inherit;padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid rgba(0,0,0,.15);background:#fff}
+.bw-btns .bw-back{background:#2563eb;color:#fff;border:0;font-weight:600}
+.bw-btns .bw-go{color:#555;font-size:.88rem}
+
 /* Apple Pay step in the payment window */
 .apay-step{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:18px 20px 12px;color:#111}
 .apay-logo{color:#000}
