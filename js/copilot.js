@@ -106,7 +106,9 @@
         code = code.replace(/\n+$/, "");
         html += `<div class="cop-code"><div class="cop-code-head"><span class="cop-code-lang">${escapeHtml(lang || "code")}</span><button class="cop-code-copy">Copy</button></div><pre class="cop-code-body">${escapeHtml(code)}</pre></div>`;
       } else if (part.trim()) {
-        html += `<div class="cop-text">${escapeHtml(part).replace(/`([^`\n]+)`/g, '<code class="cop-inline">$1</code>')}</div>`;
+        html += `<div class="cop-text">${escapeHtml(part).replace(/`([^`\n]+)`/g, '<code class="cop-inline">$1</code>')
+          .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,!?;:)]|$)/g, "$1<i>$2</i>")
+          .replace(/^\s*[-•]\s+/gm, "• ")}</div>`;
       }
     });
     return html || `<div class="cop-text">${escapeHtml(text)}</div>`;
@@ -412,8 +414,16 @@
       if (!text && pendingFiles.length === 0) return;
       // Daily message limit per plan.
       const p = planCfg(), u = usage();
-      if (u.messages >= p.msgs) { showLimit(body, "You've used all " + p.msgs + " messages today on " + p.name + ". Upgrade for more."); return; }
       const images = pendingFiles.filter((f) => f.dataUrl).map((f) => f.dataUrl);
+      // Built-in brain first (free, offline). The online model is only used when the brain
+      // isn't sure, for pictures, or for images the user attached. Brain answers don't use up the daily limit.
+      const wantsImage = /\b(draw|generate|create|make|design|paint)\b[\s\S]*\b(image|picture|photo|pic|wallpaper|logo|art|artwork|drawing|painting)\b/i.test(text);
+      const local = (!images.length && !wantsImage && window.Brain && text) ? Brain.answer(text) : null;
+      const free = !!(local && local.confident);
+      if (!free && u.messages >= p.msgs) {
+        if (local) { /* out of online messages: still answer from the brain */ }
+        else { showLimit(body, "You've used all " + p.msgs + " messages today on " + p.name + ". Upgrade for more."); return; }
+      }
       const otherNames = pendingFiles.filter((f) => !f.dataUrl).map((f) => f.name);
       const note = otherNames.length ? "[Attached: " + otherNames.join(", ") + "]" : "";
       const content = [note, text].filter(Boolean).join("\n").trim();
@@ -429,7 +439,9 @@
       const conv = activeConv();
       conv.history.push(userMsg);
       if (conv.history.filter((m) => m.role === "user").length === 1) { conv.title = convTitle(conv.history); renderConvos(); }
-      u.messages++; State.save(); updateUsage();
+      const overLimit = u.messages >= p.msgs;
+      if (!free && !overLimit) u.messages++;
+      State.save(); updateUsage();
       addBubble(userMsg);
 
       // Coding requests get the animated "AI Planning" workflow; everything else the dots.
@@ -440,7 +452,11 @@
       sendBtn.disabled = true;
 
       try {
-        const [reply] = await Promise.all([callApi(conv.history), plan ? plan.run() : Promise.resolve()]);
+        const think = () => new Promise((r) => setTimeout(r, 450 + Math.random() * 650));
+        let replyP;
+        if (free || (local && overLimit)) replyP = think().then(() => local.text);
+        else replyP = callApi(conv.history).catch((err) => { if (local) return local.text; throw err; });
+        const [reply] = await Promise.all([replyP, plan ? plan.run() : Promise.resolve()]);
         typing.remove();
         const m = reply.match(/\[\[IMAGE:\s*([\s\S]+?)\]\]/i);
         if (m) {

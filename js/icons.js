@@ -518,8 +518,12 @@
       b.style.top = (inp.offsetTop + (inp.offsetHeight - 26) / 2) + "px";
     };
     inp.addEventListener("input", place); inp.addEventListener("focus", place);
-    // pages often clear the box in code after a submit, which fires no "input" event
+    // pages often clear the box in code (after a submit, a "Change" button…), which fires no "input" event
     if (inp.form) { inp.form.addEventListener("submit", () => setTimeout(place, 0)); inp.form.addEventListener("reset", () => setTimeout(place, 0)); }
+    inp._pwPlace = place;
+    if (!window.__pwEyeSweep) window.__pwEyeSweep = setInterval(() => {
+      document.querySelectorAll('input[data-pw-eye]').forEach((i) => { const e = i.nextElementSibling; if (i._pwPlace && e && e.classList.contains("pw-eye-btn") && !i.value && e.style.display !== "none") i._pwPlace(); });
+    }, 400);
     if (window.ResizeObserver) new ResizeObserver(place).observe(inp);
     requestAnimationFrame(place);
     b.addEventListener("mousedown", (e) => e.preventDefault());   // keep focus in the box
