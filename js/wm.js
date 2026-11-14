@@ -794,6 +794,11 @@
   // play here as "Recent". Logged in to Spotify in this browser = full songs; otherwise
   // Spotify plays 30-second previews. Built once, so music keeps playing.
   const SPOTIFY_DEFAULT = { type: "playlist", id: "37i9dQZF1DXcBWIGoYBM5M", title: "Today's Top Hits" };
+  // Built-in Spotify app Client ID (public, not a secret — PKCE needs no secret). Used unless
+  // the user set their own. For their account to connect it must be added under User Management
+  // in this app's Spotify dashboard (while the app is in Development mode).
+  const SPOTIFY_CLIENT_ID = "ee13b83a1aef48728ea814414db013d3";
+  const spClientId = () => (spState().clientId || SPOTIFY_CLIENT_ID);
   const SPOTIFY_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>`;
   function spState() { const d = S().desktop || (S().desktop = {}); return d.spotify || (d.spotify = { hidden: false, pos: null, recent: [SPOTIFY_DEFAULT] }); }
   function parseSpotify(t) {
@@ -806,7 +811,7 @@
   const spTok = { get() { try { return JSON.parse(localStorage.getItem("spw_token") || "null"); } catch (_) { return null; } }, set(t) { try { t ? localStorage.setItem("spw_token", JSON.stringify(t)) : localStorage.removeItem("spw_token"); } catch (_) {} } };
   const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   async function spConnect() {
-    const id = spState().clientId; if (!id) return;
+    const id = spClientId(); if (!id) return;
     const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
     const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
     try { localStorage.setItem("spw_pkce", verifier); } catch (_) {}
@@ -824,12 +829,12 @@
     history.replaceState(null, "", SP_REDIRECT() + location.hash);
     if (q.get("error")) throw new Error(q.get("error") === "access_denied" ? "Spotify sign-in was cancelled." : q.get("error"));
     let verifier = ""; try { verifier = localStorage.getItem("spw_pkce") || ""; localStorage.removeItem("spw_pkce"); } catch (_) {}
-    await spTokenRequest({ grant_type: "authorization_code", code: q.get("code"), redirect_uri: SP_REDIRECT(), client_id: spState().clientId, code_verifier: verifier });
+    await spTokenRequest({ grant_type: "authorization_code", code: q.get("code"), redirect_uri: SP_REDIRECT(), client_id: spClientId(), code_verifier: verifier });
     return true;
   }
   async function spApi(path) {
     let t = spTok.get(); if (!t) throw new Error("not connected");
-    if (Date.now() > t.exp) { await spTokenRequest({ grant_type: "refresh_token", refresh_token: t.refresh, client_id: spState().clientId }); t = spTok.get(); }
+    if (Date.now() > t.exp) { await spTokenRequest({ grant_type: "refresh_token", refresh_token: t.refresh, client_id: spClientId() }); t = spTok.get(); }
     const r = await fetch("https://api.spotify.com/v1" + path, { headers: { Authorization: "Bearer " + t.access } });
     if (r.status === 401) { spTok.set(null); throw new Error("Spotify signed you out — connect again."); }
     if (r.status === 403) throw new Error("This Spotify account isn't allowed for the app yet. Add it under User Management in your Spotify developer dashboard.");
@@ -895,12 +900,18 @@
       const connected = !!spTok.get();
       conn.innerHTML = connected
         ? `<div class="spw-c-row">✓ Connected to Spotify — showing your recently played.</div><div class="spw-c-btns"><button class="spw-c-refresh">Refresh</button><button class="spw-c-out">Disconnect</button></div>`
-        : `<div class="spw-c-row">Show your real <b>recently played</b> songs. Paste your Spotify app's <b>Client ID</b> (from developer.spotify.com — it isn't secret).</div>
-           <input class="spw-c-id" placeholder="Client ID" value="${escAttr(spState().clientId || "")}" spellcheck="false">
-           <div class="spw-c-row spw-c-small">In your Spotify app's settings, add this Redirect URI:<br><code>${escAttr(SP_REDIRECT())}</code></div>
-           <div class="spw-c-btns"><button class="spw-c-go">Connect Spotify</button></div>`;
+        : `<div class="spw-c-row">Connect your Spotify account to see your real <b>recently played</b> songs here.</div>
+           <div class="spw-c-btns"><button class="spw-c-go spw-c-connect">Connect Spotify</button></div>
+           <a class="spw-c-adv">Use my own Spotify app</a>
+           <div class="spw-c-own" hidden>
+             <input class="spw-c-id" placeholder="Client ID (32 characters)" value="${escAttr(spState().clientId || "")}" spellcheck="false">
+             <div class="spw-c-row spw-c-small">Add this Redirect URI in your Spotify app:<br><code>${escAttr(SP_REDIRECT())}</code></div>
+             <div class="spw-c-btns"><button class="spw-c-go spw-c-own-go">Connect with it</button></div>
+           </div>`;
       if (msg) conn.appendChild(el(`<div class="spw-err">${escAttr(msg)}</div>`));
-      const g = conn.querySelector(".spw-c-go");
+      const connect = conn.querySelector(".spw-c-connect"); if (connect) connect.onclick = () => spConnect();
+      const adv = conn.querySelector(".spw-c-adv"); if (adv) adv.onclick = () => { const own = conn.querySelector(".spw-c-own"); own.hidden = !own.hidden; };
+      const g = conn.querySelector(".spw-c-own-go");
       if (g) g.onclick = () => { const v = conn.querySelector(".spw-c-id").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { paintConn("That doesn't look like a Client ID (32 letters and numbers)."); return; } spState().clientId = v; State.save(); spConnect(); };
       const rf = conn.querySelector(".spw-c-refresh"); if (rf) rf.onclick = () => loadRecent().then(() => paintConn()).catch((e) => paintConn(e.message));
       const out = conn.querySelector(".spw-c-out"); if (out) out.onclick = () => { spTok.set(null); spRecent = null; paintRecent(); paintConn(); };

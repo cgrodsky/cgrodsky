@@ -5111,6 +5111,9 @@ body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08
 .spw-c-btns button{font:inherit;font-size:.78rem;padding:6px 12px;border-radius:999px;border:0;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .spw-c-btns .spw-c-go{background:#1ed760;color:#000;font-weight:700}
 .spw-none{font-size:.76rem;opacity:.7}
+.spw-c-adv{display:inline-block;margin-top:8px;font-size:.74rem;color:#1ed760;cursor:pointer;text-decoration:underline}
+.spw-c-own[hidden]{display:none}
+.spw-c-own{margin-top:8px}
 .w12s-card[hidden],.lock-touchid[hidden]{display:none!important}
 .w12s-fp-btns{display:flex;gap:8px}
 .w12s-fp-btns:empty{display:none}
