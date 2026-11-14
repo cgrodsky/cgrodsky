@@ -387,7 +387,7 @@
       if (clr) clr.onmousedown = (e) => { e.preventDefault(); const b = bstore(); b.history = b.history.filter((h) => !/^(search|images):/.test(h.url)); if (window.State) State.save(); paintSugg(); };
       sugg.hidden = !sugg.childElementCount; sIdx = -1;
     }
-    urlInput.addEventListener("focus", () => { urlInput.select(); paintSugg(); });
+    urlInput.addEventListener("focus", () => { urlInput.select(); paintSugg(); if (window.Brain && Brain.load) Brain.load().then(() => { if (document.activeElement === urlInput) paintSugg(); }); });
     urlInput.addEventListener("input", paintSugg);
     urlInput.addEventListener("blur", () => setTimeout(hideSugg, 120));
     urlInput.addEventListener("keydown", (e) => {

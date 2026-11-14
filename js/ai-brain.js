@@ -46,20 +46,24 @@
   }
 
   // ---------- index ----------
-  let built = 0, entries = [], phr = [], df = new Map(), N = 1;
+  // phr: every phrasing; inv: word -> phrasings containing it; exact: normalized phrasing -> phrasing
+  let built = 0, entries = [], phr = [], df = new Map(), inv = new Map(), exact = new Map(), N = 1;
   function build() {
     const src = window.AIQA || [];
     if (built === src.length) return;
-    built = src.length; entries = src; phr = []; df = new Map();
+    built = src.length; entries = src; phr = []; df = new Map(); inv = new Map(); exact = new Map();
     src.forEach((e, i) => {
       String(e[0]).split("|").forEach((q) => {
         q = q.trim(); if (!q) return;
         const toks = tokens(q); const set = new Set(toks);
-        phr.push({ i, n: norm(q), toks, set });
-        set.forEach((t) => df.set(t, (df.get(t) || 0) + 1));
+        const p = { i, n: norm(q), toks, set, w2: 0 }, k = phr.length;
+        phr.push(p);
+        if (!exact.has(p.n)) exact.set(p.n, k);
+        set.forEach((t) => { df.set(t, (df.get(t) || 0) + 1); let l = inv.get(t); if (!l) inv.set(t, (l = [])); l.push(k); });
       });
     });
     N = Math.max(1, phr.length);
+    phr.forEach((p) => { let s = 0; p.set.forEach((t) => { const w = idf(t); s += w * w; }); p.w2 = s; });
   }
   const idf = (t) => Math.log(1 + N / (1 + (df.get(t) || 0)));
 
@@ -74,30 +78,32 @@
     return e + (a.length - i) + (b.length - j) <= 1;
   }
 
-  function score(qToks, p) {
-    if (!qToks.length || !p.toks.length) return 0;
-    let hit = 0, qW = 0, pW = 0;
-    const qSet = new Set(qToks);
-    qSet.forEach((t) => {
-      const w = idf(t); qW += w * w;
-      if (p.set.has(t)) hit += w * w;
-      else if (t.length >= 5) { for (const pt of p.set) { if (pt.length >= 5 && lev1(t, pt)) { hit += 0.7 * w * w; break; } } }
-    });
-    p.set.forEach((t) => { const w = idf(t); pW += w * w; });
-    return hit / Math.sqrt(qW * pW);
-  }
-
+  // Only phrasings that share a word with the question (or a word one typo away) are scored.
   function search(text) {
     build();
     const n = norm(text).replace(/[?!.]+$/g, "").trim();
-    const q = tokens(text);
+    const qSet = new Set(tokens(text));
+    let qW = 0;
+    const alts = new Map();   // query word -> [[word in index, weight]]
+    qSet.forEach((t) => {
+      const w = idf(t); qW += w * w;
+      const list = [];
+      if (inv.has(t)) list.push([t, 1]);
+      else if (t.length >= 5) { for (const vt of inv.keys()) { if (vt.length >= 4 && Math.abs(vt.length - t.length) <= 1 && lev1(t, vt)) { list.push([vt, 0.7]); if (list.length > 6) break; } } }
+      alts.set(t, list);
+    });
+    const hits = new Map();   // phrasing index -> summed weight
+    alts.forEach((list, t) => {
+      const w2 = idf(t) ** 2;
+      const got = new Map();
+      list.forEach(([vt, f]) => (inv.get(vt) || []).forEach((k) => { if ((got.get(k) || 0) < f) got.set(k, f); }));
+      got.forEach((f, k) => hits.set(k, (hits.get(k) || 0) + f * w2));
+    });
     let best = [];
-    for (const p of phr) {
-      const s = p.n === n ? 1.5 : score(q, p);
-      if (s > 0) best.push({ s, i: p.i, q: p.n });
-    }
+    const ex = exact.get(n);
+    if (ex != null) best.push({ s: 1.5, i: phr[ex].i, q: phr[ex].n });
+    hits.forEach((h, k) => { const p = phr[k]; const s = h / Math.sqrt(qW * p.w2); if (s > 0) best.push({ s, i: p.i, q: p.n }); });
     best.sort((a, b) => b.s - a.s);
-    // de-duplicate by entry
     const seen = new Set(); best = best.filter((b) => (seen.has(b.i) ? false : (seen.add(b.i), true)));
     return best.slice(0, 8);
   }
@@ -191,5 +197,33 @@
     return { text: pick(FALLBACKS), confident: false, score: top ? top.s : 0, source: "fallback" };
   }
 
-  window.Brain = { answer, search, get size() { build(); return entries.length; } };
+  // ---- loading the answer packs (js/ai-qa/qa-NN.js) in the background ----
+  const PACKS = 30;
+  const VER = (() => { try { const s = document.currentScript && document.currentScript.src; return (s && (s.match(/[?&]v=([^&]+)/) || [])[1]) || ""; } catch (_) { return ""; } })();
+  let loadP = null;
+  function load() {
+    if (loadP) return loadP;
+    const one = (n) => new Promise((res) => {
+      const s = document.createElement("script");
+      s.src = "js/ai-qa/qa-" + String(n).padStart(2, "0") + ".js" + (VER ? "?v=" + VER : "");
+      s.onload = s.onerror = () => res();
+      document.head.appendChild(s);
+    });
+    loadP = Promise.all(Array.from({ length: PACKS }, (_, i) => one(i + 1))).then(() => { build(); return entries.length; });
+    return loadP;
+  }
+  // start quietly a few seconds after the page settles; Copilot also asks for it on first use
+  const kick = () => setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(() => load(), { timeout: 4000 }) : load()), 3500);
+  if (document.readyState === "complete") kick(); else window.addEventListener("load", kick);
+
+  // ---- skills: things the brain works out live (e.g. js/ai-coding.js). fn(text) -> string | Promise<string> | null
+  const skills = [];
+  function addSkill(fn) { skills.push(fn); }
+  async function answerAsync(text) {
+    for (const fn of skills) { try { const r = await fn(String(text || "")); if (r) return { text: r, confident: true, score: 1, source: "skill" }; } catch (_) {} }
+    await load().catch(() => {});
+    return answer(text);
+  }
+
+  window.Brain = { answer, answerAsync, search, load, addSkill, get size() { build(); return entries.length; } };
 })();

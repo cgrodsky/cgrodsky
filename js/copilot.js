@@ -418,7 +418,8 @@
       // Built-in brain first (free, offline). The online model is only used when the brain
       // isn't sure, for pictures, or for images the user attached. Brain answers don't use up the daily limit.
       const wantsImage = /\b(draw|generate|create|make|design|paint)\b[\s\S]*\b(image|picture|photo|pic|wallpaper|logo|art|artwork|drawing|painting)\b/i.test(text);
-      const local = (!images.length && !wantsImage && window.Brain && text) ? Brain.answer(text) : null;
+      // answerAsync: coding skills first (run JS, write code, JSON, convert, explain errors), then the Q&A packs
+      const local = (!images.length && !wantsImage && window.Brain && text) ? await (Brain.answerAsync ? Brain.answerAsync(text) : Brain.answer(text)) : null;
       const free = !!(local && local.confident);
       if (!free && u.messages >= p.msgs) {
         if (local) { /* out of online messages: still answer from the brain */ }
