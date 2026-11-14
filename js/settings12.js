@@ -171,7 +171,7 @@
       devices: [
         { ic: "plus", t: "Add device", s: "Search for new Bluetooth devices", act: () => note(q.bt ? "Searching for devices… nothing found nearby." : "Turn on Bluetooth first.") },
         { ic: "mouse", t: "Mouse", s: "Buttons, pointer speed, scrolling", sub: "mouse" },
-        { ic: "keyboard", t: "Devices", s: "Bluetooth mouse, keyboard, other devices" },
+        { ic: "keyboard", t: "Devices & drivers", s: "Fingerprint sensor, mouse, keyboard — drivers and status", sub: "devmgr" },
         { ic: "printer", t: "Printers & scanners", s: "Set up and troubleshoot printers" },
         { ic: "phone", t: "Phone Link", s: "Get to your phone's photos, texts and more" },
         { ic: "touchpad", t: "Touchpad", s: "Taps, scrolling, zoom, gestures" },
@@ -223,7 +223,7 @@
         { ic: "lang", t: "Language & region", s: "Windows and some apps format dates and time based on your region", sub: "language" },
         { ic: "keyboard", t: "Typing", s: "Touch keyboard, text suggestions, preferences" },
         { ic: "mic", t: "Speech", s: "Speech language, voice recognition, microphone setup" },
-        { ic: "globe", t: "Windows display language", s: "Settings and File Explorer will appear in this language", ctl: () => select((window.I18n ? I18n.languages : [{ code: "en", name: "English" }]).map((l) => [l.code, l.name]), window.I18n ? I18n.lang : "en", (v) => { if (window.I18n) I18n.set(v); note("Display language changed. Some text changes after a restart."); }) },
+        { ic: "globe", t: "Windows display language", s: "Settings and File Explorer will appear in this language", ctl: () => select((window.I18n ? I18n.languages : [{ code: "en", name: "English" }]).map((l) => [l.code, l.name]), window.I18n ? I18n.lang : "en", (v) => { if (window.I18n) I18n.set(v); note(v === "sv" ? "Visningsspråket är nu svenska." : "Display language changed."); }) },
       ],
       gaming: [
         { ic: "gamepad", t: "Game Bar", s: "Controller and keyboard shortcuts", ctl: () => toggle(pf.gameBar, (v) => { pf.gameBar = v; State.save(); }) },
@@ -344,6 +344,21 @@
         <p class="w12s-row-s" style="margin-top:8px">A pretend computer made for fun. Not affiliated with Microsoft.</p>
         <p class="w12s-row-s">Some app icons by <a class="w12s-link" style="font-size:inherit" href="https://icons8.com" target="_blank" rel="noopener">Icons8</a>.</p>`));
     } },
+    devmgr: { title: "Devices & drivers", parent: "devices", build(h) {
+      const touch = /iPad|iPhone/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+      const dev = (name, sub, status, ok, extra) => { const c = card(`<div class="w12s-row-t">${name}</div><table class="w12s-spec">${sub}</table><div class="w12s-row-s" style="color:${ok ? "#2a8a3e" : "#a35a00"}">${status}</div>`); if (extra) c.appendChild(extra); h.appendChild(c); };
+      const fpBox = el(`<div></div>`); h.appendChild(fpBox);
+      if (window.TouchID) TouchID.available().then((ok) => {
+        const i = TouchID.driverInfo();
+        const set = el(`<div style="display:flex;gap:8px"></div>`);
+        if (ok) { const b = el(`<button class="w12s-btn">${TouchID.enrolled() ? "Sign-in options" : "Set up fingerprint"}</button>`); b.onclick = () => openSubRef("signin"); set.appendChild(b); }
+        const c = card(`<div class="w12s-row-t">${ok ? esc(i.name) : "Fingerprint sensor"}</div>${ok ? `<table class="w12s-spec"><tr><td>Driver</td><td>${esc(i.driver)}</td></tr><tr><td>Version</td><td>${esc(i.version)}</td></tr><tr><td>Provider</td><td>${esc(i.provider)}</td></tr><tr><td>Date</td><td>${esc(i.date)}</td></tr></table>` : ""}<div class="w12s-row-s" style="color:${ok ? "#2a8a3e" : "#8a8a96"}">${ok ? "✓ This device is working properly." + (TouchID.enrolled() ? " A fingerprint is set up." : " No fingerprint set up yet.") : "Not found — this device doesn't have a fingerprint reader."}</div>`);
+        c.appendChild(set); fpBox.appendChild(c);
+      });
+      dev(touch ? "Touch screen" : "Mouse", `<tr><td>Driver</td><td>${touch ? "HID-compliant touch screen" : "HID-compliant mouse"}</td></tr><tr><td>Version</td><td>10.0.26100.1</td></tr>`, "✓ This device is working properly.", true);
+      dev("Keyboard", `<tr><td>Driver</td><td>Standard PS/2 Keyboard</td></tr><tr><td>Version</td><td>10.0.26100.1</td></tr>`, "✓ This device is working properly.", true);
+      dev("Display adapter", `<tr><td>Driver</td><td>Microsoft Basic Display Adapter</td></tr><tr><td>Resolution</td><td>${screen.width} × ${screen.height}</td></tr>`, "✓ This device is working properly.", true);
+    } },
     mouse: { title: "Mouse", parent: "devices", build(h) {
       const d = S().appData.mouse || (S().appData.mouse = { speed: 6, primary: "left", scroll: 3 });
       h.appendChild(line("Primary mouse button", select([["left", "Left"], ["right", "Right"]], d.primary, (v) => { d.primary = v; State.save(); })));
@@ -393,6 +408,28 @@
     } },
     signin: { title: "Sign-in options", parent: "accounts", build(h) {
       const pr = profile(), isPin = pr.authType === "pin";
+      // Fingerprint (real Touch ID / Windows Hello sensor through the browser)
+      const fp = card(`<div class="w12s-row-t">Fingerprint recognition (${window.TouchID ? TouchID.sensorName() : "Touch ID"})</div><div class="w12s-row-s w12s-fp-s">Checking for a sensor…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
+      h.appendChild(fp);
+      const fs = fp.querySelector(".w12s-fp-s"), fb = fp.querySelector(".w12s-fp-btns"), fe = fp.querySelector(".w12s-err");
+      const paintFp = () => {
+        if (!window.TouchID) { fs.textContent = "Not supported in this browser."; return; }
+        TouchID.available().then((ok) => {
+          fb.innerHTML = ""; fe.textContent = "";
+          if (!ok) { fs.textContent = "No fingerprint sensor was found on this device. The lock screen's Touch ID button uses a pretend scan."; return; }
+          if (TouchID.enrolled()) {
+            fs.textContent = "On — you can unlock and pay with your fingerprint.";
+            const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => note("Fingerprint recognized ✓")).catch(() => { fe.textContent = "Not recognized — try again."; });
+            const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note("Fingerprint removed."); paintFp(); };
+            fb.append(t, r);
+          } else {
+            fs.textContent = "A sensor is ready on this device. Set it up to unlock and pay with your fingerprint.";
+            const s = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`); s.onclick = () => TouchID.enroll().then(() => { note("Fingerprint set up ✓"); paintFp(); }).catch(() => { fe.textContent = "Setup was cancelled or didn't finish."; });
+            fb.append(s);
+          }
+        });
+      };
+      paintFp();
       h.appendChild(line(isPin ? "PIN (Windows Hello)" : "Password", null, "This is how you sign in on the lock screen"));
       const c = card(`<div class="w12s-row-t">Change your ${isPin ? "PIN" : "password"}</div>
         <input class="w12s-input" type="password" placeholder="New ${isPin ? "PIN" : "password"}" ${isPin ? 'inputmode="numeric"' : ""}>
@@ -520,6 +557,7 @@
   // rows built in pages() call go(): route to the most recently opened Settings window
   let goRef = () => {}, subRef = () => {};
   function go(id) { goRef(id); }
+  function openSubRef(k) { subRef(k); }
 
   // ---------- expanding panels (Personalization) ----------
   function buildColors(panel) {

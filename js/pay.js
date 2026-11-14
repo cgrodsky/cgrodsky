@@ -33,12 +33,15 @@
     go.onclick = () => {
       if (go.disabled) return; go.disabled = true;
       go.classList.add("scanning"); sheet.querySelector(".apay-go-t").textContent = "Processing…";
-      setTimeout(() => {
+      // Real Touch ID when it's set up on this device; otherwise a pretend confirmation.
+      const confirm = (window.TouchID && TouchID.enrolled()) ? TouchID.verify() : new Promise((r) => setTimeout(r, 1100));
+      confirm.then(() => finish()).catch(() => { go.disabled = false; go.classList.remove("scanning"); sheet.querySelector(".apay-go-t").textContent = "Not recognized — try again"; });
+      const finish = () => setTimeout(() => {
         go.classList.remove("scanning"); go.classList.add("done");
         go.querySelector(".apay-touch").innerHTML = `<svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>`;
         sheet.querySelector(".apay-go-t").textContent = "Done";
         setTimeout(() => { close(); onPaid(); }, 750);
-      }, 1100);
+      }, 150);
     };
     document.getElementById("screen").appendChild(sheet);
   }

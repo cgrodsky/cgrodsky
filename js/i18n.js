@@ -347,7 +347,13 @@
     if (!dict[code]) code = "en";
     lang = code;
     if (window.State) { State.data.langCode = code; State.data.language = (languages.find((l) => l.code === code) || {}).name || State.data.language; State.save(); }
+    try { document.dispatchEvent(new CustomEvent("langchange", { detail: code })); } catch (_) {}
+  }
+  // Add a language from another file (e.g. js/i18n-sv.js).
+  function add(code, name, entries) {
+    if (!languages.some((l) => l.code === code)) languages.push({ code, name });
+    dict[code] = Object.assign({}, dict.en, entries);
   }
 
-  window.I18n = { languages, t, set, get lang() { return lang; } };
+  window.I18n = { languages, t, set, add, get lang() { return lang; } };
 })();

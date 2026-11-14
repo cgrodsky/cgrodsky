@@ -51,7 +51,14 @@
     };
     layer.querySelector(".lock-skip").onclick = unlock;
     const tid = layer.querySelector(".lock-touchid");
-    if (tid) tid.onclick = () => { tid.classList.add("scanning"); setTimeout(unlock, 550); };
+    if (tid) tid.onclick = () => {
+      tid.classList.add("scanning");
+      // Real Touch ID when this account registered the device's sensor; otherwise the pretend scan.
+      if (window.TouchID && TouchID.enrolled()) {
+        TouchID.verify().then(() => { tid.classList.remove("scanning"); unlock(); })
+          .catch(() => { tid.classList.remove("scanning"); err.textContent = "Fingerprint not recognized — try again or use your " + (pr.authType === "pin" ? "PIN" : "password") + "."; });
+      } else setTimeout(unlock, 550);
+    };
     // Forgot PIN/password — set a new one without the old (personal sim).
     layer.querySelector(".lock-forgot").onclick = () => {
       const isPin = pr.authType === "pin";

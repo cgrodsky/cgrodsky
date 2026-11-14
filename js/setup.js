@@ -248,7 +248,7 @@
 
   // ---- Region & language ----
   function oobeRegion() {
-    const regions = ["United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Japan", "India", "Brazil", "Mexico"];
+    const regions = ["United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Sweden", "Japan", "India", "Brazil", "Mexico"];
     const node = el(`<div>
       <h1>Is this the right country or region?</h1>
       <div class="setup-list oobe-list" id="regionList"></div>
@@ -535,10 +535,36 @@
   }
 
   function oobeFingerprintScan() {
+    // Real sensor (Touch ID / Windows Hello) when this device has one; it's asked
+    // right away because Safari only allows it straight after a tap.
+    if (window.TouchID && window.PublicKeyCredential) {
+      const realP = TouchID.available().then((ok) => (ok ? TouchID.enroll() : null)).catch(() => false);
+      const node = el(`<div>
+        <h1>Fingerprint</h1>
+        <p class="oobe-fp-status"><b>Touch the sensor</b></p>
+        <p class="sub">Rest your finger on ${TouchID.sensorName()} when your device asks.</p>
+        <div class="oobe-fp-pct" id="pct">…</div>
+        <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
+      </div>`);
+      oobe(node, { illustration: `<div class="fp-anim" id="fp">${ILLUS.finger}</div>`, back: oobeFingerprintIntro });
+      let left = false;
+      bg.querySelector("#skip").onclick = () => { left = true; oobeWelcomeBack(); };
+      realP.then((res) => {
+        if (left) return;
+        if (res === true) { bg.querySelector("#pct").textContent = "100%"; bg.querySelector(".oobe-fp-status b").textContent = "All set — your fingerprint works"; const f = bg.querySelector("#fp"); if (f) f.style.filter = "drop-shadow(0 0 12px #6cf)"; setTimeout(oobeWelcomeBack, 900); }
+        else if (res === null) { left = true; oobeFingerprintSim(); }   // no sensor on this device → pretend scan
+        else { bg.querySelector(".oobe-fp-status b").textContent = "Couldn't read your fingerprint"; bg.querySelector("#pct").textContent = ""; const t = el(`<button class="btn-primary" id="again" style="margin-right:8px">Try again</button>`); t.onclick = oobeFingerprintScan; bg.querySelector(".oobe-actions").prepend(t); }
+      });
+      return;
+    }
+    oobeFingerprintSim();
+  }
+  // Pretend scan for devices without a fingerprint sensor.
+  function oobeFingerprintSim() {
     const node = el(`<div>
       <h1>Fingerprint</h1>
       <p class="oobe-fp-status"><b>Fingerprint in progress</b></p>
-      <p class="sub">Place your finger on the sensor, then lift it off when you feel a vibration.</p>
+      <p class="sub">No fingerprint sensor was found, so this is a pretend scan. Place your finger on the screen.</p>
       <div class="oobe-fp-pct" id="pct">0%</div>
       <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
     </div>`);

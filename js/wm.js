@@ -772,6 +772,8 @@
     renderDesktopIcons();
     buildSpotifyWidget();
     buildTaskbar();
+    // First time a fingerprint sensor is found: Windows-style "installing device driver".
+    setTimeout(() => { if (window.TouchID) TouchID.installDriverOnce(); }, 3000);
     startClock();
   }
 
@@ -792,25 +794,64 @@
   // play here as "Recent". Logged in to Spotify in this browser = full songs; otherwise
   // Spotify plays 30-second previews. Built once, so music keeps playing.
   const SPOTIFY_DEFAULT = { type: "playlist", id: "37i9dQZF1DXcBWIGoYBM5M", title: "Today's Top Hits" };
+  const SPOTIFY_SVG = `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>`;
   function spState() { const d = S().desktop || (S().desktop = {}); return d.spotify || (d.spotify = { hidden: false, pos: null, recent: [SPOTIFY_DEFAULT] }); }
   function parseSpotify(t) {
     const s = String(t || "").trim();
     let m = s.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]{22})/i) || s.match(/^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]{22})$/i);
     return m ? { type: m[1].toLowerCase(), id: m[2] } : null;
   }
+  // ---- Spotify sign-in (Authorization Code + PKCE: no secret, works on GitHub Pages) ----
+  const SP_REDIRECT = () => location.origin + location.pathname.replace(/index\.html$/, "");
+  const spTok = { get() { try { return JSON.parse(localStorage.getItem("spw_token") || "null"); } catch (_) { return null; } }, set(t) { try { t ? localStorage.setItem("spw_token", JSON.stringify(t)) : localStorage.removeItem("spw_token"); } catch (_) {} } };
+  const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  async function spConnect() {
+    const id = spState().clientId; if (!id) return;
+    const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+    const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+    try { localStorage.setItem("spw_pkce", verifier); } catch (_) {}
+    location.href = "https://accounts.spotify.com/authorize?" + new URLSearchParams({ response_type: "code", client_id: id, scope: "user-read-recently-played", redirect_uri: SP_REDIRECT(), code_challenge_method: "S256", code_challenge: challenge, state: "spw" });
+  }
+  async function spTokenRequest(params) {
+    const r = await fetch("https://accounts.spotify.com/api/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params) });
+    const j = await r.json(); if (!r.ok || !j.access_token) throw new Error(j.error_description || j.error || "Spotify sign-in failed");
+    const old = spTok.get() || {};
+    spTok.set({ access: j.access_token, refresh: j.refresh_token || old.refresh, exp: Date.now() + (j.expires_in - 60) * 1000 });
+  }
+  async function spFinishLogin() {   // back from Spotify with ?code=…&state=spw
+    const q = new URLSearchParams(location.search);
+    if (q.get("state") !== "spw" || !(q.get("code") || q.get("error"))) return false;
+    history.replaceState(null, "", SP_REDIRECT() + location.hash);
+    if (q.get("error")) throw new Error(q.get("error") === "access_denied" ? "Spotify sign-in was cancelled." : q.get("error"));
+    let verifier = ""; try { verifier = localStorage.getItem("spw_pkce") || ""; localStorage.removeItem("spw_pkce"); } catch (_) {}
+    await spTokenRequest({ grant_type: "authorization_code", code: q.get("code"), redirect_uri: SP_REDIRECT(), client_id: spState().clientId, code_verifier: verifier });
+    return true;
+  }
+  async function spApi(path) {
+    let t = spTok.get(); if (!t) throw new Error("not connected");
+    if (Date.now() > t.exp) { await spTokenRequest({ grant_type: "refresh_token", refresh_token: t.refresh, client_id: spState().clientId }); t = spTok.get(); }
+    const r = await fetch("https://api.spotify.com/v1" + path, { headers: { Authorization: "Bearer " + t.access } });
+    if (r.status === 401) { spTok.set(null); throw new Error("Spotify signed you out — connect again."); }
+    if (r.status === 403) throw new Error("This Spotify account isn't allowed for the app yet. Add it under User Management in your Spotify developer dashboard.");
+    if (!r.ok) throw new Error("Spotify error " + r.status);
+    return r.json();
+  }
+
   function buildSpotifyWidget() {
     if (!desktop || desktop.querySelector(".spw")) return;
     const st = spState();
     const cur = st.recent[0] || SPOTIFY_DEFAULT;
     const w = el(`<div class="spw ${st.hidden ? "spw-hidden" : ""}">
-      <div class="spw-head"><span class="dag-grip">${dagGripSvg()}</span><svg class="spw-logo" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg><b>Spotify</b><span class="grow"></span><button class="spw-btn spw-add" title="Play a Spotify link">＋</button><button class="spw-btn spw-x" title="Hide widget">×</button></div>
+      <div class="spw-head"><span class="dag-grip">${dagGripSvg()}</span><svg class="spw-logo" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="11" fill="#1ed760"/><path d="M6.5 9.3c3.6-1.1 7.8-.8 11 1.1M7.2 12.4c2.9-.8 6.3-.5 8.9 1M7.9 15.3c2.3-.6 4.8-.4 6.9.8" stroke="#000" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg><b>Spotify</b><span class="grow"></span><button class="spw-btn spw-acct" title="Connect your Spotify account"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button><button class="spw-btn spw-add" title="Play a Spotify link">＋</button><button class="spw-btn spw-x" title="Hide widget">×</button></div>
       <div class="spw-paste" hidden><input placeholder="Paste a Spotify song, album or playlist link" spellcheck="false"><button>Play</button><div class="spw-err"></div></div>
+      <div class="spw-conn" hidden></div>
       <iframe class="spw-frame" title="Spotify player" src="https://open.spotify.com/embed/${cur.type}/${cur.id}?utm_source=generator" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
       <div class="spw-recent-h">Recent listens</div>
       <div class="spw-recent"></div>
     </div>`);
     const frame = w.querySelector(".spw-frame"), paste = w.querySelector(".spw-paste"), inp = paste.querySelector("input"), err = paste.querySelector(".spw-err");
     function play(item) {
+      spState().pickedSince = true;
       const r = spState().recent.filter((x) => x.id !== item.id); r.unshift(item); spState().recent = r.slice(0, 6); State.save();
       frame.src = `https://open.spotify.com/embed/${item.type}/${item.id}?utm_source=generator`;
       paintRecent();
@@ -818,8 +859,19 @@
         const it = spState().recent.find((x) => x.id === item.id); if (it && j && j.title) { it.title = j.title; it.thumb = j.thumbnail_url; State.save(); paintRecent(); }
       }).catch(() => {});
     }
+    let spRecent = null;   // real "recently played" from Spotify once connected
     function paintRecent() {
       const box = w.querySelector(".spw-recent"); box.innerHTML = "";
+      w.querySelector(".spw-recent-h").textContent = spRecent ? "Recently played on Spotify" : "Recent listens";
+      if (spRecent) {
+        if (!spRecent.length) box.innerHTML = `<span class="spw-none">Nothing played on Spotify yet.</span>`;
+        spRecent.forEach((it) => {
+          const b = el(`<button class="spw-chip" title="${escAttr(it.title + " — " + it.artist)}">${it.thumb ? `<img src="${escAttr(it.thumb)}" alt="">` : `<span class="spw-chip-ic">♫</span>`}<span>${escAttr(it.title)}</span></button>`);
+          b.onclick = () => { frame.src = `https://open.spotify.com/embed/track/${it.id}?utm_source=generator`; box.querySelectorAll(".spw-chip").forEach((x) => x.classList.toggle("on", x === b)); };
+          box.appendChild(b);
+        });
+        return;
+      }
       spState().recent.forEach((it, i) => {
         const b = el(`<button class="spw-chip ${i === 0 ? "on" : ""}" title="${escAttr(it.title || it.type)}">${it.thumb ? `<img src="${escAttr(it.thumb)}" alt="">` : `<span class="spw-chip-ic">♫</span>`}<span>${escAttr(it.title || (it.type[0].toUpperCase() + it.type.slice(1)))}</span></button>`);
         b.onclick = () => play(it);
@@ -828,7 +880,38 @@
     }
     paintRecent();
     st.recent.filter((x) => !x.thumb).slice(0, 6).forEach((it) => fetch("https://open.spotify.com/oembed?url=" + encodeURIComponent(`https://open.spotify.com/${it.type}/${it.id}`)).then((x) => x.json()).then((j) => { if (j && j.thumbnail_url) { it.thumb = j.thumbnail_url; if (j.title) it.title = j.title; State.save(); paintRecent(); } }).catch(() => {}));
-    w.querySelector(".spw-add").onclick = () => { paste.hidden = !paste.hidden; err.textContent = ""; if (!paste.hidden) inp.focus(); };
+    // ---- connect your Spotify account (real recently played) ----
+    const conn = w.querySelector(".spw-conn");
+    function loadRecent() {
+      return spApi("/me/player/recently-played?limit=20").then((j) => {
+        const seen = new Set();
+        spRecent = (j.items || []).map((x) => x.track).filter((t) => t && t.id && !seen.has(t.id) && seen.add(t.id)).slice(0, 10)
+          .map((t) => ({ id: t.id, title: t.name, artist: (t.artists || []).map((a) => a.name).join(", "), thumb: ((t.album && t.album.images) || []).slice(-1)[0]?.url }));
+        paintRecent();
+        if (spRecent[0] && !spState().pickedSince) frame.src = `https://open.spotify.com/embed/track/${spRecent[0].id}?utm_source=generator`;
+      });
+    }
+    function paintConn(msg) {
+      const connected = !!spTok.get();
+      conn.innerHTML = connected
+        ? `<div class="spw-c-row">✓ Connected to Spotify — showing your recently played.</div><div class="spw-c-btns"><button class="spw-c-refresh">Refresh</button><button class="spw-c-out">Disconnect</button></div>`
+        : `<div class="spw-c-row">Show your real <b>recently played</b> songs. Paste your Spotify app's <b>Client ID</b> (from developer.spotify.com — it isn't secret).</div>
+           <input class="spw-c-id" placeholder="Client ID" value="${escAttr(spState().clientId || "")}" spellcheck="false">
+           <div class="spw-c-row spw-c-small">In your Spotify app's settings, add this Redirect URI:<br><code>${escAttr(SP_REDIRECT())}</code></div>
+           <div class="spw-c-btns"><button class="spw-c-go">Connect Spotify</button></div>`;
+      if (msg) conn.appendChild(el(`<div class="spw-err">${escAttr(msg)}</div>`));
+      const g = conn.querySelector(".spw-c-go");
+      if (g) g.onclick = () => { const v = conn.querySelector(".spw-c-id").value.trim(); if (!/^[0-9a-f]{32}$/i.test(v)) { paintConn("That doesn't look like a Client ID (32 letters and numbers)."); return; } spState().clientId = v; State.save(); spConnect(); };
+      const rf = conn.querySelector(".spw-c-refresh"); if (rf) rf.onclick = () => loadRecent().then(() => paintConn()).catch((e) => paintConn(e.message));
+      const out = conn.querySelector(".spw-c-out"); if (out) out.onclick = () => { spTok.set(null); spRecent = null; paintRecent(); paintConn(); };
+    }
+    w.querySelector(".spw-acct").onclick = () => { conn.hidden = !conn.hidden; paste.hidden = true; if (!conn.hidden) paintConn(); };
+    spFinishLogin().then((justLoggedIn) => {
+      if (spTok.get()) loadRecent().catch((e) => { conn.hidden = false; paintConn(e.message); });
+      if (justLoggedIn && window.Notify) Notify.show({ icon: SPOTIFY_SVG, title: "Spotify connected", body: "Your recently played songs are in the Spotify widget." });
+    }).catch((e) => { conn.hidden = false; paintConn(e.message); });
+
+    w.querySelector(".spw-add").onclick = () => { paste.hidden = !paste.hidden; conn.hidden = true; err.textContent = ""; if (!paste.hidden) inp.focus(); };
     const go = () => { const p = parseSpotify(inp.value); if (!p) { err.textContent = "That isn't a Spotify link. In Spotify, tap Share → Copy link."; return; } inp.value = ""; paste.hidden = true; play(p); };
     paste.querySelector("button").onclick = go;
     inp.onkeydown = (e) => { if (e.key === "Enter") go(); if (e.key === "Escape") paste.hidden = true; };
@@ -1322,12 +1405,13 @@
   }
   function paintStartClock() {
     const d = State.now ? State.now() : new Date();
-    const h24 = !!(S().clock && S().clock.format24);
-    const parts = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: !h24 }).formatToParts(d);
+    const sv = window.I18n && I18n.lang === "sv", loc = sv ? "sv-SE" : undefined;
+    const h24 = sv || !!(S().clock && S().clock.format24);
+    const parts = new Intl.DateTimeFormat(loc, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: !h24 }).formatToParts(d);
     const main = parts.filter((p) => p.type !== "dayPeriod").map((p) => p.value).join("").trim();
     const per = (parts.find((p) => p.type === "dayPeriod") || {}).value || "";
     startMenu.querySelector(".sm12-time").innerHTML = main + (per ? `<small>${per}</small>` : "");
-    startMenu.querySelector(".sm12-date").textContent = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    startMenu.querySelector(".sm12-date").textContent = d.toLocaleDateString(loc, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   }
   const START_PIN_DEFAULT = ["calculator", "camera", "settings", "store__", "edge", "fileexplorer", "notepad", "copilot", "xbox", "minecraft", "word", "photos", "clock", "outlook", "excel", "powerpoint", "calendar", "weather"];
   function startPins() {
