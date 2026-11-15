@@ -21,6 +21,12 @@
   let bg, onComplete;
   const S = () => State.data;
 
+  // Full list of countries/regions for the OOBE picker.
+  const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)","Congo (Kinshasa)","Costa Rica","Côte d'Ivoire","Croatia","Cuba","Cyprus","Czechia","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+  // Keyboard / input layouts, including Swedish.
+  const ALL_KEYBOARDS = ["US","United States-International","United Kingdom","Canadian","Canadian French","Spanish","Spanish (Latin America)","French","French (Canada)","German","German (Switzerland)","Italian","Portuguese","Portuguese (Brazil)","Dutch","Swedish","Norwegian","Danish","Finnish","Icelandic","Polish","Czech","Hungarian","Romanian","Greek","Russian","Ukrainian","Turkish","Arabic","Hebrew","Hindi","Japanese","Korean","Chinese (Simplified)","Chinese (Traditional)","Thai","Vietnamese","Dvorak","Colemak"];
+
   function mount() {
     bg = el(`<div class="setup-bg iwave-bg"></div>`);
     screen().appendChild(bg);
@@ -426,7 +432,7 @@
 
   // ---- Country / region ----
   function oobeRegion() {
-    const regions = ["UAE", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Canada", "Australia", "Germany", "France", "Sweden", "Japan", "India", "Brazil", "Mexico", "Iceland", "Indonesia", "Ireland"];
+    const regions = ALL_COUNTRIES;
     const node = el(`<div>
       <h1>Is this the right country or region?</h1>
       <div class="oobe2-search"><span class="oobe2-search-ic">&#128269;</span><input id="csearch" placeholder="Search another Country"></div>
@@ -441,6 +447,7 @@
         const o = el(`<div class="oobe2-ritem ${r === sel ? "sel" : ""}">${r}</div>`);
         o.onclick = () => { sel = r; S().region = r; list.querySelectorAll(".oobe2-ritem").forEach((x) => x.classList.toggle("sel", x === o)); };
         list.appendChild(o);
+        if (r === sel && !filter) setTimeout(() => o.scrollIntoView({ block: "nearest" }), 0);
       });
     }
     render("");
@@ -451,20 +458,27 @@
 
   // ---- Keyboard layout ----
   function oobeKeyboard() {
-    const kbs = ["US", "United Kingdom", "Canadian", "Spanish", "French", "German", "Swedish", "Japanese", "United States-International", "Dvorak"];
+    const kbs = ALL_KEYBOARDS;
     const node = el(`<div>
       <h1>Is this the right keyboard layout?</h1>
       <p class="sub">If you also use another keyboard layout, you can add one next.</p>
+      <div class="oobe2-search"><span class="oobe2-search-ic">&#128269;</span><input id="ksearch" placeholder="Search a keyboard layout"></div>
       <div class="oobe2-rlist" id="klist"></div>
       <div class="oobe2-actions"><button class="ibtn" id="next">Yes</button></div>
     </div>`);
-    const list = node.querySelector("#klist");
+    const list = node.querySelector("#klist"), srch = node.querySelector("#ksearch");
     let sel = S().keyboard || "US";
-    kbs.forEach((k) => {
-      const o = el(`<div class="oobe2-ritem ${k === sel ? "sel" : ""}">${k}</div>`);
-      o.onclick = () => { sel = k; list.querySelectorAll(".oobe2-ritem").forEach((x) => x.classList.toggle("sel", x === o)); };
-      list.appendChild(o);
-    });
+    function render(filter) {
+      list.innerHTML = "";
+      kbs.filter((k) => !filter || k.toLowerCase().includes(filter.toLowerCase())).forEach((k) => {
+        const o = el(`<div class="oobe2-ritem ${k === sel ? "sel" : ""}">${k}</div>`);
+        o.onclick = () => { sel = k; list.querySelectorAll(".oobe2-ritem").forEach((x) => x.classList.toggle("sel", x === o)); };
+        list.appendChild(o);
+        if (k === sel && !filter) setTimeout(() => o.scrollIntoView({ block: "nearest" }), 0);
+      });
+    }
+    render("");
+    srch.oninput = () => render(srch.value);
     node.querySelector("#next").onclick = () => { S().keyboard = sel; State.save(); oobeSecondKeyboard(); };
     oobe(node, { illus: IC.keyboard, back: oobeRegion });
   }
