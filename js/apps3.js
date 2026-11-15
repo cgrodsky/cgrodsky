@@ -49,7 +49,19 @@
         title: "Creating your image…", subtitle: `“${prompt.slice(0, 60)}”`, etaMs: 14000,
         onCancel: () => { aborted = true; if (ctrl) ctrl.abort(); btn.disabled = false; btn.textContent = "Generate"; },
       }) : null;
+      // Offline generator: used when no API key is set, or if the real API can't
+      // be reached. The AI can still "draw" 1000+ things with no network/key.
+      const useLocal = () => {
+        if (aborted) return;
+        const url = window.AIArt ? AIArt.generate(prompt) : null;
+        if (!url) { if (job) job.remove(); alert("Image generation isn't available."); return; }
+        history.unshift({ url, prompt, ts: Date.now(), local: true });
+        State.save();
+        if (job) job.complete(renderGallery); else renderGallery();
+        ta.value = "";
+      };
       try {
+        if (!KEY()) { useLocal(); return; }
         const r = await fetch(BASE() + "/images/generations", {
           method: "POST", signal: ctrl ? ctrl.signal : undefined,
           headers: { "Content-Type": "application/json", "Authorization": "Bearer " + KEY() },
@@ -66,8 +78,8 @@
         ta.value = "";
       } catch (e) {
         if (aborted || (e && e.name === "AbortError")) return;
-        if (job) job.remove();
-        alert("Image generation failed: " + (e.message || e));
+        // fall back to the offline generator instead of failing
+        if (window.AIArt) { useLocal(); } else { if (job) job.remove(); alert("Image generation failed: " + (e.message || e)); }
       }
       if (!aborted) { btn.disabled = false; btn.textContent = "Generate"; }
     };

@@ -475,14 +475,18 @@
             const gen = el(`<div class="cop-msg bot"><div style="flex:0 0 auto">${LOGO("cop-logo")}</div><div class="cop-bubble"><span class="cop-text">Creating your image…</span><div class="cop-img-skeleton"><div class="cop-skel-shine"></div><svg viewBox="0 0 24 24" class="cop-skel-ic" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg></div></div></div>`);
             msgs.appendChild(gen); msgs.scrollTop = msgs.scrollHeight;
             try {
-              const url = await generateImage(imgPrompt);
+              let url;
+              try { url = await generateImage(imgPrompt); }
+              catch (e) { if (window.AIArt) url = AIArt.generate(imgPrompt); else throw e; }
               gen.remove();
               uu.images++; State.save(); updateUsage();
               const am = { role: "assistant", content: caption || `Here's "${imgPrompt}".`, image: url };
               conv.history.push(am); State.save(); addBubble(am);
             } catch (e) {
               gen.remove();
-              const am = { role: "assistant", content: "I couldn't create that image.\n\n" + (e.message || e) };
+              const am = window.AIArt
+                ? { role: "assistant", content: caption || `Here's "${imgPrompt}".`, image: AIArt.generate(imgPrompt) }
+                : { role: "assistant", content: "I couldn't create that image.\n\n" + (e.message || e) };
               conv.history.push(am); State.save(); addBubble(am);
             }
           }
