@@ -5246,3 +5246,41 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
 .prep-screen .spinner-ring.big{width:48px;height:48px}
 .prep-msg{font-size:1.5rem;font-weight:300;margin:0}
 .prep-sub{font-size:.9rem;opacity:.7;margin:0}
+
+/* ===== Windows 12.1 installer — wavy wallpaper + glassy panels (video reference) ===== */
+.iwave-bg { background: #140f3c url("../assets/setup_wave.png?v=1") center/cover no-repeat !important; display: flex; align-items: center; justify-content: center; }
+.iwave-bg::before, .iwave-bg::after { display: none !important; }
+.iflag { display: block; }
+.iwin-brand { display: inline-flex; align-items: center; gap: 11px; }
+.iwin-txt { font-size: 1.45rem; font-weight: 400; color: #fff; letter-spacing: .2px; font-family: "Segoe UI", system-ui, sans-serif; }
+.iwin-ver { font-weight: 600; }
+/* branded splash pill */
+.isplash { background: rgba(8,8,18,.66); border: 1px solid rgba(255,255,255,.08); border-radius: 15px; padding: 15px 30px; box-shadow: 0 24px 70px rgba(0,0,0,.5); animation: isplashIn .5s ease; }
+@keyframes isplashIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+/* glassy installer card */
+.ipanel { width: min(470px, 92vw); background: rgba(14,12,30,.74); backdrop-filter: blur(34px); -webkit-backdrop-filter: blur(34px); border: 1px solid rgba(255,255,255,.09); border-radius: 18px; padding: 30px 32px 20px; box-shadow: 0 34px 90px rgba(0,0,0,.52); color: #eef0fb; animation: isplashIn .32s ease; }
+.ipanel-head { display: flex; justify-content: center; margin-bottom: 26px; }
+.ipanel-rows { display: flex; flex-direction: column; gap: 16px; }
+.ipanel-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: .9rem; }
+.ipanel-row label { color: #c7cbe0; white-space: nowrap; }
+.ipanel-sel { width: 220px; max-width: 58%; padding: 7px 10px; background: rgba(255,255,255,.06); color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; font-size: .86rem; outline: none; }
+.ipanel-sel:focus { border-color: #ff4fa3; box-shadow: 0 0 0 2px rgba(255,79,163,.25); }
+.ipanel-sel option { background: #1a1636; color: #fff; }
+.ipanel-hint { margin-top: 22px; font-size: .82rem; color: #aab0cc; text-align: center; }
+.ipanel-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; }
+.ipanel-foot-col { flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 30px; }
+.ipanel-copy { font-size: .68rem; color: #8187a6; }
+.ipanel-cta { display: flex; justify-content: center; padding: 10px 0 6px; }
+.ibtn { border: 0; cursor: pointer; color: #fff; font-size: .9rem; font-weight: 600; padding: 9px 26px; border-radius: 9px; background: linear-gradient(90deg, #ff4fa3 0%, #8b5cff 55%, #3b82e8 100%); box-shadow: 0 8px 22px rgba(123,92,255,.35); transition: transform .12s ease, box-shadow .12s ease; }
+.ibtn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(123,92,255,.5); }
+.ibtn:active { transform: translateY(0); }
+.ibtn-lg { padding: 13px 40px; font-size: 1rem; border-radius: 11px; }
+.ilink { background: none; border: 0; color: #c7cbe0; font-size: .86rem; cursor: pointer; padding: 0; text-align: left; }
+.ilink:hover { color: #fff; text-decoration: underline; }
+.ilink:disabled { color: #8187a6; cursor: default; text-decoration: none; }
+/* centered install progress bar */
+.iprog { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.iprog-title { margin-bottom: 8px; }
+.iprog-bar { width: 230px; height: 4px; background: rgba(255,255,255,.22); border-radius: 4px; overflow: hidden; }
+.iprog-fill { height: 100%; width: 0; background: #fff; border-radius: 4px; transition: width .28s linear; }
+.iprog-status { font-size: .84rem; color: #cfd3e8; letter-spacing: .2px; }

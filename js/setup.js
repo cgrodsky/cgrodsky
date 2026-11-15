@@ -32,30 +32,77 @@
   // ============================================================
   const WIN_FLAG = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="2" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="2" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/></svg>`;
 
-  // Classic "Windows Setup" language dialog — the first thing a real install shows.
-  function installerLanguage() {
-    bg.className = "setup-bg iclassic-bg";
-    const opt = (arr, sel) => arr.map((o) => `<option${o === sel ? " selected" : ""}>${o}</option>`).join("");
-    const langs = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "日本語 (日本)", "Português (Brasil)", "中文 (简体)"];
-    const times = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "日本語 (日本)"];
-    const kbs = ["US", "United Kingdom", "Spanish", "French", "German", "Japanese"];
-    bg.innerHTML = `
-      <div class="iclassic-win">
-        <div class="iclassic-tb"><span class="iclassic-tt">${SETUP_IC(16)} Windows Setup</span>
-          <span class="iclassic-ctrls"><i class="iclassic-min">&#9472;</i><i class="iclassic-max">&#9723;</i><i class="iclassic-close setup-skip">&#215;</i></span></div>
-        <div class="iclassic-body">
-          <div class="iclassic-logo">${WIN_FLAG(40)}<span>Windows</span></div>
-          <div class="iclassic-rows">
-            <div class="iclassic-row"><label>Language to install:</label><select class="iclassic-sel" id="il-lang">${opt(langs, "English (United States)")}</select></div>
-            <div class="iclassic-row"><label>Time and currency format:</label><select class="iclassic-sel" id="il-time">${opt(times, "English (United States)")}</select></div>
-            <div class="iclassic-row"><label>Keyboard or input method:</label><select class="iclassic-sel" id="il-kb">${opt(kbs, "US")}</select></div>
-          </div>
-          <div class="iclassic-hint">Enter your language and other preferences and click &ldquo;Next&rdquo; to continue.</div>
-        </div>
-        <div class="iclassic-foot"><span class="iclassic-copy">&copy; Microsoft Corporation. All rights reserved.</span><button class="iclassic-next" id="il-next">Next</button></div>
-      </div>`;
+  // White 4-pane logo used across the installer (matches the "Windows 12.1" reference setup).
+  const WHITE_FLAG = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" class="iflag"><rect x="2" y="2" width="9" height="9" rx="1.6" fill="#fff"/><rect x="13" y="2" width="9" height="9" rx="1.6" fill="#fff"/><rect x="2" y="13" width="9" height="9" rx="1.6" fill="#fff"/><rect x="13" y="13" width="9" height="9" rx="1.6" fill="#fff"/></svg>`;
+  const BRAND_PILL = (s) => `<span class="iwin-brand">${WHITE_FLAG(s || 26)}<span class="iwin-txt">Windows <span class="iwin-ver">12.1</span></span></span>`;
+
+  // Put the installer on the signature wavy blue→magenta wallpaper.
+  function iwave() { bg.className = "setup-bg iwave-bg"; return bg; }
+  // A centered glassy installer card on the wallpaper.
+  function ipanel(inner) {
+    iwave();
+    bg.innerHTML = `<div class="ipanel"><div class="ipanel-head">${BRAND_PILL(30)}</div>${inner}</div>`;
     wireSkip();
-    bg.querySelector("#il-next").onclick = installerWelcome;
+    return bg.querySelector(".ipanel");
+  }
+
+  // Branded "Windows 12.1" splash that flashes before the first installer screen.
+  function installerSplash() {
+    iwave();
+    bg.innerHTML = `<div class="isplash">${BRAND_PILL(34)}</div>`;
+    setTimeout(installerLanguage, 1600);
+  }
+
+  // Language / time / keyboard — the first real installer screen, styled to the reference.
+  function installerLanguage() {
+    const opt = (arr, sel) => arr.map((o) => `<option${o === sel ? " selected" : ""}>${o}</option>`).join("");
+    const langs = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "Svenska (Sverige)", "日本語 (日本)", "Português (Brasil)", "中文 (简体)"];
+    const times = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "Svenska (Sverige)", "日本語 (日本)"];
+    const kbs = ["US", "United Kingdom", "Spanish", "French", "German", "Swedish", "Japanese"];
+    const p = ipanel(`
+      <div class="ipanel-rows">
+        <div class="ipanel-row"><label>Language to install:</label><select class="ipanel-sel" id="il-lang">${opt(langs, "English (United States)")}</select></div>
+        <div class="ipanel-row"><label>Time &amp; currency format:</label><select class="ipanel-sel" id="il-time">${opt(times, "English (United States)")}</select></div>
+        <div class="ipanel-row"><label>Keyboard or input method:</label><select class="ipanel-sel" id="il-kb">${opt(kbs, "US")}</select></div>
+      </div>
+      <div class="ipanel-hint">Enter your preferences then click &ldquo;Next&rdquo; to continue.</div>
+      <div class="ipanel-foot"><span class="ipanel-copy">&copy;Microsoft Corporation. All rights reserved.</span><button class="ibtn" id="il-next">Next</button></div>`);
+    p.querySelector("#il-next").onclick = installerInstallNow;
+  }
+
+  // "Install now" screen with a Repair your PC option.
+  function installerInstallNow() {
+    const p = ipanel(`
+      <div class="ipanel-cta"><button class="ibtn ibtn-lg" id="il-install">Install now</button></div>
+      <div class="ipanel-foot ipanel-foot-col"><button class="ilink" id="il-repair">Repair your PC</button><span class="ipanel-copy">&copy;Microsoft Corporation. All rights reserved.</span></div>`);
+    p.querySelector("#il-install").onclick = installerInstalling;
+    p.querySelector("#il-repair").onclick = () => {
+      if (!S().systemBroken) {
+        const r = p.querySelector("#il-repair");
+        r.textContent = "Nothing to repair — this is a fresh install"; r.disabled = true; return;
+      }
+      repairWindows();
+    };
+  }
+
+  // Centered progress bar on the wallpaper — "installing Windows".
+  function installerInstalling() {
+    S().installerDone = true; State.save();
+    iwave();
+    bg.innerHTML = `<div class="iprog"><div class="iprog-bar"><div class="iprog-fill"></div></div><div class="iprog-status">Installing Windows 12.1…</div></div>`;
+    const fill = bg.querySelector(".iprog-fill"), status = bg.querySelector(".iprog-status");
+    const stages = ["Copying Windows files…", "Getting files ready for installation…", "Installing features…", "Installing updates…", "Finishing up…"];
+    let p = 0;
+    const iv = setInterval(() => {
+      p += Math.random() * 7 + 3;
+      if (p >= 100) {
+        p = 100; fill.style.width = "100%"; status.textContent = "Completing installation…";
+        clearInterval(iv); setTimeout(oobeDisplayOptimize, 1100);
+      } else {
+        fill.style.width = p + "%";
+        status.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 20))];
+      }
+    }, 260);
   }
 
   function installerFrame(inner, step) {
@@ -98,12 +145,9 @@
   // Repair Windows: restore the deleted system files and return to the desktop,
   // keeping the user's apps, files and settings (unlike a full reinstall).
   function repairWindows() {
-    const body = installerFrame(`
-      <h1>Repairing Windows</h1>
-      <p>Windows found a problem with your system files and is putting them back. Your apps and files are safe.</p>
-      <div style="width:min(460px,100%);height:8px;margin:14px 0;background:rgba(255,255,255,.16);border-radius:6px;overflow:hidden"><div id="repbar" style="width:0%;height:100%;background:#fff;transition:width .45s ease"></div></div>
-      <p class="sub" id="repmsg">Scanning system files…</p>`, 1);
-    const bar = body.querySelector("#repbar"), msg = body.querySelector("#repmsg");
+    iwave();
+    bg.innerHTML = `<div class="iprog"><div class="iprog-title">${BRAND_PILL(28)}</div><div class="iprog-bar"><div class="iprog-fill" id="repbar"></div></div><div class="iprog-status" id="repmsg">Scanning system files…</div></div>`;
+    const bar = bg.querySelector("#repbar"), msg = bg.querySelector("#repmsg");
     const steps = ["Scanning system files…", "Restoring C:\\Windows\\System32…", "Re-registering components…", "Verifying boot files…", "Finishing repair…"];
     let i = 0;
     const iv = setInterval(() => {
@@ -876,7 +920,7 @@
     document.body.classList.toggle("dark", S().theme === "dark");
     document.documentElement.style.setProperty("--scale", S().textScale / 100);
     mount();
-    if (!S().installerDone) installerLanguage();
+    if (!S().installerDone) installerSplash();
     else oobeRegion();
   }
 
