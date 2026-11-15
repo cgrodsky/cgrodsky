@@ -5493,3 +5493,16 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
   .wsetup-illus, .oobe2-illus { min-height: 110px; max-height: 130px; }
   .oobe2-cats, .oobe2-papers { grid-template-columns: 1fr 1fr; }
 }
+
+/* refinements: restart card, single-column setup body, Office 365 offer */
+.wsetup-body.noillus { grid-template-columns: 1fr; }
+.wsetup-restartbar { height: 4px; background: rgba(255,255,255,.14); border-radius: 3px; overflow: hidden; margin: 10px 0 20px; }
+.wsetup-restartbar-fill { height: 100%; width: 10%; background: linear-gradient(90deg,#3b82e8,#8b5cff); border-radius: 3px; animation: restartfill 2.6s ease-in-out forwards; }
+@keyframes restartfill { from { width: 6%; } to { width: 100%; } }
+.oobe2-office { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
+.oobe2-office-row { display: flex; gap: 10px; align-items: flex-start; }
+.oobe2-office-chk { color: #35c759; font-weight: 700; flex: 0 0 auto; margin-top: 1px; }
+.oobe2-office-row b { display: block; font-size: .84rem; color: #fff; }
+.oobe2-office-row span { font-size: .72rem; line-height: 1.4; color: #b8bed6; }
+.oobe2-office-r { display: inline-flex; align-items: center; gap: 14px; }
+.oobe2-content h1 br { line-height: 1.2; }
