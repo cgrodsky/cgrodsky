@@ -32,6 +32,7 @@
     cyber:    { sky: ["#03101a", "#06283a", "#0a3d54"], ground: "#021018", part: "grid",   glow: "#2cf0ff" },
     gold:     { sky: ["#3a2a06", "#8a6a16", "#ffd34e"], ground: "#241a05", part: "sparkle",glow: "#fff2b0" },
     meadow:   { sky: ["#bfe8ff", "#e9ffd9", "#fff6c8"], ground: "#79c162", part: "cloud",  glow: "#ffffff" },
+    starbucks:{ sky: ["#06301f", "#00704a", "#cfe9df"], ground: "#063b28", part: "sparkle",glow: "#eafaf2" },
   };
   const THEME_NAMES = Object.keys(THEMES);
 
@@ -99,6 +100,7 @@
     activity: `juggling 🤹, meditation/meditating/yoga/lotus 🧘, person taking bath 🛀, person in bed 🛌, massage 💆, haircut 💇, person walking 🚶, judge 🧑‍⚖️, office worker 🧑‍💼, technologist/coder/programmer 🧑‍💻, factory worker 🧑‍🏭`,
     sport2: `diving mask 🤿, playground slide 🛝, fishing pole 🎣`,
     tech2: `camera with flash 📸, videocassette 📼, dvd disc 📀, minidisc 💽, phone with arrow 📲, telephone receiver 📞, antenna bars 📶`,
+    starbucks: `starbucks coffee/starbucks ☕, caffè latte/latte ☕, caffè mocha/mocha ☕, caramel macchiato ☕, cappuccino ☕, flat white ☕, americano ☕, espresso shot ☕, cortado ☕, blonde roast ☕, pike place roast ☕, caffè misto ☕, white chocolate mocha ☕, cinnamon dolce latte ☕, pumpkin spice latte/psl ☕, peppermint mocha ☕, caramel brulée latte ☕, chestnut praline latte ☕, oatmilk latte ☕, honey almondmilk latte ☕, brown sugar oatmilk shaken espresso 🥤, iced shaken espresso 🥤, nitro cold brew 🥤, cold brew ☕, vanilla sweet cream cold brew 🥤, salted caramel cream cold brew 🥤, iced caramel macchiato 🥤, iced latte 🥤, iced flat white 🥤, iced americano 🥤, caramel frappuccino 🧋, mocha frappuccino 🧋, java chip frappuccino 🧋, vanilla bean frappuccino 🧋, strawberry crème frappuccino 🧋, matcha crème frappuccino 🧋, caramel ribbon crunch frappuccino 🧋, white mocha frappuccino 🧋, pumpkin spice frappuccino 🧋, chai tea latte/chai latte 🍵, iced chai latte 🥤, matcha latte 🍵, iced matcha latte 🥤, london fog 🍵, green tea 🍵, earl grey 🍵, mango dragonfruit refresher 🥤, strawberry açaí refresher 🥤, pink drink 🥤, paradise drink 🥤, dragon drink 🥤, kiwi starfruit refresher 🥤, hot chocolate ☕, white hot chocolate ☕, caramel apple spice 🥤, steamed milk 🥛, hot tea 🍵, cake pop 🍭, butter croissant 🥐, chocolate croissant 🥐, banana bread 🍞, pumpkin bread 🍞, cheese danish 🥐, blueberry muffin 🧁, coffee cake 🍰, starbucks cookie 🍪, bagel 🥯, egg bites 🥚, breakfast sandwich 🥪, protein box 🥗, starbucks siren/mermaid 🧜‍♀️, coffee beans 🫘, reusable tumbler 🥤`,
   };
 
   // category -> a sensible default theme
@@ -113,7 +115,7 @@
     number: "studio", clock: "studio", instrument: "neon", game: "neon", religion: "gold",
     household: "studio", office: "studio", landmark: "sunset", food2: "studio",
     animal2: "meadow", plant2: "meadow", weather2: "day", body2: "pastel",
-    activity: "day", sport2: "day", tech2: "cyber",
+    activity: "day", sport2: "day", tech2: "cyber", starbucks: "starbucks",
   };
 
   // Parse the catalog into [{kw:[...], emoji, theme}]
@@ -141,16 +143,32 @@
     ["{n} in a galaxy", "galaxy"], ["{n} in the desert", "desert"], ["{n} on fire", "fire"],
     ["{n} in a meadow", "meadow"], ["candy {n}", "candy"], ["{n} at dawn", "sunset"],
   ];
+  // 10,000 base things + a 200-strong Starbucks block + 1,500 more = ~11,700.
+  const TARGET = 11700, SB_TARGET = 200;
+  const SB_SIZES = ["Tall", "Grande", "Venti", "Iced", "Hot", "Decaf", "Oat milk", "Almond milk", "Extra hot", "Half-caf", "Blonde", "Soy", "Skinny", "Double"];
   const CATALOG = [];
-  SUBJECTS.forEach((s) => CATALOG.push({ name: s.kw[0], emoji: s.emoji, theme: s.theme }));
-  // add scene variants across every subject until the catalog is well past 2000 things
-  let vi = 0;
-  for (let pass = 0; pass < VARIANTS.length && CATALOG.length < 2400; pass++) {
-    for (let i = pass % 2; i < SUBJECTS.length && CATALOG.length < 2400; i += 2) {
-      const s = SUBJECTS[i];
-      const v = VARIANTS[vi % VARIANTS.length]; vi++;
-      CATALOG.push({ name: v[0].replace("{n}", s.kw[0]), emoji: s.emoji, theme: v[1] });
-    }
+  const sbSubs = SUBJECTS.filter((s) => s.cat === "starbucks");
+  const genSubs = SUBJECTS; // everything (incl. Starbucks) can take scene variants
+  // 1) base things (non-Starbucks subjects as-is)
+  SUBJECTS.filter((s) => s.cat !== "starbucks").forEach((s) => CATALOG.push({ name: s.kw[0], emoji: s.emoji, theme: s.theme }));
+  // 2) the Starbucks block — drinks plus size/temperature/milk variants, exactly 200
+  const sb = [];
+  sbSubs.forEach((s) => sb.push({ name: s.kw[0], emoji: s.emoji, theme: "starbucks" }));
+  let sbi = 0;
+  while (sb.length < SB_TARGET && sbSubs.length) {
+    const s = sbSubs[sbi % sbSubs.length];
+    const sz = SB_SIZES[(Math.floor(sbi / sbSubs.length)) % SB_SIZES.length];
+    sb.push({ name: sz + " " + s.kw[0], emoji: s.emoji, theme: "starbucks" });
+    sbi++;
+  }
+  sb.forEach((e) => CATALOG.push(e));
+  // 3) fill to TARGET with scene variants across every subject
+  let vi = 0, gi = 0;
+  while (CATALOG.length < TARGET && genSubs.length) {
+    const s = genSubs[gi % genSubs.length]; gi++;
+    const v = VARIANTS[vi % VARIANTS.length]; vi++;
+    const theme = s.cat === "starbucks" ? "starbucks" : v[1];
+    CATALOG.push({ name: v[0].replace("{n}", s.kw[0]), emoji: s.emoji, theme });
   }
 
   // ---- prompt -> subject + theme ----
@@ -265,8 +283,24 @@
     catalog: CATALOG,
     subjects: SUBJECTS,
     count: CATALOG.length,
+    starbucksCount: sb.length,
     themes: THEME_NAMES,
+    catalogAsset: "assets/aiart-catalog.json",
     // a quick list of example prompts
     examples(n) { const out = []; for (let i = 0; i < (n || 12); i++) out.push(CATALOG[(i * 97) % CATALOG.length].name); return out; },
   };
+
+  // The full catalog also lives in assets/aiart-catalog.json; load it when present
+  // (keeps the browsable list in assets), falling back to the runtime-built list.
+  (function loadAsset() {
+    try {
+      if (typeof fetch !== "function") return;
+      fetch("assets/aiart-catalog.json").then((r) => (r && r.ok ? r.json() : null)).then((list) => {
+        if (Array.isArray(list) && list.length) {
+          window.AIArt.catalog = list.map((x) => ({ name: x.n || x.name, emoji: x.e || x.emoji, theme: x.t || x.theme }));
+          window.AIArt.count = window.AIArt.catalog.length;
+        }
+      }).catch(() => {});
+    } catch (e) {}
+  })();
 })();
