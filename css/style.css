@@ -5240,3 +5240,9 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
 /* UAC warning detail */
 .uac-detail{margin:10px 16px 0;padding:10px 12px;border-radius:6px;background:rgba(224,78,60,.14);color:#ffd7d2;font-size:.82rem;line-height:1.4}
 .uac-danger .uac-head{background:#7a1f1a}
+
+/* Setup: "preparing your desktop" sequence (Windows 12.1 reference) */
+.prep-screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px}
+.prep-screen .spinner-ring.big{width:48px;height:48px}
+.prep-msg{font-size:1.5rem;font-weight:300;margin:0}
+.prep-sub{font-size:.9rem;opacity:.7;margin:0}

@@ -211,7 +211,7 @@
     if (bg.querySelector(".oobe-panel")) return;
     bg.className = "setup-bg oobe-bg";
     bg.innerHTML = `
-      <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12</b><sup>${EDITION_YEAR}</sup></div>
+      <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12.1</b> Pro</div>
       <div class="oobe-orb"></div>
       <div class="oobe-panel">
         <div class="oobe-breadcrumb"><span class="oobe-crumb"><span>${SETUP_IC(18)} Set up Windows</span></span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
@@ -271,8 +271,35 @@
     const slider = node.querySelector(".oobe-opt-slider"), screenEl = node.querySelector(".oobe-opt-screen"), val = node.querySelector(".oobe-opt-val");
     const apply = () => { const v = +slider.value; screenEl.style.transform = `scale(${v / 100})`; val.textContent = v + "%"; };
     slider.oninput = apply; apply();
-    node.querySelector("#next").onclick = () => { S().displayScale = +slider.value / 100; State.save(); oobeRegion(); };
+    node.querySelector("#next").onclick = () => { S().displayScale = +slider.value / 100; State.save(); oobeNameDevice(); };
     oobe(node, { illustration: ILLUS.display });
+  }
+
+  // ---- Name this device ----
+  function oobeNameDevice() {
+    const cur = S().deviceName || "";
+    const node = el(`<div>
+      <h1>Let's name your device</h1>
+      <p class="sub">Make it yours with a unique name that's easy to recognize when connecting to it from other devices. Your device will restart after you name it.</p>
+      <div class="field"><input type="text" id="dname" maxlength="15" placeholder="e.g. My-PC" value="${escapeHtml(cur)}"></div>
+      <p class="sub" style="font-size:.8rem">Can't contain only numbers<br>No more than 15 characters<br>No spaces or any of the following special characters: " / \\ [ ] : | &lt; &gt; + = ; , ?</p>
+      <div class="error-msg" id="derr"></div>
+      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="next">Next</button></div>
+    </div>`);
+    const inp = node.querySelector("#dname"), err = node.querySelector("#derr");
+    const go = () => {
+      const v = inp.value.trim();
+      if (v) {
+        if (/^\d+$/.test(v)) { err.textContent = "The name can't be only numbers."; return; }
+        if (/[\s"/\\[\]:|<>+=;,?]/.test(v)) { err.textContent = "The name has a space or a character that isn't allowed."; return; }
+        S().deviceName = v;
+      }
+      State.save(); oobeRegion();
+    };
+    inp.onkeydown = (e) => { if (e.key === "Enter") go(); };
+    node.querySelector("#skip").onclick = () => { State.save(); oobeRegion(); };
+    node.querySelector("#next").onclick = go;
+    oobe(node, { illustration: ILLUS.display, back: oobeDisplayOptimize });
   }
 
   // ---- Region & language ----
@@ -343,8 +370,8 @@
       ["creativity", "Creativity", "🎨", "Adds a 3D Models folder for Blender & Blockbench."],
     ];
     const node = el(`<div>
-      <h1>How will you use this device?</h1>
-      <p class="sub">We'll set up a few apps and folders to match. You can change this later.</p>
+      <h1>How would you like to set up this device?</h1>
+      <p class="sub">Choose how you'll use it and we'll set up a few apps and folders to match. You can change this later.</p>
       <div class="use-opts">${OPTS.map(([v, t, e, d]) => `<button class="use-opt ${v === cur ? "sel" : ""}" data-v="${v}"><span class="use-ic">${e}</span><span class="use-txt"><b>${t}</b><span class="use-d">${d}</span></span></button>`).join("")}</div>
       <div class="oobe-actions spread"><button class="btn-text" id="later">Skip</button><button class="btn-primary" id="next">Next</button></div>
     </div>`);
@@ -559,13 +586,41 @@
   }
   function oobeFingerprintIntroShow() {
     const node = el(`<div>
-      <h1>Windows Hello</h1>
-      <p class="sub">Set up a fingerprint so you can sign in with a touch. This is optional.</p>
+      <h1>Add a Biometrics</h1>
+      <p class="sub">Windows 12.1 Hello uses Biometrics to unlock your device, sign in to apps, and keep your device more secure. This is optional.</p>
+      <button class="oobe-choice" id="finger"><b>&#128070; Fingerprint</b><span>Unlock with a touch using your device's fingerprint sensor.</span></button>
+      <button class="oobe-choice" id="face"><b>&#128100; Face ID</b><span>Unlock just by looking at your device with the camera.</span></button>
       <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="go">Set up</button></div>
     </div>`);
+    let choice = "finger";
+    const fp = node.querySelector("#finger"), fa = node.querySelector("#face");
+    const paint = () => { fp.classList.toggle("sel", choice === "finger"); fa.classList.toggle("sel", choice === "face"); };
+    fp.onclick = () => { choice = "finger"; paint(); };
+    fa.onclick = () => { choice = "face"; paint(); };
+    paint();
     node.querySelector("#skip").onclick = () => oobeWelcomeBack();
-    node.querySelector("#go").onclick = () => oobeFingerprintScan();
+    node.querySelector("#go").onclick = () => (choice === "face" ? oobeFaceScan() : oobeFingerprintScan());
     oobe(node, { illustration: ILLUS.finger, back: oobePin });
+  }
+
+  // ---- Face ID scan (cosmetic — browsers have no face unlock API) ----
+  function oobeFaceScan() {
+    const node = el(`<div>
+      <h1>Face ID</h1>
+      <p class="oobe-fp-status"><b>Look at your device</b></p>
+      <p class="sub">Keep your face in view while Windows learns what you look like.</p>
+      <div class="oobe-fp-pct" id="pct">0%</div>
+      <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
+    </div>`);
+    oobe(node, { illustration: `<div class="fp-anim" id="fp">&#128100;</div>`, back: oobeFingerprintIntro });
+    const pctEl = bg.querySelector("#pct"), fp = bg.querySelector("#fp");
+    let pct = 0, done = false;
+    const iv = setInterval(() => {
+      if (done) return; pct = Math.min(100, pct + 6 + Math.floor(Math.random() * 10)); pctEl.textContent = pct + "%";
+      if (fp) fp.style.filter = `drop-shadow(0 0 ${pct / 8}px #6cf)`;
+      if (pct >= 100) { done = true; clearInterval(iv); bg.querySelector(".oobe-fp-status b").textContent = "All set — Face ID is ready"; S().profile = Object.assign({}, S().profile, { faceId: true }); State.save(); setTimeout(oobeWelcomeBack, 900); }
+    }, 220);
+    bg.querySelector("#skip").onclick = () => { done = true; clearInterval(iv); oobeWelcomeBack(); };
   }
 
   function oobeFingerprintScan() {
@@ -637,10 +692,62 @@
       row.onclick = () => { if (chosen.has(c.id)) chosen.delete(c.id); else chosen.add(c.id); row.classList.toggle("sel", chosen.has(c.id)); };
       catsEl.appendChild(row);
     });
-    const go = () => { S().setup = Object.assign({}, S().setup, { categories: [...chosen] }); State.save(); oobeTime(); };
+    const go = () => { S().setup = Object.assign({}, S().setup, { categories: [...chosen] }); State.save(); oobeOneDrive(); };
     node.querySelector("#skip").onclick = go;
     node.querySelector("#next").onclick = go;
     oobe(node, { illustration: ILLUS.cards, back: oobeWelcomeBack });
+  }
+
+  // ---- Save space with OneDrive ----
+  function oobeOneDrive() {
+    const node = el(`<div>
+      <h1>Save space on your PC with OneDrive</h1>
+      <p class="sub">Store your files, documents, and photos in OneDrive so they're backed up and protected if something happens to your device. You can get to them from any device.</p>
+      <button class="oobe-choice" id="od-on"><b>&#9729; Automatically store my files in OneDrive</b><span>Back up Desktop, Documents and Pictures to OneDrive.</span></button>
+      <button class="oobe-choice" id="od-off"><b>&#128187; Only store files on this device</b><span>Your files stay on this PC and aren't backed up.</span></button>
+      <div class="oobe-actions spread"><span class="link-blue">Privacy Statement</span><button class="btn-primary" id="next">Next</button></div>
+    </div>`);
+    let choice = "on";
+    const on = node.querySelector("#od-on"), off = node.querySelector("#od-off");
+    const paint = () => { on.classList.toggle("sel", choice === "on"); off.classList.toggle("sel", choice === "off"); };
+    on.onclick = () => { choice = "on"; paint(); };
+    off.onclick = () => { choice = "off"; paint(); };
+    paint();
+    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { oneDrive: choice === "on" }); State.save(); oobeThankYou(); };
+    oobe(node, { illustration: ILLUS.restore, back: oobeCustomize });
+  }
+
+  // ---- Thank you! ----
+  function oobeThankYou() {
+    const node = el(`<div class="center-col" style="text-align:center;gap:10px">
+      <h1>Thank you!</h1>
+      <p class="sub">Thank you for your participation in the Windows 12.1 setup. Your Windows 12.1 is ready for use. Let's go!</p>
+      <div class="oobe-actions" style="justify-content:center;margin-top:14px"><button class="btn-primary" id="go">Let's go</button></div>
+    </div>`);
+    node.querySelector("#go").onclick = finishSetup;
+    oobe(node, { illustration: ILLUS.gear });
+  }
+
+  // Complete setup (clock defaults to automatic, like the reference), then show the
+  // "preparing your desktop" sequence and open the desktop.
+  function finishSetup() {
+    S().clock = Object.assign({ mode: "automatic", format24: false }, S().clock, { mode: "automatic" });
+    S().setupCompleted = true;
+    if (S().systemBroken) { try { const d = S(); if (window.FilesParts) { d.appData = d.appData || {}; d.appData.files = d.appData.files || { root: FilesParts.FILE_SEED() }; Object.assign(d.appData.files.root, FilesParts.WIN_FS()); } } catch (_) {} S().systemBroken = false; }
+    State.save();
+    if (window.Achievements) window.Achievements.unlock("welcome");
+    prepareDesktop();
+  }
+
+  // "Now we prepare your desktop… / Getting ready… / Almost ready…" (matches the video)
+  function prepareDesktop() {
+    bg.className = "setup-bg oobe-bg";
+    bg.innerHTML = `<div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12.1</b> Pro</div>
+      <div class="prep-screen"><div class="spinner-ring big"></div><p class="prep-msg">Now we prepare your desktop…</p><p class="prep-sub">This might take a few minutes. Don't turn off your device.</p></div>`;
+    const msgs = ["Now we prepare your desktop…", "Getting ready…", "Installing your apps…", "Almost ready…"];
+    const msgEl = bg.querySelector(".prep-msg");
+    let i = 0;
+    const iv = setInterval(() => { i++; if (i < msgs.length) msgEl.textContent = msgs[i]; else { clearInterval(iv); finish(); } }, 1700);
   }
 
   // ---- Time ----
