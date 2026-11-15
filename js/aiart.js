@@ -78,6 +78,27 @@
     clothing: `t-shirt 👕, jeans 👖, dress 👗, kimono 👘, sari 🥻, bikini 👙, shorts 🩳, suit/necktie 👔, coat 🧥, scarf 🧣, gloves 🧤, socks 🧦, hat/top hat 🎩, cap 🧢, graduation cap 🎓, crown 👑, helmet ⛑️, boot 👢, high heel 👠, sandal 👡, sneaker 👟, running shoe 👟, flat shoe 🥿, ballet shoes 🩰, diamond ring 💍, handbag 👜, backpack 🎒, lab coat 🥼, safety vest 🦺`,
     symbol: `heart ❤️, orange heart 🧡, yellow heart 💛, green heart 💚, blue heart 💙, purple heart 💜, black heart 🖤, white heart 🤍, broken heart 💔, sparkling heart 💖, star ⭐, sparkle ✨, fire 🔥, hundred 💯, music note 🎵, peace ☮️, yin yang ☯️, infinity ♾️, recycle ♻️, checkmark ✅, cross mark ❌, warning ⚠️, question ❓, exclamation ❗, radioactive ☢️, biohazard ☣️, atom ⚛️, anchor ⚓`,
     holiday: `christmas tree 🎄, santa 🎅, snowman ⛄, gift 🎁, jack-o-lantern 🎃, ghost 👻, fireworks 🎆, sparkler 🎇, hearts 💕, birthday cake 🎂, balloons 🎈, party 🥳, menorah 🕎, diya 🪔, red envelope 🧧, moon cake 🥮, dumpling 🥟, egg/easter 🥚, four leaf clover 🍀, turkey 🦃, candy 🍬`,
+    flag: `usa flag/flag of usa 🇺🇸, uk flag/flag of britain 🇬🇧, canada flag/flag of canada 🇨🇦, mexico flag/flag of mexico 🇲🇽, brazil flag/flag of brazil 🇧🇷, argentina flag 🇦🇷, france flag/flag of france 🇫🇷, germany flag/flag of germany 🇩🇪, italy flag/flag of italy 🇮🇹, spain flag/flag of spain 🇪🇸, portugal flag 🇵🇹, netherlands flag 🇳🇱, belgium flag 🇧🇪, switzerland flag 🇨🇭, austria flag 🇦🇹, sweden flag/flag of sweden 🇸🇪, norway flag 🇳🇴, denmark flag 🇩🇰, finland flag 🇫🇮, iceland flag 🇮🇸, ireland flag 🇮🇪, poland flag 🇵🇱, czechia flag 🇨🇿, greece flag 🇬🇷, turkey flag 🇹🇷, russia flag/flag of russia 🇷🇺, ukraine flag 🇺🇦, india flag/flag of india 🇮🇳, china flag/flag of china 🇨🇳, japan flag/flag of japan 🇯🇵, south korea flag 🇰🇷, north korea flag 🇰🇵, thailand flag 🇹🇭, vietnam flag 🇻🇳, philippines flag 🇵🇭, indonesia flag 🇮🇩, malaysia flag 🇲🇾, singapore flag 🇸🇬, australia flag/flag of australia 🇦🇺, new zealand flag 🇳🇿, south africa flag 🇿🇦, egypt flag 🇪🇬, nigeria flag 🇳🇬, kenya flag 🇰🇪, morocco flag 🇲🇦, saudi arabia flag 🇸🇦, uae flag 🇦🇪, israel flag 🇮🇱, iran flag 🇮🇷, iraq flag 🇮🇶, pakistan flag 🇵🇰, bangladesh flag 🇧🇩, chile flag 🇨🇱, peru flag 🇵🇪, colombia flag 🇨🇴, venezuela flag 🇻🇪, cuba flag 🇨🇺, jamaica flag 🇯🇲, hungary flag 🇭🇺, romania flag 🇷🇴, croatia flag 🇭🇷, serbia flag 🇷🇸, pirate flag 🏴‍☠️, pride flag/rainbow flag 🏳️‍🌈, white flag 🏳️, black flag 🏴, checkered flag/finish flag 🏁, red flag 🚩`,
+    zodiac: `aries ♈, taurus ♉, gemini ♊, cancer sign ♋, leo ♌, virgo ♍, libra ♎, scorpio ♏, sagittarius ♐, capricorn ♑, aquarius ♒, pisces ♓, ophiuchus ⛎`,
+    moonphase: `new moon 🌑, waxing crescent moon 🌒, first quarter moon 🌓, waxing gibbous moon 🌔, waning gibbous moon 🌖, last quarter moon 🌗, waning crescent moon 🌘, full moon face 🌝, new moon face 🌚, first quarter moon face 🌛, last quarter moon face 🌜`,
+    shape: `red circle 🔴, orange circle 🟠, yellow circle 🟡, green circle 🟢, blue circle 🔵, purple circle 🟣, brown circle 🟤, black circle ⚫, white circle ⚪, red square 🟥, orange square 🟧, yellow square 🟨, green square 🟩, blue square 🟦, purple square 🟪, brown square 🟫, black square ⬛, white square ⬜, large orange diamond 🔶, large blue diamond 🔷, small orange diamond 🔸, small blue diamond 🔹, red triangle 🔺, down triangle 🔻, diamond with dot 💠, radio button 🔘, heart suit ♥️, spade suit ♠️, club suit ♣️, diamond suit ♦️`,
+    arrow: `up arrow ⬆️, down arrow ⬇️, left arrow ⬅️, right arrow ➡️, up-right arrow ↗️, up-left arrow ↖️, down-right arrow ↘️, down-left arrow ↙️, left-right arrow ↔️, up-down arrow ↕️, repeat 🔁, repeat one 🔂, shuffle 🔀, fast forward ⏩, rewind ⏪, play button ▶️, pause button ⏸️, stop button ⏹️, record button ⏺️, next track ⏭️, last track ⏮️, up button 🔼, down button 🔽, back arrow 🔙, soon arrow 🔜, top arrow 🔝`,
+    number: `zero/0 0️⃣, one/1 1️⃣, two/2 2️⃣, three/3 3️⃣, four/4 4️⃣, five/5 5️⃣, six/6 6️⃣, seven/7 7️⃣, eight/8 8️⃣, nine/9 9️⃣, ten 🔟, hundred points 💯, hashtag #️⃣, asterisk *️⃣, input numbers 🔢, input letters 🔤`,
+    clock: `twelve o'clock 🕛, one o'clock 🕐, two o'clock 🕑, three o'clock 🕒, four o'clock 🕓, five o'clock 🕔, six o'clock 🕕, seven o'clock 🕖, eight o'clock 🕗, nine o'clock 🕘, ten o'clock 🕙, eleven o'clock 🕚, stopwatch ⏱️, timer clock ⏲️`,
+    instrument: `long drum 🪘, level slider 🎚️, control knobs 🎛️, studio microphone 🎙️, film frames 🎞️, film projector 📽️, clapper board 🎬, ticket 🎫, admission ticket 🎟️, performing arts 🎭`,
+    game: `video game controller/game controller/gamepad/controller 🎮, game die/dice 🎲, puzzle piece 🧩, chess pawn/chess ♟️, mahjong tile 🀄, flower playing cards 🎴, joker card/playing card 🃏, slot machine 🎰`,
+    religion: `latin cross ✝️, orthodox cross ☦️, star and crescent ☪️, om symbol 🕉️, wheel of dharma ☸️, star of david ✡️, six pointed star 🔯, place of worship 🛐, khanda 🪯, prayer beads 📿`,
+    household: `mousetrap 🪤, toothbrush 🪥, razor 🪒, lotion bottle 🧴, safety pin 🧷, spool of thread 🧵, ball of yarn 🧶, sewing needle 🪡, knot 🪢, hook 🪝, fire extinguisher 🧯, bellhop bell 🛎️, nesting dolls 🪆, piñata 🪅, mirror ball 🪩, wind chime 🎐, carp streamer 🎏, nazar amulet 🧿, hamsa 🪬, moai 🗿, headstone 🪦, coffin ⚰️, funeral urn ⚱️, id card 🪪, placard 🪧, receipt 🧾, euro banknote 💶, pound banknote 💷, yen banknote 💴, boomerang 🪃, water pistol 🔫, bomb 💣, firecracker 🧨, chains ⛓️, crutch 🩼, x-ray 🩻, blood drop 🩸`,
+    office: `linked paperclips 🖇️, round pushpin 📍, card index dividers 🗂️, card file box 🗃️, file cabinet 🗄️, wastebasket 🗑️, clipboard 📋, chart increasing 📈, chart decreasing 📉, fountain pen 🖋️, memo 📝, ledger 📒, decorated notebook 📔, red book 📕, green book 📗, blue book 📘, orange book 📙, bookmark 🔖, label tag 🏷️, triangular ruler 📐, tear-off calendar 📆, spiral calendar 🗓️, card index 📇, page facing up 📄, bookmark tabs 📑`,
+    landmark: `railway track 🛤️, motorway 🛣️, compass 🧭, mountain cableway 🚠, aerial tramway 🚡, mountain railway 🚞, stop sign 🛑, globe with meridians 🌐, horizontal traffic light 🚥, world map 🗺️`,
+    food2: `butter 🧈, salt 🧂, teapot 🫖, pouring liquid 🫗, jar 🫙, shallow pan of food/paella 🥘`,
+    animal2: `moose 🫎, donkey 🫏, paw prints 🐾, bird nest with eggs 🪺, poodle 🐩, dodo 🦤, guide dog 🦮, black cat 🐈‍⬛`,
+    plant2: `hyacinth 🪻, fallen leaves 🍁, maple leaf 🍁`,
+    weather2: `cyclone 🌀, sunrise over mountains 🌄, cityscape at dusk 🌆, hot springs ♨️, umbrella on ground ⛱️, bubbles 🫧, dashing wind 💨`,
+    body2: `kiss mark 💋, tongue 👅, mouth 👄, leg 🦵, foot 🦶, handshake 🤝, nail polish 💅, selfie 🤳, writing hand ✍️, vulcan salute 🖖`,
+    activity: `juggling 🤹, meditation/meditating/yoga/lotus 🧘, person taking bath 🛀, person in bed 🛌, massage 💆, haircut 💇, person walking 🚶, judge 🧑‍⚖️, office worker 🧑‍💼, technologist/coder/programmer 🧑‍💻, factory worker 🧑‍🏭`,
+    sport2: `diving mask 🤿, playground slide 🛝, fishing pole 🎣`,
+    tech2: `camera with flash 📸, videocassette 📼, dvd disc 📀, minidisc 💽, phone with arrow 📲, telephone receiver 📞, antenna bars 📶`,
   };
 
   // category -> a sensible default theme
@@ -88,6 +109,11 @@
     person: "day", body: "studio", emotion: "pastel", tech: "cyber", transport: "day",
     place: "sunset", music: "neon", sport: "day", object: "studio", clothing: "pastel",
     symbol: "neon", holiday: "night",
+    flag: "day", zodiac: "galaxy", moonphase: "space", shape: "neon", arrow: "cyber",
+    number: "studio", clock: "studio", instrument: "neon", game: "neon", religion: "gold",
+    household: "studio", office: "studio", landmark: "sunset", food2: "studio",
+    animal2: "meadow", plant2: "meadow", weather2: "day", body2: "pastel",
+    activity: "day", sport2: "day", tech2: "cyber",
   };
 
   // Parse the catalog into [{kw:[...], emoji, theme}]
@@ -112,15 +138,19 @@
     ["{n} in space", "space"], ["{n} underwater", "ocean"], ["cute pastel {n}", "pastel"],
     ["{n} in the snow", "snow"], ["{n} in a forest", "forest"], ["golden {n}", "gold"],
     ["{n} in a studio", "studio"], ["rainbow {n}", "rainbow"], ["cyber {n}", "cyber"],
+    ["{n} in a galaxy", "galaxy"], ["{n} in the desert", "desert"], ["{n} on fire", "fire"],
+    ["{n} in a meadow", "meadow"], ["candy {n}", "candy"], ["{n} at dawn", "sunset"],
   ];
   const CATALOG = [];
   SUBJECTS.forEach((s) => CATALOG.push({ name: s.kw[0], emoji: s.emoji, theme: s.theme }));
-  // add scene variants for a spread of hero subjects until the catalog clears 1000
+  // add scene variants across every subject until the catalog is well past 2000 things
   let vi = 0;
-  for (let i = 0; i < SUBJECTS.length && CATALOG.length < 1200; i += 2) {
-    const s = SUBJECTS[i];
-    const v = VARIANTS[vi % VARIANTS.length]; vi++;
-    CATALOG.push({ name: v[0].replace("{n}", s.kw[0]), emoji: s.emoji, theme: v[1] });
+  for (let pass = 0; pass < VARIANTS.length && CATALOG.length < 2400; pass++) {
+    for (let i = pass % 2; i < SUBJECTS.length && CATALOG.length < 2400; i += 2) {
+      const s = SUBJECTS[i];
+      const v = VARIANTS[vi % VARIANTS.length]; vi++;
+      CATALOG.push({ name: v[0].replace("{n}", s.kw[0]), emoji: s.emoji, theme: v[1] });
+    }
   }
 
   // ---- prompt -> subject + theme ----
