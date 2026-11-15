@@ -1,10 +1,17 @@
-/* Out-of-box experience. Two stages:
-   1. Installer  — "Welcome to Windows Setup" + "Activate Windows" (product key),
-      styled as a windowed installer ("Step 1 of 3: Collecting Information").
-   2. OOBE       — a glassy panel over a glowing orb with the "Windows 12 2026"
-      wordmark: region → accessibility → Microsoft account → just a moment →
-      personalize → PIN → fingerprint → welcome back/restore → customize → time.
-   Reuses State product-key / account / PIN logic. */
+/* Out-of-box experience — rebuilt to match the "Windows 12.1" reference setup video
+   frame-for-frame.
+
+   STAGE 1 — INSTALLER (on the wavy blue→magenta wallpaper):
+     splash → language → "Windows Setup" dialog cards:
+       Activate Windows (product key) → Choose your edition → License Terms →
+       Installation Types → Select a partition → Installing Windows (animated
+       checklist) → reboot → "Getting ready" flag screens.
+   STAGE 2 — OOBE ("Windows 12.1 Pro", glassy panel, 3D illustrations):
+     Just a moment → name device → country/region → keyboard → second keyboard →
+     how to set up → personalize (theme/accent) → personalize (wallpaper) →
+     sign in to Microsoft → set up PIN → fingerprint → Alright → welcome back →
+     restoring → privacy → customize experience → OneDrive → Office 365 → Thank you.
+   Reuses State product-key / account / PIN / TouchID / FilesParts logic. */
 (function () {
   "use strict";
 
@@ -13,32 +20,75 @@
 
   let bg, onComplete;
   const S = () => State.data;
-  const EDITION_YEAR = "2026";
-  const SETUP_IC = (s) => `<img src="assets/winsetup.png?v=1" alt="Setup" style="width:${s || 18}px;height:${s || 18}px;object-fit:contain;vertical-align:middle">`;
 
   function mount() {
-    bg = el(`<div class="setup-bg oobe-bg"></div>`);
+    bg = el(`<div class="setup-bg iwave-bg"></div>`);
     screen().appendChild(bg);
   }
 
-  // ---------- shared corner icons (accessibility + volume) ----------
-  const CORNER = `<div class="oobe-corner">
-    <span title="Accessibility"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="4.2" r="1.8" fill="currentColor" stroke="none"/><path d="M4 8 h16 M12 8 v7 M12 15 l-3.5 5 M12 15 l3.5 5"/></svg></span>
-    <span title="Volume"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M4 9 h3.5 L13 5 v14 L7.5 15 H4 z"/><path d="M16 8.5 a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>
-  </div>`;
+  // ============================================================
+  //  Logos
+  // ============================================================
+  // White 4-pane flag (installer / OOBE brand).
+  const FLAG_WHITE = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" class="iflag"><rect x="2" y="2" width="9" height="9" rx="1.4" fill="#fff"/><rect x="13" y="2" width="9" height="9" rx="1.4" fill="#fff"/><rect x="2" y="13" width="9" height="9" rx="1.4" fill="#fff"/><rect x="13" y="13" width="9" height="9" rx="1.4" fill="#fff"/></svg>`;
+  // Gradient 4-pane flag (boot tiles).
+  const FLAG_GRAD = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><defs><linearGradient id="fg${s}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset=".5" stop-color="#8b5cff"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient></defs><rect x="2" y="2" width="9" height="9" rx="1.4" fill="url(#fg${s})"/><rect x="13" y="2" width="9" height="9" rx="1.4" fill="url(#fg${s})"/><rect x="2" y="13" width="9" height="9" rx="1.4" fill="url(#fg${s})"/><rect x="13" y="13" width="9" height="9" rx="1.4" fill="url(#fg${s})"/></svg>`;
+  const BRAND_PILL = (s) => `<span class="iwin-brand">${FLAG_WHITE(s || 26)}<span class="iwin-txt">Windows <span class="iwin-ver">12.1</span></span></span>`;
+  // Small colourful "Set Up Windows" glyph used in the dialog/OOBE breadcrumb.
+  const SETUP_IC = (s) => `<svg viewBox="0 0 24 24" width="${s || 18}" height="${s || 18}" style="vertical-align:middle"><rect x="2" y="2" width="9" height="9" rx="2" fill="#ff4fa3"/><rect x="13" y="2" width="9" height="9" rx="2" fill="#8b5cff"/><rect x="2" y="13" width="9" height="9" rx="2" fill="#3b82e8"/><rect x="13" y="13" width="9" height="9" rx="2" fill="#19c3b2"/></svg>`;
 
   // ============================================================
-  //  STAGE 1 — INSTALLER (windowed "Windows Setup")
+  //  3D-style illustrations (approximating the video's Fluent icons)
   // ============================================================
-  const WIN_FLAG = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><rect x="2" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="2" width="9.3" height="9.3" fill="#2f6bff"/><rect x="2" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/><rect x="12.7" y="12.7" width="9.3" height="9.3" fill="#2f6bff"/></svg>`;
+  const IC = {};
+  // Glowing key orb + gold pointing finger (Activate Windows).
+  IC.activate = `<svg class="il-svg" viewBox="0 0 220 200"><defs><radialGradient id="aGlow" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#3ad1ff"/><stop offset=".6" stop-color="#2b7bff"/><stop offset="1" stop-color="#1b2b8f" stop-opacity="0"/></radialGradient><linearGradient id="aKey" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ff0a6"/><stop offset="1" stop-color="#17b56b"/></linearGradient></defs><circle cx="96" cy="86" r="74" fill="url(#aGlow)"/><circle cx="96" cy="86" r="30" fill="url(#aKey)"/><circle cx="96" cy="80" r="9" fill="#0b3a24"/><rect x="92" y="86" width="8" height="24" rx="3" fill="#0b3a24"/><rect x="100" y="100" width="10" height="5" rx="2" fill="#0b3a24"/><g transform="translate(70 96)"><path d="M18 70 V40 a9 9 0 0 1 18 0 v8 l20 3 a10 10 0 0 1 8 10 v18 a12 12 0 0 1-12 12 H34 a16 16 0 0 1-14-8 L8 72 a7 7 0 0 1 10-9 z" fill="#ffcf6b" stroke="#e0a63c" stroke-width="2"/><path d="M36 48 v-8 a9 9 0 0 0-18 0 V70" fill="#ffd98a"/></g></svg>`;
+  // Windows flag + open cardboard box (Choose your edition).
+  IC.edition = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="eF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fd0ff"/><stop offset=".5" stop-color="#8b5cff"/><stop offset="1" stop-color="#ff5fb0"/></linearGradient></defs><rect x="40" y="26" width="64" height="64" rx="8" fill="#0d0b1e"/><rect x="48" y="34" width="22" height="22" rx="3" fill="url(#eF)"/><rect x="74" y="34" width="22" height="22" rx="3" fill="url(#eF)"/><rect x="48" y="60" width="22" height="22" rx="3" fill="url(#eF)"/><rect x="74" y="60" width="22" height="22" rx="3" fill="url(#eF)"/><g><path d="M62 108 L104 94 L150 110 L150 158 L104 176 L62 160 Z" fill="#d79a5a"/><path d="M104 130 L150 110 L150 158 L104 176 Z" fill="#b97c3e"/><path d="M62 108 L104 130 L104 176 L62 160 Z" fill="#e8b579"/><path d="M62 108 L82 84 L124 96 L104 94 Z" fill="#f0c88c"/><path d="M150 110 L132 86 L82 84 L104 94 Z" fill="#c98f4f"/></g></svg>`;
+  // Flag tile + certificate with seal (License Terms).
+  IC.license = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="lF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fd0ff"/><stop offset=".5" stop-color="#8b5cff"/><stop offset="1" stop-color="#ff5fb0"/></linearGradient></defs><rect x="34" y="40" width="58" height="58" rx="10" fill="#0d0b1e"/><rect x="42" y="48" width="18" height="18" rx="2.5" fill="url(#lF)"/><rect x="66" y="48" width="18" height="18" rx="2.5" fill="url(#lF)"/><rect x="42" y="72" width="18" height="18" rx="2.5" fill="url(#lF)"/><rect x="66" y="72" width="18" height="18" rx="2.5" fill="url(#lF)"/><g transform="translate(86 86)"><rect x="0" y="0" width="86" height="74" rx="8" fill="#bfe8ff"/><rect x="0" y="0" width="86" height="20" rx="8" fill="#5ec0ff"/><path d="M12 36 H74 M12 48 H74 M12 60 H56" stroke="#5a90c0" stroke-width="4" stroke-linecap="round"/><circle cx="66" cy="70" r="15" fill="#f2b23a" stroke="#fff" stroke-width="3"/><path d="M60 82 l-5 16 8 -5 8 5 -5 -16" fill="#e23a63"/></g></svg>`;
+  // Gold handbag/lock (Installation Types).
+  IC.types = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="tB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd87a"/><stop offset="1" stop-color="#f0a93b"/></linearGradient></defs><path d="M62 72 a38 38 0 0 1 76 0" fill="none" stroke="#e0a63c" stroke-width="12"/><rect x="40" y="68" width="120" height="96" rx="18" fill="url(#tB)"/><rect x="40" y="68" width="120" height="96" rx="18" fill="#fff" fill-opacity=".06"/><rect x="86" y="104" width="28" height="22" rx="5" fill="#8a5a12"/></svg>`;
+  // Monitor + hard drive (Select a partition).
+  IC.partition = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="pM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fe0ff"/><stop offset="1" stop-color="#2f8bff"/></linearGradient></defs><rect x="46" y="34" width="118" height="80" rx="9" fill="#1a2740"/><rect x="54" y="42" width="102" height="64" rx="4" fill="url(#pM)"/><rect x="92" y="114" width="26" height="14" fill="#223354"/><rect x="72" y="128" width="66" height="9" rx="4.5" fill="#223354"/><rect x="40" y="140" width="120" height="34" rx="9" fill="#cfd8e8"/><rect x="40" y="140" width="120" height="34" rx="9" fill="#8595b0" fill-opacity=".4"/><circle cx="140" cy="157" r="7" fill="#45d07a"/><rect x="56" y="153" width="40" height="8" rx="4" fill="#6b7a95"/></svg>`;
+  // File cluster (Installing — copying/extracting).
+  IC.files = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="fD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd3ff"/><stop offset="1" stop-color="#3b8bff"/></linearGradient></defs><g transform="translate(44 66) rotate(-8)"><rect x="0" y="0" width="58" height="74" rx="7" fill="url(#fD)"/><path d="M12 16 H46 M12 28 H46 M12 40 H34" stroke="#fff" stroke-width="4" stroke-linecap="round"/></g><g transform="translate(96 44) rotate(6)"><rect x="0" y="0" width="58" height="74" rx="7" fill="url(#fD)"/><path d="M20 24 l-9 13 9 13 M38 24 l9 13 -9 13" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(82 108) rotate(-4)"><rect x="0" y="0" width="54" height="60" rx="7" fill="url(#fD)"/><circle cx="18" cy="20" r="6" fill="#fff"/><path d="M8 48 L24 30 L34 40 L42 34 L48 48 Z" fill="#fff"/></g></svg>`;
+  // App cluster (Installing — features).
+  IC.apps = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="aEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#35c1f1"/><stop offset="1" stop-color="#1f7 fd" stop-color="#1f77fd"/></linearGradient></defs><circle cx="70" cy="70" r="30" fill="#2f8bff"/><path d="M48 76 a24 24 0 0 1 44 -10 a20 20 0 0 0 -34 22 a24 24 0 0 1 -10 -12 z" fill="#8fe9c8"/><rect x="104" y="40" width="54" height="54" rx="10" fill="#f0a93b"/><rect x="112" y="48" width="38" height="38" rx="5" fill="#fff"/><rect x="118" y="54" width="12" height="12" fill="#f25022"/><rect x="132" y="54" width="12" height="12" fill="#7fba00"/><rect x="118" y="68" width="12" height="12" fill="#00a4ef"/><rect x="132" y="68" width="12" height="12" fill="#ffb900"/><circle cx="130" cy="138" r="26" fill="#107c10"/><path d="M122 128 l20 10 -20 10 z" fill="#fff"/><g transform="translate(44 108)"><rect x="0" y="0" width="52" height="40" rx="7" fill="#7c3aed"/><path d="M10 20 a16 16 0 0 1 32 0" fill="none" stroke="#fff" stroke-width="4"/><circle cx="26" cy="22" r="5" fill="#fff"/></g></svg>`;
+  // Disc + flag + check (Installing — finishing).
+  IC.disc = `<svg class="il-svg" viewBox="0 0 200 200"><defs><radialGradient id="dG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#bfe8ff"/><stop offset=".55" stop-color="#3b8bff"/><stop offset="1" stop-color="#1b3a9f"/></radialGradient><linearGradient id="dF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fd0ff"/><stop offset=".5" stop-color="#8b5cff"/><stop offset="1" stop-color="#ff5fb0"/></linearGradient></defs><circle cx="78" cy="104" r="56" fill="url(#dG)"/><circle cx="78" cy="104" r="16" fill="#0d0b1e"/><circle cx="78" cy="104" r="6" fill="#4aa8ff"/><rect x="104" y="40" width="58" height="58" rx="9" fill="#0d0b1e"/><rect x="111" y="47" width="19" height="19" rx="2.5" fill="url(#dF)"/><rect x="134" y="47" width="19" height="19" rx="2.5" fill="url(#dF)"/><rect x="111" y="70" width="19" height="19" rx="2.5" fill="url(#dF)"/><rect x="134" y="70" width="19" height="19" rx="2.5" fill="url(#dF)"/><circle cx="140" cy="140" r="26" fill="#1fc06a"/><path d="M128 140 l8 9 16 -18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  // 3D globe + paper plane (country/region).
+  IC.globe = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="gO" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="86" cy="104" r="62" fill="url(#gO)"/><g fill="#8fd6a0" stroke="none"><path d="M60 66 q18 -8 30 2 q-6 16 -22 18 q-14 -2 -8 -20z"/><path d="M96 118 q22 -6 34 8 q-10 20 -30 18 q-16 -10 -4 -26z"/><path d="M52 118 q14 2 16 16 q-12 10 -22 -2 q-4 -12 6 -14z"/></g><g fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"><ellipse cx="86" cy="104" rx="26" ry="62"/><line x1="24" y1="104" x2="148" y2="104"/><path d="M34 72 H138 M34 136 H138"/></g><path d="M118 42 L176 60 L132 78 L128 66 Z" fill="#fff"/><path d="M128 66 L176 60 L132 78 Z" fill="#dce9ff"/></svg>`;
+  // 3D keyboard + numpad.
+  IC.keyboard = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="kB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3fb"/><stop offset="1" stop-color="#c3cde0"/></linearGradient></defs><rect x="26" y="70" width="118" height="58" rx="8" fill="url(#kB)"/><g fill="#8390ab">${(() => { let r = ""; for (let y = 0; y < 3; y++) for (let x = 0; x < 8; x++) r += `<rect x="${34 + x * 13}" y="${78 + y * 15}" width="9" height="9" rx="2"/>`; return r; })()}</g><rect x="56" y="123" width="58" height="8" rx="3" fill="#8390ab"/><g transform="translate(120 104) rotate(-6)"><rect x="0" y="0" width="56" height="60" rx="8" fill="#1f2636"/><g fill="#3b4760">${(() => { let r = ""; for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) r += `<rect x="${8 + x * 14}" y="${8 + y * 14}" width="10" height="10" rx="2"/>`; return r; })()}</g></g></svg>`;
+  // Chat bubbles + photo + video + doc (how to set up).
+  IC.chat = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="cB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4ec5ff"/><stop offset="1" stop-color="#2f8bff"/></linearGradient></defs><rect x="30" y="34" width="44" height="34" rx="5" fill="#fff" stroke="#cdd8ec" stroke-width="2"/><circle cx="44" cy="48" r="5" fill="#f0a93b"/><path d="M34 64 L48 52 L58 60 L66 54 L70 64 Z" fill="#8fd3a0"/><path d="M40 86 a40 40 0 0 1 78 0 a40 40 0 0 1 -40 40 l-20 14 4 -20 a40 40 0 0 1 -22 -34z" fill="url(#cB)"/><path d="M58 96 H100 M58 110 H88" stroke="#fff" stroke-width="5" stroke-linecap="round"/><g transform="translate(118 96)"><rect x="0" y="0" width="52" height="38" rx="6" fill="#1f2636"/><path d="M14 19 l18 -11 v22 z" fill="#fff"/></g><rect x="112" y="46" width="34" height="42" rx="5" fill="#fff" stroke="#cdd8ec" stroke-width="2"/><path d="M120 60 H140 M120 70 H140 M120 80 H132" stroke="#9fb0cc" stroke-width="3" stroke-linecap="round"/></svg>`;
+  // Monitor + paintbrush + colour wheel (personalize).
+  IC.personalize = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="pS" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6fe0ff"/><stop offset="1" stop-color="#2f8bff"/></linearGradient></defs><rect x="52" y="44" width="110" height="74" rx="8" fill="#1a2740"/><rect x="60" y="52" width="94" height="58" rx="4" fill="url(#pS)"/><rect x="96" y="118" width="22" height="12" fill="#223354"/><rect x="78" y="130" width="58" height="9" rx="4.5" fill="#223354"/><g transform="translate(96 60) rotate(40)"><rect x="0" y="0" width="12" height="58" rx="6" fill="#d94a8c"/><rect x="0" y="-16" width="12" height="18" rx="4" fill="#f0a93b"/><path d="M0 58 l6 14 6 -14 z" fill="#ffd87a"/></g><g transform="translate(40 120)"><circle cx="22" cy="22" r="22" fill="#fff"/><path d="M22 22 L22 0 A22 22 0 0 1 41 11 Z" fill="#ff5fb0"/><path d="M22 22 L41 11 A22 22 0 0 1 41 33 Z" fill="#ffd34e"/><path d="M22 22 L41 33 A22 22 0 0 1 22 44 Z" fill="#45d07a"/><path d="M22 22 L22 44 A22 22 0 0 1 3 33 Z" fill="#4aa8ff"/><path d="M22 22 L3 33 A22 22 0 0 1 3 11 Z" fill="#8b5cff"/><path d="M22 22 L3 11 A22 22 0 0 1 22 0 Z" fill="#ff8a4a"/><circle cx="22" cy="22" r="8" fill="#fff"/></g></svg>`;
+  // Gold padlock + key + PIN dots (set up PIN).
+  IC.pin = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="pL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd87a"/><stop offset="1" stop-color="#eca12f"/></linearGradient></defs><g transform="translate(96 70)"><rect x="0" y="22" width="64" height="52" rx="9" fill="url(#pL)"/><path d="M10 22 V12 a22 22 0 0 1 44 0 V22" fill="none" stroke="#e0a63c" stroke-width="10"/><circle cx="32" cy="44" r="7" fill="#8a5a12"/><rect x="29" y="48" width="6" height="14" rx="3" fill="#8a5a12"/></g><g transform="translate(40 96)"><circle cx="24" cy="24" r="24" fill="url(#pL)"/><circle cx="24" cy="24" r="9" fill="#8a5a12"/><rect x="44" y="19" width="42" height="10" rx="3" fill="url(#pL)"/><rect x="78" y="19" width="8" height="16" rx="2" fill="url(#pL)"/></g><rect x="110" y="44" width="54" height="22" rx="6" fill="#cfe0ff"/><g fill="#2f6bff"><circle cx="122" cy="55" r="3.5"/><circle cx="134" cy="55" r="3.5"/><circle cx="146" cy="55" r="3.5"/><circle cx="158" cy="55" r="3.5"/></g></svg>`;
+  // Cyan fingerprint.
+  IC.finger = `<svg class="il-svg il-fp" viewBox="0 0 200 200" fill="none" stroke="#28d0ff" stroke-width="6" stroke-linecap="round"><path d="M44 96 q6 -52 56 -52 q50 0 56 52" stroke-opacity=".45"/><path d="M58 122 q0 -60 42 -60 q42 0 42 60"/><path d="M72 132 q0 -44 28 -44 q28 0 28 44"/><path d="M86 140 q0 -28 14 -28 q14 0 14 28 v8"/><path d="M100 112 v36"/></svg>`;
+  // Orange marigold (welcome back).
+  IC.flower = `<svg class="il-svg" viewBox="0 0 200 200"><defs><radialGradient id="flG" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#ffd15a"/><stop offset="1" stop-color="#ff7a1a"/></radialGradient></defs><g transform="translate(100 100)">${(() => { let r = ""; for (let i = 0; i < 16; i++) { const a = (i / 16) * 360; r += `<ellipse cx="0" cy="-48" rx="13" ry="30" fill="#ff8a1e" transform="rotate(${a})"/>`; } return r; })()}${(() => { let r = ""; for (let i = 0; i < 12; i++) { const a = (i / 12) * 360 + 15; r += `<ellipse cx="0" cy="-32" rx="10" ry="22" fill="#ffb13e" transform="rotate(${a})"/>`; } return r; })()}<circle cx="0" cy="0" r="30" fill="url(#flG)"/><g fill="#d9731a">${(() => { let r = ""; for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; r += `<circle cx="${Math.cos(a) * 16}" cy="${Math.sin(a) * 16}" r="3"/>`; } return r; })()}</g></g></svg>`;
+  // OneDrive cloud + media (OneDrive).
+  IC.onedrive = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="odC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4aa8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><g transform="translate(26 118) rotate(-8)"><rect x="0" y="0" width="40" height="30" rx="5" fill="#1f2636"/><path d="M11 15 l16 -9 v18 z" fill="#fff"/></g><rect x="28" y="70" width="40" height="30" rx="5" fill="#fff" stroke="#cdd8ec" stroke-width="2"/><circle cx="40" cy="82" r="5" fill="#f0a93b"/><path d="M30 96 L44 86 L54 94 L62 88 L66 96 Z" fill="#8fd3a0"/><path d="M70 150 a26 26 0 0 1 2 -52 a34 34 0 0 1 64 8 a24 24 0 0 1 -4 44 z" fill="url(#odC)"/><path d="M70 150 a26 26 0 0 1 2 -52 a34 34 0 0 1 40 -16 a30 30 0 0 0 -42 68 z" fill="#8fd0ff" opacity=".55"/></svg>`;
+  // Gaming / cards / pen / disc cluster (customize experience).
+  IC.customize = `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="cuD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cff"/><stop offset="1" stop-color="#5b3ee0"/></linearGradient></defs><g transform="translate(34 70) rotate(-10)"><path d="M14 16 Q14 2 32 4 H78 Q96 2 96 16 L104 50 Q108 68 86 68 Q74 68 70 58 L68 52 H42 L40 58 Q36 68 24 68 Q2 68 6 50 Z" fill="url(#cuD)"/><rect x="22" y="26" width="7" height="20" rx="2" fill="#fff"/><rect x="15" y="33" width="21" height="7" rx="2" fill="#fff"/><circle cx="78" cy="30" r="5" fill="#fff"/><circle cx="90" cy="40" r="5" fill="#fff"/></g><g transform="translate(96 94) rotate(8)"><rect x="0" y="0" width="54" height="68" rx="8" fill="#fff" stroke="#cdd8ec" stroke-width="2"/><path d="M27 16 C42 34 44 44 32 50 C27 53 27 46 27 46 C27 46 27 53 22 50 C10 44 12 34 27 16Z" fill="#111"/><rect x="24" y="50" width="6" height="10" fill="#111"/></g><g transform="translate(40 128) rotate(42)"><rect x="0" y="0" width="9" height="40" rx="4" fill="#d94a8c"/><rect x="0" y="-12" width="9" height="14" rx="3" fill="#f0a93b"/></g></svg>`;
 
-  // White 4-pane logo used across the installer (matches the "Windows 12.1" reference setup).
-  const WHITE_FLAG = (s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" class="iflag"><rect x="2" y="2" width="9" height="9" rx="1.6" fill="#fff"/><rect x="13" y="2" width="9" height="9" rx="1.6" fill="#fff"/><rect x="2" y="13" width="9" height="9" rx="1.6" fill="#fff"/><rect x="13" y="13" width="9" height="9" rx="1.6" fill="#fff"/></svg>`;
-  const BRAND_PILL = (s) => `<span class="iwin-brand">${WHITE_FLAG(s || 26)}<span class="iwin-txt">Windows <span class="iwin-ver">12.1</span></span></span>`;
-
-  // Put the installer on the signature wavy blue→magenta wallpaper.
+  // ============================================================
+  //  STAGE 1 — INSTALLER
+  // ============================================================
   function iwave() { bg.className = "setup-bg iwave-bg"; return bg; }
-  // A centered glassy installer card on the wallpaper.
+
+  // Branded "Windows 12.1" splash (frame ~#093 in the reference).
+  function installerSplash() {
+    iwave();
+    bg.innerHTML = `<div class="isplash">${BRAND_PILL(34)}</div>`;
+    setTimeout(installerLanguage, 1600);
+  }
+
+  // Centered glassy panel used for the language screen.
   function ipanel(inner) {
     iwave();
     bg.innerHTML = `<div class="ipanel"><div class="ipanel-head">${BRAND_PILL(30)}</div>${inner}</div>`;
@@ -46,14 +96,6 @@
     return bg.querySelector(".ipanel");
   }
 
-  // Branded "Windows 12.1" splash that flashes before the first installer screen.
-  function installerSplash() {
-    iwave();
-    bg.innerHTML = `<div class="isplash">${BRAND_PILL(34)}</div>`;
-    setTimeout(installerLanguage, 1600);
-  }
-
-  // Language / time / keyboard — the first real installer screen, styled to the reference.
   function installerLanguage() {
     const opt = (arr, sel) => arr.map((o) => `<option${o === sel ? " selected" : ""}>${o}</option>`).join("");
     const langs = ["English (United States)", "English (United Kingdom)", "Español (España)", "Français (France)", "Deutsch (Deutschland)", "Svenska (Sverige)", "日本語 (日本)", "Português (Brasil)", "中文 (简体)"];
@@ -67,169 +109,193 @@
       </div>
       <div class="ipanel-hint">Enter your preferences then click &ldquo;Next&rdquo; to continue.</div>
       <div class="ipanel-foot"><span class="ipanel-copy">&copy;Microsoft Corporation. All rights reserved.</span><button class="ibtn" id="il-next">Next</button></div>`);
-    p.querySelector("#il-next").onclick = installerInstallNow;
+    p.querySelector("#il-next").onclick = winsetupActivate;
   }
 
-  // "Install now" screen with a Repair your PC option.
-  function installerInstallNow() {
-    const p = ipanel(`
-      <div class="ipanel-cta"><button class="ibtn ibtn-lg" id="il-install">Install now</button></div>
-      <div class="ipanel-foot ipanel-foot-col"><button class="ilink" id="il-repair">Repair your PC</button><span class="ipanel-copy">&copy;Microsoft Corporation. All rights reserved.</span></div>`);
-    p.querySelector("#il-install").onclick = installerInstalling;
-    p.querySelector("#il-repair").onclick = () => {
-      if (!S().systemBroken) {
-        const r = p.querySelector("#il-repair");
-        r.textContent = "Nothing to repair — this is a fresh install"; r.disabled = true; return;
-      }
-      repairWindows();
-    };
-  }
-
-  // Centered progress bar on the wallpaper — "installing Windows".
-  function installerInstalling() {
-    S().installerDone = true; State.save();
+  // ---- "Windows Setup" dialog chrome ----
+  // step: 1 = collecting information, 2 = installing windows (bottom progress)
+  function winsetup(titleHtml, bodyHtml, opts) {
+    opts = opts || {};
+    const step = opts.step || 1;
     iwave();
-    bg.innerHTML = `<div class="iprog"><div class="iprog-bar"><div class="iprog-fill"></div></div><div class="iprog-status">Installing Windows 12.1…</div></div>`;
-    const fill = bg.querySelector(".iprog-fill"), status = bg.querySelector(".iprog-status");
-    const stages = ["Copying Windows files…", "Getting files ready for installation…", "Installing features…", "Installing updates…", "Finishing up…"];
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 7 + 3;
-      if (p >= 100) {
-        p = 100; fill.style.width = "100%"; status.textContent = "Completing installation…";
-        clearInterval(iv); setTimeout(oobeDisplayOptimize, 1100);
-      } else {
-        fill.style.width = p + "%";
-        status.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 20))];
-      }
-    }, 260);
-  }
-
-  function installerFrame(inner, step) {
-    bg.className = "setup-bg installer-bg";
     bg.innerHTML = `
-      <div class="installer-win">
-        <div class="installer-titlebar">
-          <span class="installer-tt">${SETUP_IC(18)} Windows Setup</span>
-          <span class="row" style="gap:12px"><button class="setup-skip">Skip setup</button><span class="installer-x">&#215;</span></span>
+      <div class="wsetup-screen">
+        <div class="wsetup-card${opts.wide ? " wide" : ""}">
+          <div class="wsetup-top">
+            <span class="wsetup-id">${opts.back ? `<button class="wsetup-back">&#8592;</button>` : ""}${SETUP_IC(18)} Windows Setup</span>
+            <button class="wsetup-x setup-skip">&#215;</button>
+          </div>
+          <div class="wsetup-body">
+            <div class="wsetup-illus">${opts.illus || ""}</div>
+            <div class="wsetup-main">
+              <h1 class="wsetup-title">${titleHtml}</h1>
+              ${bodyHtml}
+            </div>
+          </div>
         </div>
-        <div class="installer-body">${inner}</div>
-        <div class="installer-foot">
-          <div class="installer-dashes">${[1, 2, 3].map((i) => `<span class="${i <= step ? "on" : ""}"></span>`).join("")}</div>
-          <div class="installer-stepnote">Step ${step} of 3: Collecting Information</div>
+        <div class="wsetup-steps">
+          <div class="wsetup-track"><div class="wsetup-fill" style="width:${step === 2 ? "100%" : "18%"}"></div></div>
+          <div class="wsetup-labels">
+            <span class="wsetup-step ${step >= 1 ? "on" : ""}"><b>1</b> Collecting information</span>
+            <span class="wsetup-step ${step >= 2 ? "on" : ""}"><b>2</b> Installing Windows</span>
+          </div>
         </div>
       </div>`;
     wireSkip();
-    return bg.querySelector(".installer-body");
+    const back = bg.querySelector(".wsetup-back");
+    if (back && opts.back) back.onclick = opts.back;
+    return bg.querySelector(".wsetup-main");
   }
 
-  function installerWelcome() {
-    const body = installerFrame(`
-      <h1>Welcome to Windows Setup</h1>
-      <p>Welcome to Windows 12 ${EDITION_YEAR} Setup. This will involve a very easy few steps. Once these steps are completed, setup will let you know when you can walk away and setup can complete on its own. This will take a while (maybe 10 or more minutes).</p>
-      <p>To begin the setup, click <b>Next</b>. If you want to repair your PC, click <b>Repair Windows</b>.</p>
-      <div class="installer-actions"><span></span>
-        <div class="row" style="gap:12px">
-          <button class="btn-text" id="repair">Repair Windows</button>
-          <button class="btn-primary" id="next">Next</button>
-        </div>
-      </div>`, 1);
-    body.querySelector("#repair").onclick = () => {
-      const note = body.querySelector("#repair");
-      if (!S().systemBroken) { note.textContent = "Nothing to repair — fresh install"; note.disabled = true; return; }
-      repairWindows();
-    };
-    body.querySelector("#next").onclick = installerActivate;
-  }
-
-  // Repair Windows: restore the deleted system files and return to the desktop,
-  // keeping the user's apps, files and settings (unlike a full reinstall).
-  function repairWindows() {
-    iwave();
-    bg.innerHTML = `<div class="iprog"><div class="iprog-title">${BRAND_PILL(28)}</div><div class="iprog-bar"><div class="iprog-fill" id="repbar"></div></div><div class="iprog-status" id="repmsg">Scanning system files…</div></div>`;
-    const bar = bg.querySelector("#repbar"), msg = bg.querySelector("#repmsg");
-    const steps = ["Scanning system files…", "Restoring C:\\Windows\\System32…", "Re-registering components…", "Verifying boot files…", "Finishing repair…"];
-    let i = 0;
-    const iv = setInterval(() => {
-      i++; bar.style.width = Math.min(100, i / steps.length * 100) + "%";
-      if (i <= steps.length) msg.textContent = steps[i - 1] || msg.textContent;
-      if (i >= steps.length) {
-        clearInterval(iv);
-        try {
-          const d = S();
-          if (window.FilesParts) { d.appData = d.appData || {}; d.appData.files = d.appData.files || { root: FilesParts.FILE_SEED() }; Object.assign(d.appData.files.root, FilesParts.WIN_FS()); }
-          d.systemBroken = false; d.setupCompleted = true; d.installerDone = true;
-          State.save();
-        } catch (_) {}
-        msg.textContent = "Repair complete. Starting Windows…";
-        setTimeout(() => { if (typeof onComplete === "function") onComplete(); }, 900);
-      }
-    }, 650);
-  }
-
-  function installerActivate() {
-    const body = installerFrame(`
-      <h1>Activate Windows</h1>
-      <p>If this is the first time you're installing Windows on this PC (or you're installing a different edition), you need to enter a valid Windows product key. Your product key should be in the confirmation email you received after buying a digital copy of Windows or on a label inside the box that Windows came in.</p>
-      <p>The product key looks like this:<br><span class="mono">XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</span></p>
-      <p>If you don't have a valid product key, select <b>I don't have product key</b>, then you must have a 30-day trial and after trial ends, you must insert a valid product key.</p>
-      <div class="field"><input type="text" id="key" class="key-input activate-key" maxlength="15" placeholder="XXX-XXX-XXX-XXX"><div class="error-msg" id="err"></div></div>
-      <p><span class="link-blue" id="sheet">View available keys</span></p>
-      <div class="installer-actions">
-        <button class="btn-text" id="priv">Privacy Statement</button>
-        <div class="row" style="gap:12px">
-          <button class="btn-text" id="nokey">I don't have product key</button>
-          <button class="btn-primary" id="next">Next</button>
-        </div>
-      </div>`, 1);
-
-    const key = body.querySelector("#key"), err = body.querySelector("#err");
+  function winsetupActivate() {
+    const main = winsetup("Activate Windows", `
+      <p class="wsetup-p">If this is the first time you're installing Windows on this PC (or you're installing a different edition), you need to enter a valid Windows product key. Your product key should be in the confirmation email you received after buying a digital copy of Windows or on a label inside the box that Windows came in.</p>
+      <p class="wsetup-p">The product key looks like this:<br><span class="wsetup-mono">XXXXX-XXXXX-XXXXX-XXXXX-XXXXX</span></p>
+      <p class="wsetup-p">If you doesn't have a valid product key, select <b>I don't have product key</b>, then you must to have a 30-days trial and after trial ends, you must insert a valid product key.</p>
+      <div class="wsetup-field"><input type="text" id="key" class="activate-key" placeholder="Enter product key"><div class="wsetup-err" id="err"></div></div>
+      <div class="wsetup-foot">
+        <button class="wsetup-link" id="priv">Privacy Statement</button>
+        <span class="wsetup-foot-r"><button class="wsetup-link" id="nokey">I don't have product key</button><button class="ibtn" id="next">Next</button></span>
+      </div>`, { illus: IC.activate, step: 1 });
+    const key = main.querySelector("#key"), err = main.querySelector("#err");
     key.addEventListener("input", () => {
-      const v = key.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
-      key.value = v.replace(/(.{3})/g, "$1-").replace(/-$/, ""); err.textContent = "";
+      const v = key.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 25);
+      key.value = v.replace(/(.{5})/g, "$1-").replace(/-$/, ""); err.textContent = "";
     });
-    body.querySelector("#sheet").onclick = showKeySheet;
-    body.querySelector("#priv").onclick = () => openTermsBrowser();
-    body.querySelector("#nokey").onclick = () => { S().hasProductKey = false; finishInstaller(); };
-    body.querySelector("#next").onclick = () => {
+    main.querySelector("#priv").onclick = openTermsBrowser;
+    main.querySelector("#nokey").onclick = () => { S().hasProductKey = false; winsetupEdition(); };
+    main.querySelector("#next").onclick = () => {
       const res = State.validateKey(key.value);
-      if (res === "valid") { State.redeemKey(key.value); finishInstaller(); }
+      if (res === "valid") { State.redeemKey(key.value); winsetupEdition(); }
       else if (res === "redeemed") err.textContent = "That key has already been redeemed.";
+      else if (!key.value.trim()) { S().hasProductKey = false; winsetupEdition(); }
       else err.textContent = "That doesn't look like a valid product key.";
     };
+    // quick-fill helper
+    key.ondblclick = showKeySheet;
   }
 
-  function finishInstaller() {
+  function winsetupEdition() {
+    const eds = ["Windows 12.1 Pro", "Windows 12.1 Home", "Windows 12.1 Enterprise", "Windows 12.1 Education", "Windows 12.1 Pro Education", "Windows 12.1 SE"];
+    const main = winsetup("Choose your edition", `
+      <p class="wsetup-sub">${eds.length} editions are available</p>
+      <div class="wsetup-editions" id="eds">${eds.map((e, i) => `<div class="wsetup-ed ${i === 0 ? "sel" : ""}" data-e="${e}">${e}</div>`).join("")}</div>
+      <div class="wsetup-foot end"><button class="wsetup-btn" id="next">Next</button></div>`, { illus: IC.edition, step: 1, back: winsetupActivate });
+    const list = main.querySelector("#eds");
+    let sel = eds[0];
+    list.querySelectorAll(".wsetup-ed").forEach((o) => o.onclick = () => { list.querySelectorAll(".wsetup-ed").forEach((x) => x.classList.remove("sel")); o.classList.add("sel"); sel = o.dataset.e; });
+    main.querySelector("#next").onclick = () => { S().edition = sel; State.save(); winsetupLicense(); };
+  }
+
+  function winsetupLicense() {
+    const main = winsetup("License Terms", `
+      <div class="wsetup-license">
+        <p><b>MICROSOFT SOFTWARE LICENSE TERMS</b></p>
+        <p><b>WINDOWS OPERATING SYSTEM</b></p>
+        <p>IF YOU LIVE IN (OR IF YOUR PRINCIPAL PLACE OF BUSINESS IS IN) THE UNITED STATES, PLEASE READ THE BINDING ARBITRATION CLAUSE AND CLASS ACTION WAIVER IN SECTION 11. IT AFFECTS HOW DISPUTES ARE RESOLVED.</p>
+        <p><b>Thank you for choosing Microsoft!</b></p>
+        <p class="wsetup-license-note">This is a simulated operating system made for fun and learning. It is not affiliated with Microsoft. All purchases, accounts and cloud features are simulated.</p>
+      </div>
+      <label class="wsetup-accept"><input type="checkbox" id="acc" checked> I accept the license terms</label>
+      <div class="wsetup-foot end"><button class="ibtn" id="next">Next</button></div>`, { illus: IC.license, step: 1, back: winsetupEdition });
+    const acc = main.querySelector("#acc"), next = main.querySelector("#next");
+    const sync = () => { next.disabled = !acc.checked; next.classList.toggle("disabled", !acc.checked); };
+    acc.onchange = sync; sync();
+    next.onclick = () => { if (acc.checked) winsetupTypes(); };
+  }
+
+  function winsetupTypes() {
+    const main = winsetup("Installation Types", `
+      <div class="wsetup-types">
+        <button class="wsetup-type" id="t-up"><span class="wsetup-type-ic">${upgradeIc()}</span><span class="wsetup-type-tx"><b>Upgrade: Install Windows and keep files, apps, etc.</b><span>The Files, settings &amp; applications are moved to Windows with this option. This option is only available when a supported version of Windows is already running on the computer</span></span></button>
+        <button class="wsetup-type sel" id="t-cu"><span class="wsetup-type-ic">${customIc()}</span><span class="wsetup-type-tx"><b>Custom: Install Windows only (advanced)</b><span>The Files, settings &amp; applications aren't moved to Windows with this option. If you want to make changes to partitions and drives, start the computer using the installation disc. We recommend backing up your files before you continue</span></span></button>
+      </div>
+      <p class="wsetup-note">NOTE: Upgrade has been disabled</p>
+      <p class="wsetup-note">- To upgrade, start the installation from Windows.</p>`, { illus: IC.types, step: 1, back: winsetupLicense });
+    const up = main.querySelector("#t-up"), cu = main.querySelector("#t-cu");
+    up.onclick = () => {}; // disabled per the note
+    cu.onclick = () => { winsetupPartition(); };
+  }
+
+  function winsetupPartition() {
+    const main = winsetup("Select a partition to Install", `
+      <div class="wsetup-parts">
+        <div class="wsetup-parts-head"><span>Name</span><span>Total size</span><span>Free space</span><span>Type</span></div>
+        <div class="wsetup-part sel"><span>🖴 Drive 0 Unallocated Space</span><span>500 GB</span><span>500 GB</span><span></span></div>
+      </div>
+      <div class="wsetup-parttools">
+        <span class="wsetup-pt">&#10753; New</span><span class="wsetup-pt">&#10060; Delete</span><span class="wsetup-pt">&#9633; Format</span><span class="wsetup-pt wsetup-pt-r">&#8635;</span>
+        <span class="wsetup-pt">&#9679; Load Driver</span><span class="wsetup-pt">&#8596; Extend</span>
+      </div>
+      <div class="wsetup-foot end"><button class="wsetup-btn" id="next">Next</button></div>`, { illus: IC.partition, step: 1, back: winsetupTypes });
+    main.querySelector("#next").onclick = winsetupInstalling;
+  }
+
+  function upgradeIc() { return `<svg viewBox="0 0 48 48" width="40" height="40"><rect x="7" y="8" width="34" height="24" rx="3" fill="#2f8bff"/><rect x="11" y="12" width="26" height="16" rx="2" fill="#dbeeff"/><rect x="18" y="32" width="12" height="5" fill="#2f8bff"/><rect x="13" y="37" width="22" height="4" rx="2" fill="#2f8bff"/><path d="M24 24 V14 M19 19 l5 -5 5 5" stroke="#2f8bff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`; }
+  function customIc() { return `<svg viewBox="0 0 48 48" width="40" height="40"><defs><linearGradient id="ciF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fd0ff"/><stop offset=".5" stop-color="#8b5cff"/><stop offset="1" stop-color="#ff5fb0"/></linearGradient></defs><rect x="6" y="9" width="22" height="22" rx="3" fill="#0d0b1e"/><rect x="9" y="12" width="7.5" height="7.5" rx="1" fill="url(#ciF)"/><rect x="18" y="12" width="7.5" height="7.5" rx="1" fill="url(#ciF)"/><rect x="9" y="21" width="7.5" height="7.5" rx="1" fill="url(#ciF)"/><rect x="18" y="21" width="7.5" height="7.5" rx="1" fill="url(#ciF)"/><rect x="26" y="20" width="16" height="20" rx="2" fill="#2f8bff"/><path d="M30 26 h8 M30 31 h8 M30 36 h5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>`; }
+
+  // Animated "Installing Windows" — checklist + per-stage left icon.
+  function winsetupInstalling() {
     S().installerDone = true; State.save();
-    installerDownload();
+    const steps = ["Copying Windows files", "Extracting files", "Installing features", "Installing updates", "Finishing up"];
+    const main = winsetup("Installing Windows", `
+      <p class="wsetup-p">This is not take a long, just sit relax.</p>
+      <ul class="wsetup-check" id="chk">${steps.map((s, i) => `<li data-i="${i}"><span class="wsetup-chk-mark"></span>${s}</li>`).join("")}</ul>
+      <div class="wsetup-spin"><div class="spinner-ring sm"></div></div>`, { illus: IC.files, step: 2 });
+    const items = [...main.querySelectorAll("#chk li")];
+    const illusEl = bg.querySelector(".wsetup-illus");
+    const stageIc = [IC.files, IC.files, IC.apps, IC.disc, IC.disc];
+    let i = 0;
+    const mark = () => {
+      items.forEach((li, k) => { li.classList.toggle("done", k < i); li.classList.toggle("cur", k === i); });
+      if (illusEl && stageIc[i]) illusEl.innerHTML = stageIc[Math.min(i, stageIc.length - 1)];
+    };
+    mark();
+    const iv = setInterval(() => {
+      i++;
+      if (i >= items.length) {
+        clearInterval(iv);
+        items.forEach((li) => { li.classList.add("done"); li.classList.remove("cur"); });
+        if (illusEl) illusEl.innerHTML = IC.disc;
+        setTimeout(rebootSequence, 1100);
+      } else mark();
+    }, 1300);
   }
 
-  // "Downloading Windows" — a progress screen before the OOBE.
-  function installerDownload() {
-    const body = installerFrame(`
-      <div class="installer-download">
-        <div class="dl-flag"><span class="w12-flag"><i></i><i></i><i></i><i></i></span></div>
-        <h1 class="dl-title">Downloading Windows 12</h1>
-        <div class="dl-status">Preparing…</div>
-        <div class="dl-bar"><div class="dl-fill"></div></div>
-        <div class="dl-meta"><span class="dl-pct">0%</span><span class="dl-speed"></span></div>
-        <p class="dl-note">Keep your PC on and plugged in until this is done.</p>
-      </div>`, 3);
-    const fill = body.querySelector(".dl-fill"), pct = body.querySelector(".dl-pct"), status = body.querySelector(".dl-status"), speed = body.querySelector(".dl-speed");
-    const stages = ["Downloading files…", "Verifying download…", "Installing features…", "Getting ready…"];
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 6 + 2.5;
-      if (p >= 100) {
-        p = 100; fill.style.width = "100%"; pct.textContent = "100%"; status.textContent = "Download complete"; speed.textContent = "";
-        clearInterval(iv); setTimeout(oobeDisplayOptimize, 1000);
-      } else {
-        fill.style.width = p + "%"; pct.textContent = Math.floor(p) + "%";
-        status.textContent = stages[Math.min(stages.length - 1, Math.floor(p / 25))];
-        speed.textContent = (18 + Math.floor(Math.random() * 30)) + " MB/s";
-      }
-    }, 230);
-    wireSkip();
+  // ---- Reboot + "getting ready" flag screens between installer and OOBE ----
+  function flagScreen(flagHtml, title, sub, bar) {
+    bg.className = "setup-bg boot-bg";
+    bg.innerHTML = `<div class="boot-wrap">
+      ${title && title.top ? `<div class="boot-top">${title.top}</div>` : ""}
+      <div class="boot-flag">${flagHtml}</div>
+      ${bar ? `<div class="boot-bar"><div class="boot-bar-fill"></div></div>` : `<div class="spinner-ring boot-spin"></div>`}
+      ${title && title.text ? `<div class="boot-msg">${title.text}</div>` : ""}
+      ${sub ? `<div class="boot-sub">${sub}</div>` : ""}
+    </div>`;
+  }
+  function waveScreen(title, sub, note) {
+    bg.className = "setup-bg iwave-bg boot-wave";
+    bg.innerHTML = `<div class="boot-wrap">
+      <div class="spinner-ring boot-spin"></div>
+      <div class="boot-msg">${title}</div>
+      ${sub ? `<div class="boot-sub">${sub}</div>` : ""}
+      ${note ? `<div class="boot-note">${note}</div>` : ""}
+    </div>`;
+  }
+
+  function rebootSequence() {
+    // sequence: gradient flag spinner → white flag "Getting ready" → "Setup is starting services" (wave)
+    const seq = [
+      () => flagScreen(FLAG_GRAD(56), null),
+      () => flagScreen(FLAG_WHITE(56), { text: "Getting ready" }, null, true),
+      () => waveScreen("Setup is starting services.", null),
+      () => flagScreen(FLAG_GRAD(56), { top: "Windows 12.1" }, null),
+      () => flagScreen(FLAG_WHITE(56), { text: "Get ready to running your PC for first use" }),
+      () => waveScreen("Checking your performance", null),
+    ];
+    let k = 0;
+    const run = () => { if (k < seq.length) { seq[k](); k++; setTimeout(run, 1500); } else oobeJustAMoment(oobeNameDevice); };
+    run();
   }
 
   // Jump straight to the desktop with sensible defaults (available on every screen).
@@ -246,89 +312,68 @@
   function wireSkip() { bg.querySelectorAll(".setup-skip").forEach((x) => x.onclick = skipSetup); }
 
   // ============================================================
-  //  STAGE 2 — OOBE (glassy orb panel)
+  //  STAGE 2 — OOBE
   // ============================================================
-  // opts: { illustration, back, wide }
-  // Build the persistent OOBE chrome once (animated orb + panel) so it stays
-  // put between steps; only the illustration + content swap, with a slide-in.
-  function ensureOobeChrome() {
-    if (bg.querySelector(".oobe-panel")) return;
-    bg.className = "setup-bg oobe-bg";
+  function oobeChrome() {
+    if (bg.querySelector(".oobe2-panel")) return;
+    bg.className = "setup-bg iwave-bg oobe2-bg";
     bg.innerHTML = `
-      <div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12.1</b> Pro</div>
-      <div class="oobe-orb"></div>
-      <div class="oobe-panel">
-        <div class="oobe-breadcrumb"><span class="oobe-crumb"><span>${SETUP_IC(18)} Set up Windows</span></span><span class="grow"></span><button class="setup-skip">Skip setup</button></div>
-        <div class="oobe-stage">
-          <div class="oobe-illus"></div>
-          <div class="oobe-content"></div>
-        </div>
-        ${CORNER}
+      <div class="oobe2-brand">${FLAG_WHITE(22)} Windows <b>12.1</b> Pro</div>
+      <div class="oobe2-panel">
+        <div class="oobe2-top"><span class="oobe2-id">${SETUP_IC(18)} Set Up Windows</span></div>
+        <div class="oobe2-stage"><div class="oobe2-illus"></div><div class="oobe2-content"></div></div>
+      </div>
+      <div class="oobe2-corner">
+        <button title="Accessibility">${cornerAccess()}</button>
+        <button title="Settings">${cornerGear()}</button>
       </div>`;
   }
+  function cornerAccess() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dfe6fb" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.4" fill="#dfe6fb" stroke="none"/><path d="M7 10 h10 M12 10 v5 M12 15 l-2.5 3.5 M12 15 l2.5 3.5"/></svg>`; }
+  function cornerGear() { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dfe6fb" stroke-width="1.7"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.5M12 18v2.5M4.6 7l2.2 1.3M17.2 15.7l2.2 1.3M4.6 17l2.2-1.3M17.2 8.3l2.2-1.3"/></svg>`; }
+
+  // opts: { illus, back, big (illustration spans full on spinners), wide }
   function oobe(contentNode, opts) {
     opts = opts || {};
-    ensureOobeChrome();
-    // Back button in the breadcrumb
-    const crumb = bg.querySelector(".oobe-crumb");
-    let back = crumb.querySelector(".oobe-back");
-    if (opts.back) { if (!back) { back = el(`<button class="oobe-back">&#8592;</button>`); crumb.insertBefore(back, crumb.firstChild); } back.onclick = opts.back; }
+    oobeChrome();
+    const top = bg.querySelector(".oobe2-top");
+    let back = top.querySelector(".oobe2-back");
+    if (opts.back) { if (!back) { back = el(`<button class="oobe2-back">&#8592;</button>`); top.insertBefore(back, top.firstChild); } back.onclick = opts.back; }
     else if (back) back.remove();
-    // Swap illustration + content with a slide-in animation
-    const illus = bg.querySelector(".oobe-illus");
-    const content = bg.querySelector(".oobe-content");
-    illus.innerHTML = opts.illustration || "";
+    const illus = bg.querySelector(".oobe2-illus");
+    const content = bg.querySelector(".oobe2-content");
+    const stage = bg.querySelector(".oobe2-stage");
+    stage.classList.toggle("noillus", !opts.illus);
+    illus.innerHTML = opts.illus || "";
     content.innerHTML = ""; content.appendChild(contentNode);
-    illus.classList.remove("oobe-in"); content.classList.remove("oobe-in");
-    void content.offsetWidth; // reflow to restart the animation
-    illus.classList.add("oobe-in"); content.classList.add("oobe-in");
-    wireSkip();
+    illus.classList.remove("oobe2-in"); content.classList.remove("oobe2-in");
+    void content.offsetWidth;
+    illus.classList.add("oobe2-in"); content.classList.add("oobe2-in");
     return bg;
   }
 
-  const ILLUS = {
-    globe: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilGl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilGl)"/><g fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="2.5"><ellipse cx="100" cy="100" rx="30" ry="72"/><ellipse cx="100" cy="100" rx="58" ry="72"/><line x1="28" y1="100" x2="172" y2="100"/><path d="M40 62 H160"/><path d="M40 138 H160"/></g></svg>`,
-    display: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilDsp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><rect x="30" y="44" width="140" height="92" rx="12" fill="url(#ilDsp)"/><rect x="44" y="58" width="112" height="64" rx="5" fill="#fff" fill-opacity=".92"/><rect x="86" y="136" width="28" height="16" fill="url(#ilDsp)"/><rect x="66" y="152" width="68" height="9" rx="4.5" fill="url(#ilDsp)"/><rect x="132" y="74" width="34" height="60" rx="7" fill="#2f6bff"/><rect x="138" y="80" width="22" height="42" rx="2" fill="#fff" fill-opacity=".92"/></svg>`,
-    gear: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilAc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><circle cx="100" cy="100" r="72" fill="url(#ilAc)"/><circle cx="100" cy="62" r="13" fill="#fff"/><path d="M62 84 H138 M100 84 V132 M100 132 L74 168 M100 132 L126 168" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round"/></svg>`,
-    apps: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilPad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5cf6"/><stop offset="1" stop-color="#5b3ee0"/></linearGradient><linearGradient id="ilMus" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fc7"/><stop offset="1" stop-color="#e3008c"/></linearGradient><linearGradient id="ilPic" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#43d69a"/><stop offset="1" stop-color="#0a9d6e"/></linearGradient></defs><g transform="translate(24 74) rotate(-8)"><path d="M30 20 Q30 0 55 2 H115 Q140 0 140 20 L152 66 Q158 92 130 92 Q114 92 108 78 L104 68 H66 L62 78 Q56 92 40 92 Q12 92 18 66 Z" fill="url(#ilPad)"/><rect x="42" y="34" width="9" height="27" rx="3" fill="#fff"/><rect x="33" y="43" width="27" height="9" rx="3" fill="#fff"/><circle cx="112" cy="40" r="6" fill="#fff"/><circle cx="128" cy="52" r="6" fill="#fff"/><circle cx="112" cy="64" r="6" fill="#fff"/></g><g transform="translate(150 22)"><rect x="40" y="0" width="10" height="58" rx="5" fill="url(#ilMus)"/><circle cx="30" cy="60" r="15" fill="url(#ilMus)"/><path d="M40 0 q22 4 22 22 V6 q0 -8 -22 -6 Z" fill="url(#ilMus)"/></g><g transform="translate(178 98)"><rect x="0" y="0" width="64" height="52" rx="8" fill="url(#ilPic)"/><circle cx="18" cy="18" r="7" fill="#fff"/><path d="M6 44 L26 24 L40 38 L50 30 L58 44 Z" fill="#fff"/></g></svg>`,
-    lock: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilLk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ec8ff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs><path d="M100 20 L160 42 V96 Q160 150 100 178 Q40 150 40 96 V42 Z" fill="url(#ilLk)"/><rect x="76" y="88" width="48" height="40" rx="6" fill="#fff"/><path d="M84 88 V76 a16 16 0 0 1 32 0 V88" fill="none" stroke="#fff" stroke-width="7"/><circle cx="100" cy="104" r="6" fill="#2f6bff"/><rect x="97" y="106" width="6" height="12" rx="3" fill="#2f6bff"/></svg>`,
-    finger: `<svg class="il-svg il-fp" viewBox="0 0 200 200" fill="none" stroke="#5ea0ff" stroke-width="6" stroke-linecap="round"><path d="M50 96 q4 -46 50 -46 q46 0 50 46" stroke-opacity=".5"/><path d="M60 120 q0 -55 40 -55 q40 0 40 55"/><path d="M74 128 q0 -40 26 -40 q26 0 26 40"/><path d="M88 134 q0 -26 12 -26 q12 0 12 26 v6"/><path d="M100 108 v34"/></svg>`,
-    restore: `<svg class="il-svg" viewBox="0 0 200 200"><defs><linearGradient id="ilBolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#e0245e"/></linearGradient></defs><rect x="40" y="40" width="120" height="120" rx="28" fill="url(#ilBolt)"/><path d="M108 62 L78 108 H98 L92 138 L124 90 H104 Z" fill="#fff"/></svg>`,
-    cards: `<svg class="il-svg il-wide" viewBox="0 0 260 200"><defs><linearGradient id="ilNote" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd3ff"/><stop offset="1" stop-color="#4aa8ff"/></linearGradient></defs><g transform="translate(28 55) rotate(-6)"><rect x="0" y="0" width="78" height="96" rx="8" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><rect x="0" y="0" width="78" height="20" rx="8" fill="url(#ilNote)"/><path d="M12 40 H62 M12 54 H62 M12 68 H46" stroke="#c6d2e6" stroke-width="4" stroke-linecap="round"/><path d="M52 74 l18 -18 8 8 -18 18 -10 2 2 -10Z" fill="#f5a623"/></g><g transform="translate(118 48) rotate(6)"><rect x="0" y="0" width="76" height="104" rx="10" fill="#fff" stroke="#dfe6f2" stroke-width="2"/><path d="M38 24 C58 46 60 58 46 66 C40 70 40 62 40 62 C40 62 40 70 34 70 C20 62 22 46 38 24Z" fill="#1d1d21"/><rect x="34" y="70" width="8" height="14" fill="#1d1d21"/></g><g transform="translate(196 108)"><circle cx="24" cy="24" r="24" fill="#e50914"/><path d="M18 14 L36 24 L18 34 Z" fill="#fff"/></g></svg>`,
-  };
-
-  // ---- Display optimization (the first thing you see) ----
-  function oobeDisplayOptimize() {
-    const start = S().displayScale ? Math.round(S().displayScale * 100) : 100;
-    const node = el(`<div>
-      <h1>Let's optimize your display</h1>
-      <p class="sub">Drag the slider so Windows 12 looks best on your screen.</p>
-      <div class="oobe-optrow">
-        <img class="oobe-opt-ic" src="assets/opt_phone.png?v=1" alt="Phone">
-        <input type="range" class="oobe-opt-slider" min="80" max="120" value="${start}">
-        <img class="oobe-opt-ic" src="assets/opt_monitor.png?v=1" alt="Monitor">
-      </div>
-      <div class="oobe-opt-preview"><div class="oobe-opt-screen"><span class="oobe-opt-bar"></span><span class="oobe-opt-tile"></span><span class="oobe-opt-tile"></span><span class="oobe-opt-tile"></span></div></div>
-      <div class="oobe-opt-val">${start}%</div>
-      <div class="oobe-actions"><button class="btn-primary" id="next">Looks good</button></div>
-    </div>`);
-    const slider = node.querySelector(".oobe-opt-slider"), screenEl = node.querySelector(".oobe-opt-screen"), val = node.querySelector(".oobe-opt-val");
-    const apply = () => { const v = +slider.value; screenEl.style.transform = `scale(${v / 100})`; val.textContent = v + "%"; };
-    slider.oninput = apply; apply();
-    node.querySelector("#next").onclick = () => { S().displayScale = +slider.value / 100; State.save(); oobeNameDevice(); };
-    oobe(node, { illustration: ILLUS.display });
+  // ---- Just a moment… (spinner inside panel) ----
+  function oobeJustAMoment(next, label) {
+    oobeChrome();
+    const top = bg.querySelector(".oobe2-top");
+    const b = top.querySelector(".oobe2-back"); if (b) b.remove();
+    const stage = bg.querySelector(".oobe2-stage");
+    stage.classList.add("noillus");
+    bg.querySelector(".oobe2-illus").innerHTML = "";
+    const content = bg.querySelector(".oobe2-content");
+    content.innerHTML = `<div class="oobe2-moment"><div class="spinner-ring big"></div><p>${label || "Just a moment…"}</p></div>`;
+    setTimeout(() => next(), 2400);
   }
 
-  // ---- Name this device ----
+  // ---- Let's name your device ----
   function oobeNameDevice() {
     const cur = S().deviceName || "";
     const node = el(`<div>
       <h1>Let's name your device</h1>
-      <p class="sub">Make it yours with a unique name that's easy to recognize when connecting to it from other devices. Your device will restart after you name it.</p>
-      <div class="field"><input type="text" id="dname" maxlength="15" placeholder="e.g. My-PC" value="${escapeHtml(cur)}"></div>
-      <p class="sub" style="font-size:.8rem">Can't contain only numbers<br>No more than 15 characters<br>No spaces or any of the following special characters: " / \\ [ ] : | &lt; &gt; + = ; , ?</p>
+      <p class="sub">Make it yours with a unique name that's easy to recognize when connecting to it from other devices. Your devices will restart after you name it.</p>
+      <div class="field"><input type="text" id="dname" maxlength="15" placeholder="" value="${escapeHtml(cur)}"></div>
+      <p class="sub small">Can't contain only numbers<br>No more than 15 characters<br>No spaces or any of the following special characters: " / \\ [ ] : | &lt; &gt; + = ; , ?</p>
       <div class="error-msg" id="derr"></div>
-      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="next">Next</button></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
     </div>`);
     const inp = node.querySelector("#dname"), err = node.querySelector("#derr");
     const go = () => {
@@ -341,135 +386,146 @@
       State.save(); oobeRegion();
     };
     inp.onkeydown = (e) => { if (e.key === "Enter") go(); };
-    node.querySelector("#skip").onclick = () => { State.save(); oobeRegion(); };
     node.querySelector("#next").onclick = go;
-    oobe(node, { illustration: ILLUS.display, back: oobeDisplayOptimize });
+    oobe(node, {});
   }
 
-  // ---- Region & language ----
+  // ---- Country / region ----
   function oobeRegion() {
-    const regions = ["United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Sweden", "Japan", "India", "Brazil", "Mexico"];
+    const regions = ["UAE", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Canada", "Australia", "Germany", "France", "Sweden", "Japan", "India", "Brazil", "Mexico", "Iceland", "Indonesia", "Ireland"];
     const node = el(`<div>
       <h1>Is this the right country or region?</h1>
-      <div class="setup-list oobe-list" id="regionList"></div>
-      <div class="field" style="margin-top:14px"><label>Language</label><select id="lang"></select></div>
-      <div class="oobe-actions"><button class="btn-primary" id="next">Yes</button></div>
+      <div class="oobe2-search"><span class="oobe2-search-ic">&#128269;</span><input id="csearch" placeholder="Search another Country"></div>
+      <div class="oobe2-rlist" id="rlist"></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Yes</button></div>
     </div>`);
-    const list = node.querySelector("#regionList");
-    regions.forEach((r) => {
-      const o = el(`<div class="opt">${r}</div>`);
-      if (r === (S().region || "United States")) o.classList.add("sel");
-      o.onclick = () => { list.querySelectorAll(".opt").forEach((x) => x.classList.remove("sel")); o.classList.add("sel"); S().region = r; };
+    const list = node.querySelector("#rlist"), srch = node.querySelector("#csearch");
+    let sel = S().region || "United States";
+    function render(filter) {
+      list.innerHTML = "";
+      regions.filter((r) => !filter || r.toLowerCase().includes(filter.toLowerCase())).forEach((r) => {
+        const o = el(`<div class="oobe2-ritem ${r === sel ? "sel" : ""}">${r}</div>`);
+        o.onclick = () => { sel = r; S().region = r; list.querySelectorAll(".oobe2-ritem").forEach((x) => x.classList.toggle("sel", x === o)); };
+        list.appendChild(o);
+      });
+    }
+    render("");
+    srch.oninput = () => render(srch.value);
+    node.querySelector("#next").onclick = () => { S().region = sel; State.save(); oobeKeyboard(); };
+    oobe(node, { illus: IC.globe });
+  }
+
+  // ---- Keyboard layout ----
+  function oobeKeyboard() {
+    const kbs = ["US", "United Kingdom", "Canadian", "Spanish", "French", "German", "Swedish", "Japanese", "United States-International", "Dvorak"];
+    const node = el(`<div>
+      <h1>Is this the right keyboard layout?</h1>
+      <p class="sub">If you also use another keyboard layout, you can add one next.</p>
+      <div class="oobe2-rlist" id="klist"></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Yes</button></div>
+    </div>`);
+    const list = node.querySelector("#klist");
+    let sel = S().keyboard || "US";
+    kbs.forEach((k) => {
+      const o = el(`<div class="oobe2-ritem ${k === sel ? "sel" : ""}">${k}</div>`);
+      o.onclick = () => { sel = k; list.querySelectorAll(".oobe2-ritem").forEach((x) => x.classList.toggle("sel", x === o)); };
       list.appendChild(o);
     });
-    const langSel = node.querySelector("#lang");
-    I18n.languages.forEach((l) => {
-      const opt = document.createElement("option");
-      opt.value = l.code; opt.textContent = l.name;
-      if (l.code === I18n.lang) opt.selected = true;
-      langSel.appendChild(opt);
-    });
-    langSel.onchange = () => { I18n.set(langSel.value); oobeRegion(); };
-    node.querySelector("#next").onclick = () => { State.save(); oobeAccessibility(); };
-    oobe(node, { illustration: ILLUS.globe });
+    node.querySelector("#next").onclick = () => { S().keyboard = sel; State.save(); oobeSecondKeyboard(); };
+    oobe(node, { illus: IC.keyboard, back: oobeRegion });
   }
 
-  // ---- Accessibility ----
-  function oobeAccessibility() {
+  function oobeSecondKeyboard() {
     const node = el(`<div>
-      <h1>Make it easier to use your PC</h1>
-      <p class="sub">You can change any of this later in Settings.</p>
-      <div class="field"><label>Appearance</label>
-        <div class="toggle-row" id="themeRow"><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
-      <div class="field"><label>Text size — <span id="tsVal">${S().textScale}%</span></label>
-        <input type="range" id="ts" min="80" max="180" step="10" value="${S().textScale}"></div>
-      <div class="field"><label>Touch keyboard</label>
-        <div class="toggle-row" id="oskRow"><button data-v="off" class="sel">Off</button><button data-v="on">On</button></div></div>
-      <div class="oobe-actions spread"><button class="btn-text" id="later">Skip for now</button><button class="btn-primary" id="setup">Next</button></div>
+      <h1>Want too add a second keyboard layout?</h1>
+      <p class="sub">You can add more keyboard layouts and switch between them any time in Settings.</p>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="add">Add layout</button><button class="ibtn" id="skip">Skip</button></div>
     </div>`);
-    const themeRow = node.querySelector("#themeRow");
-    const paintTheme = () => themeRow.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.v === S().theme));
-    themeRow.querySelectorAll("button").forEach((b) => b.onclick = () => { S().theme = b.dataset.v; document.body.classList.toggle("dark", S().theme === "dark"); paintTheme(); });
-    paintTheme();
-    const ts = node.querySelector("#ts"), tsVal = node.querySelector("#tsVal");
-    ts.oninput = () => { S().textScale = +ts.value; tsVal.textContent = ts.value + "%"; document.documentElement.style.setProperty("--scale", ts.value / 100); };
-    const oskRow = node.querySelector("#oskRow");
-    oskRow.querySelectorAll("button").forEach((b) => b.onclick = () => {
-      oskRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel");
-      if (b.dataset.v === "on") OSK.show(); else OSK.hide();
-    });
-    const go = () => { State.save(); oobeUsage(); };
-    node.querySelector("#later").onclick = go;
-    node.querySelector("#setup").onclick = go;
-    oobe(node, { illustration: ILLUS.gear, back: oobeRegion });
+    node.querySelector("#add").onclick = () => oobeJustAMoment(oobeSetupType);
+    node.querySelector("#skip").onclick = () => oobeJustAMoment(oobeSetupType);
+    oobe(node, { illus: IC.keyboard, back: oobeKeyboard });
   }
 
-  // ---- How will you use this device? (adds apps/folders to match) ----
-  function oobeUsage() {
-    if (!S().appData) S().appData = {};
-    const cur = S().appData.usage || "personal";
-    const OPTS = [
-      ["personal", "Personal", "💻", "Everyday browsing, media, and games."],
-      ["school", "School", "🎓", "Adds Google Classroom plus Education & Math folders."],
-      ["creativity", "Creativity", "🎨", "Adds a 3D Models folder for Blender & Blockbench."],
-    ];
+  // ---- How would you like to set up this device? ----
+  function oobeSetupType() {
     const node = el(`<div>
       <h1>How would you like to set up this device?</h1>
-      <p class="sub">Choose how you'll use it and we'll set up a few apps and folders to match. You can change this later.</p>
-      <div class="use-opts">${OPTS.map(([v, t, e, d]) => `<button class="use-opt ${v === cur ? "sel" : ""}" data-v="${v}"><span class="use-ic">${e}</span><span class="use-txt"><b>${t}</b><span class="use-d">${d}</span></span></button>`).join("")}</div>
-      <div class="oobe-actions spread"><button class="btn-text" id="later">Skip</button><button class="btn-primary" id="next">Next</button></div>
-    </div>`);
-    let choice = cur;
-    node.querySelectorAll(".use-opt").forEach((b) => b.onclick = () => { node.querySelectorAll(".use-opt").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); choice = b.dataset.v; });
-    const go = (apply) => {
-      if (apply) {
-        S().appData.usage = choice;
-        S().appData.creativity = choice === "creativity";
-        S().appData.schoolFolders = choice === "school";
-        if (choice === "school") { if (!S().installedApps) S().installedApps = []; if (!S().installedApps.includes("classroom")) S().installedApps.push("classroom"); }
-      }
-      State.save(); oobeAccount();
-    };
-    node.querySelector("#later").onclick = () => go(false);
-    node.querySelector("#next").onclick = () => go(true);
-    oobe(node, { illustration: ILLUS.apps, back: oobeAccessibility });
-  }
-
-  // ---- Microsoft account ----
-  function msAppsIllus() {
-    const apps = [["edge", 70, 4, 1.05], ["ms365", 150, 42, 0.95], ["outlook", 40, 92, 1], ["xbox", 8, 168, 0.95], ["onenote", 118, 128, 1.05], ["store__", 160, 190, 0.92]];
-    return `<div class="ms-apps-illus">${apps.map((a) => `<span class="ms-app-tile" style="left:${a[1]}px;top:${a[2]}px;transform:scale(${a[3]})">${Icon.box(a[0], a[0], 40)}</span>`).join("")}</div>`;
-  }
-  function benIcon(k) {
-    const map = {
-      grid: `<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>`,
-      shield: `<path d="M12 3 L20 6 V12 Q20 18 12 21 Q4 18 4 12 V6 Z"/>`,
-      cloud: `<path d="M7 18 a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.3 A4 4 0 0 1 17 18 Z"/>`,
-      globe: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 4 3 14 0 18M12 3c-3 4-3 14 0 18"/>`,
-    };
-    return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">${map[k] || map.grid}</svg>`;
-  }
-  function oobeAccount() {
-    const node = el(`<div>
-      <h1>Sign in with a Microsoft account</h1>
-      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Microsoft Edge and Microsoft Store.</p>
-      <div class="ms-benefits">
-        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("grid")}</span><div><b>The best of Windows and Microsoft 365</b><span>Personalized widgets, quick chat, and web versions of Word, Excel, and PowerPoint.</span></div></div>
-        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("shield")}</span><div><b>Your account, your data. More secure</b><span>Keep tabs on your subscription and order history, and manage privacy settings.</span></div></div>
-        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("cloud")}</span><div><b>Protect a lifetime of memories</b><span>OneDrive backs up your Desktop, Documents, and Pictures folders to the cloud.</span></div></div>
-        <div class="ms-benefit"><span class="ms-ben-ic">${benIcon("globe")}</span><div><b>Browsing made easier</b><span>Sync your favorites, passwords, and history across your devices.</span></div></div>
+      <div class="oobe2-opts">
+        <button class="oobe2-opt sel" id="o-personal"><span class="oobe2-opt-ic">${homeIc()}</span><span class="oobe2-opt-tx"><b>Set up for personal use</b><span>Use a personal Microsoft account to get set up and have full control over this device.</span></span></button>
+        <button class="oobe2-opt" id="o-work"><span class="oobe2-opt-ic">${workIc()}</span><span class="oobe2-opt-tx"><b>Set up for work or school</b><span>Get access to your organization's resources like email, Network, apps and services. Your organization will gave Full control over this device.</span></span></button>
       </div>
-      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="signin">Sign in</button></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
     </div>`);
-    node.querySelector("#skip").onclick = () => oobeJustAMoment(oobePersonalize);
-    node.querySelector("#signin").onclick = accountSignIn;
-    oobe(node, { illustration: msAppsIllus(), back: oobeAccessibility });
+    let choice = "personal";
+    const pe = node.querySelector("#o-personal"), wk = node.querySelector("#o-work");
+    pe.onclick = () => { choice = "personal"; pe.classList.add("sel"); wk.classList.remove("sel"); };
+    wk.onclick = () => { choice = "work"; wk.classList.add("sel"); pe.classList.remove("sel"); };
+    node.querySelector("#next").onclick = () => { S().setupFor = choice; State.save(); oobePersonalizeTheme(); };
+    oobe(node, { illus: IC.chat, back: oobeSecondKeyboard });
+  }
+  function homeIc() { return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11"/><path d="M6 10 v9 h12 v-9"/></svg>`; }
+  function workIc() { return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M9 8 V5 h6 v3 M4 13 h16"/></svg>`; }
+
+  // ---- Personalize: theme + accent ----
+  function oobePersonalizeTheme() {
+    const node = el(`<div>
+      <h1>Personalize your device</h1>
+      <p class="sub">More personalization options are available in the settings app.</p>
+      <div class="oobe2-prow"><span class="oobe2-plabel">Theme</span></div>
+      <div class="oobe2-themes" id="themes">
+        <button class="oobe2-theme sel" data-t="dark"><span class="oobe2-theme-prev dark">Aa</span></button>
+        <button class="oobe2-theme" data-t="light"><span class="oobe2-theme-prev light">Aa</span></button>
+      </div>
+      <div class="oobe2-prow"><span class="oobe2-plabel">Accent color</span><span class="oobe2-pmode"><span class="on">Gradient</span><span>Solid color</span></span></div>
+      <div class="oobe2-accents" id="accents"></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
+    </div>`);
+    const themes = node.querySelector("#themes");
+    themes.querySelectorAll(".oobe2-theme").forEach((b) => b.onclick = () => {
+      themes.querySelectorAll(".oobe2-theme").forEach((x) => x.classList.toggle("sel", x === b));
+      S().theme = b.dataset.t; document.body.classList.toggle("dark", S().theme !== "light");
+    });
+    const accents = ["#ff4fa3", "#8b5cff", "#3b82e8", "#19c3b2", "#45d07a", "#ffb13e", "#ff6b4a", "#c061ff"];
+    const acc = node.querySelector("#accents");
+    accents.forEach((c, i) => {
+      const o = el(`<button class="oobe2-acc ${i === 1 ? "sel" : ""}" style="background:${c}"></button>`);
+      o.onclick = () => { acc.querySelectorAll(".oobe2-acc").forEach((x) => x.classList.toggle("sel", x === o)); S().accent = c; };
+      acc.appendChild(o);
+    });
+    node.querySelector("#next").onclick = () => { State.save(); oobePersonalizeWallpaper(); };
+    oobe(node, { illus: IC.personalize, back: oobeSetupType });
   }
 
-  function accountSignIn() {
+  // ---- Personalize: wallpaper ----
+  function oobePersonalizeWallpaper() {
+    const papers = [
+      "linear-gradient(135deg,#1b1152,#7b1f6a,#ff4fa3)",
+      "linear-gradient(135deg,#2a1b5e,#8b5cff,#d98fe0)",
+      "linear-gradient(135deg,#0d1b3a,#2f6bff,#5ec8ff)",
+      "radial-gradient(circle at 50% 45%,#2a2550,#0d0b1e)",
+      "linear-gradient(135deg,#0a3d91,#2f8bff)",
+      "linear-gradient(135deg,#143a7a,#4aa8ff,#bfe8ff)",
+      "linear-gradient(135deg,#1b1152,#3b82e8)",
+      "linear-gradient(135deg,#0a2a5e,#1f77c0)",
+    ];
     const node = el(`<div>
-      <h1>Let's add your Microsoft account</h1>
-      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Edge, and the Microsoft Store.</p>
+      <h1>Personalize your device</h1>
+      <p class="sub">More personalization options are available in the settings app.</p>
+      <div class="oobe2-prow"><span class="oobe2-plabel">Wallpaper</span></div>
+      <div class="oobe2-papers" id="papers">${papers.map((p, i) => `<button class="oobe2-paper ${i === 0 ? "sel" : ""}" style="background:${p}"></button>`).join("")}<button class="oobe2-paper oobe2-paper-more">🖼<span>More wallpapers</span></button></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
+    </div>`);
+    const papersEl = node.querySelector("#papers");
+    papersEl.querySelectorAll(".oobe2-paper:not(.oobe2-paper-more)").forEach((b, i) => b.onclick = () => { papersEl.querySelectorAll(".oobe2-paper").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); S().wallpaperChoice = i; });
+    node.querySelector("#next").onclick = () => { State.save(); oobeJustAMoment(oobeSignIn); };
+    oobe(node, { illus: IC.personalize, back: oobePersonalizeTheme });
+  }
+
+  // ---- Sign in to Microsoft ----
+  function oobeSignIn() {
+    const node = el(`<div>
+      <h1>Let's sign in to Microsoft</h1>
+      <p class="sub">One account connects your device across Microsoft apps and services, like Office, OneDrive, Microsoft Edge and Microsoft Store.</p>
       <div class="ms-badge">${msLogo()} Microsoft</div>
       <div class="ms-stage" id="msStage"></div>
     </div>`);
@@ -477,19 +533,10 @@
     function emailView() {
       stage.innerHTML = `
         <div class="field"><label>Sign in</label><input type="email" id="email" placeholder="Email, phone, or Skype" value="${S().account ? S().account.email : ""}"></div>
-        <p class="ms-links"><span class="link-blue" id="createLink">No account? Create one!</span><span class="link-blue" id="optLink">Sign-in options</span></p>
-        <div class="ms-signin-opts" id="opts" hidden>
-          <button class="ms-opt" id="optKey"><span class="ms-opt-ic">&#128273;</span><div><b>Sign in with a security key</b><span>Choose this only if you've enabled a security key for your account.</span></div></button>
-          <button class="ms-opt" id="optOffline"><span class="ms-opt-ic">&#128187;</span><div><b>Offline account</b><span>Set up this device with a local account, no Microsoft account needed.</span></div></button>
-          <button class="ms-opt" id="optForgot"><span class="ms-opt-ic">?</span><div><b>Forgot my username</b></div></button>
-        </div>
-        <div class="oobe-actions spread"><button class="btn-text" id="skip2">Back</button><button class="btn-primary" id="next">Next</button></div>`;
+        <p class="ms-links"><span class="oobe2-link" id="createLink">No account? Create one!</span></p>
+        <div class="oobe2-actions spread"><button class="oobe2-link" id="noacc">Skip for now</button><button class="ibtn" id="next">Next</button></div>`;
       stage.querySelector("#createLink").onclick = createView;
-      stage.querySelector("#optLink").onclick = () => { const o = stage.querySelector("#opts"); o.hidden = !o.hidden; };
-      stage.querySelector("#optKey").onclick = () => oobeJustAMoment(oobePersonalize);
-      stage.querySelector("#optOffline").onclick = () => { S().account = null; State.save(); oobeJustAMoment(oobePersonalize); };
-      stage.querySelector("#optForgot").onclick = () => stage.querySelector("#opts").hidden = true;
-      stage.querySelector("#skip2").onclick = oobeAccount;
+      stage.querySelector("#noacc").onclick = () => { S().account = null; State.save(); oobeJustAMoment(oobePin); };
       stage.querySelector("#next").onclick = () => {
         const email = stage.querySelector("#email").value.trim();
         if (!email) { stage.querySelector("#email").focus(); return; }
@@ -500,116 +547,54 @@
     function createView() {
       stage.innerHTML = `
         <div class="field"><label>Create account</label><input type="email" id="cemail" placeholder="someone@example.com"></div>
-        <div class="field"><div class="pw-wrap"><input type="password" id="cpw" placeholder="Create a password"><button class="pw-eye" id="ceye"><i class="pw-eye-ic"></i></button></div></div>
-        <div class="field"><input type="password" id="cpw2" placeholder="Confirm password"></div>
+        <div class="field"><input type="password" id="cpw" placeholder="Create a password"></div>
         <div class="error-msg" id="cerr"></div>
-        <div class="oobe-actions spread"><button class="btn-text" id="cback">Back to sign in</button><button class="btn-primary" id="ccreate">Create account</button></div>`;
-      const cpw = stage.querySelector("#cpw"), cpw2 = stage.querySelector("#cpw2"), cerr = stage.querySelector("#cerr");
-      stage.querySelector("#ceye").onclick = () => { const t = cpw.type === "password" ? "text" : "password"; cpw.type = t; cpw2.type = t; };
+        <div class="oobe2-actions spread"><button class="oobe2-link" id="cback">Back to sign in</button><button class="ibtn" id="ccreate">Create</button></div>`;
+      const cpw = stage.querySelector("#cpw"), cerr = stage.querySelector("#cerr");
       stage.querySelector("#cback").onclick = emailView;
       stage.querySelector("#ccreate").onclick = () => {
         const email = stage.querySelector("#cemail").value.trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { cerr.textContent = "Enter a valid email address."; return; }
         if (cpw.value.length < 4) { cerr.textContent = "Password must be at least 4 characters."; return; }
-        if (cpw.value !== cpw2.value) { cerr.textContent = "Those passwords don't match."; return; }
         S().account = { email, password: cpw.value, created: true }; State.save();
-        oobeJustAMoment(oobePersonalize);
+        oobeJustAMoment(oobePin);
       };
     }
     function pwView(email) {
       stage.innerHTML = `
         <div class="ms-return">&#8592; ${escapeHtml(email)}</div>
-        <div class="field"><label>Enter Password</label>
-          <div class="pw-wrap"><input type="password" id="pw" placeholder="Password"><button class="pw-eye" id="eye"><i class="pw-eye-ic"></i></button></div></div>
-        <p class="ms-links"><span class="link-blue">Forgot password?</span><span class="link-blue">Email code to ${escapeHtml(email)}</span></p>
-        <div class="oobe-actions spread"><button class="btn-text" id="back2">Back</button><button class="btn-primary" id="signin">Next</button></div>`;
-      const pw = stage.querySelector("#pw");
-      stage.querySelector("#eye").onclick = () => { pw.type = pw.type === "password" ? "text" : "password"; };
+        <div class="field"><label>Enter Password</label><input type="password" id="pw" placeholder="Password"></div>
+        <p class="ms-links"><span class="oobe2-link">Forgot password?</span></p>
+        <div class="oobe2-actions spread"><button class="oobe2-link" id="back2">Back</button><button class="ibtn" id="signin">Next</button></div>`;
       stage.querySelector("#back2").onclick = emailView;
       stage.querySelector("#signin").onclick = () => {
-        S().account = { email, password: pw.value }; State.save();
-        oobeJustAMoment(oobePersonalize);
+        S().account = { email, password: stage.querySelector("#pw").value }; State.save();
+        oobeJustAMoment(oobePin);
       };
     }
     emailView();
-    oobe(node, { illustration: msAppsIllus(), back: oobeAccount });
+    oobe(node, { illus: IC.chat, back: oobePersonalizeWallpaper });
   }
 
-  // ---- Just a moment… ----
-  function oobeJustAMoment(next) {
-    const node = el(`<div class="oobe-moment">
-      <div class="moment-tiles"><span></span><span></span><span></span></div>
-      <div class="moment-row"><div class="spinner-ring"></div><span>Just a moment…</span></div>
-    </div>`);
-    oobe(node, {});
-    setTimeout(() => next(), 2600);
-  }
-
-  // ---- Personalize (username + picture) ----
-  function oobePersonalize() {
-    const suggested = S().account && S().account.email ? S().account.email.split("@")[0] : "User";
-    const node = el(`<div>
-      <h1>Personalize your device</h1>
-      <p class="sub">Add a name and a picture. You can change these later.</p>
-      <div class="center-col"><div class="pic-crop" id="crop"><span class="muted" style="margin:auto">No photo</span></div>
-        <button class="btn-text" id="upload">Upload a photo</button></div>
-      <div class="field"><label>Your name</label><input type="text" id="uname" value="${escapeHtml(suggested)}"></div>
-      <div class="oobe-actions"><button class="btn-primary" id="next">Next</button></div>
-    </div>`);
-    const crop = node.querySelector("#crop");
-    let imgEl = null;
-    node.querySelector("#upload").onclick = () => {
-      const inp = document.getElementById("globalFileInput");
-      inp.accept = "image/*"; inp.value = "";
-      inp.onchange = () => {
-        const f = inp.files[0]; if (!f) return;
-        const reader = new FileReader();
-        reader.onload = () => { crop.innerHTML = ""; imgEl = document.createElement("img"); imgEl.src = reader.result; imgEl.style.width = "100%"; imgEl.onload = () => enableDrag(imgEl, crop); crop.appendChild(imgEl); };
-        reader.readAsDataURL(f);
-      };
-      inp.click();
-    };
-    node.querySelector("#next").onclick = () => {
-      const uname = node.querySelector("#uname").value.trim() || "User";
-      S().profile = Object.assign({}, S().profile, { picture: imgEl ? captureCrop(imgEl, crop) : (S().profile && S().profile.picture) || null, username: uname });
-      State.save();
-      oobeHelloIntro();
-    };
-    oobe(node, { illustration: ILLUS.apps, back: oobeAccount });
-  }
-
-  // ---- Use Windows Hello (intro) ----
-  function oobeHelloIntro() {
-    const node = el(`<div>
-      <h1>Use Windows Hello with your account</h1>
-      <p class="sub">Your organization requires you to set up your account with Windows Hello Face, Fingerprint, or PIN.</p>
-      <p class="sub">If you've already set up Windows Hello on this device, we'll automatically add it for this account. You may be asked to re-verify with Windows Hello.</p>
-      <p class="sub">If your organization requires a more complex PIN, Windows will prompt you to change it.</p>
-      <div class="oobe-actions"><button class="btn-primary" id="ok">OK</button></div>
-    </div>`);
-    node.querySelector("#ok").onclick = oobePin;
-    oobe(node, { illustration: ILLUS.lock, back: oobePersonalize });
-  }
-
-  // ---- Set up a PIN ----
+  // ---- Set up PIN ----
   function oobePin() {
     const node = el(`<div>
-      <h1>Set up a PIN</h1>
+      <h1>Set up PIN</h1>
       <p class="sub">A Windows Hello PIN is a fast, secure way to sign in to your device, Apps and services.</p>
-      <div class="field"><div class="pw-wrap"><input type="password" id="pin" placeholder="New PIN" inputmode="numeric"><button class="pw-eye" id="eye"><i class="pw-eye-ic"></i></button></div></div>
+      <div class="field"><input type="password" id="pin" placeholder="New PIN" inputmode="numeric"></div>
       <div class="field"><input type="password" id="pin2" placeholder="Confirm PIN" inputmode="numeric"></div>
-      <div class="field row" style="gap:8px;align-items:center"><input type="checkbox" id="letters" style="width:auto"><label for="letters" style="margin:0">Include letters and symbols</label></div>
+      <div class="field checkrow"><input type="checkbox" id="letters"><label for="letters">Include letters and symbols</label></div>
       <div class="error-msg" id="err"></div>
-      <div class="oobe-actions"><button class="btn-primary" id="ok">OK</button></div>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="ok">Ok</button></div>
     </div>`);
     const pin = node.querySelector("#pin"), pin2 = node.querySelector("#pin2"), err = node.querySelector("#err"), letters = node.querySelector("#letters");
-    node.querySelector("#eye").onclick = () => { const tp = pin.type === "password" ? "text" : "password"; pin.type = tp; pin2.type = tp; };
     letters.onchange = () => {
       const mode = letters.checked ? "text" : "numeric";
       pin.inputMode = mode; pin2.inputMode = mode;
       pin.placeholder = letters.checked ? "New password" : "New PIN";
       pin2.placeholder = letters.checked ? "Confirm password" : "Confirm PIN";
     };
+    node.querySelector("#skip").onclick = () => oobeFingerprintIntro();
     node.querySelector("#ok").onclick = () => {
       const a = pin.value, b = pin2.value;
       if (letters.checked) { if (!a) { err.textContent = "Enter a password."; return; } }
@@ -619,161 +604,186 @@
       State.save();
       oobeFingerprintIntro();
     };
-    oobe(node, { illustration: ILLUS.lock, back: oobePersonalize });
+    oobe(node, { illus: IC.pin, back: oobeSignIn });
   }
 
-  // ---- Fingerprint (intro → scanning %) ----
+  // ---- Fingerprint ----
   function oobeFingerprintIntro() {
-    // No fingerprint sensor on this device → no fingerprint step at all.
-    if (!window.TouchID) { oobeWelcomeBack(); return; }
-    TouchID.available().then((ok) => (ok ? oobeFingerprintIntroShow() : oobeWelcomeBack()));
+    if (!window.TouchID) { oobeAlright(); return; }
+    TouchID.available().then((ok) => (ok ? oobeFingerprintShow() : oobeAlright()));
   }
-  function oobeFingerprintIntroShow() {
+  function oobeFingerprintShow() {
     const node = el(`<div>
-      <h1>Add a Biometrics</h1>
-      <p class="sub">Windows 12.1 Hello uses Biometrics to unlock your device, sign in to apps, and keep your device more secure. This is optional.</p>
-      <button class="oobe-choice" id="finger"><b>&#128070; Fingerprint</b><span>Unlock with a touch using your device's fingerprint sensor.</span></button>
-      <button class="oobe-choice" id="face"><b>&#128100; Face ID</b><span>Unlock just by looking at your device with the camera.</span></button>
-      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip for now</button><button class="btn-primary" id="go">Set up</button></div>
+      <h1>Fingerprint</h1>
+      <p class="oobe2-sub-strong">How to use Fingerprint</p>
+      <p class="sub">To activate the Fingerprint, you must to place your finger at the Fingerprint sensor on your device and keep holding until Fingerprint activated.</p>
+      <div class="oobe2-fp-sensor"><div class="oobe2-fp-pad"></div><span class="oobe2-fp-hand">&#128070;</span></div>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Next</button></div>
     </div>`);
-    let choice = "finger";
-    const fp = node.querySelector("#finger"), fa = node.querySelector("#face");
-    const paint = () => { fp.classList.toggle("sel", choice === "finger"); fa.classList.toggle("sel", choice === "face"); };
-    fp.onclick = () => { choice = "finger"; paint(); };
-    fa.onclick = () => { choice = "face"; paint(); };
-    paint();
-    node.querySelector("#skip").onclick = () => oobeWelcomeBack();
-    node.querySelector("#go").onclick = () => (choice === "face" ? oobeFaceScan() : oobeFingerprintScan());
-    oobe(node, { illustration: ILLUS.finger, back: oobePin });
+    node.querySelector("#skip").onclick = () => oobeAlright();
+    node.querySelector("#next").onclick = () => oobeFingerprintScan();
+    oobe(node, { illus: IC.finger, back: oobePin });
   }
-
-  // ---- Face ID scan (cosmetic — browsers have no face unlock API) ----
-  function oobeFaceScan() {
-    const node = el(`<div>
-      <h1>Face ID</h1>
-      <p class="oobe-fp-status"><b>Look at your device</b></p>
-      <p class="sub">Keep your face in view while Windows learns what you look like.</p>
-      <div class="oobe-fp-pct" id="pct">0%</div>
-      <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
-    </div>`);
-    oobe(node, { illustration: `<div class="fp-anim" id="fp">&#128100;</div>`, back: oobeFingerprintIntro });
-    const pctEl = bg.querySelector("#pct"), fp = bg.querySelector("#fp");
-    let pct = 0, done = false;
-    const iv = setInterval(() => {
-      if (done) return; pct = Math.min(100, pct + 6 + Math.floor(Math.random() * 10)); pctEl.textContent = pct + "%";
-      if (fp) fp.style.filter = `drop-shadow(0 0 ${pct / 8}px #6cf)`;
-      if (pct >= 100) { done = true; clearInterval(iv); bg.querySelector(".oobe-fp-status b").textContent = "All set — Face ID is ready"; S().profile = Object.assign({}, S().profile, { faceId: true }); State.save(); setTimeout(oobeWelcomeBack, 900); }
-    }, 220);
-    bg.querySelector("#skip").onclick = () => { done = true; clearInterval(iv); oobeWelcomeBack(); };
-  }
-
   function oobeFingerprintScan() {
-    // Real sensor (Touch ID / Windows Hello) when this device has one; it's asked
-    // right away because Safari only allows it straight after a tap.
+    const node = el(`<div class="oobe2-fpscan">
+      <div class="oobe2-fpring"><div class="oobe2-fpring-fill" id="ring"></div><span class="oobe2-fpglyph">${IC.finger}</span></div>
+      <p class="oobe2-fp-status" id="st">Fingerprint is in process…</p>
+    </div>`);
+    oobe(node, {});
+    bg.querySelector(".oobe2-stage").classList.add("noillus");
+    const ring = bg.querySelector("#ring"), st = bg.querySelector("#st");
+    let left = false;
+    const finishScan = () => {
+      if (left) return; left = true;
+      ring.style.background = "conic-gradient(#1fc06a 360deg,#1fc06a 360deg)";
+      bg.querySelector(".oobe2-fpring").classList.add("done");
+      bg.querySelector(".oobe2-fpglyph").innerHTML = `<svg viewBox="0 0 48 48" width="70" height="70"><circle cx="24" cy="24" r="22" fill="#1fc06a"/><path d="M15 24 l6 7 12 -14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      st.textContent = "All set — your fingerprint works!";
+      S().profile = Object.assign({}, S().profile, { fingerprint: true }); State.save();
+      setTimeout(oobeAlright, 1100);
+    };
+    // animate ring; try the real sensor if present
+    let pct = 0;
+    const iv = setInterval(() => { pct = Math.min(100, pct + 7); ring.style.background = `conic-gradient(#28d0ff ${pct * 3.6}deg,rgba(255,255,255,.12) ${pct * 3.6}deg)`; if (pct >= 100) { clearInterval(iv); finishScan(); } }, 120);
     if (window.TouchID && window.PublicKeyCredential) {
-      const realP = TouchID.available().then((ok) => (ok ? TouchID.enroll() : null)).catch(() => false);
-      const node = el(`<div>
-        <h1>Fingerprint</h1>
-        <p class="oobe-fp-status"><b>Touch the sensor</b></p>
-        <p class="sub">Rest your finger on ${TouchID.sensorName()} when your device asks.</p>
-        <div class="oobe-fp-pct" id="pct">…</div>
-        <div class="oobe-actions"><button class="btn-primary" id="skip">Skip</button></div>
-      </div>`);
-      oobe(node, { illustration: `<div class="fp-anim" id="fp">${ILLUS.finger}</div>`, back: oobeFingerprintIntro });
-      let left = false;
-      bg.querySelector("#skip").onclick = () => { left = true; oobeWelcomeBack(); };
-      realP.then((res) => {
-        if (left) return;
-        if (res === true) { bg.querySelector("#pct").textContent = "100%"; bg.querySelector(".oobe-fp-status b").textContent = "All set — your fingerprint works"; const f = bg.querySelector("#fp"); if (f) f.style.filter = "drop-shadow(0 0 12px #6cf)"; setTimeout(oobeWelcomeBack, 900); }
-        else if (res === null) { left = true; oobeWelcomeBack(); }   // no sensor on this device → skip
-        else { bg.querySelector(".oobe-fp-status b").textContent = "Couldn't read your fingerprint"; bg.querySelector("#pct").textContent = ""; const t = el(`<button class="btn-primary" id="again" style="margin-right:8px">Try again</button>`); t.onclick = oobeFingerprintScan; bg.querySelector(".oobe-actions").prepend(t); }
-      });
-      return;
+      TouchID.available().then((ok) => (ok ? TouchID.enroll() : null)).then((res) => { if (res === true) { clearInterval(iv); ring.style.background = "conic-gradient(#28d0ff 360deg,#28d0ff 360deg)"; finishScan(); } }).catch(() => {});
     }
-    oobeWelcomeBack();   // no fingerprint support in this browser
+  }
+
+  // ---- Alright! ----
+  function oobeAlright() {
+    const node = el(`<div>
+      <h1>Alright!</h1>
+      <p class="sub">Now your account becomes more secure! Next, you must insert your fingerprint to log in!</p>
+      <div class="oobe2-actions"><button class="ibtn" id="save">Save</button></div>
+    </div>`);
+    node.querySelector("#save").onclick = () => oobeWelcomeBack();
+    oobe(node, { illus: IC.finger });
   }
 
   // ---- Welcome back / Restore ----
   function oobeWelcomeBack() {
-    const name = (S().profile && S().profile.username) || "there";
+    const name = (S().account && S().account.email ? S().account.email.split("@")[0] : (S().profile && S().profile.username)) || "there";
     const node = el(`<div>
       <h1>Welcome back, ${escapeHtml(name)}!</h1>
-      <p class="sub">Your settings and OneDrive files are synced to this PC and you'll get a chance to restore apps from your previous PC once you finish device setup.</p>
-      <button class="oobe-choice" id="restore"><b>&#8635; Restore from previous PC</b><span>Last synced recently. Use settings &amp; preferences, sync OneDrive files, and select apps to install from this device.</span></button>
-      <button class="oobe-choice" id="fresh"><b>&#128187; Set up as new device</b><span>Choose your apps. You'll still have access to your settings, preferences, and OneDrive files.</span></button>
-      <div class="oobe-actions spread"><span class="link-blue">Restore from another device</span><button class="btn-primary" id="next">Next</button></div>
+      <p class="sub">Your settings and OneDrive files are synced to this PC and you'll get a chance to restore apps from your previous PC once you finish your device setup.</p>
+      <button class="oobe2-choice sel" id="restore"><b>&#8635; Restore from DESKTOP-TV89QC4D</b><span>Last synced on Wednesday, June 23, 2021 use settings &amp; preferences, sync OneDrive files, and select apps to install from this device.</span></button>
+      <button class="oobe2-choice" id="fresh"><b>&#128187; Set up as new device</b><span>Choose new apps. You'll still have access to your settings, preferences, and OneDrive files.</span></button>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
     </div>`);
-    let choice = "fresh";
+    let choice = "restore";
     const restore = node.querySelector("#restore"), fresh = node.querySelector("#fresh");
-    const paint = () => { restore.classList.toggle("sel", choice === "restore"); fresh.classList.toggle("sel", choice === "fresh"); };
-    restore.onclick = () => { choice = "restore"; paint(); };
-    fresh.onclick = () => { choice = "fresh"; paint(); };
-    paint();
-    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { restore: choice }); State.save(); oobeCustomize(); };
-    oobe(node, { illustration: ILLUS.restore, back: oobeFingerprintIntro });
+    restore.onclick = () => { choice = "restore"; restore.classList.add("sel"); fresh.classList.remove("sel"); };
+    fresh.onclick = () => { choice = "fresh"; fresh.classList.add("sel"); restore.classList.remove("sel"); };
+    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { restore: choice }); State.save(); if (choice === "restore") oobeRestoring(); else oobePrivacy(); };
+    oobe(node, { illus: IC.flower, back: oobeAlright });
+  }
+  function oobeRestoring() {
+    oobeChrome();
+    const b = bg.querySelector(".oobe2-back"); if (b) b.remove();
+    bg.querySelector(".oobe2-stage").classList.add("noillus");
+    bg.querySelector(".oobe2-illus").innerHTML = "";
+    bg.querySelector(".oobe2-content").innerHTML = `<div class="oobe2-moment"><div class="spinner-ring big"></div><p>Restoring your files…</p><span class="oobe2-moment-sub">This not take a long, just relax.</span></div>`;
+    setTimeout(oobePrivacy, 2600);
+  }
+
+  // ---- Choose privacy settings ----
+  function oobePrivacy() {
+    const opts = [
+      ["location", "Location", "Get location-based experiences like weather and directions. Let Windows and apps request your location."],
+      ["findmy", "Find my device", "Use your location to help you find your device if you lose it."],
+      ["diagnostic", "Diagnostic data", "Send required and optional diagnostic data about your device to Microsoft."],
+      ["inking", "Inking & typing", "Improve suggestions by sending typing and inking data to Microsoft."],
+      ["tailored", "Tailored experiences", "Let Microsoft use your diagnostic data for personalized tips and recommendations."],
+      ["adid", "Advertising ID", "Apps can use advertising ID to show more personalized ads."],
+    ];
+    const node = el(`<div>
+      <h1>Choose privacy settings for your device</h1>
+      <p class="sub">Microsoft puts you in control of your privacy. Choose your settings, then select Accept to save them. You can change these at any time.</p>
+      <div class="oobe2-privacy" id="pv">${opts.map((o) => `<div class="oobe2-priv"><div class="oobe2-priv-tx"><b>${o[1]}</b><span>${o[2]}</span></div><label class="oobe2-switch"><input type="checkbox" checked data-k="${o[0]}"><span></span></label></div>`).join("")}</div>
+      <div class="oobe2-actions"><button class="ibtn" id="accept">Accept</button></div>
+    </div>`);
+    node.querySelector("#accept").onclick = () => {
+      const pv = {}; node.querySelectorAll("#pv input").forEach((c) => pv[c.dataset.k] = c.checked);
+      S().setup = Object.assign({}, S().setup, { privacy: pv }); State.save(); oobeCustomize();
+    };
+    oobe(node, { illus: IC.types, back: oobeWelcomeBack });
   }
 
   // ---- Customize your experience ----
   function oobeCustomize() {
-    const svg = (inner, c) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="${c}">${inner}</svg>`;
     const cats = [
-      { id: "entertainment", name: "Entertainment", desc: "Watch videos, browse the web, connect on social media", icon: svg('<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M10 8 l6 3 -6 3 z" fill="#fff"/>', "#e50914") },
-      { id: "gaming", name: "Gaming", desc: "Play and discover games, keep up with new releases", icon: svg('<path d="M6 8 h12 a5 5 0 0 1 5 5 a3 3 0 0 1 -5.5 1.8 H8.5 A3 3 0 0 1 3 13 a5 5 0 0 1 3 -5 z"/><circle cx="16.5" cy="12" r="1.2" fill="#fff"/><rect x="6" y="11" width="4" height="1.6" fill="#fff"/><rect x="7.2" y="9.8" width="1.6" height="4" fill="#fff"/>', "#7c5cff") },
-      { id: "school", name: "School", desc: "Take notes, write essays and collaborate on projects", icon: svg('<path d="M12 4 L22 9 L12 14 L2 9 z"/><path d="M6 11 v4 c0 1.5 3 3 6 3 s6 -1.5 6 -3 v-4" fill="none" stroke="#0a7d3a" stroke-width="1.6"/>', "#0a7d3a") },
-      { id: "creativity", name: "Creativity", desc: "Draw, edit photos and make things", icon: svg('<path d="M12 3 a9 9 0 1 0 0 18 c1.5 0 2 -1 2 -2 a2 2 0 0 1 2 -2 h1 a4 4 0 0 0 4 -4 c0 -5 -4 -8 -9 -8 z"/><circle cx="8" cy="10" r="1.3" fill="#fff"/><circle cx="12" cy="7.5" r="1.3" fill="#fff"/><circle cx="16" cy="10" r="1.3" fill="#fff"/>', "#e3008c") },
-      { id: "business", name: "Business", desc: "Manage work, email and meetings", icon: svg('<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M9 8 V6 a2 2 0 0 1 2 -2 h2 a2 2 0 0 1 2 2 v2" fill="none" stroke="#0067c0" stroke-width="1.6"/>', "#0067c0") },
+      { id: "gaming", name: "Gaming", ic: catIc("#7c5cff", '<path d="M6 8 h12 a5 5 0 0 1 5 5 a3 3 0 0 1 -5.5 1.8 H8.5 A3 3 0 0 1 3 13 a5 5 0 0 1 3 -5 z"/><circle cx="16.5" cy="12" r="1.2" fill="#fff"/><rect x="6" y="11" width="4" height="1.6" fill="#fff"/><rect x="7.2" y="9.8" width="1.6" height="4" fill="#fff"/>') },
+      { id: "school", name: "School", ic: catIc("#0a7d3a", '<path d="M12 4 L22 9 L12 14 L2 9 z"/><path d="M6 11 v4 c0 1.5 3 3 6 3 s6 -1.5 6 -3 v-4" fill="none" stroke="#0a7d3a" stroke-width="1.6"/>') },
+      { id: "family", name: "Family", ic: catIc("#e3008c", '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20 c0 -4 3 -6 6 -6 s6 2 6 6 M12 20 c0 -4 3 -6 6 -6 s4 2 4 6"/>') },
+      { id: "entertainment", name: "Entertainment", ic: catIc("#e50914", '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M10 8 l6 3 -6 3 z" fill="#fff"/>') },
+      { id: "creativity", name: "Creativity", ic: catIc("#ff6b4a", '<path d="M12 3 a9 9 0 1 0 0 18 c1.5 0 2 -1 2 -2 a2 2 0 0 1 2 -2 h1 a4 4 0 0 0 4 -4 c0 -5 -4 -8 -9 -8 z"/><circle cx="8" cy="10" r="1.3" fill="#fff"/><circle cx="12" cy="7.5" r="1.3" fill="#fff"/><circle cx="16" cy="10" r="1.3" fill="#fff"/>') },
+      { id: "business", name: "Business", ic: catIc("#0067c0", '<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M9 8 V6 a2 2 0 0 1 2 -2 h2 a2 2 0 0 1 2 2 v2" fill="none" stroke="#0067c0" stroke-width="1.6"/>') },
     ];
-    const chosen = new Set((S().setup && S().setup.categories) || []);
+    const chosen = new Set((S().setup && S().setup.categories) || ["gaming"]);
     const node = el(`<div>
-      <h1>Customize your experience</h1>
-      <p class="sub">Select all the ways you plan to use your device to get customized suggestions for tips, tools, and services. You can change this in Settings.</p>
-      <div class="oobe-cats" id="cats"></div>
-      <div class="oobe-actions spread"><button class="btn-text" id="skip">Skip</button><button class="btn-primary" id="next">Next</button></div>
+      <h1>Let's customize your experience</h1>
+      <p class="sub">Select all the ways you plan to use your device to get customized suggestions for tips, tools, and services. You can always change this in Settings.</p>
+      <div class="oobe2-cats" id="cats"></div>
+      <div class="oobe2-actions"><button class="ibtn" id="next">Next</button></div>
     </div>`);
     const catsEl = node.querySelector("#cats");
     cats.forEach((c) => {
-      const row = el(`<button class="oobe-cat ${chosen.has(c.id) ? "sel" : ""}"><span class="oobe-cat-ic">${c.icon}</span><span class="oobe-cat-txt"><b>${c.name}</b><span>${c.desc}</span></span><span class="oobe-cat-check">&#10003;</span></button>`);
-      row.onclick = () => { if (chosen.has(c.id)) chosen.delete(c.id); else chosen.add(c.id); row.classList.toggle("sel", chosen.has(c.id)); };
+      const row = el(`<button class="oobe2-cat ${chosen.has(c.id) ? "sel" : ""}"><span class="oobe2-cat-ic">${c.ic}</span><b>${c.name}</b><span class="oobe2-cat-box">${chosen.has(c.id) ? "&#10003;" : ""}</span></button>`);
+      row.onclick = () => { const on = !chosen.has(c.id); if (on) chosen.add(c.id); else chosen.delete(c.id); row.classList.toggle("sel", on); row.querySelector(".oobe2-cat-box").innerHTML = on ? "&#10003;" : ""; };
       catsEl.appendChild(row);
     });
-    const go = () => { S().setup = Object.assign({}, S().setup, { categories: [...chosen] }); State.save(); oobeOneDrive(); };
-    node.querySelector("#skip").onclick = go;
-    node.querySelector("#next").onclick = go;
-    oobe(node, { illustration: ILLUS.cards, back: oobeWelcomeBack });
+    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { categories: [...chosen] }); State.save(); oobeOneDrive(); };
+    oobe(node, { illus: IC.customize, back: oobePrivacy });
   }
+  function catIc(c, inner) { return `<svg viewBox="0 0 24 24" width="18" height="18" fill="${c}">${inner}</svg>`; }
 
-  // ---- Save space with OneDrive ----
+  // ---- OneDrive ----
   function oobeOneDrive() {
     const node = el(`<div>
       <h1>Save space on your PC with OneDrive</h1>
-      <p class="sub">Store your files, documents, and photos in OneDrive so they're backed up and protected if something happens to your device. You can get to them from any device.</p>
-      <button class="oobe-choice" id="od-on"><b>&#9729; Automatically store my files in OneDrive</b><span>Back up Desktop, Documents and Pictures to OneDrive.</span></button>
-      <button class="oobe-choice" id="od-off"><b>&#128187; Only store files on this device</b><span>Your files stay on this PC and aren't backed up.</span></button>
-      <div class="oobe-actions spread"><span class="link-blue">Privacy Statement</span><button class="btn-primary" id="next">Next</button></div>
+      <p class="sub">Store your Desktop, Documents, and Pictures folders in OneDrive to keep them protected and accessible on all your devices. You can also share your files and photos with others by sending them a link.</p>
+      <button class="oobe2-choice sel" id="od-on"><b>&#9729; Automatically store my files in OneDrive</b><span>Save space on your PC protect your files, and access them anywhere.</span></button>
+      <button class="oobe2-choice" id="od-off"><b>&#128421; Only store files on this device</b><span>Your files will only be accessible on this device.</span></button>
+      <div class="oobe2-actions spread"><button class="oobe2-link">Privacy Statement</button><button class="ibtn" id="next">Next</button></div>
     </div>`);
     let choice = "on";
     const on = node.querySelector("#od-on"), off = node.querySelector("#od-off");
-    const paint = () => { on.classList.toggle("sel", choice === "on"); off.classList.toggle("sel", choice === "off"); };
-    on.onclick = () => { choice = "on"; paint(); };
-    off.onclick = () => { choice = "off"; paint(); };
-    paint();
-    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { oneDrive: choice === "on" }); State.save(); oobeThankYou(); };
-    oobe(node, { illustration: ILLUS.restore, back: oobeCustomize });
+    on.onclick = () => { choice = "on"; on.classList.add("sel"); off.classList.remove("sel"); };
+    off.onclick = () => { choice = "off"; off.classList.add("sel"); on.classList.remove("sel"); };
+    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { oneDrive: choice === "on" }); State.save(); oobeOffice(); };
+    oobe(node, { illus: IC.onedrive, back: oobeCustomize });
+  }
+
+  // ---- Office 365 offer ----
+  function oobeOffice() {
+    const node = el(`<div>
+      <h1>To premium Office apps for free. With Microsoft 365</h1>
+      <p class="sub">Get Word, Excel, PowerPoint, Outlook and 1 TB of OneDrive cloud storage. Try Microsoft 365 free for one month.</p>
+      <button class="oobe2-choice sel" id="try"><b>&#11088; Try Microsoft 365 free for 1 month</b><span>You won't be charged now. Cancel anytime before your trial ends.</span></button>
+      <button class="oobe2-choice" id="later"><b>&#128336; Maybe later</b><span>Continue without Microsoft 365. You can get it any time from the Store.</span></button>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="decline">Decline</button><button class="ibtn" id="next">Next</button></div>
+    </div>`);
+    let choice = "try";
+    const t = node.querySelector("#try"), l = node.querySelector("#later");
+    t.onclick = () => { choice = "try"; t.classList.add("sel"); l.classList.remove("sel"); };
+    l.onclick = () => { choice = "later"; l.classList.add("sel"); t.classList.remove("sel"); };
+    node.querySelector("#decline").onclick = () => oobeThankYou();
+    node.querySelector("#next").onclick = () => { S().setup = Object.assign({}, S().setup, { m365: choice === "try" }); State.save(); oobeThankYou(); };
+    oobe(node, { illus: IC.apps, back: oobeOneDrive });
   }
 
   // ---- Thank you! ----
   function oobeThankYou() {
-    const node = el(`<div class="center-col" style="text-align:center;gap:10px">
+    const node = el(`<div class="oobe2-thanks">
       <h1>Thank you!</h1>
-      <p class="sub">Thank you for your participation in the Windows 12.1 setup. Your Windows 12.1 is ready for use. Let's go!</p>
-      <div class="oobe-actions" style="justify-content:center;margin-top:14px"><button class="btn-primary" id="go">Let's go</button></div>
+      <p class="sub">Thank you for your participate in this Windows 12.1 setup. Your Windows 12.1 is ready for use now. Let's go!</p>
+      <div class="oobe2-actions"><button class="ibtn" id="go">Finish</button></div>
     </div>`);
     node.querySelector("#go").onclick = finishSetup;
-    oobe(node, { illustration: ILLUS.gear });
+    oobe(node, {});
   }
 
-  // Complete setup (clock defaults to automatic, like the reference), then show the
-  // "preparing your desktop" sequence and open the desktop.
   function finishSetup() {
     S().clock = Object.assign({ mode: "automatic", format24: false }, S().clock, { mode: "automatic" });
     S().setupCompleted = true;
@@ -783,52 +793,21 @@
     prepareDesktop();
   }
 
-  // "Now we prepare your desktop… / Getting ready… / Almost ready…" (matches the video)
+  // "This may take several minutes / Getting ready / Almost there" → desktop.
   function prepareDesktop() {
-    bg.className = "setup-bg oobe-bg";
-    bg.innerHTML = `<div class="oobe-brand"><span class="oobe-flag"><i></i><i></i><i></i><i></i></span>Windows <b>12.1</b> Pro</div>
-      <div class="prep-screen"><div class="spinner-ring big"></div><p class="prep-msg">Now we prepare your desktop…</p><p class="prep-sub">This might take a few minutes. Don't turn off your device.</p></div>`;
-    const msgs = ["Now we prepare your desktop…", "Getting ready…", "Installing your apps…", "Almost ready…"];
-    const msgEl = bg.querySelector(".prep-msg");
-    let i = 0;
-    const iv = setInterval(() => { i++; if (i < msgs.length) msgEl.textContent = msgs[i]; else { clearInterval(iv); finish(); } }, 1700);
-  }
-
-  // ---- Time ----
-  function oobeTime() {
-    const node = el(`<div>
-      <h1>Set the date and time</h1>
-      <p class="sub">Choose how the clock behaves on your device.</p>
-      <div class="field"><label>Mode</label>
-        <div class="toggle-row" id="modeRow"><button data-v="automatic" class="sel">Automatic</button><button data-v="custom">Custom</button></div></div>
-      <div class="field"><label>Clock format</label>
-        <div class="toggle-row" id="fmtRow"><button data-v="12" class="sel">12-hour</button><button data-v="24">24-hour</button></div></div>
-      <div class="field" id="customWrap" style="display:none"><label>Custom time</label><input type="time" id="customTime"></div>
-      <p class="muted" id="preview"></p>
-      <div class="oobe-actions"><button class="btn-primary" id="finish">Finish</button></div>
-    </div>`);
-    let mode = "automatic", fmt24 = false;
-    const modeRow = node.querySelector("#modeRow"), fmtRow = node.querySelector("#fmtRow");
-    const customWrap = node.querySelector("#customWrap"), preview = node.querySelector("#preview");
-    function updatePreview() { const d = new Date(); preview.textContent = "Preview: " + (fmt24 ? d.toTimeString().slice(0, 5) : d.toLocaleTimeString()); }
-    modeRow.querySelectorAll("button").forEach((b) => b.onclick = () => { modeRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); mode = b.dataset.v; customWrap.style.display = mode === "custom" ? "" : "none"; });
-    fmtRow.querySelectorAll("button").forEach((b) => b.onclick = () => { fmtRow.querySelectorAll("button").forEach((x) => x.classList.remove("sel")); b.classList.add("sel"); fmt24 = b.dataset.v === "24"; updatePreview(); });
-    updatePreview();
-    node.querySelector("#finish").onclick = () => {
-      S().clock.mode = mode; S().clock.format24 = fmt24;
-      if (mode === "custom") { const tv = node.querySelector("#customTime").value || "12:00"; const [h, m] = tv.split(":").map(Number); const base = new Date(); base.setHours(h, m, 0, 0); S().clock.customBaseMs = base.getTime(); S().clock.customSetAt = Date.now(); }
-      S().setupCompleted = true;
-      // A full reinstall also fixes a broken system: clear the flag and restore system files.
-      if (S().systemBroken) { try { const d = S(); if (window.FilesParts) { d.appData = d.appData || {}; d.appData.files = d.appData.files || { root: FilesParts.FILE_SEED() }; Object.assign(d.appData.files.root, FilesParts.WIN_FS()); } } catch (_) {} S().systemBroken = false; }
-      State.save();
-      if (window.Achievements) window.Achievements.unlock("welcome");
-      finish();
-    };
-    oobe(node, { illustration: ILLUS.gear, back: oobeCustomize });
+    const seq = [
+      () => waveScreen("This may take several minutes", "In order for you to use your PC", "Don't turn off or unplug your device."),
+      () => waveScreen("Getting ready", "In order for you to use your PC", "Don't turn off or unplug your device."),
+      () => waveScreen("Almost there", "In order for you to use your PC", "Don't turn off or unplug your device."),
+      () => flagScreen(FLAG_GRAD(56), null),
+    ];
+    let k = 0;
+    const run = () => { if (k < seq.length) { seq[k](); k++; setTimeout(run, 1600); } else finish(); };
+    run();
   }
 
   // ============================================================
-  //  shared helpers (reused from prior version)
+  //  shared helpers
   // ============================================================
   function msLogo() {
     return `<svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="13" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="13" width="10" height="10" fill="#00a4ef"/><rect x="13" y="13" width="10" height="10" fill="#ffb900"/></svg>`;
@@ -837,7 +816,7 @@
   function showKeySheet() {
     const overlay = el(`<div class="modal-mask" style="z-index:9999;overflow:auto;padding:40px">
       <div style="background:#fff;color:#111;max-width:700px;margin:0 auto;padding:30px;border-radius:12px">
-        <h2 style="margin-top:0">Windows 12 — Product Key Sheet (100 keys)</h2>
+        <h2 style="margin-top:0">Windows 12 — Product Key Sheet</h2>
         <p style="color:#666">Tap any key to copy it and fill the box. Each key works once.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-family:monospace;font-size:13px"></div>
         <div style="text-align:right;margin-top:16px"><button class="pill-btn" id="closeSheet">Close</button></div>
@@ -848,7 +827,6 @@
       const row = el(`<div class="key-sheet-row ${used ? "used" : ""}">${(i + 1).toString().padStart(3, "0")}. ${k}</div>`);
       if (!used) row.onclick = () => {
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(k).catch(() => {});
-        // Fill the activate-key / product-key input if one is on screen.
         const inp = document.querySelector(".activate-key, .key-input");
         if (inp) { inp.value = k; inp.dispatchEvent(new Event("input", { bubbles: true })); }
         row.textContent = "Copied ✓  " + k;
@@ -886,28 +864,6 @@
     screen().appendChild(overlay);
   }
 
-  function enableDrag(img, container) {
-    let dragging = false, sx, sy, ox = 0, oy = 0;
-    img.style.position = "absolute"; img.style.left = "0px"; img.style.top = "0px";
-    img.style.touchAction = "none";
-    // Pointer events + capture: repositioning the photo works by finger on touch
-    // devices, and capture keeps move/up on the image so no window listeners leak.
-    img.addEventListener("pointerdown", (e) => { dragging = true; sx = e.clientX; sy = e.clientY; img.style.cursor = "grabbing"; try { img.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
-    img.addEventListener("pointermove", (e) => { if (!dragging) return; ox += e.clientX - sx; oy += e.clientY - sy; sx = e.clientX; sy = e.clientY; img.style.left = ox + "px"; img.style.top = oy + "px"; });
-    img.addEventListener("pointerup", (e) => { dragging = false; img.style.cursor = "grab"; try { img.releasePointerCapture(e.pointerId); } catch (_) {} });
-  }
-
-  function captureCrop(img) {
-    try {
-      const size = 180;
-      const canvas = document.createElement("canvas"); canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext("2d");
-      const left = parseFloat(img.style.left) || 0, top = parseFloat(img.style.top) || 0;
-      ctx.drawImage(img, left, top, img.width, img.height);
-      return canvas.toDataURL("image/png");
-    } catch (e) { return img.src; }
-  }
-
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
   function finish() {
@@ -921,7 +877,7 @@
     document.documentElement.style.setProperty("--scale", S().textScale / 100);
     mount();
     if (!S().installerDone) installerSplash();
-    else oobeRegion();
+    else oobeJustAMoment(oobeNameDevice);
   }
 
   window.Setup = { run };

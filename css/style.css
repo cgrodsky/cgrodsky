@@ -5284,3 +5284,212 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
 .iprog-bar { width: 230px; height: 4px; background: rgba(255,255,255,.22); border-radius: 4px; overflow: hidden; }
 .iprog-fill { height: 100%; width: 0; background: #fff; border-radius: 4px; transition: width .28s linear; }
 .iprog-status { font-size: .84rem; color: #cfd3e8; letter-spacing: .2px; }
+
+/* ============================================================
+   Reference-accurate setup (Windows 12.1) — installer dialog,
+   boot/prep flag screens, and OOBE panel.
+   ============================================================ */
+.il-svg { width: 100%; height: 100%; display: block; }
+
+/* ---- "Windows Setup" dialog cards ---- */
+.wsetup-screen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.wsetup-card { width: min(760px, 92vw); max-height: 80vh; background: rgba(12,10,24,.80); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; box-shadow: 0 40px 100px rgba(0,0,0,.55); color: #eef0fb; overflow: hidden; animation: isplashIn .3s ease; display: flex; flex-direction: column; }
+.wsetup-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.wsetup-id { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; color: #c9cee6; }
+.wsetup-back { background: none; border: 0; color: #cfd4ea; font-size: 1.1rem; cursor: pointer; padding: 0 6px 0 0; line-height: 1; }
+.wsetup-x { background: none; border: 0; color: #c9cee6; font-size: 1.1rem; cursor: pointer; width: 28px; height: 28px; border-radius: 6px; }
+.wsetup-x:hover { background: rgba(255,255,255,.1); }
+.wsetup-body { display: grid; grid-template-columns: 34% 1fr; gap: 18px; padding: 6px 30px 26px; overflow: auto; }
+.wsetup-illus { align-self: center; min-height: 150px; display: flex; align-items: center; justify-content: center; padding: 10px; }
+.wsetup-main { min-width: 0; }
+.wsetup-title { font-size: 1.5rem; font-weight: 600; margin: 4px 0 12px; color: #fff; }
+.wsetup-p { font-size: .76rem; line-height: 1.5; color: #c4cadf; margin: 0 0 10px; }
+.wsetup-sub { font-size: .8rem; color: #aab0cc; margin: 0 0 10px; }
+.wsetup-mono { font-family: "Consolas", monospace; letter-spacing: 1px; color: #e7eaf7; }
+.wsetup-field { margin: 8px 0 14px; }
+.wsetup-field input { width: 100%; background: rgba(0,0,0,.35); border: 0; border-bottom: 2px solid #ff4fa3; color: #fff; padding: 9px 4px; font-size: .9rem; outline: none; letter-spacing: 1px; }
+.wsetup-err { color: #ff8aa8; font-size: .75rem; min-height: 1em; margin-top: 4px; }
+.wsetup-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.wsetup-foot.end { justify-content: flex-end; }
+.wsetup-foot-r { display: inline-flex; align-items: center; gap: 16px; }
+.wsetup-link { background: none; border: 0; cursor: pointer; font-size: .78rem; color: #cdd3ea; }
+.wsetup-foot .wsetup-link:first-child { color: #7fa4ff; }
+.wsetup-btn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #fff; padding: 8px 24px; border-radius: 8px; font-size: .85rem; cursor: pointer; }
+.wsetup-btn:hover { background: rgba(255,255,255,.18); }
+.ibtn.disabled { opacity: .45; cursor: default; box-shadow: none; }
+/* editions */
+.wsetup-editions { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; overflow: hidden; background: rgba(0,0,0,.25); }
+.wsetup-ed { padding: 9px 14px; font-size: .84rem; color: #d7dcf0; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.05); }
+.wsetup-ed:last-child { border-bottom: 0; }
+.wsetup-ed.sel { background: linear-gradient(90deg, rgba(255,79,163,.32), rgba(59,130,232,.32)); color: #fff; box-shadow: inset 0 -2px 0 #ff4fa3; }
+.wsetup-ed:hover:not(.sel) { background: rgba(255,255,255,.05); }
+/* license */
+.wsetup-license { background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 12px 14px; max-height: 190px; overflow: auto; font-size: .74rem; line-height: 1.55; color: #cfd4ea; }
+.wsetup-license p { margin: 0 0 8px; }
+.wsetup-license-note { color: #9aa0bd; font-size: .68rem; }
+.wsetup-accept { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #d7dcf0; margin: 12px 0 0; cursor: pointer; }
+.wsetup-accept input { width: auto; accent-color: #8b5cff; }
+/* installation types */
+.wsetup-types { display: flex; flex-direction: column; gap: 10px; }
+.wsetup-type { display: flex; gap: 12px; text-align: left; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; color: inherit; }
+.wsetup-type.sel { border-color: #ff4fa3; background: linear-gradient(90deg, rgba(255,79,163,.18), rgba(59,130,232,.14)); box-shadow: 0 0 0 1px rgba(255,79,163,.5); }
+.wsetup-type-ic { flex: 0 0 auto; }
+.wsetup-type-tx b { display: block; font-size: .82rem; color: #fff; margin-bottom: 3px; }
+.wsetup-type-tx span { font-size: .72rem; line-height: 1.45; color: #bcc2db; }
+.wsetup-note { font-size: .74rem; color: #aab0cc; margin: 10px 0 0; }
+/* partition */
+.wsetup-parts { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; overflow: hidden; background: rgba(0,0,0,.25); }
+.wsetup-parts-head, .wsetup-part { display: grid; grid-template-columns: 2fr 1fr 1fr .8fr; gap: 6px; padding: 8px 12px; font-size: .78rem; }
+.wsetup-parts-head { color: #9aa0bd; border-bottom: 1px solid rgba(255,255,255,.08); }
+.wsetup-part.sel { background: linear-gradient(90deg, rgba(255,79,163,.3), rgba(59,130,232,.3)); color: #fff; box-shadow: inset 0 -2px 0 #ff4fa3; }
+.wsetup-parttools { display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0 0; font-size: .76rem; color: #cdd3ea; }
+.wsetup-pt { cursor: default; }
+.wsetup-pt-r { margin-left: auto; }
+/* installing checklist */
+.wsetup-check { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.wsetup-check li { display: flex; align-items: center; gap: 10px; font-size: .86rem; color: #aab0cc; }
+.wsetup-check li .wsetup-chk-mark { width: 16px; height: 16px; flex: 0 0 16px; display: inline-block; }
+.wsetup-check li.done { color: #eef0fb; }
+.wsetup-check li.done .wsetup-chk-mark { background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6 9 17l-5-5' fill='none' stroke='%231fc06a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.wsetup-check li.cur { color: #fff; }
+.wsetup-check li.cur .wsetup-chk-mark { background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='%234aa8ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.wsetup-spin { position: absolute; right: 26px; bottom: 60px; }
+.spinner-ring.sm { width: 16px; height: 16px; border-width: 2px; }
+/* bottom step indicator */
+.wsetup-steps { position: absolute; left: 0; right: 0; bottom: 0; }
+.wsetup-track { height: 3px; background: rgba(255,255,255,.14); }
+.wsetup-fill { height: 100%; background: linear-gradient(90deg, #ff4fa3, #8b5cff 55%, #3b82e8); transition: width .5s ease; }
+.wsetup-labels { display: flex; gap: 46px; padding: 12px 26px 16px; }
+.wsetup-step { display: inline-flex; align-items: center; gap: 10px; font-size: .78rem; color: rgba(255,255,255,.5); }
+.wsetup-step b { font-size: 1.7rem; font-weight: 300; color: rgba(255,255,255,.4); }
+.wsetup-step.on { color: #fff; }
+.wsetup-step.on b { color: #fff; }
+
+/* ---- Boot / prep flag screens ---- */
+.boot-bg { background: #000 !important; display: flex; align-items: center; justify-content: center; }
+.boot-bg::before, .boot-bg::after { display: none !important; }
+.boot-wave { display: flex; align-items: center; justify-content: center; }
+.boot-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; color: #fff; padding: 24px; }
+.boot-top { position: absolute; top: 34%; font-size: 1.4rem; font-weight: 300; letter-spacing: .3px; color: #cfd4ea; }
+.boot-flag { line-height: 0; }
+.boot-spin { width: 34px; height: 34px; border-width: 3px; }
+.boot-bar { width: 150px; height: 5px; background: rgba(255,255,255,.25); border-radius: 4px; overflow: hidden; }
+.boot-bar-fill { height: 100%; width: 40%; background: #fff; border-radius: 4px; animation: bootbar 1.4s ease-in-out infinite; }
+@keyframes bootbar { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+.boot-msg { font-size: 1.15rem; font-weight: 300; }
+.boot-sub { font-size: .85rem; color: #aab0cc; margin-top: -8px; }
+.boot-note { position: absolute; bottom: 7%; font-size: .78rem; color: #aab0cc; }
+
+/* ---- OOBE panel (Windows 12.1 Pro) ---- */
+.oobe2-bg { display: block !important; }
+.oobe2-brand { position: absolute; top: 24px; left: 0; right: 0; text-align: center; color: #fff; font-size: 1.1rem; font-weight: 300; display: flex; align-items: center; justify-content: center; gap: 9px; }
+.oobe2-brand b { font-weight: 600; }
+.oobe2-panel { position: absolute; left: 50%; top: 54%; transform: translate(-50%,-50%); width: min(760px, 92vw); min-height: 440px; max-height: 80vh; background: rgba(10,8,22,.52); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; box-shadow: 0 40px 110px rgba(0,0,0,.5); color: #eef0fb; display: flex; flex-direction: column; overflow: hidden; }
+.oobe2-top { display: flex; align-items: center; gap: 9px; padding: 16px 20px 6px; font-size: .82rem; color: #c9cee6; }
+.oobe2-id { display: inline-flex; align-items: center; gap: 8px; }
+.oobe2-back { background: none; border: 0; color: #cfd4ea; font-size: 1.05rem; cursor: pointer; padding: 0; line-height: 1; }
+.oobe2-stage { flex: 1; display: grid; grid-template-columns: 38% 1fr; gap: 16px; padding: 10px 34px 30px; overflow: auto; align-items: center; }
+.oobe2-stage.noillus { grid-template-columns: 1fr; place-items: center; }
+.oobe2-illus { min-height: 150px; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.oobe2-stage.noillus .oobe2-illus { display: none; }
+.oobe2-content { min-width: 0; align-self: center; }
+.oobe2-illus.oobe2-in { animation: oobeIn .4s ease; }
+.oobe2-content.oobe2-in { animation: oobeIn .4s ease .04s both; }
+@keyframes oobeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.oobe2-content h1 { font-size: 1.55rem; font-weight: 600; margin: 0 0 10px; color: #fff; }
+.oobe2-content .sub { font-size: .8rem; line-height: 1.5; color: #c0c6de; margin: 0 0 14px; }
+.oobe2-content .sub.small { font-size: .72rem; color: #9aa0bd; }
+.oobe2-content .field { margin: 10px 0; }
+.oobe2-content .field label { font-size: .78rem; color: #aeb8d2; }
+.oobe2-content .field input[type=text], .oobe2-content .field input[type=email], .oobe2-content .field input[type=password] { width: 100%; background: rgba(0,0,0,.35); border: 0; border-bottom: 2px solid #ff4fa3; color: #fff; padding: 9px 4px; font-size: .9rem; outline: none; }
+.oobe2-content .field.checkrow { display: flex; align-items: center; gap: 8px; }
+.oobe2-content .field.checkrow input { width: auto; accent-color: #8b5cff; }
+.oobe2-content .field.checkrow label { margin: 0; }
+.oobe2-content .error-msg { color: #ff8aa8; font-size: .76rem; }
+.oobe2-sub-strong { font-weight: 600; font-size: .9rem; color: #fff; margin: 0 0 6px; }
+.oobe2-actions { display: flex; justify-content: flex-end; gap: 14px; margin-top: 16px; }
+.oobe2-actions.spread { justify-content: space-between; align-items: center; }
+.oobe2-link { background: none; border: 0; cursor: pointer; font-size: .82rem; color: #8ea6ff; }
+.oobe2-corner { position: absolute; right: 24px; bottom: 20px; display: flex; gap: 14px; }
+.oobe2-corner button { background: none; border: 0; cursor: pointer; opacity: .8; }
+.oobe2-corner button:hover { opacity: 1; }
+.oobe2-moment { display: flex; flex-direction: column; align-items: center; gap: 16px; color: #e7eaf7; padding: 40px; }
+.oobe2-moment p { margin: 0; font-size: 1rem; }
+.oobe2-moment-sub { font-size: .78rem; color: #9aa0bd; }
+.spinner-ring.big { width: 46px; height: 46px; border-width: 4px; border-top-color: #cfd4ea; }
+/* region / keyboard lists */
+.oobe2-search { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.35); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; }
+.oobe2-search-ic { opacity: .6; }
+.oobe2-search input { flex: 1; background: none; border: 0; color: #fff; outline: none; font-size: .84rem; }
+.oobe2-rlist { max-height: 190px; overflow: auto; background: rgba(0,0,0,.28); border-radius: 8px; border: 1px solid rgba(255,255,255,.06); }
+.oobe2-ritem { padding: 9px 14px; font-size: .84rem; color: #d7dcf0; cursor: pointer; }
+.oobe2-ritem.sel { background: linear-gradient(90deg, #ff4fa3, #8b5cff 60%, #3b82e8); color: #fff; }
+.oobe2-ritem:hover:not(.sel) { background: rgba(255,255,255,.05); }
+/* setup-type / choice options */
+.oobe2-opts, .oobe2-choice + .oobe2-choice { margin-top: 10px; }
+.oobe2-opts { display: flex; flex-direction: column; gap: 10px; }
+.oobe2-opt, .oobe2-choice { display: block; width: 100%; text-align: left; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 12px 14px; cursor: pointer; color: inherit; }
+.oobe2-opt { display: flex; gap: 12px; }
+.oobe2-opt.sel, .oobe2-choice.sel { background: linear-gradient(90deg, #ff4fa3, #8b5cff 55%, #3b82e8); border-color: transparent; }
+.oobe2-opt-ic { flex: 0 0 auto; color: #cdd6f2; }
+.oobe2-opt.sel .oobe2-opt-ic { color: #fff; }
+.oobe2-opt-tx b, .oobe2-choice b { display: block; font-size: .84rem; color: #fff; margin-bottom: 3px; }
+.oobe2-opt-tx span, .oobe2-choice span { font-size: .72rem; line-height: 1.45; color: #c2c8e0; }
+.oobe2-opt.sel .oobe2-opt-tx span, .oobe2-choice.sel span { color: #eef0ff; }
+/* personalize */
+.oobe2-prow { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 8px; }
+.oobe2-plabel { font-size: .9rem; color: #e7eaf7; }
+.oobe2-pmode { display: inline-flex; gap: 10px; font-size: .72rem; color: #9aa0bd; }
+.oobe2-pmode .on { color: #fff; }
+.oobe2-themes { display: flex; gap: 12px; }
+.oobe2-theme { background: none; border: 2px solid transparent; border-radius: 10px; padding: 2px; cursor: pointer; }
+.oobe2-theme.sel { border-color: #ff4fa3; }
+.oobe2-theme-prev { display: flex; align-items: center; justify-content: center; width: 86px; height: 54px; border-radius: 7px; font-size: .9rem; }
+.oobe2-theme-prev.dark { background: linear-gradient(135deg,#1b1152,#2f2a5e); color: #fff; }
+.oobe2-theme-prev.light { background: linear-gradient(135deg,#e7ecf7,#cdd8ec); color: #222; }
+.oobe2-accents { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 6px; }
+.oobe2-acc { width: 26px; height: 26px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; }
+.oobe2-acc.sel { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.3); }
+.oobe2-papers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.oobe2-paper { height: 52px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; color: #cfd4ea; font-size: .66rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.oobe2-paper.sel { border-color: #ff4fa3; }
+.oobe2-paper-more { background: rgba(255,255,255,.06); }
+/* privacy */
+.oobe2-privacy { max-height: 220px; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px; }
+.oobe2-priv { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.oobe2-priv-tx b { display: block; font-size: .82rem; color: #fff; }
+.oobe2-priv-tx span { font-size: .7rem; color: #aab0cc; line-height: 1.4; }
+.oobe2-switch { position: relative; width: 42px; height: 22px; flex: 0 0 auto; }
+.oobe2-switch input { opacity: 0; width: 0; height: 0; }
+.oobe2-switch span { position: absolute; inset: 0; background: rgba(255,255,255,.2); border-radius: 22px; transition: .2s; }
+.oobe2-switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.oobe2-switch input:checked + span { background: linear-gradient(90deg,#8b5cff,#3b82e8); }
+.oobe2-switch input:checked + span::before { transform: translateX(20px); }
+/* customize tiles */
+.oobe2-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oobe2-cat { display: flex; align-items: center; gap: 9px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 9px; padding: 10px 12px; cursor: pointer; color: #e7eaf7; }
+.oobe2-cat.sel { border-color: #8b5cff; background: rgba(139,92,255,.14); }
+.oobe2-cat b { flex: 1; font-size: .82rem; font-weight: 500; }
+.oobe2-cat-box { width: 18px; height: 18px; border: 1.5px solid rgba(255,255,255,.35); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .7rem; color: #fff; }
+.oobe2-cat.sel .oobe2-cat-box { background: #8b5cff; border-color: #8b5cff; }
+/* fingerprint */
+.oobe2-fp-sensor { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+.oobe2-fp-pad { width: 120px; height: 70px; border-radius: 8px; background: linear-gradient(135deg,#d7dde8,#aeb8cc); }
+.oobe2-fp-hand { font-size: 1.6rem; }
+.oobe2-fpscan { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 24px; }
+.oobe2-fpring { width: 120px; height: 120px; border-radius: 50%; padding: 8px; background: conic-gradient(#28d0ff 0deg, rgba(255,255,255,.12) 0deg); display: flex; align-items: center; justify-content: center; }
+.oobe2-fpring .oobe2-fpring-fill { display: none; }
+.oobe2-fpring { position: relative; }
+.oobe2-fpglyph { width: 84px; height: 84px; border-radius: 50%; background: rgba(8,8,18,.6); display: flex; align-items: center; justify-content: center; }
+.oobe2-fpglyph .il-fp { width: 56px; height: 56px; }
+.oobe2-fp-status { font-size: .95rem; color: #e7eaf7; }
+/* MS account badge */
+.oobe2-content .ms-badge { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; color: #fff; margin: 4px 0 10px; }
+.oobe2-content .ms-links { display: flex; gap: 16px; font-size: .78rem; margin: 8px 0; }
+.oobe2-content .ms-return { font-size: .85rem; color: #cdd3ea; margin-bottom: 10px; }
+
+@media (max-width: 680px) {
+  .wsetup-body, .oobe2-stage { grid-template-columns: 1fr; }
+  .wsetup-illus, .oobe2-illus { min-height: 110px; max-height: 130px; }
+  .oobe2-cats, .oobe2-papers { grid-template-columns: 1fr 1fr; }
+}
