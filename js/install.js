@@ -14,12 +14,13 @@
     prompt(opts, onAllow, onDeny) {
       opts = opts || {};
       const mask = el(`<div class="uac-mask"></div>`);
-      const dlg = el(`<div class="uac">
+      const dlg = el(`<div class="uac ${opts.danger ? "uac-danger" : ""}">
         <div class="uac-head">User Account Control</div>
         <div class="uac-body">
           <p class="uac-q">Do you want to allow this app to make changes to your device?</p>
           <div class="uac-app"><span class="uac-ic">${mini(opts.iconKey || "settings", opts.name || "App")}</span>
             <div class="uac-meta"><b>${opts.name || "App"}</b><span>Verified publisher: ${opts.publisher || "Microsoft Windows"}</span></div></div>
+          ${opts.detail ? `<p class="uac-detail">${opts.detail}</p>` : ""}
           <button class="uac-more">Show more details</button>
         </div>
         <div class="uac-btns"><button class="uac-yes">Yes</button><button class="uac-no">No</button></div>

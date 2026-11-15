@@ -892,7 +892,7 @@ wtmp begins ${new Date(Date.now() - 6048e5).toDateString()}</pre>`);
   function WIN_FS() {
     const folder = (children) => ({ type: "folder", children: children || {} });
     const fill = (names) => { const o = {}; names.forEach((n) => (o[n] = sysFile())); return o; };
-    const sys32 = fill(["kernel32.dll", "user32.dll", "gdi32.dll", "ntdll.dll", "advapi32.dll", "shell32.dll", "ole32.dll", "ws2_32.dll", "d3d11.dll", "cmd.exe", "conhost.exe", "notepad.exe", "calc.exe", "taskmgr.exe", "mmc.exe", "regedit.exe", "rundll32.exe", "svchost.exe", "winlogon.exe", "csrss.exe", "dwm.exe", "hal.dll", "ntoskrnl.exe", "drivers.dll"]);
+    const sys32 = fill(["kernel32.dll", "user32.dll", "gdi32.dll", "ntdll.dll", "advapi32.dll", "shell32.dll", "ole32.dll", "oleaut32.dll", "comctl32.dll", "comdlg32.dll", "ws2_32.dll", "wininet.dll", "crypt32.dll", "bcrypt.dll", "msvcrt.dll", "ucrtbase.dll", "setupapi.dll", "shlwapi.dll", "gdiplus.dll", "d3d9.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll", "opengl32.dll", "dsound.dll", "winmm.dll", "cmd.exe", "conhost.exe", "notepad.exe", "calc.exe", "taskmgr.exe", "mmc.exe", "regedit.exe", "rundll32.exe", "svchost.exe", "services.exe", "lsass.exe", "winlogon.exe", "csrss.exe", "smss.exe", "explorer.exe", "dwm.exe", "spoolsv.exe", "ctfmon.exe", "dllhost.exe", "wscript.exe", "cscript.exe", "powershell.exe", "ipconfig.exe", "ping.exe", "tasklist.exe", "sfc.exe", "chkdsk.exe", "diskpart.exe", "hal.dll", "ntoskrnl.exe", "win32k.sys", "drivers.dll"]);
     sys32["drivers"] = folder(fill(["disk.sys", "ntfs.sys", "tcpip.sys", "usbhub.sys", "volsnap.sys", "acpi.sys"]));
     sys32["config"] = folder(); sys32["Tasks"] = folder(); sys32["en-US"] = folder(); sys32["spool"] = folder();
     const windows = folder({

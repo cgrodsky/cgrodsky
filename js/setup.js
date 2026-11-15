@@ -89,9 +89,38 @@
       </div>`, 1);
     body.querySelector("#repair").onclick = () => {
       const note = body.querySelector("#repair");
-      note.textContent = "Nothing to repair — fresh install"; note.disabled = true;
+      if (!S().systemBroken) { note.textContent = "Nothing to repair — fresh install"; note.disabled = true; return; }
+      repairWindows();
     };
     body.querySelector("#next").onclick = installerActivate;
+  }
+
+  // Repair Windows: restore the deleted system files and return to the desktop,
+  // keeping the user's apps, files and settings (unlike a full reinstall).
+  function repairWindows() {
+    const body = installerFrame(`
+      <h1>Repairing Windows</h1>
+      <p>Windows found a problem with your system files and is putting them back. Your apps and files are safe.</p>
+      <div style="width:min(460px,100%);height:8px;margin:14px 0;background:rgba(255,255,255,.16);border-radius:6px;overflow:hidden"><div id="repbar" style="width:0%;height:100%;background:#fff;transition:width .45s ease"></div></div>
+      <p class="sub" id="repmsg">Scanning system files…</p>`, 1);
+    const bar = body.querySelector("#repbar"), msg = body.querySelector("#repmsg");
+    const steps = ["Scanning system files…", "Restoring C:\\Windows\\System32…", "Re-registering components…", "Verifying boot files…", "Finishing repair…"];
+    let i = 0;
+    const iv = setInterval(() => {
+      i++; bar.style.width = Math.min(100, i / steps.length * 100) + "%";
+      if (i <= steps.length) msg.textContent = steps[i - 1] || msg.textContent;
+      if (i >= steps.length) {
+        clearInterval(iv);
+        try {
+          const d = S();
+          if (window.FilesParts) { d.appData = d.appData || {}; d.appData.files = d.appData.files || { root: FilesParts.FILE_SEED() }; Object.assign(d.appData.files.root, FilesParts.WIN_FS()); }
+          d.systemBroken = false; d.setupCompleted = true; d.installerDone = true;
+          State.save();
+        } catch (_) {}
+        msg.textContent = "Repair complete. Starting Windows…";
+        setTimeout(() => { if (typeof onComplete === "function") onComplete(); }, 900);
+      }
+    }, 650);
   }
 
   function installerActivate() {
@@ -637,7 +666,10 @@
     node.querySelector("#finish").onclick = () => {
       S().clock.mode = mode; S().clock.format24 = fmt24;
       if (mode === "custom") { const tv = node.querySelector("#customTime").value || "12:00"; const [h, m] = tv.split(":").map(Number); const base = new Date(); base.setHours(h, m, 0, 0); S().clock.customBaseMs = base.getTime(); S().clock.customSetAt = Date.now(); }
-      S().setupCompleted = true; State.save();
+      S().setupCompleted = true;
+      // A full reinstall also fixes a broken system: clear the flag and restore system files.
+      if (S().systemBroken) { try { const d = S(); if (window.FilesParts) { d.appData = d.appData || {}; d.appData.files = d.appData.files || { root: FilesParts.FILE_SEED() }; Object.assign(d.appData.files.root, FilesParts.WIN_FS()); } } catch (_) {} S().systemBroken = false; }
+      State.save();
       if (window.Achievements) window.Achievements.unlock("welcome");
       finish();
     };

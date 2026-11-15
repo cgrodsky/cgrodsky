@@ -5224,3 +5224,19 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
   .sm12-list{max-height:220px;flex:none}.sm12-toprow{flex-direction:column}.sm12-clockbox{width:auto;align-items:flex-start}.sm12-time{font-size:2.4rem}
   .sm12-files{grid-template-columns:1fr}.sm12-grid{max-height:300px}
 }
+
+/* ===== Blue Screen of Death (delete System32) ===== */
+.bsod{position:fixed;inset:0;z-index:2147483646;background:#0078d7;color:#fff;overflow:auto;font-family:"Segoe UI",system-ui,sans-serif;font-weight:300;cursor:default;animation:bsodIn .12s ease}
+@keyframes bsodIn{from{opacity:0}}
+.bsod-inner{max-width:900px;margin:0 auto;padding:9vh 7vw}
+.bsod-face{font-size:10vh;line-height:1;font-weight:300;margin-bottom:3vh}
+.bsod-msg{font-size:2.6vh;line-height:1.35;max-width:46ch;margin:0 0 3.5vh}
+.bsod-pct{font-size:2.6vh;margin:0 0 6vh}
+.bsod-foot{display:flex;gap:18px;align-items:flex-start}
+.bsod-qr{width:108px;height:108px;flex:none;background:#fff;padding:5px;box-sizing:border-box;cursor:pointer}
+.bsod-foot-tx p{margin:0 0 10px;font-size:1.55vh;line-height:1.5;opacity:.95;max-width:62ch;word-break:break-word}
+.bsod-foot-tx .bsod-small{font-size:1.55vh;margin:0 0 4px;opacity:.9}
+@media (max-width:640px){.bsod-face{font-size:14vw}.bsod-msg,.bsod-pct{font-size:4.4vw}.bsod-foot-tx p{font-size:2.9vw}}
+/* UAC warning detail */
+.uac-detail{margin:10px 16px 0;padding:10px 12px;border-radius:6px;background:rgba(224,78,60,.14);color:#ffd7d2;font-size:.82rem;line-height:1.4}
+.uac-danger .uac-head{background:#7a1f1a}

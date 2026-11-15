@@ -285,8 +285,20 @@
 
     // ---- actions ----
     function parentOf(e) { return kidsAt(e.path); }
+    // Deleting Windows system files needs admin and breaks Windows (blue screen).
+    const isSystemCritical = (e) => { const full = e.path.concat(e.name).join("/"); return full === "Local Disk (C:)" || full === "Local Disk (C:)/Windows" || full === "Local Disk (C:)/Windows/System32"; };
     function doDelete(list) {
       if (!list.length) return;
+      const crit = list.find(isSystemCritical);
+      if (crit && window.UAC) {
+        window.UAC.prompt({ name: "Delete " + crit.name, publisher: "Microsoft Windows", iconKey: "fileexplorer", danger: true,
+          detail: "Deleting <b>" + esc(crit.name) + "</b> removes files Windows needs to run. Your PC may stop working. Do this only if you know what you're doing." }, () => {
+          list.forEach((e) => { const p = parentOf(e); if (p) delete p[e.name]; });
+          sel.clear(); State.save(); render();
+          if (window.BSOD) setTimeout(() => BSOD.show(), 350);
+        });
+        return;
+      }
       if (!confirm(list.length === 1 ? `Delete "${list[0].name}"?` : `Delete these ${list.length} items?`)) return;
       list.forEach((e) => { const p = parentOf(e); if (p) delete p[e.name]; });
       sel.clear(); State.save(); render();
