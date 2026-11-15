@@ -815,8 +815,26 @@
     const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
     const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
     try { localStorage.setItem("spw_pkce", verifier); } catch (_) {}
-    location.href = "https://accounts.spotify.com/authorize?" + new URLSearchParams({ response_type: "code", client_id: id, scope: "user-read-recently-played", redirect_uri: SP_REDIRECT(), code_challenge_method: "S256", code_challenge: challenge, state: "spw" });
+    const url = "https://accounts.spotify.com/authorize?" + new URLSearchParams({ response_type: "code", client_id: id, scope: "user-read-recently-played", redirect_uri: SP_REDIRECT(), code_challenge_method: "S256", code_challenge: challenge, state: "spw" });
+    // Open sign-in in a popup so the desktop stays put. If the browser blocks it
+    // (iPad Safari sometimes does), fall back to a full-page redirect.
+    let win = null;
+    try { win = window.open(url, "spotify_login", "width=480,height=720,noopener=no"); } catch (_) { win = null; }
+    if (!win) { location.href = url; return; }
+    try { win.focus(); } catch (_) {}
   }
+  // The popup lands back on this app (the redirect URI). If this window IS that popup,
+  // finish the token exchange, tell the opener, and close — without booting a 2nd desktop.
+  function spIsPopupCallback() { try { return !!window.opener && window.opener !== window && /[?&]state=spw\b/.test(location.search) && /[?&](code|error)=/.test(location.search); } catch (_) { return false; } }
+  async function spFinishPopup() {
+    let ok = false, err = "";
+    try { await spFinishLogin(); ok = true; } catch (e) { err = (e && e.message) || "Sign-in failed"; }
+    try { if (window.opener && !window.opener.closed) window.opener.postMessage({ sp: "spw-done", ok, err }, location.origin); } catch (_) {}
+    try { window.close(); } catch (_) {}
+    try { document.documentElement.innerHTML = `<body style="margin:0;font:16px system-ui;display:grid;place-items:center;height:100vh;background:#121216;color:#fff"><div style="text-align:center">${ok ? "✓ Connected to Spotify." : "Couldn't connect: " + err.replace(/</g, "&lt;")}<br><br>You can close this window and go back to Windows 12.</div></body>`; } catch (_) {}
+  }
+  window.SpotifyPopup = { isCallback: spIsPopupCallback, finish: spFinishPopup };
+  if (!window.__spMsg) { window.__spMsg = 1; window.addEventListener("message", (e) => { if (e.origin === location.origin && e.data && e.data.sp === "spw-done" && typeof window.__spOnConnected === "function") window.__spOnConnected(e.data); }); }
   async function spTokenRequest(params) {
     const r = await fetch("https://accounts.spotify.com/api/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params) });
     const j = await r.json(); if (!r.ok || !j.access_token) throw new Error(j.error_description || j.error || "Spotify sign-in failed");
@@ -917,6 +935,14 @@
       const out = conn.querySelector(".spw-c-out"); if (out) out.onclick = () => { spTok.set(null); spRecent = null; paintRecent(); paintConn(); };
     }
     w.querySelector(".spw-acct").onclick = () => { conn.hidden = !conn.hidden; paste.hidden = true; if (!conn.hidden) paintConn(); };
+    // When the popup sign-in finishes, it messages us — refresh the widget then.
+    window.__spOnConnected = (d) => {
+      if (d && d.ok === false) { conn.hidden = false; paintConn(d.err || "Couldn't connect to Spotify."); return; }
+      conn.hidden = false;
+      loadRecent().then(() => paintConn()).catch((e) => paintConn(e.message));
+      if (window.Notify) Notify.show({ icon: SPOTIFY_SVG, title: "Spotify connected", body: "Your recently played songs are in the Spotify widget." });
+    };
+    // Full-page redirect fallback: if we came back from Spotify in this same window.
     spFinishLogin().then((justLoggedIn) => {
       if (spTok.get()) loadRecent().catch((e) => { conn.hidden = false; paintConn(e.message); });
       if (justLoggedIn && window.Notify) Notify.show({ icon: SPOTIFY_SVG, title: "Spotify connected", body: "Your recently played songs are in the Spotify widget." });

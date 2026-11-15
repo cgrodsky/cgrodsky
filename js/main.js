@@ -15,6 +15,9 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
+    // If this window is the Spotify sign-in popup coming back, finish it and close —
+    // don't boot a second desktop inside the popup.
+    if (window.SpotifyPopup && SpotifyPopup.isCallback()) { SpotifyPopup.finish(); return; }
     Boot.run(() => {
       if (!State.data.setupCompleted) {
         Setup.run(startDesktop);
