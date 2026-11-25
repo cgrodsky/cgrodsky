@@ -559,9 +559,9 @@
       const pr = profile(), isPin = pr.authType === "pin";
       const errMsg = (e, fallback) => (e && e.message === "cancelled") ? "" : ((e && e.friendly) || fallback);
       const when = (t) => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
-      // Touch ID / Face ID / Windows Hello — a real WebAuthn platform authenticator.
+      // Touch ID / Windows Hello — no passkey (Windows Hello fingerprint pop-up).
       const tName = window.TouchID ? TouchID.sensorName() : "Touch ID";
-      const fp = card(`<div class="w12s-row-t">${esc(tName)} (fingerprint or face)</div><div class="w12s-row-s w12s-fp-s">Checking this device…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
+      const fp = card(`<div class="w12s-row-t">${esc(tName)} (fingerprint)</div><div class="w12s-row-s w12s-fp-s">Checking this device…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
       h.appendChild(fp);
       const fs = fp.querySelector(".w12s-fp-s"), fb = fp.querySelector(".w12s-fp-btns"), fe = fp.querySelector(".w12s-err");
       const paintFp = () => {
@@ -571,12 +571,12 @@
           const on = TouchID.enrolled();
           if (!ok && !on) { fs.textContent = "Not available in this browser on this device. (It needs a fingerprint reader or face unlock that the browser can use, and an https page.)"; return; }
           if (on) {
-            fs.textContent = "On — unlock and pay with " + tName + ". Your device checks your fingerprint or face; Windows 12 checks the signed answer." + (ok ? "" : " (Not available on this device right now.)");
+            fs.textContent = "On — unlock and pay with " + tName + ". No passkey is used: Windows Hello's fingerprint sensor pops up and you touch it.";
             const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => { fe.textContent = ""; note(tName + " recognized ✓"); }).catch((e) => { fe.textContent = errMsg(e, "Not recognized — try again."); });
             const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note(tName + " removed."); paintFp(); };
             fb.append(t, r);
           } else {
-            fs.textContent = "This device can use " + tName + ". Set it up to unlock and pay with your fingerprint or face.";
+            fs.textContent = "Set up " + tName + " to unlock and pay with a touch. No passkey is saved.";
             const s = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`); s.onclick = () => TouchID.enroll().then(() => { note(tName + " set up ✓"); paintFp(); }).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
             fb.append(s);
           }

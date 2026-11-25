@@ -1,6 +1,6 @@
 /* Lock screen — shown after boot if setup is complete.
    Sign-in options, like Windows 11:
-     PIN · Password · Touch ID / Windows Hello (real WebAuthn) · Security key (real WebAuthn)
+     PIN · Password · Touch ID / Windows Hello (no passkey) · Security key (real WebAuthn)
    Passwords set in Settings are checked against a salted hash (js/touchid.js). */
 (function () {
   "use strict";
@@ -92,7 +92,7 @@
       } else {
         const isKey = m === "key";
         box.innerHTML = `<button type="button" class="lock-webauthn">${IC[m]}<span>${isKey ? "Use your security key" : "Use " + esc(tidName)}</span></button>
-          <div class="lock-hint">${isKey ? "Insert or tap your key when asked, then touch it." : "Your device will ask for your fingerprint or face."}</div>`;
+          <div class="lock-hint">${isKey ? "Insert or tap your key when asked, then touch it." : "Touch the fingerprint sensor when it appears."}</div>`;
         const b = box.querySelector(".lock-webauthn");
         // WebAuthn must start from a tap (Safari requires it) — no auto-prompt.
         b.onclick = () => {
@@ -101,6 +101,7 @@
           p.then(() => unlock(m)).catch((e) => {
             b.disabled = false; b.classList.remove("scanning");
             if (e && e.message === "cancelled") { err.textContent = isKey ? "Cancelled, or that key isn't set up for this account." : ""; return; }
+            if (e && e.message === "pin") { const alt = methods.find((x) => x === "pin" || x === "password"); if (alt) { show(alt); return; } }
             err.textContent = (isKey ? "Security key not recognized" : tidName + " not recognized") + " — " + ((e && e.friendly) || "try again.");
             shake();
           });

@@ -680,8 +680,8 @@
     const nm = window.TouchID ? TouchID.sensorName() : "Touch ID";
     const node = el(`<div>
       <h1>${escapeHtml(nm)}</h1>
-      <p class="oobe2-sub-strong">Sign in with your fingerprint or face</p>
-      <p class="sub" id="fpmsg">Tap <b>Set up</b>. Your device will ask for your fingerprint or face — that's the real ${escapeHtml(nm)}, not a pretend one.</p>
+      <p class="oobe2-sub-strong">Sign in with your fingerprint</p>
+      <p class="sub" id="fpmsg">Tap <b>Set up</b>, then touch the fingerprint sensor a few times until it's captured. No passkey is saved.</p>
       <div class="oobe2-fp-sensor"><div class="oobe2-fp-pad"></div><span class="oobe2-fp-hand">&#128070;</span></div>
       <p class="sub" id="fperr" style="color:#ff8a8a;min-height:1.2em"></p>
       <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Set up</button></div>
