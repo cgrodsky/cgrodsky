@@ -224,6 +224,7 @@
 
   // ---------- names ----------
   function sensorName() {
+    if (typeof nativeType !== "undefined" && window.WIN12_NATIVE) { if (nativeType === "faceID") return "Face ID"; if (nativeType === "opticID") return "Optic ID"; return "Touch ID"; }
     const ua = navigator.userAgent;
     if (/iPhone|iPad|Macintosh/.test(ua)) return "Touch ID";
     if (/Windows/.test(ua)) return "Windows Hello";
@@ -233,9 +234,38 @@
     return { name: sensorName() + " (your device's sensor, via WebAuthn)", driver: "Browser WebAuthn (passkey)", version: "Web Authentication Level 2", provider: "Your browser / operating system", date: "—" };
   }
 
-  // ---------- Touch ID = the device's REAL sensor (passkey) ----------
+  // ---------- Inside the Windows 12 iPad app: real Touch ID / Face ID, NO passkey ----------
+  // ios/Sources/WebViewController.swift exposes LocalAuthentication as a message handler.
+  const native = (() => { try { return window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.win12bio; } catch (_) { return null; } })();
+  var nativeType = "touchID"; // var: sensorName() may run before this line
+  const nat = (msg) => native.postMessage(msg);
+  function nativeStatus() {
+    return nat({ action: "status" }).then((r) => { if (r && r.type && r.type !== "none") nativeType = r.type; return !!(r && r.available); }).catch(() => false);
+  }
+  function nativeVerify(reason) {
+    return nat({ action: "verify", reason: reason || "Unlock Windows 12" }).then(() => true).catch((e) => {
+      const m = String((e && e.message) || e || "");
+      if (/cancelled/.test(m)) throw Object.assign(new Error("cancelled"), { friendly: "Cancelled." });
+      if (/^pin$|Error: pin/.test(m)) throw Object.assign(new Error("pin"), { friendly: "Use your PIN instead." });
+      throw Object.assign(new Error(m || "failed"), { friendly: m || "Not recognized." });
+    });
+  }
+  if (native) nativeStatus();
+
+  // ---------- In a browser: the device's REAL sensor through WebAuthn (passkey) ----------
   // Shown only where the browser can reach a real fingerprint / face sensor.
-  window.TouchID = {
+  window.TouchID = native ? {
+    available: nativeStatus,
+    passkeyAvailable: () => Promise.resolve(false),
+    enrolled: () => !!(S().profile && S().profile.touchId && S().profile.touchId.native),
+    usesPasskey: () => false,
+    isNative: true,
+    enroll: () => nativeVerify("Set up " + sensorName() + " for Windows 12").then(() => { const p = profile(); p.touchId = { native: true, at: Date.now() }; p.fingerprint = true; save(); return true; }),
+    verify: () => (window.TouchID.enrolled() ? nativeVerify("Unlock Windows 12") : Promise.reject(Object.assign(new Error("not enrolled"), { friendly: sensorName() + " isn't set up." }))),
+    forget: () => { const p = profile(); delete p.touchId; p.fingerprint = false; save(); },
+    sensorName, driverInfo: () => ({ name: sensorName() + " (iPad sensor)", driver: "Apple LocalAuthentication", version: "iOS", provider: "Apple", date: "—" }),
+    installDriverOnce: () => Promise.resolve(false),
+  } : {
     available: platformAvailable,
     passkeyAvailable: platformAvailable,
     enrolled: () => list("platform").length > 0,
@@ -260,5 +290,5 @@
   window.PasswordAuth = Password;
 
   // The on-screen sensor is gone: an old "no passkey" setup no longer counts as Touch ID.
-  try { const p = S().profile; if (p && p.touchId) { delete p.touchId; if (!list("platform").length) p.fingerprint = false; save(); } } catch (_) {}
+  try { const p = S().profile; if (p && p.touchId && p.touchId.sim) { delete p.touchId; if (!list("platform").length) p.fingerprint = false; save(); } } catch (_) {}
 })();

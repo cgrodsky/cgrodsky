@@ -569,14 +569,18 @@
         TouchID.available().then((real) => {
           fb.innerHTML = ""; fe.textContent = "";
           const on = TouchID.enrolled();
-          if (!real && !on) { fs.textContent = "Not available in this browser. " + tName + " needs a device with a fingerprint or face sensor, a browser that supports passkeys, and an https page."; return; }
+          if (!real && !on) { fs.textContent = TouchID.isNative ? "Touch ID / Face ID isn't set up on this iPad (iPad Settings → Touch ID & Passcode)." : "Not available in this browser. " + tName + " needs a device with a fingerprint or face sensor, a browser that supports passkeys, and an https page."; return; }
           if (on) {
-            fs.textContent = "On — your device's real " + tName + " checks your fingerprint or face (through a passkey), and Windows 12 checks the signed answer." + (real ? "" : " The sensor isn't reachable in this browser right now.");
+            fs.textContent = TouchID.isNative
+              ? "On — the Windows 12 app uses your iPad's real " + TouchID.sensorName() + " directly. No passkey."
+              : "On — your device's real " + tName + " checks your fingerprint or face (through a passkey), and Windows 12 checks the signed answer." + (real ? "" : " The sensor isn't reachable in this browser right now.");
             const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => { fe.textContent = ""; note(tName + " recognized ✓"); }).catch((e) => { fe.textContent = errMsg(e, "Not recognized — try again."); });
             const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note(tName + " removed. You can also delete its passkey from your device's saved passwords."); paintFp(); };
             fb.append(t, r);
           } else {
-            fs.textContent = "Unlock and pay with your device's real " + tName + ". Setting it up saves a passkey for this site.";
+            fs.textContent = TouchID.isNative
+              ? "Unlock and pay with your iPad's real " + TouchID.sensorName() + ". The Windows 12 app uses it directly — no passkey."
+              : "Unlock and pay with your device's real " + tName + ". Setting it up saves a passkey for this site.";
             const a = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`);
             a.onclick = () => TouchID.enroll().then(() => { note(tName + " set up ✓"); paintFp(); }).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
             fb.append(a);

@@ -681,7 +681,7 @@
     const node = el(`<div>
       <h1>${escapeHtml(nm)}</h1>
       <p class="oobe2-sub-strong">Sign in with your fingerprint or face</p>
-      <p class="sub" id="fpmsg">Tap <b>Set up</b> and your device will ask for your real ${escapeHtml(nm)}. This saves a passkey for this site.</p>
+      <p class="sub" id="fpmsg">Tap <b>Set up</b> and your device will ask for your real ${escapeHtml(nm)}.${window.TouchID && TouchID.isNative ? "" : " This saves a passkey for this site."}</p>
       <div class="oobe2-fp-sensor"><div class="oobe2-fp-pad"></div><span class="oobe2-fp-hand">&#128070;</span></div>
       <p class="sub" id="fperr" style="color:#ff8a8a;min-height:1.2em"></p>
       <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Set up</button></div>
