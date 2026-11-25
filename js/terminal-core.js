@@ -15,7 +15,10 @@
   "use strict";
   const S = () => State.data;
   const SYS = "Local Disk (C:)";
-  const COL = { fg: "#cccccc", green: "#16c60c", red: "#ff4b4b", yellow: "#ffe000", blue: "#3a96ff", gray: "#888888", arch: "#1793d1", cyan: "#61d6d6", white: "#f2f2f2", ps: "#f2f2f2" };
+  // Colors are CSS variables so Windows Terminal color schemes (js/terminalx.js) can restyle every
+  // pane; the fallbacks are the classic Campbell colors used when no scheme is applied.
+  const V = (n, fb) => "var(--tx-" + n + "," + fb + ")";
+  const COL = { fg: V("fg", "#cccccc"), green: V("green", "#16c60c"), red: V("red", "#ff4b4b"), yellow: V("yellow", "#ffe000"), blue: V("blue", "#3a96ff"), gray: V("gray", "#888888"), arch: V("arch", "#1793d1"), cyan: V("cyan", "#61d6d6"), white: V("white", "#f2f2f2"), ps: V("white", "#f2f2f2"), input: V("input", "#ffffff"), magenta: V("magenta", "#b4009e"), ubuntuPath: V("upath", "#3b78ff") };
   const CANCEL = { cancelled: true };
   // Commands added by other files (js/recovery.js, js/accounts.js): window.TerminalExt =
   // { cmd: { name: fn(c, api) }, ps: { "verb-noun": fn(c, api) } }. They run before the built-ins.
@@ -286,31 +289,63 @@
   function injectStyle() {
     if (styled) return; styled = true;
     const st = document.createElement("style");
-    st.textContent = `.wt-term{height:100%;background:#0c0c0c;color:#cccccc;font-family:"Cascadia Mono",Consolas,"Courier New",monospace;font-size:.9rem;padding:12px;overflow:auto;box-sizing:border-box;line-height:1.3;cursor:text}
+    st.textContent = `.wt-term{height:100%;background:var(--tx-bg,#0c0c0c);color:var(--tx-fg,#cccccc);font-family:"Cascadia Mono",Consolas,"Courier New",monospace;font-size:.9rem;padding:12px;overflow:auto;box-sizing:border-box;line-height:1.3;cursor:text}
 .wt-out .tl{white-space:pre-wrap;word-break:break-word;min-height:1.3em}
 .wt-row{display:flex;align-items:flex-start}.wt-row.busy .wt-in{caret-color:transparent}
-.wt-prompt{white-space:pre;color:#16c60c;flex:none;max-width:70%;overflow:hidden;text-overflow:ellipsis}
-.wt-in{flex:1;min-width:40px;background:none;border:none;color:#fff;outline:none;font:inherit;padding:0;margin:0;caret-color:#fff}
-.wt-term ::selection{background:#264f78}`;
+.wt-prompt{white-space:pre;color:var(--tx-green,#16c60c);flex:none;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+.wt-in{flex:1;min-width:40px;background:none;border:none;color:var(--tx-input,#fff);outline:none;font:inherit;padding:0;margin:0;caret-color:var(--tx-cursor,#fff)}
+.wt-term ::selection{background:var(--tx-sel,#264f78)}`;
     document.head.appendChild(st);
   }
 
-  function open(cw) {
-    injectStyle();
+  // Profiles a session can start as (js/terminalx.js passes one per pane):
+  //   { shell: "cmd" | "ps" | "bash" | "azure", ps: "5.1" | "7", distro: "arch" | "ubuntu",
+  //     startDir: "C:\\Users\\me\\Documents" | "~" | "%USERPROFILE%" | null, banner: "legacy" | "profile" | "none" }
+  const BASE_PROFILE = { shell: "cmd", ps: "7", distro: "arch", startDir: null, banner: "legacy" };
+
+  // The classic single-session Terminal window (also used by the Windows RE Command Prompt in js/recovery.js).
+  function open(cw, profile) {
     const create = cw || ((o) => window.WM.createWindow(o));
-    let closed = false, curJob = null, pendingAsk = null, busy = false;
-    const winRef = create({ title: "Terminal", icon: Icon.mini("terminal", "Terminal"), width: 720, height: 460, appId: "terminal", onClose: () => { closed = true; if (curJob && curJob.cancel) curJob.cancel(); } });
-    const body = winRef.body;
-    body.innerHTML = `<div class="wt-term" id="term">
-      <div class="wt-banner"><div style="color:#16c60c">Windows 12 Terminal [Version ${VERSION}]</div><div>(c) Cameron Systems. All rights reserved (not really).</div><div style="color:#888">Type 'help' for the list of commands. Tab completes, Up/Down = history, Ctrl+C cancels, Ctrl+L clears.</div></div>
-      <div class="wt-out" id="out"></div>
-      <div class="wt-row"><span class="wt-prompt prompt"></span><input id="cmd" class="wt-in" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command line"></div></div>`;
-    const termEl = body.querySelector("#term"), out = body.querySelector("#out"), cmd = body.querySelector("#cmd"), promptEl = body.querySelector(".prompt"), rowEl = body.querySelector(".wt-row");
+    let sess = null;
+    const winRef = create({ title: "Terminal", icon: Icon.mini("terminal", "Terminal"), width: 720, height: 460, appId: "terminal", onClose: () => { if (sess) sess.dispose(); } });
+    sess = createSession({ host: winRef.body, win: winRef.win, close: () => winRef.close(), profile: profile || BASE_PROFILE });
+    return winRef;
+  }
+
+  // One shell session rendered into o.host. Each session has its own cwd, history, variables and
+  // nested-shell stack. Hooks (all optional):
+  //   o.close()            close this session's pane/tab/window ("exit" in the outermost shell)
+  //   o.closeWindow()      close the whole window (taskkill / Stop-Process on the Terminal itself)
+  //   o.setTitle(text)     the `title` command          o.onMode(mode, info)  nested shell entered/left
+  //   o.onBell()           BEL was printed              o.onIdle()            a command finished
+  //   o.win                window element (legacy chrome updates when onMode is not given)
+  function createSession(o) {
+    injectStyle();
+    o = o || {};
+    const prof = Object.assign({}, BASE_PROFILE, o.profile || {});
+    let closed = false, curJob = null, pendingAsk = null, busy = false, exited = null;
+    const winRef = { win: o.win || null, close: () => { if (o.closeWindow) o.closeWindow(); else if (o.close) o.close(); } };
+    const body = o.host;
+    const legacy = prof.banner === "legacy";
+    body.innerHTML = `<div class="wt-term">
+      <div class="wt-banner">${legacy ? `<div style="color:var(--tx-green,#16c60c)">Windows 12 Terminal [Version ${VERSION}]</div><div>(c) Cameron Systems. All rights reserved (not really).</div><div style="color:var(--tx-gray,#888)">Type 'help' for the list of commands. Tab completes, Up/Down = history, Ctrl+C cancels, Ctrl+L clears.</div>` : ""}</div>
+      <div class="wt-out"></div>
+      <div class="wt-row"><span class="wt-prompt prompt"></span><input class="wt-in" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command line"></div></div>`;
+    const termEl = body.querySelector(".wt-term"), out = body.querySelector(".wt-out"), cmd = body.querySelector(".wt-in"), promptEl = body.querySelector(".prompt"), rowEl = body.querySelector(".wt-row");
     let fg = COL.fg;
 
     // ---- session ----
     const ts = TS();
-    const stack = [{ mode: "cmd", cwd: HOME() }];
+    function startSegs() {
+      const d = prof.startDir;
+      if (!d || /^%userprofile%$/i.test(String(d).trim()) || String(d).trim() === "~") return HOME();
+      const raw = String(d).trim().replace(/%userprofile%/ig, winPath(HOME())).replace(/%systemroot%|%windir%/ig, "C:\\Windows").replace(/%homepath%/ig, winPath(HOME()));
+      const segs = /^[\/]/.test(raw) && !/^\\/.test(raw) ? posixSegs(raw, HOME()) : winSegs(raw, HOME());
+      const h = segs && walk(segs);
+      return h && isDir(h.node) ? h.canon : null;
+    }
+    const firstFrame = () => ({ mode: prof.shell, cwd: (o.cwd && walk(o.cwd) && isDir(walk(o.cwd).node) ? walk(o.cwd).canon : startSegs()) || HOME(), psv: prof.ps === "5.1" ? "5.1" : "7", distro: prof.distro === "ubuntu" ? "ubuntu" : "arch" });
+    const stack = [firstFrame()];
     const top = () => stack[stack.length - 1];
     const mode = () => top().mode;
     const cwd = () => top().cwd;
@@ -322,6 +357,7 @@
     const bashEnv = {};
     let lastStatus = 0;
     const hist = ts.history.slice(-200);
+    const wtSession = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => { const r = Math.random() * 16 | 0; return (ch === "x" ? r : (r & 3) | 8).toString(16); });
     let histIdx = hist.length, tabState = null, lastTabAt = 0;
     let shutdownTimer = null;
 
@@ -343,13 +379,19 @@
       const e = winEnv(); return e[N] != null ? e[N] : null;
     }
     function bashVar(n) {
-      const map = { HOME: "/home/" + archUser(), USER: archUser(), LOGNAME: archUser(), SHELL: "/bin/bash", PATH: "/usr/local/sbin:/usr/local/bin:/usr/bin:/mnt/c/Windows/system32", LANG: "en_US.UTF-8", TERM: "xterm-256color", HOSTNAME: "arch", PWD: posixPath(cwd()), OLDPWD: top().prev ? posixPath(top().prev) : "", "?": String(lastStatus), $: "1337", WSL_DISTRO_NAME: "Arch" };
+      const ub = isUbuntu();
+      const map = { HOME: "/home/" + archUser(), USER: archUser(), LOGNAME: archUser(), SHELL: "/bin/bash", PATH: "/usr/local/sbin:/usr/local/bin:/usr/bin:/mnt/c/Windows/system32", LANG: "en_US.UTF-8", TERM: "xterm-256color", HOSTNAME: ub ? HOSTNAME : "arch", PWD: posixPath(cwd()), OLDPWD: top().prev ? posixPath(top().prev) : "", "?": String(lastStatus), $: "1337", WSL_DISTRO_NAME: ub ? "Ubuntu" : "Arch", WT_SESSION: wtSession, WT_PROFILE_ID: prof.guid || "" };
       return bashEnv[n] != null ? bashEnv[n] : map[n] != null ? map[n] : "";
     }
 
     // ---- output ----
     const scroll = () => { termEl.scrollTop = termEl.scrollHeight; };
     function emit(parts, color) {
+      if (Array.isArray(parts) ? parts.some((p) => /\u0007/.test(p[0])) : /\u0007/.test(parts)) {
+        if (o.onBell) try { o.onBell(); } catch (_) {}
+        parts = Array.isArray(parts) ? parts.map((p) => [String(p[0]).replace(/\u0007/g, ""), p[1]]) : String(parts).replace(/\u0007/g, "");
+        if (Array.isArray(parts) ? !parts.some((p) => p[0]) : !parts) return;
+      }
       const d = document.createElement("div"); d.className = "tl";
       if (Array.isArray(parts)) parts.forEach(([t, c]) => { const s = document.createElement("span"); s.textContent = t; if (c) s.style.color = c; d.appendChild(s); });
       else { d.textContent = parts; if (color) d.style.color = color; }
@@ -358,28 +400,47 @@
       scroll();
     }
     function clearScreen() { out.innerHTML = ""; const b = body.querySelector(".wt-banner"); if (b) b.remove(); }
-    function promptText() {
+    function isUbuntu() { return mode() === "bash" && top().distro === "ubuntu"; }
+    function promptText() { return promptParts().map((p) => p[0]).join(""); }
+    function promptParts() {
       const m = mode();
-      if (m === "bash") { const c = cwd(); const base = atHome(c) ? "~" : c.length ? c[c.length - 1] : "/"; return `[${archUser()}@arch ${base}]$ `; }
-      if (m === "ps") return `PS ${winPath(cwd())}> `;
-      return winPath(cwd()) + ">";
+      if (m === "bash") {
+        const c = cwd();
+        if (isUbuntu()) return [[`${archUser()}@${HOSTNAME}`, promptEl.dataset.custom || COL.green], [":", COL.fg], [tildePath(c), COL.ubuntuPath], ["$ ", COL.fg]];
+        const base = atHome(c) ? "~" : c.length ? c[c.length - 1] : "/"; return [[`[${archUser()}@arch ${base}]$ `, promptEl.dataset.custom || COL.arch]];
+      }
+      if (m === "azure") return [["PS Azure:\\> ", COL.yellow]];
+      if (m === "ps") return [[`PS ${winPath(cwd())}> `, promptEl.dataset.custom || (top().psv === "5.1" ? COL.fg : COL.green)]];
+      return [[winPath(cwd()) + ">", promptEl.dataset.custom || COL.green]];
     }
-    const promptColor = () => (mode() === "bash" ? COL.arch : promptEl.dataset.custom || COL.green);
+    const promptColor = () => promptParts()[0][1];
+    function paintPrompt() { promptEl.textContent = ""; promptEl.style.color = ""; promptParts().forEach(([t, c]) => { const sp = document.createElement("span"); sp.textContent = t; if (c) sp.style.color = c; promptEl.appendChild(sp); }); }
+    const isActive = () => (o.isActive ? o.isActive() : true);
     function renderPrompt() {
-      if (pendingAsk) { rowEl.classList.remove("busy"); promptEl.textContent = pendingAsk.q; promptEl.style.color = fg; cmd.readOnly = false; }
+      if (exited) { rowEl.classList.add("busy"); promptEl.textContent = ""; cmd.readOnly = true; }
+      else if (pendingAsk) { rowEl.classList.remove("busy"); promptEl.textContent = pendingAsk.q; promptEl.style.color = fg; cmd.readOnly = false; }
       else if (busy) { promptEl.textContent = ""; rowEl.classList.add("busy"); cmd.readOnly = true; }
-      else { rowEl.classList.remove("busy"); cmd.readOnly = false; promptEl.textContent = promptText(); promptEl.style.color = promptColor(); }
-      if (!closed) try { cmd.focus({ preventScroll: true }); } catch (_) {}
+      else { rowEl.classList.remove("busy"); cmd.readOnly = false; paintPrompt(); }
+      if (!closed && isActive()) try { cmd.focus({ preventScroll: true }); } catch (_) {}
       scroll();
     }
     function setChrome(iconKey, label, title) {
+      if (!winRef.win) return;
       const ic = winRef.win.querySelector(".win-titlebar .title span:first-child");
       if (ic && window.Icon) ic.innerHTML = Icon.mini(iconKey, label);
       const tt = winRef.win.querySelector(".win-titlebar .t-text");
       if (tt) tt.textContent = title;
     }
+    function shellName() {
+      const m = mode(), f = top();
+      if (m === "bash") return f.distro === "ubuntu" ? "Ubuntu" : "Arch Linux";
+      if (m === "ps") return f.psv === "5.1" ? "Windows PowerShell" : "PowerShell";
+      if (m === "azure") return "Azure Cloud Shell";
+      return "Command Prompt";
+    }
     function chromeForMode() {
       const m = mode();
+      if (o.onMode) { try { o.onMode(m, { name: shellName(), distro: top().distro, psv: top().psv, depth: stack.length }); } catch (_) {} return; }
       if (m === "bash") setChrome("linuxterminal", "Arch", "Arch Linux");
       else if (m === "ps") setChrome("powershell", "PowerShell", "Windows PowerShell");
       else setChrome("terminal", "Terminal", "Terminal");
@@ -401,7 +462,7 @@
 
     // ---- run a line ----
     async function submit(line) {
-      emit([[promptText(), promptColor()], [line, "#ffffff"]]);
+      emit(promptParts().concat([[line, COL.input]]));
       const t = line.trim();
       if (t) { if (hist[hist.length - 1] !== line) hist.push(line); if (hist.length > 200) hist.shift(); ts.history = hist.slice(); try { State.save(); } catch (_) {} }
       histIdx = hist.length;
@@ -414,7 +475,8 @@
       try { await Promise.race([p, cancelP]); }
       catch (e) { if (e !== CANCEL) { emit("Error: " + ((e && e.message) || e), COL.red); try { console.warn(e); } catch (_) {} } }
       curJob = null; pendingAsk = null; busy = false;
-      if (!closed) renderPrompt();
+      if (!closed && !exited) renderPrompt();
+      if (!closed && o.onIdle) try { o.onIdle(); } catch (_) {}
     }
     function expand(line, m) {
       if (m === "cmd") return line.replace(/%([^%\s]+)%/g, (all, n) => { const v = getEnv(n); return v == null ? all : v; });
@@ -427,12 +489,13 @@
             if (k === "psversiontable" || k === "host") return a;
             if (k === "home") return winPath(HOME()); if (k === "pwd") return winPath(cwd()); if (k === "true") return "True"; if (k === "false") return "False"; if (k === "null") return "";
             return psVars[k] != null ? psVars[k] : "";
-          }).replace(/\$\?/g, lastStatus ? "False" : "True");
+          }).replace(/\$\?/g, lastStatus ? "False" : "True").replace(/`a/g, "\u0007");
         return seg.replace(/\$\{(\w+)\}|\$(\w+|\?|\$)/g, (a, b, c) => bashVar(b || c)).replace(/(^|\s)~(?=\/|\s|$)/g, "$1/home/" + archUser());
       }).join("");
     }
     async function execLine(line, job) {
       const m = mode();
+      if (m === "azure") return runAzure(line, mkIO(job, null, null));
       if (m === "ps") { const r = psPre(line, job); if (r !== undefined) return r; }
       if (m === "bash") { const a = /^\s*(?:export\s+)?([A-Za-z_]\w*)=(.*)$/.exec(line); if (a) { bashEnv[a[1]] = expand(a[2], "bash").replace(/^["']|["']$/g, ""); return 0; } }
       const src = expand(line, m);
@@ -833,29 +896,36 @@
       if (a && NAMES[lc(a)]) c.io.out("Color set.", f);
       return 0;
     }
-    async function installArch(io) {
-      if (TS().archInstalled) { io.out("Arch Linux is already installed. Launch it with: arch", COL.green); return 0; }
-      io.out("Installing Arch Linux (WSL). It uses this PC's real files: / is C:\\ and ~ is your user folder.", COL.green);
-      for (const l of ["Downloading Arch Linux rootfs...", ":: Synchronizing package databases...", "  core   is up to date", "  extra  is up to date", ":: Running pacstrap (base linux linux-firmware)...", ":: Configuring system (locale, keyring, fstab)...", ":: Finalizing installation..."]) { await io.sleep(320); io.out(l); }
-      TS().archInstalled = true; State.save();
-      io.out("Arch Linux has been installed. Launch it with: arch", COL.green);
+    // WSL: the Control Panel "Windows Subsystem for Linux" feature is appData.terminal.archInstalled
+    // (js/systools.js). Turning it on makes both distros (Ubuntu, Arch) available.
+    async function installArch(io, distro) {
+      const nm = distro === "ubuntu" ? "Ubuntu" : "Arch Linux";
+      if (TS().archInstalled) { io.out(`${nm} is already installed. Launch it with: ${distro === "ubuntu" ? "ubuntu (or wsl -d Ubuntu)" : "arch"}`, COL.green); TS().wslDefault = TS().wslDefault || distro; State.save(); return 0; }
+      io.out(`Installing: Windows Subsystem for Linux\nInstalling ${nm} (WSL). It uses this PC's real files: / is C:\\ and ~ is your user folder.`, COL.green);
+      const steps = distro === "ubuntu" ? ["Downloading: Ubuntu 24.04 LTS...", "Installing: Ubuntu...", "Creating default user...", "Configuring /etc/wsl.conf (interop, automount /mnt/c)..."] : ["Downloading Arch Linux rootfs...", ":: Synchronizing package databases...", "  core   is up to date", "  extra  is up to date", ":: Running pacstrap (base linux linux-firmware)...", ":: Configuring system (locale, keyring, fstab)...", ":: Finalizing installation..."];
+      for (const l of steps) { await io.sleep(320); io.out(l); }
+      TS().archInstalled = true; TS().wslDefault = distro || "arch"; State.save();
+      io.out(`${nm} has been installed. Launch it with: ${distro === "ubuntu" ? "ubuntu" : "arch"}  (Terminal: open the Ubuntu profile from the tab dropdown)`, COL.green);
       return 0;
     }
-    function enterArch(io) {
-      if (!TS().archInstalled) { io.err("Arch is not installed. Run: wsl --install arch"); return 1; }
-      stack.push({ mode: "bash", cwd: HOME() }); chromeForMode(); cmd.style.color = "#ffffff";
-      io.out("Welcome to Arch Linux on WSL. / is C:\\, ~ is your user folder. Type 'help' or 'neofetch'; 'exit' returns to Windows.", COL.arch);
+    function enterArch(io, distro) {
+      distro = distro === "ubuntu" ? "ubuntu" : "arch";
+      if (!TS().archInstalled) { io.err(distro === "ubuntu" ? "Windows Subsystem for Linux has no installed distributions.\nInstall one with: wsl --install   (or turn on \"Windows Subsystem for Linux\" in Control Panel > Programs > Turn Windows features on or off)" : "Arch is not installed. Run: wsl --install arch"); return 1; }
+      stack.push({ mode: "bash", cwd: HOME(), distro }); chromeForMode();
+      io.out(distro === "ubuntu" ? "Welcome to Ubuntu 24.04.1 LTS on WSL. / is C:\\, ~ is your user folder. Type 'help'; 'exit' returns to Windows." : "Welcome to Arch Linux on WSL. / is C:\\, ~ is your user folder. Type 'help' or 'neofetch'; 'exit' returns to Windows.", distro === "ubuntu" ? COL.green : COL.arch);
       return 0;
     }
-    function enterPS(io) {
-      stack.push({ mode: "ps", cwd: cwd().slice() }); chromeForMode();
-      io.out("PowerShell 7.4.6\nType 'help' for commands. 'exit' returns to Command Prompt.");
+    function enterPS(io, ver) {
+      ver = ver === "5.1" ? "5.1" : "7";
+      stack.push({ mode: "ps", cwd: cwd().slice(), psv: ver }); chromeForMode();
+      io.out(ver === "5.1" ? "Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nType 'help' for commands. 'exit' returns to the previous shell." : "PowerShell 7.4.6\nType 'help' for commands. 'exit' returns to the previous shell.");
       return 0;
     }
     function enterCmd(io) { stack.push({ mode: "cmd", cwd: cwd().slice() }); chromeForMode(); io.out(`Microsoft Windows 12 [Version ${VERSION}]\n(c) Microsoft Corporation. All rights reserved.`); return 0; }
     function exitShell(io) {
       if (stack.length > 1) { const was = stack.pop(); chromeForMode(); if (was.mode === "bash") io.out("logout"); return 0; }
-      setTimeout(() => winRef.close(), 0); return 0;
+      if (mode() === "bash") io.out("logout");
+      setTimeout(() => { if (o.close) o.close(); }, 0); return 0;
     }
     function doLast(c) {
       const u = mode() === "bash" ? archUser() : userName();
@@ -881,10 +951,24 @@
     }
     function wsl(c) {
       const s = lc(c.a.join(" "));
-      if (/install/.test(s) && /arch/.test(s) || (lc(c.name) === "install" && /arch/.test(s))) return installArch(c.io);
-      if (/^(-l|--list)/.test(s)) { c.io.out("Windows Subsystem for Linux Distributions:"); if (TS().archInstalled) c.io.out("Arch (Default)"); else c.io.out("(none) Install one with: wsl --install arch"); return 0; }
-      if (!s && TS().archInstalled) return enterArch(c.io);
-      c.io.warn("Usage: wsl --install arch   (then run: arch)"); return 1;
+      const pick = (t) => (/ubuntu/.test(t) ? "ubuntu" : /arch/.test(t) ? "arch" : null);
+      if (lc(c.name) === "install") { if (/arch|ubuntu/.test(s)) return installArch(c.io, pick(s)); c.io.warn("Usage: install arch   (or: wsl --install)"); return 1; }
+      if (/(^|\s)--install\b/.test(s)) return installArch(c.io, pick(s) || "ubuntu");
+      if (/^(-l|--list)/.test(s)) {
+        c.io.out("Windows Subsystem for Linux Distributions:");
+        if (!TS().archInstalled) { c.io.out("(none) Install one with: wsl --install   (Ubuntu)   or: wsl --install arch"); return 0; }
+        const def = TS().wslDefault || "arch";
+        if (/-v|--verbose/.test(s)) { c.io.out("  NAME      STATE           VERSION"); [["ubuntu", "Ubuntu"], ["arch", "Arch"]].forEach(([k, n]) => c.io.out(`${k === def ? "*" : " "} ${n.padEnd(9)} Stopped         2`)); }
+        else { c.io.out(def === "ubuntu" ? "Ubuntu (Default)\nArch" : "Arch (Default)\nUbuntu"); }
+        return 0;
+      }
+      if (/^--status/.test(s)) { c.io.out(TS().archInstalled ? `Default Distribution: ${(TS().wslDefault || "arch") === "ubuntu" ? "Ubuntu" : "Arch"}\nDefault Version: 2` : "The Windows Subsystem for Linux optional component is not enabled. Turn it on in Control Panel > Programs > Turn Windows features on or off, or run: wsl --install"); return 0; }
+      if (/^(-v|--version)$/.test(s)) { c.io.out("WSL version: 2.3.26.0\nKernel version: 5.15.167.4-1\nWindows version: " + VERSION); return 0; }
+      if (/^--shutdown/.test(s)) return 0;
+      const m = /^(?:-d|--distribution)\s+(\S+)/.exec(s);
+      if (m) { const d = pick(m[1]); if (!d) { c.io.err("There is no distribution with the supplied name.\nError code: Wsl/Service/WSL_E_DISTRO_NOT_FOUND"); return 1; } return enterArch(c.io, d); }
+      if (!s) return enterArch(c.io, TS().wslDefault || "arch");
+      c.io.warn("Usage: wsl [--install [-d Ubuntu|Arch]] [-d <distro>] [-l -v] [--status]   (then run: ubuntu or arch)"); return 1;
     }
     function historyCmd(c) { hist.forEach((h, i) => c.io.out(`${String(i + 1).padStart(5)}  ${h}`)); return 0; }
     async function timeoutCmd(c) {
@@ -896,6 +980,7 @@
     function clip(c) { const t = c.io.stdin != null ? c.io.stdin : c.raw(); try { navigator.clipboard.writeText(t); } catch (_) {} return 0; }
     // Bash virtual files
     function VIRTUAL_ETC() {
+      if (isUbuntu()) return { "/etc/os-release": `PRETTY_NAME="Ubuntu 24.04.1 LTS"\nNAME="Ubuntu"\nVERSION_ID="24.04"\nVERSION="24.04.1 LTS (Noble Numbat)"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL="https://www.ubuntu.com/"`, "/etc/hostname": HOSTNAME, "/proc/version": "Linux version 5.15.167.4-microsoft-standard-WSL2 (root@f9c826d3017f) (gcc (GCC) 11.2.0) #1 SMP", "/etc/shells": "/bin/sh\n/bin/bash\n/usr/bin/bash", "/etc/wsl.conf": "[boot]\nsystemd=true\n\n[automount]\nenabled=true\nroot=/mnt/", "/proc/cpuinfo": `processor\t: 0\nmodel name\t: Cameron Virtual CPU\ncpu cores\t: ${navigator.hardwareConcurrency || 4}` };
       return { "/etc/os-release": `NAME="Arch Linux"\nPRETTY_NAME="Arch Linux"\nID=arch\nBUILD_ID=rolling\nANSI_COLOR="38;2;23;147;209"\nHOME_URL="https://archlinux.org/"`, "/etc/hostname": "arch", "/proc/version": "Linux version 6.9.1-arch1-1 (linux@archlinux) (gcc (GCC) 14.1.1) #1 SMP PREEMPT_DYNAMIC", "/etc/shells": "/bin/sh\n/bin/bash", "/proc/cpuinfo": `processor\t: 0\nmodel name\t: Cameron Virtual CPU\ncpu cores\t: ${navigator.hardwareConcurrency || 4}` };
     }
 
@@ -1272,11 +1357,11 @@
       set: cmdSet, setx: cmdSetx, path: cmdPath, where: whereCmd, tasklist, taskkill, start: (c) => { const a = c.args.slice(); if (a[0] && a[0].q && a.length > 1) a.shift(); return startThing(c, a[0] && a[0].v, a.slice(1)); },
       explorer: (c) => { if (!c.a[0]) { launchApp("fileexplorer"); return 0; } return startThing(c, c.a[0]); },
       shutdown, systeminfo, ipconfig, ping: (c) => doPing(c, false), nslookup: doNslookup, attrib: attribCmd, find: (c) => findLike(c, false), findstr: (c) => findLike(c, true),
-      sort: (c) => { const { flags, rest } = splitOpts(c.a); return sortCmd(c, !!flags.r, rest[0]); }, more: moreCmd, fc: fcCmd, comp: fcCmd, chkdsk, tree: cmdTree, title: (c) => { const tt = winRef.win.querySelector(".win-titlebar .t-text"); if (tt) tt.textContent = c.raw() || "Terminal"; return 0; },
+      sort: (c) => { const { flags, rest } = splitOpts(c.a); return sortCmd(c, !!flags.r, rest[0]); }, more: moreCmd, fc: fcCmd, comp: fcCmd, chkdsk, tree: cmdTree, title: (c) => { if (o.setTitle) { o.setTitle(c.raw()); return 0; } const tt = winRef.win && winRef.win.querySelector(".win-titlebar .t-text"); if (tt) tt.textContent = c.raw() || "Terminal"; return 0; },
       color: setColor, calc, weather, history: historyCmd, doskey: (c) => (lc(c.a[0]) === "/history" ? historyCmd(c) : 0), last: doLast, who: doWho, open: openApp, update, kiosk, accessibility: a11y, a11y, theme,
       sfc, "factory-reset": () => { window.WM.factoryReset(); return 0; }, curl: (c) => doCurl(c), wget: (c) => doCurl(c, ""), "curl.exe": (c) => doCurl(c),
-      wsl, install: wsl, arch: (c) => enterArch(c.io), bash: (c) => (TS().archInstalled ? enterArch(c.io) : (c.io.err("'bash' is not recognized as an internal or external command,\noperable program or batch file.\nInstall Linux first: wsl --install arch"), 1)),
-      powershell: (c) => enterPS(c.io), pwsh: (c) => enterPS(c.io), cmd: (c) => enterCmd(c.io), timeout: timeoutCmd, pause: async (c) => { await c.io.ask("Press Enter to continue . . . "); return 0; },
+      wsl, install: wsl, arch: (c) => enterArch(c.io, "arch"), ubuntu: (c) => enterArch(c.io, "ubuntu"), bash: (c) => (TS().archInstalled ? enterArch(c.io, TS().wslDefault || "arch") : (c.io.err("'bash' is not recognized as an internal or external command,\noperable program or batch file.\nInstall Linux first: wsl --install arch"), 1)),
+      powershell: (c) => enterPS(c.io, "5.1"), pwsh: (c) => enterPS(c.io, "7"), cmd: (c) => enterCmd(c.io), timeout: timeoutCmd, pause: async (c) => { await c.io.ask("Press Enter to continue . . . "); return 0; },
       clip, rem: () => 0, vol: (c) => { c.io.out(" Volume in drive C is Local Disk\n Volume Serial Number is 1A2B-3C4D"); return 0; },
       win12: vmCmd, vmconnect: vmCmd, "vmconnect.exe": vmCmd, "virtmgmt.msc": vmCmd, hyperv: vmCmd,
     };
@@ -1292,7 +1377,7 @@
       if (h && !isDir(h.node)) return startThing(c, n);
       const id = findApp(n);
       if (id) {
-        if (id === "powershell") return enterPS(c.io);
+        if (id === "powershell") return enterPS(c.io, /pwsh/i.test(n) ? "7" : "5.1");
         const fa = c.a[0] && winSegs(c.a[0], cwd()); const fh = fa && walk(fa);
         if (fh && !isDir(fh.node) && window.VFS && window.VFS.openNode && id !== "fileexplorer") { window.VFS.openNode(fh.key, fh.node); return 0; }
         if (fh && isDir(fh.node) && id === "fileexplorer") { openExplorerAt(fh.canon); return 0; }
@@ -1304,7 +1389,7 @@
     }
     async function runCmd(c) {
       const key = lc(c.name);
-      if (c.a[0] === "/?" && CMD[key] && key !== "echo") { const row = CMD_HELP.find(([k]) => k.split(" / ").some((x) => lc(x) === key)); c.io.out(row ? row[1] : "No help available for " + c.name + "."); return 0; }
+      if (c.a[0] === "/?" && CMD[key] && key !== "echo") { const row = CMD_HELP.find(([k]) => k.split(" / ").some((x) => lc(x) === key)); if (row) { c.io.out(row[1]); return 0; } if (!/^(win12|vmconnect|vmconnect\.exe|virtmgmt\.msc|hyperv|wsl)$/.test(key)) { c.io.out("No help available for " + c.name + "."); return 0; } }
       const ex = extCmd("cmd", key) || extCmd("cmd", key.replace(/\.exe$/, ""));
       if (ex) { const r = await ex(c, { mode: "cmd", COL, host: HOSTNAME, userName }); return typeof r === "number" ? r : 0; }
       const fn = CMD[key];
@@ -1315,7 +1400,7 @@
     // ================================================================ PowerShell
     const PS_NAMES = ["Get-ChildItem", "Set-Location", "Get-Location", "Get-Content", "Set-Content", "Add-Content", "New-Item", "Remove-Item", "Copy-Item", "Move-Item", "Rename-Item", "Get-Process", "Stop-Process", "Get-Date", "Get-Host", "Clear-Host", "Write-Output", "Write-Host", "Select-String", "Sort-Object", "Measure-Object", "Get-History", "Start-Process", "Invoke-WebRequest", "Invoke-Item", "Get-Command", "Get-Help", "Test-Path", "Test-Connection", "Resolve-DnsName", "Get-Item", "Out-File"];
     const PS_ALIAS = { ls: "get-childitem", dir: "get-childitem", gci: "get-childitem", cd: "set-location", sl: "set-location", chdir: "set-location", pwd: "get-location", gl: "get-location", cat: "get-content", gc: "get-content", type: "get-content", ac: "add-content", ni: "new-item", rm: "remove-item", del: "remove-item", erase: "remove-item", rd: "remove-item", rmdir: "remove-item", ri: "remove-item", cp: "copy-item", copy: "copy-item", cpi: "copy-item", mv: "move-item", move: "move-item", mi: "move-item", ren: "rename-item", rni: "rename-item", ps: "get-process", gps: "get-process", kill: "stop-process", spps: "stop-process", cls: "clear-host", clear: "clear-host", echo: "write-output", write: "write-output", sls: "select-string", sort: "sort-object", measure: "measure-object", h: "get-history", history: "get-history", ghy: "get-history", start: "start-process", saps: "start-process", iwr: "invoke-webrequest", ii: "invoke-item", gcm: "get-command", man: "get-help", help: "get-help", gi: "get-item", date: "get-date" };
-    const PS_PASS = ["ipconfig", "ping", "whoami", "hostname", "systeminfo", "tasklist", "taskkill", "nslookup", "sfc", "chkdsk", "shutdown", "tree", "attrib", "findstr", "curl", "wget", "wsl", "install", "arch", "bash", "cmd", "update", "kiosk", "accessibility", "a11y", "theme", "factory-reset", "open", "weather", "calc", "calendar", "last", "who", "timeout", "clip", "explorer", "setx", "xcopy", "robocopy", "where.exe", "ver"];
+    const PS_PASS = ["ipconfig", "ping", "whoami", "hostname", "systeminfo", "tasklist", "taskkill", "nslookup", "sfc", "chkdsk", "shutdown", "tree", "attrib", "findstr", "curl", "wget", "wsl", "install", "arch", "ubuntu", "bash", "cmd", "update", "kiosk", "accessibility", "a11y", "theme", "factory-reset", "open", "weather", "calc", "calendar", "last", "who", "timeout", "clip", "explorer", "setx", "xcopy", "robocopy", "where.exe", "ver"];
     function psParams(tokens, spec) {
       const named = {}, pos = []; const all = (spec.sw || []).concat(spec.params || []);
       for (let i = 0; i < tokens.length; i++) {
@@ -1521,11 +1606,13 @@
       c.io.out(""); c.io.out(longDate(d)); c.io.out(""); return 0;
     }
     const PS_INSTANCE = "a1b2c3d4-" + Math.floor(Math.random() * 0xffff).toString(16).padStart(4, "0") + "-4e5f-9a8b-0c1d2e3f4a5b";
-    function psHost(io) { io.out(""); [["Name", "ConsoleHost"], ["Version", "7.4.6"], ["InstanceId", PS_INSTANCE], ["UI", "System.Management.Automation.Internal.Host.InternalHostUserInterface"], ["CurrentCulture", navigator.language || "en-US"], ["CurrentUICulture", navigator.language || "en-US"], ["PrivateData", "Microsoft.PowerShell.ConsoleHost+ConsoleColorProxy"], ["DebuggerEnabled", "True"], ["IsRunspacePushed", "False"], ["Runspace", "System.Management.Automation.Runspaces.LocalRunspace"]].forEach(([k, v]) => io.out(k.padEnd(17) + ": " + v)); io.out(""); return 0; }
+    function psHost(io) { io.out(""); [["Name", "ConsoleHost"], ["Version", top().psv === "5.1" ? "5.1.26100.2026" : "7.4.6"], ["InstanceId", PS_INSTANCE], ["UI", "System.Management.Automation.Internal.Host.InternalHostUserInterface"], ["CurrentCulture", navigator.language || "en-US"], ["CurrentUICulture", navigator.language || "en-US"], ["PrivateData", "Microsoft.PowerShell.ConsoleHost+ConsoleColorProxy"], ["DebuggerEnabled", "True"], ["IsRunspacePushed", "False"], ["Runspace", "System.Management.Automation.Runspaces.LocalRunspace"]].forEach(([k, v]) => io.out(k.padEnd(17) + ": " + v)); io.out(""); return 0; }
     function psVersionTable(io, sub) {
-      if (sub === "psversion") { io.out("\nMajor  Minor  Patch  PreReleaseLabel BuildLabel\n-----  -----  -----  --------------- ----------\n7      4      6\n"); return 0; }
+      const win = top().psv === "5.1";
+      if (sub === "psversion") { io.out("\nMajor  Minor  " + (win ? "Build  Revision\n-----  -----  -----  --------\n5      1      26100  2026\n" : "Patch  PreReleaseLabel BuildLabel\n-----  -----  -----  --------------- ----------\n7      4      6\n")); return 0; }
       io.out("\nName                           Value\n----                           -----");
-      [["PSVersion", "7.4.6"], ["PSEdition", "Core"], ["GitCommitId", "7.4.6"], ["OS", "Microsoft Windows " + VERSION], ["Platform", "Win32NT"], ["PSCompatibleVersions", "{1.0, 2.0, 3.0, 4.0…}"], ["PSRemotingProtocolVersion", "2.3"], ["SerializationVersion", "1.1.0.1"], ["WSManStackVersion", "3.0"]].forEach(([k, v]) => io.out(k.padEnd(31) + v));
+      (win ? [["PSVersion", "5.1.26100.2026"], ["PSEdition", "Desktop"], ["PSCompatibleVersions", "{1.0, 2.0, 3.0, 4.0...}"], ["BuildVersion", "10.0.26100.2026"], ["CLRVersion", "4.0.30319.42000"], ["WSManStackVersion", "3.0"], ["PSRemotingProtocolVersion", "2.3"], ["SerializationVersion", "1.1.0.1"]]
+        : [["PSVersion", "7.4.6"], ["PSEdition", "Core"], ["GitCommitId", "7.4.6"], ["OS", "Microsoft Windows " + VERSION], ["Platform", "Win32NT"], ["PSCompatibleVersions", "{1.0, 2.0, 3.0, 4.0…}"], ["PSRemotingProtocolVersion", "2.3"], ["SerializationVersion", "1.1.0.1"], ["WSManStackVersion", "3.0"]]).forEach(([k, v]) => io.out(k.padEnd(31) + v));
       io.out(""); return 0;
     }
     function psPre(line, job) {
@@ -1605,7 +1692,8 @@
         case "resolve-dnsname": return doNslookup(c);
         case "get-item": { const p = c.a.find((x) => !x.startsWith("-")) || "."; const list = psResolve(p, "Get-Item", io); if (!list) return 1; list.forEach(({ h }) => psTable(io, h.canon.slice(0, -1), [[h.canon[h.canon.length - 1] || "C:\\", h.node]])); return 0; }
         case "exit": return exitShell(io);
-        case "powershell": case "pwsh": return enterPS(io);
+        case "powershell": return enterPS(io, "5.1");
+        case "pwsh": return enterPS(io, "7");
         case "where": case "where-object": io.err("Where-Object isn't supported in this PowerShell. Try: ls | sls pattern"); return 1;
       }
       if (PS_PASS.includes(n) && CMD[n.replace(/\.exe$/, "")]) { const r = await CMD[n.replace(/\.exe$/, "")](c); return typeof r === "number" ? r : 0; }
@@ -1806,12 +1894,30 @@
       io.out(`\n${t.nd} director${t.nd === 1 ? "y" : "ies"}${f.has("d") ? "" : `, ${t.nf} file${t.nf === 1 ? "" : "s"}`}`); return 0;
     }
     function neofetch(c) {
-      const io = c.io; const A = COL.arch, W = "#ffffff";
+      if (isUbuntu()) return neofetchUbuntu(c);
+      const io = c.io; const A = COL.arch, W = COL.input;
       const art = ["                  -`", "                 .o+`", "                `ooo/", "               `+oooo:", "              `+oooooo:", "              -+oooooo+:", "            `/:-:++oooo+:", "           `/++++/+++++++:", "          `/++++++++++++++:", "         `/+++ooooooooooooo/`", "        ./ooosssso++osssssso+`", "       .oossssso-````/ossssss+`", "      -osssssso.      :ssssssso.", "     :osssssss/        osssso+++.", "    /ossssssss/        +ssssooo/-", "  `/ossssso+/:-        -:/+osssso+-", " `+sso+:-`                 `.-/+oso:", "`++:.                          `-/+/", ".`                                 `/"];
       const mem = navigator.deviceMemory ? navigator.deviceMemory * 1024 : 4096;
       const info = [[`${archUser()}@arch`, null], ["-".repeat(archUser().length + 5), null], ["OS", "Arch Linux (WSL on Windows 12)"], ["Kernel", "6.9.1-arch1-1"], ["Uptime", Math.max(1, Math.round(performance.now() / 60000)) + " mins"], ["Packages", "148 (pacman)"], ["Shell", "bash 5.2"], ["Resolution", screen.width + "x" + screen.height], ["Terminal", "Windows Terminal"], ["CPU", `Cameron Virtual CPU (${navigator.hardwareConcurrency || 4})`], ["Memory", `${Math.round(mem / 8)}MiB / ${mem}MiB`], ["Disk (/)", `${Math.round((DISK.total - DISK.free) / 1073741824)}G / ${Math.round(DISK.total / 1073741824)}G`]];
       art.forEach((l, i) => { const inf = info[i]; const parts = [[l.padEnd(38), A]]; if (inf) { if (inf[1] == null) parts.push([inf[0], i === 0 ? W : null]); else parts.push([inf[0], A], [": " + inf[1], null]); } io.seg(parts); });
       return 0;
+    }
+    function neofetchUbuntu(c) {
+      const io = c.io, O = V("orange", "#e95420"), W = COL.input; const mem = navigator.deviceMemory ? navigator.deviceMemory * 1024 : 4096;
+      const art = ["            .-/+oossssoo+/-.", "        `:+ssssssssssssssssss+:`", "      -+ssssssssssssssssssyyssss+-", "    .ossssssssssssssssssdMMMNysssso.", "   /ssssssssssshdmmNNmmyNMMMMhssssss/", "  +ssssssssshmydMMMMMMMNddddyssssssss+", " /sssssssshNMMMyhhyyyyhmNMMMNhssssssss/", ".ssssssssdMMMNhsssssssssshNMMMdssssssss.", "+sssshhhyNMMNyssssssssssssyNMMMysssssss+", "ossyNMMMNyMMhsssssssssssssshmmmhssssssso", "+sssshhhyNMMNyssssssssssssyNMMMysssssss+", ".ssssssssdMMMNhsssssssssshNMMMdssssssss.", " /sssssssshNMMMyhhyyyyhdNMMMNhssssssss/", "  +sssssssssdmydMMMMMMMMddddyssssssss+", "   /ssssssssssshdmNNNNmyNMMMMhssssss/", "    .ossssssssssssssssssdMMMNysssso.", "      -+sssssssssssssssssyyyssss+-"];
+      const info = [[`${archUser()}@${HOSTNAME}`, null], ["-".repeat(archUser().length + HOSTNAME.length + 1), null], ["OS", "Ubuntu 24.04.1 LTS on Windows 12 x86_64"], ["Kernel", "5.15.167.4-microsoft-standard-WSL2"], ["Uptime", Math.max(1, Math.round(performance.now() / 60000)) + " mins"], ["Packages", "602 (dpkg)"], ["Shell", "bash 5.2.21"], ["Terminal", "Windows Terminal"], ["CPU", `Cameron Virtual CPU (${navigator.hardwareConcurrency || 4})`], ["Memory", `${Math.round(mem / 8)}MiB / ${mem}MiB`]];
+      art.forEach((l, i) => { const inf = info[i]; const parts = [[l.padEnd(42), O]]; if (inf) { if (inf[1] == null) parts.push([inf[0], i === 0 ? W : null]); else parts.push([inf[0], O], [": " + inf[1], null]); } io.seg(parts); });
+      return 0;
+    }
+    async function aptCmd(c, sudo) {
+      const io = c.io, a = c.a, sub = a[0] || "";
+      if (sub === "list" && a.includes("--installed")) { ["bash/noble 5.2.21-2ubuntu4 amd64 [installed]", "coreutils/noble 9.4-3ubuntu6 amd64 [installed]", "git/noble 1:2.43.0-1ubuntu7 amd64 [installed]", "python3/noble 3.12.3-0ubuntu2 amd64 [installed]"].forEach((x) => io.out(x)); return 0; }
+      if (!sudo && /^(install|update|upgrade|remove)$/.test(sub)) { io.err("E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied)\nE: Unable to acquire the dpkg frontend lock, are you root?"); return 100; }
+      if (sub === "update") { for (const l of ["Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease", "Hit:2 http://security.ubuntu.com/ubuntu noble-security InRelease", "Reading package lists... Done", "Building dependency tree... Done", "All packages are up to date."]) { await io.sleep(180); io.out(l); } return 0; }
+      if (sub === "upgrade") { io.out("Reading package lists... Done\nBuilding dependency tree... Done\nCalculating upgrade... Done\n0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded."); return 0; }
+      if (sub === "install" && a[1]) { io.out("Reading package lists... Done\nBuilding dependency tree... Done"); await io.sleep(300); io.out(`The following NEW packages will be installed:\n  ${a.slice(1).filter((x) => !x.startsWith("-")).join(" ")}\nSetting up ${a[a.length - 1]} ...`); io.out("(simulated: packages are not really downloaded)", COL.gray); return 0; }
+      if (sub === "remove" && a[1]) { io.out(`Removing ${a[1]} ...`); return 0; }
+      io.out("apt 2.7.14 (amd64)\nUsage: apt [options] command\n\nMost used commands:\n  list - list packages\n  update - update list of available packages\n  upgrade - upgrade the system\n  install - install packages\n  remove - remove packages"); return 0;
     }
     function pacman(c) {
       const io = c.io; const a = c.a;
@@ -1826,7 +1932,7 @@
       const io = c.io; let name = c.name; let sudo = false;
       if (name === "sudo") { if (!c.args.length) return bErr(io, "usage: sudo command"); sudo = true; c = Object.assign({}, c, { name: c.args[0].v, words: c.args, args: c.args.slice(1), a: c.a.slice(1) }); name = c.name; }
       switch (name) {
-        case "help": io.out("GNU bash, version 5.2 (Arch Linux on WSL). Works on this PC's real files: / = C:\\, ~ = C:\\Users\\" + userName() + "\n"); BASH_HELP.forEach(([k, d]) => io.out("  " + k.padEnd(42) + d)); io.out("\n  Tab completes, Up/Down = history, Ctrl+C cancels, Ctrl+L clears, | pipes, && chains, > >> redirect."); return 0;
+        case "help": io.out("GNU bash, version 5.2 (" + (isUbuntu() ? "Ubuntu 24.04 LTS" : "Arch Linux") + " on WSL). Works on this PC's real files: / = C:\\, ~ = C:\\Users\\" + userName() + "\n"); BASH_HELP.forEach(([k, d]) => io.out("  " + k.padEnd(42) + d)); io.out("\n  Tab completes, Up/Down = history, Ctrl+C cancels, Ctrl+L clears, | pipes, && chains, > >> redirect."); return 0;
         case "ls": case "dir": return bashLs(c);
         case "ll": return bashLs(Object.assign({}, c, { a: ["-la"].concat(c.a) }));
         case "cd": return bashCd(c);
@@ -1847,18 +1953,20 @@
         case "tree": return bashTree(c);
         case "sort": { const { f, rest } = bashFlags(c.a); return sortCmd(c, f.has("r"), rest[0]); }
         case "uniq": { const t = c.a[0] ? bashRead(io, c.a[0], "uniq") : io.stdin; if (t == null) return 1; let prev = null; textLines(t).forEach((l) => { if (l !== prev) io.out(l); prev = l; }); return 0; }
-        case "echo": { let a = c.a.slice(); let nl = true; while (a[0] === "-n" || a[0] === "-e") { if (a[0] === "-n") nl = false; a.shift(); } io.out(a.join(" ").replace(/\\n/g, c.a.includes("-e") ? "\n" : "\\n")); return 0; }
-        case "printf": io.out((c.a[0] || "").replace(/\\n$/, "").replace(/\\n/g, "\n").replace(/%s/g, () => c.a[1] || "")); return 0;
-        case "uname": io.out(c.a.includes("-a") ? "Linux arch 6.9.1-arch1-1 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux" : c.a.includes("-r") ? "6.9.1-arch1-1" : "Linux"); return 0;
+        case "echo": { let a = c.a.slice(); let nl = true; while (a[0] === "-n" || a[0] === "-e") { if (a[0] === "-n") nl = false; a.shift(); } const ee = c.a.includes("-e"); io.out(a.join(" ").replace(/\\n/g, ee ? "\n" : "\\n").replace(/\\a/g, ee ? "\u0007" : "\\a")); return 0; }
+        case "printf": io.out((c.a[0] || "").replace(/\\n$/, "").replace(/\\n/g, "\n").replace(/\\a/g, "\u0007").replace(/%s/g, () => c.a[1] || "")); return 0;
+        case "uname": io.out(isUbuntu() ? (c.a.includes("-a") ? `Linux ${HOSTNAME} 5.15.167.4-microsoft-standard-WSL2 #1 SMP x86_64 x86_64 x86_64 GNU/Linux` : c.a.includes("-r") ? "5.15.167.4-microsoft-standard-WSL2" : "Linux") : c.a.includes("-a") ? "Linux arch 6.9.1-arch1-1 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux" : c.a.includes("-r") ? "6.9.1-arch1-1" : "Linux"); return 0;
+        case "lsb_release": if (!isUbuntu()) { io.err("bash: lsb_release: command not found"); return 127; } io.out("Distributor ID:\tUbuntu\nDescription:\tUbuntu 24.04.1 LTS\nRelease:\t24.04\nCodename:\tnoble"); return 0;
+        case "apt": case "apt-get": if (!isUbuntu()) { io.err(`bash: ${name}: command not found`); return 127; } return aptCmd(c, sudo);
         case "whoami": io.out(sudo ? "root" : archUser()); return 0;
-        case "id": io.out(sudo ? "uid=0(root) gid=0(root) groups=0(root)" : `uid=1000(${archUser()}) gid=1000(${archUser()}) groups=1000(${archUser()}),998(wheel)`); return 0;
-        case "hostname": io.out("arch"); return 0;
+        case "id": io.out(sudo ? "uid=0(root) gid=0(root) groups=0(root)" : `uid=1000(${archUser()}) gid=1000(${archUser()}) groups=1000(${archUser()}),${isUbuntu() ? "27(sudo)" : "998(wheel)"}`); return 0;
+        case "hostname": io.out(isUbuntu() ? HOSTNAME : "arch"); return 0;
         case "date": { const d = nowD(); let tz = ""; try { tz = (d.toLocaleTimeString("en-US", { timeZoneName: "short" }).split(" ").pop()) || ""; } catch (_) {} let h = d.getHours(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; io.out(`${DAYS[d.getDay()].slice(0, 3)} ${MON[d.getMonth()]} ${String(d.getDate()).padStart(2)} ${p2(h)}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${ap} ${tz} ${d.getFullYear()}`); return 0; }
         case "clear": clearScreen(); return 0;
         case "exit": case "logout": return exitShell(io);
         case "history": return historyCmd(c);
         case "neofetch": case "fastfetch": return neofetch(c);
-        case "pacman": return sudo || /^-Q/.test(c.a[0] || "") ? pacman(c) : bErr(io, "error: you cannot perform this operation unless you are root.");
+        case "pacman": if (isUbuntu()) { io.err("Command 'pacman' not found, but can be installed with:\nsudo apt install pacman-package-manager"); return 127; } return sudo || /^-Q/.test(c.a[0] || "") ? pacman(c) : bErr(io, "error: you cannot perform this operation unless you are root.");
         case "which": { let st = 0; c.a.forEach((x) => { const known = ["ls", "cat", "grep", "find", "bash", "pacman", "tree", "curl", "wget", "ping", "nano", "vim"]; if (known.includes(x)) io.out("/usr/bin/" + x); else { io.err(`which: no ${x} in (/usr/local/sbin:/usr/local/bin:/usr/bin)`); st = 1; } }); return st; }
         case "env": case "printenv": ["HOME", "USER", "SHELL", "PATH", "LANG", "TERM", "HOSTNAME", "PWD", "WSL_DISTRO_NAME"].forEach((k) => io.out(k + "=" + bashVar(k))); Object.keys(bashEnv).forEach((k) => io.out(k + "=" + bashEnv[k])); return 0;
         case "export": return 0;
@@ -1888,8 +1996,9 @@
         case "sleep": { const n = parseFloat(c.a[0]) || 0; await io.sleep(n * 1000); return 0; }
         case "explorer.exe": case "explorer": { if (!c.a[0]) { launchApp("fileexplorer"); return 0; } const segs = posixSegs(c.a[0], cwd()); const h = walk(segs); if (!h) return bErr(io, "explorer.exe: path not found"); if (isDir(h.node)) openExplorerAt(h.canon); else if (window.VFS) window.VFS.openNode(h.key, h.node); return 0; }
         case "cmd.exe": return enterCmd(io);
-        case "powershell.exe": case "pwsh.exe": case "pwsh": return enterPS(io);
-        case "wsl": case "wsl.exe": io.out("You're already inside Arch Linux (WSL). Type 'exit' to go back to Windows."); return 0;
+        case "powershell.exe": return enterPS(io, "5.1");
+        case "pwsh.exe": case "pwsh": return enterPS(io, "7");
+        case "wsl": case "wsl.exe": io.out(`You're already inside ${isUbuntu() ? "Ubuntu" : "Arch Linux"} (WSL). Type 'exit' to go back to Windows.`); return 0;
       }
       if (/\.exe$/i.test(name)) { const id = findApp(name); if (id) { launchApp(id); return 0; } }
       if (/^\.?\//.test(name)) { const segs = posixSegs(name, cwd()); const h = walk(segs); if (!h) return bErr(io, `bash: ${name}: No such file or directory`); if (isDir(h.node)) return bErr(io, `bash: ${name}: Is a directory`); return bErr(io, `bash: ${name}: Permission denied`); }
@@ -1897,7 +2006,7 @@
     }
 
     // ================================================================ keyboard: history, Tab, Ctrl+C, Ctrl+L
-    const BASH_CMDS = ["ls", "ll", "cd", "pwd", "mkdir", "rm", "rmdir", "cp", "mv", "touch", "cat", "less", "more", "head", "tail", "wc", "grep", "find", "tree", "sort", "uniq", "echo", "printf", "uname", "whoami", "id", "hostname", "date", "clear", "exit", "history", "neofetch", "pacman", "sudo", "which", "env", "export", "man", "df", "free", "ps", "kill", "nano", "vim", "code", "xdg-open", "chmod", "ping", "curl", "wget", "last", "who", "nslookup", "ip", "sleep", "explorer.exe", "cmd.exe", "powershell.exe", "help"];
+    const BASH_CMDS = ["ls", "ll", "cd", "pwd", "mkdir", "rm", "rmdir", "cp", "mv", "touch", "cat", "less", "more", "head", "tail", "wc", "grep", "find", "tree", "sort", "uniq", "echo", "printf", "uname", "whoami", "id", "hostname", "date", "clear", "exit", "history", "neofetch", "pacman", "sudo", "which", "env", "export", "man", "df", "free", "ps", "kill", "nano", "vim", "code", "xdg-open", "chmod", "ping", "curl", "wget", "last", "who", "nslookup", "ip", "sleep", "explorer.exe", "cmd.exe", "powershell.exe", "help", "apt", "lsb_release"];
     function commandNames() {
       const m = mode();
       if (m === "bash") return BASH_CMDS;
@@ -1945,13 +2054,13 @@
       }
       const before = v.slice(0, pos), after = v.slice(pos);
       const { start, word, cands } = completions(before);
-      if (!cands.length) { tabState = null; return; }
+      if (!cands.length) { tabState = null; if (mode() === "bash" && o.onBell) try { o.onBell(); } catch (_) {} return; }
       if (mode() === "bash") {
         if (cands.length === 1) { const c = cands[0]; applyCompletion(before, after, start, c.cmd ? c.text + " " : quoteFor(c.text, c.dir)); tabState = null; return; }
         let common = cands[0].text; cands.forEach((c) => { while (!c.text.startsWith(common)) common = common.slice(0, -1); });
         if (common.length > word.length) { applyCompletion(before, after, start, cands[0].cmd ? common : quoteFor(common, false)); lastTabAt = 0; return; }
         const now = Date.now();
-        if (now - lastTabAt < 1200) { emit([[promptText(), promptColor()], [v, "#ffffff"]]); const names = cands.map((c) => (c.cmd ? c.text : c.text.split("/").pop() + (c.dir ? "/" : ""))); emit(names.join("  ")); }
+        if (now - lastTabAt < 1200) { emit(promptParts().concat([[v, COL.input]])); const names = cands.map((c) => (c.cmd ? c.text : c.text.split("/").pop() + (c.dir ? "/" : ""))); emit(names.join("  ")); }
         lastTabAt = now; return;
       }
       tabState = { before, after, start, cands, idx: back ? cands.length - 1 : 0 };
@@ -1960,6 +2069,12 @@
     }
     cmd.addEventListener("keydown", (e) => {
       const k = e.key;
+      if (exited) {   // "[process exited ...]": Enter restarts the profile, Ctrl+D closes the pane
+        if (k === "Enter") { e.preventDefault(); start(); }
+        else if (e.ctrlKey && lc(k) === "d") { e.preventDefault(); if (o.close) o.close(); }
+        return;
+      }
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && lc(k) === "d" && !busy && !pendingAsk && !cmd.value && (mode() === "bash" || mode() === "azure")) { e.preventDefault(); emit(promptParts()); exitShell(mkIO({ dead: false }, null, null)); return; }
       if (k !== "Tab" && k !== "Shift") tabState = null;
       if ((e.ctrlKey || e.metaKey) && lc(k) === "c" && !e.shiftKey) {
         const selOut = window.getSelection && String(window.getSelection()) || "";
@@ -1967,7 +2082,7 @@
         if (cmd.selectionStart !== cmd.selectionEnd) return;
         e.preventDefault();
         if (busy && curJob) { curJob.cancel(); emit("^C", fg); return; }
-        emit([[promptText(), promptColor()], [cmd.value + "^C", "#ffffff"]]); cmd.value = ""; histIdx = hist.length; return;
+        emit(promptParts().concat([[cmd.value + "^C", COL.input]])); cmd.value = ""; histIdx = hist.length; return;
       }
       if (e.ctrlKey && lc(k) === "l") { e.preventDefault(); clearScreen(); return; }
       if (k === "Tab") { e.preventDefault(); if (!busy) onTab(e.shiftKey); return; }
@@ -1977,16 +2092,94 @@
       if (k !== "Enter") return;
       e.preventDefault();
       const line = cmd.value;
-      if (pendingAsk) { const pa = pendingAsk; pendingAsk = null; cmd.value = ""; emit([[pa.q, fg], [line, "#ffffff"]]); renderPrompt(); pa.res(line); return; }
+      if (pendingAsk) { const pa = pendingAsk; pendingAsk = null; cmd.value = ""; emit([[pa.q, fg], [line, COL.input]]); renderPrompt(); pa.res(line); return; }
       if (busy) return;
       cmd.value = "";
       submit(line);
     });
     termEl.addEventListener("mouseup", () => { const s = window.getSelection && String(window.getSelection()); if (!s) try { cmd.focus({ preventScroll: true }); } catch (_) {} });
 
-    renderPrompt();
-    return winRef;
+    // ================================================================ Azure Cloud Shell (simulated, never connects)
+    const AZ_CODE = Array.from({ length: 9 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+    function azSignIn(io) {
+      io.out("To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code " + AZ_CODE + " to authenticate.");
+      io.out("(Simulated: this code is not registered with Microsoft, so signing in can't succeed. Nothing is sent to Azure.)", COL.gray);
+    }
+    function runAzure(line, io) {
+      const t = line.trim(), n = lc(t.split(/\s+/)[0] || "");
+      if (n === "exit" || n === "logout") return exitShell(io);
+      if (n === "cls" || n === "clear" || n === "clear-host") { clearScreen(); return 0; }
+      if (n === "help" || n === "get-help") { io.out("Azure Cloud Shell - SIMULATED, NOT CONNECTED\n\n  az login / Connect-AzAccount   show the (simulated) device sign-in prompt\n  clear                          clear the screen\n  exit                           close this tab\n\nAll other az / Az PowerShell commands report 'not connected': this tab never talks to Azure."); return 0; }
+      if (/^(az\s+login|connect-azaccount|login-azaccount)\b/i.test(t)) { azSignIn(io); io.err("Authentication failed: not connected (simulated Azure Cloud Shell)."); return 1; }
+      if (n === "whoami") { io.out("(not signed in)"); return 1; }
+      io.err(`${t.split(/\s+/)[0]}: Not connected to Azure. This Azure Cloud Shell is a simulation; the command was not sent anywhere. Type 'help'.`); return 1;
+    }
+
+    // ================================================================ profile start / restart
+    function wslOff() {
+      const g = COL.gray;
+      emit("The Windows Subsystem for Linux optional component is not enabled. Please enable it and try again.");
+      emit("See https://aka.ms/wslinstall for details.");
+      emit("Error code: Wsl/WSL_E_WSL_OPTIONAL_COMPONENT_REQUIRED", COL.red);
+      emit("");
+      emit("Turn it on like on Windows:", COL.yellow);
+      emit("  1. Control Panel > Programs > Turn Windows features on or off", g);
+      emit("  2. Check \"Windows Subsystem for Linux\" and select OK", g);
+      emit("  or run  wsl --install  in a Command Prompt or PowerShell tab, then press Enter here.", g);
+      const row = document.createElement("div"); row.className = "tl";
+      const b = document.createElement("button"); b.type = "button"; b.className = "tx-inline-btn"; b.textContent = "Turn Windows features on or off";
+      b.style.cssText = "font:inherit;font-size:.85em;margin:6px 0;padding:3px 10px;border-radius:4px;border:1px solid currentColor;background:transparent;color:var(--tx-cyan,#61d6d6);cursor:pointer";
+      b.onclick = (e) => { e.stopPropagation(); try { if (window.SysRun) window.SysRun("appwiz.cpl"); else window.WM.open("controlpanel"); } catch (_) {} };
+      row.appendChild(b); out.appendChild(row);
+      emit("");
+      emit("[process exited with code 4294967295 (0xffffffff)]");
+      emit("You can now close this terminal with Ctrl+D, or press Enter to restart.");
+      exited = { code: 4294967295 }; renderPrompt();
+    }
+    let started = false;
+    function start() {
+      const restart = started; started = true; exited = null;
+      if (restart) emit("");
+      stack.length = 0; stack.push(firstFrame());
+      const sh = prof.shell;
+      if (prof.banner === "profile") {
+        if (sh === "cmd") emit(`Microsoft Windows 12 [Version ${VERSION}]\n(c) Microsoft Corporation. All rights reserved.`);
+        else if (sh === "ps" && prof.ps === "5.1") emit("Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nInstall the latest PowerShell for new features and improvements! https://aka.ms/PSWindows");
+        else if (sh === "ps") emit("PowerShell 7.4.6");
+        else if (sh === "azure") {
+          emit("Azure Cloud Shell  -  SIMULATED, NOT CONNECTED", COL.yellow);
+          emit("This tab imitates Windows Terminal's Azure connector. It never contacts Azure or Microsoft.", COL.gray);
+          emit("");
+          emit("Welcome to Azure Cloud Shell"); emit("Requesting a Cloud Shell..."); azSignIn(mkIO({ dead: false }, null, null));
+          emit("Not connected. Type 'help' for what works here.", COL.red);
+        }
+      }
+      if (sh === "bash" && !TS().archInstalled) { if (o.onMode) chromeForMode(); wslOff(); return; }
+      if (sh === "bash" && prof.banner === "profile") {
+        if (prof.distro === "ubuntu") emit(`Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 5.15.167.4-microsoft-standard-WSL2 x86_64)\n\n * Documentation:  https://help.ubuntu.com\n * Management:     https://landscape.canonical.com\n * Support:        https://ubuntu.com/pro\n\nThis WSL distro works on this PC's real files: / is C:\\, ~ is C:\\Users\\${userName()}.\nType 'help' for commands.`);
+        else emit("Welcome to Arch Linux on WSL. / is C:\\, ~ is your user folder. Type 'help' or 'neofetch'.", COL.arch);
+      }
+      if (prof.banner !== "none") emit("");
+      if (prof.startDir && !startSegs() && !(o.cwd && walk(o.cwd))) emit(`[warning] The starting directory "${prof.startDir}" could not be found. Starting in ${show(HOME())} instead.`, COL.yellow);
+      if (o.onMode) chromeForMode();
+      renderPrompt();
+    }
+    if (prof.banner === "legacy") { started = true; renderPrompt(); } else start();
+
+    const api = {
+      el: termEl, input: cmd, profile: prof,
+      focus() { try { cmd.focus({ preventScroll: true }); } catch (_) {} },
+      dispose() { closed = true; if (curJob && curJob.cancel) curJob.cancel(); if (pendingAsk && pendingAsk.job) pendingAsk.job.dead = true; },
+      cwd: () => cwd().slice(), mode, shellName, cwdText: () => show(cwd()),
+      isBusy: () => busy, isExited: () => !!exited,
+      clear: clearScreen, restart: start,
+      // Run lines as if typed (used for multi-line paste and tests).
+      async run(lines) { for (const l of [].concat(lines)) { if (closed || exited) return; if (pendingAsk) { const pa = pendingAsk; pendingAsk = null; emit([[pa.q, fg], [l, COL.input]]); renderPrompt(); pa.res(l); continue; } await submit(l); } },
+      insert(text) { const a = cmd.selectionStart == null ? cmd.value.length : cmd.selectionStart, b = cmd.selectionEnd == null ? a : cmd.selectionEnd; cmd.value = cmd.value.slice(0, a) + text + cmd.value.slice(b); const p = a + text.length; try { cmd.setSelectionRange(p, p); } catch (_) {} cmd.dispatchEvent(new Event("input")); },
+      text: () => termEl.innerText,
+    };
+    return api;
   }
 
-  window.TerminalCore = { open, version: 1, _walk: (p) => walk(winSegs(p, HOME())) };
+  window.TerminalCore = { open, createSession, version: 2, VERSION, _walk: (p) => walk(winSegs(p, HOME())), _resolveDir: (p) => { const segs = winSegs(String(p || ""), HOME()); const h = segs && walk(segs); return h && isDir(h.node) ? winPath(h.canon) : null; } };
 })();
