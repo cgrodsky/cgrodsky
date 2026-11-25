@@ -36,7 +36,7 @@
         <button data-a="full" title="Full screen">Full screen</button>
         <button data-a="off" class="vm12-off" title="Turn off the VM">Turn off</button>
       </div>
-      <div class="vm12-screen"><iframe class="vm12-frame" title="${esc(name)}" src="${src}" allow="fullscreen; clipboard-read; clipboard-write; autoplay"></iframe>
+      <div class="vm12-screen"><iframe class="vm12-frame" title="${esc(name)}" src="${src}" allow="fullscreen; clipboard-read; clipboard-write; autoplay; publickey-credentials-get; publickey-credentials-create"></iframe>
         <div class="vm12-boot">Starting the virtual machine…<small>${hasState ? "Resuming its saved state" : "New VM — Windows Setup will run"}</small></div></div>
       <div class="vm12-status">Generation 2 · ${navigator.hardwareConcurrency || 4} virtual processors · storage key <code>${keyFor(d)}</code> · level ${d} of ${MAX_DEPTH}</div>`;
     const frame = body.querySelector(".vm12-frame"), boot = body.querySelector(".vm12-boot"), stateEl = body.querySelector(".vm12-state");

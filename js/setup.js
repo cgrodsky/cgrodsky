@@ -674,53 +674,50 @@
   }
 
   // ---- Fingerprint ----
-  function oobeFingerprintIntro() {
-    if (!window.TouchID) { oobeFingerprintShow(); return; }
-    TouchID.available().then((ok) => (ok ? oobeFingerprintShow() : oobeFingerprintShow()));
-  }
+  function oobeFingerprintIntro() { oobeFingerprintShow(); }
+  // Real enrollment: the browser's WebAuthn prompt (Touch ID / Face ID / Windows Hello).
   function oobeFingerprintShow() {
+    const nm = window.TouchID ? TouchID.sensorName() : "Touch ID";
     const node = el(`<div>
-      <h1>Fingerprint</h1>
-      <p class="oobe2-sub-strong">How to use Fingerprint</p>
-      <p class="sub">To activate the Fingerprint, you must to place your finger at the Fingerprint sensor on your device and keep holding until Fingerprint activated.</p>
+      <h1>${escapeHtml(nm)}</h1>
+      <p class="oobe2-sub-strong">Sign in with your fingerprint or face</p>
+      <p class="sub" id="fpmsg">Tap <b>Set up</b>. Your device will ask for your fingerprint or face — that's the real ${escapeHtml(nm)}, not a pretend one.</p>
       <div class="oobe2-fp-sensor"><div class="oobe2-fp-pad"></div><span class="oobe2-fp-hand">&#128070;</span></div>
-      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Next</button></div>
+      <p class="sub" id="fperr" style="color:#ff8a8a;min-height:1.2em"></p>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Set up</button></div>
     </div>`);
+    const next = node.querySelector("#next"), msg = node.querySelector("#fpmsg"), fe = node.querySelector("#fperr");
     node.querySelector("#skip").onclick = () => oobeAlright();
-    node.querySelector("#next").onclick = () => oobeFingerprintScan();
+    if (window.TouchID) TouchID.available().then((ok) => {
+      if (ok) return;
+      msg.textContent = "This browser can't reach a fingerprint reader or face unlock on this device. You can skip this and set it up later in Settings → Accounts → Sign-in options.";
+      next.textContent = "Try anyway";
+    });
+    next.onclick = () => {
+      if (!window.TouchID) { oobeAlright(); return; }
+      next.disabled = true; fe.textContent = "";
+      TouchID.enroll().then(() => oobeFingerprintDone(nm)).catch((e) => {
+        next.disabled = false;
+        fe.textContent = e && e.message === "cancelled" ? "Cancelled — tap Set up to try again, or Skip." : ((e && e.friendly) || "That didn't work.");
+      });
+    };
     oobe(node, { illus: IC.finger, back: oobeBiometric });
   }
-  function oobeFingerprintScan() {
+  function oobeFingerprintDone(nm) {
     const node = el(`<div class="oobe2-fpscan">
-      <div class="oobe2-fpring"><div class="oobe2-fpring-fill" id="ring"></div><span class="oobe2-fpglyph">${IC.finger}</span></div>
-      <p class="oobe2-fp-status" id="st">Fingerprint is in process</p>
+      <div class="oobe2-fpring done"><div class="oobe2-fpring-fill" style="background:conic-gradient(#1fc06a 360deg,#1fc06a 360deg)"></div><span class="oobe2-fpglyph"><svg viewBox="0 0 48 48" width="70" height="70"><circle cx="24" cy="24" r="22" fill="#1fc06a"/><path d="M15 24 l6 7 12 -14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <p class="oobe2-fp-status">${escapeHtml(nm)} is set up</p>
     </div>`);
     oobe(node, {});
     bg.querySelector(".oobe2-stage").classList.add("noillus");
-    const ring = bg.querySelector("#ring"), st = bg.querySelector("#st");
-    let left = false;
-    const finishScan = () => {
-      if (left) return; left = true;
-      ring.style.background = "conic-gradient(#1fc06a 360deg,#1fc06a 360deg)";
-      bg.querySelector(".oobe2-fpring").classList.add("done");
-      bg.querySelector(".oobe2-fpglyph").innerHTML = `<svg viewBox="0 0 48 48" width="70" height="70"><circle cx="24" cy="24" r="22" fill="#1fc06a"/><path d="M15 24 l6 7 12 -14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-      st.textContent = "Fingerprint is in process";
-      S().profile = Object.assign({}, S().profile, { fingerprint: true }); State.save();
-      setTimeout(oobeAlright, 1100);
-    };
-    // animate ring; try the real sensor if present
-    let pct = 0;
-    const iv = setInterval(() => { pct = Math.min(100, pct + 7); ring.style.background = `conic-gradient(#28d0ff ${pct * 3.6}deg,rgba(255,255,255,.12) ${pct * 3.6}deg)`; if (pct >= 100) { clearInterval(iv); finishScan(); } }, 120);
-    if (window.TouchID && window.PublicKeyCredential) {
-      TouchID.available().then((ok) => (ok ? TouchID.enroll({ silent: true }) : null)).then((res) => { if (res === true) { clearInterval(iv); ring.style.background = "conic-gradient(#28d0ff 360deg,#28d0ff 360deg)"; finishScan(); } }).catch(() => {});
-    }
+    setTimeout(oobeAlright, 1200);
   }
 
   // ---- Alright! ----
   function oobeAlright() {
     const node = el(`<div>
       <h1>Alright!</h1>
-      <p class="sub">Now your account becomes more secure! Next, you must insert your fingerprint to log in!</p>
+      <p class="sub">${window.TouchID && TouchID.enrolled() ? "Now your account is more secure! Next time, sign in with " + escapeHtml(TouchID.sensorName()) + " or your PIN." : "Your account is ready. You can add " + escapeHtml(window.TouchID ? TouchID.sensorName() : "Touch ID") + ", a password or a security key later in Settings → Accounts → Sign-in options."}</p>
       <div class="oobe2-actions"><button class="ibtn" id="save">Save</button></div>
     </div>`);
     node.querySelector("#save").onclick = () => oobeWelcomeBack();

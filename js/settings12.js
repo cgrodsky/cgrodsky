@@ -557,29 +557,72 @@
     } },
     signin: { title: "Sign-in options", parent: "accounts", build(h) {
       const pr = profile(), isPin = pr.authType === "pin";
-      // Fingerprint (real Touch ID / Windows Hello sensor through the browser)
-      const fp = card(`<div class="w12s-row-t">Fingerprint recognition (${window.TouchID ? TouchID.sensorName() : "Touch ID"})</div><div class="w12s-row-s w12s-fp-s">Checking for a sensor…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
-      h.appendChild(fp); fp.hidden = true;
+      const errMsg = (e, fallback) => (e && e.message === "cancelled") ? "" : ((e && e.friendly) || fallback);
+      const when = (t) => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+      // Touch ID / Face ID / Windows Hello — a real WebAuthn platform authenticator.
+      const tName = window.TouchID ? TouchID.sensorName() : "Touch ID";
+      const fp = card(`<div class="w12s-row-t">${esc(tName)} (fingerprint or face)</div><div class="w12s-row-s w12s-fp-s">Checking this device…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
+      h.appendChild(fp);
       const fs = fp.querySelector(".w12s-fp-s"), fb = fp.querySelector(".w12s-fp-btns"), fe = fp.querySelector(".w12s-err");
       const paintFp = () => {
         if (!window.TouchID) { fp.remove(); return; }
         TouchID.available().then((ok) => {
           fb.innerHTML = ""; fe.textContent = "";
-          if (!ok) { fp.remove(); return; }   // no sensor → no fingerprint option at all
-          fp.hidden = false;
-          if (TouchID.enrolled()) {
-            fs.textContent = "On — you can unlock and pay with your fingerprint.";
-            const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => note("Fingerprint recognized ✓")).catch(() => { fe.textContent = "Not recognized — try again."; });
-            const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note("Fingerprint removed."); paintFp(); };
+          const on = TouchID.enrolled();
+          if (!ok && !on) { fs.textContent = "Not available in this browser on this device. (It needs a fingerprint reader or face unlock that the browser can use, and an https page.)"; return; }
+          if (on) {
+            fs.textContent = "On — unlock and pay with " + tName + ". Your device checks your fingerprint or face; Windows 12 checks the signed answer." + (ok ? "" : " (Not available on this device right now.)");
+            const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => { fe.textContent = ""; note(tName + " recognized ✓"); }).catch((e) => { fe.textContent = errMsg(e, "Not recognized — try again."); });
+            const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note(tName + " removed."); paintFp(); };
             fb.append(t, r);
           } else {
-            fs.textContent = "A sensor is ready on this device. Set it up to unlock and pay with your fingerprint.";
-            const s = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`); s.onclick = () => TouchID.enroll().then(() => { note("Fingerprint set up ✓"); paintFp(); }).catch(() => { fe.textContent = "Setup was cancelled or didn't finish."; });
+            fs.textContent = "This device can use " + tName + ". Set it up to unlock and pay with your fingerprint or face.";
+            const s = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`); s.onclick = () => TouchID.enroll().then(() => { note(tName + " set up ✓"); paintFp(); }).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
             fb.append(s);
           }
         });
       };
       paintFp();
+      // Security keys — real WebAuthn roaming authenticators (USB / NFC / Bluetooth).
+      const sk = card(`<div class="w12s-row-t">Security key</div><div class="w12s-row-s w12s-sk-s"></div><div class="w12s-sk-list"></div><div class="w12s-fp-btns w12s-sk-btns"></div><div class="w12s-err"></div>`);
+      h.appendChild(sk);
+      const paintSk = () => {
+        const ss = sk.querySelector(".w12s-sk-s"), sl = sk.querySelector(".w12s-sk-list"), sb = sk.querySelector(".w12s-sk-btns"), se = sk.querySelector(".w12s-err");
+        sl.innerHTML = ""; sb.innerHTML = ""; se.textContent = "";
+        if (!window.SecurityKey || !SecurityKey.supported()) { ss.textContent = "This browser can't use security keys here (it needs WebAuthn and an https page)."; return; }
+        const keys = SecurityKey.list();
+        ss.textContent = keys.length ? "Sign in by plugging in or tapping your key." : "Sign in with a physical key such as a YubiKey or Titan key (USB, NFC or Bluetooth).";
+        keys.forEach((k) => {
+          const row = el(`<div class="w12s-sk-row"><span class="w12s-sk-name"></span><span class="w12s-row-s">Added ${esc(when(k.at))}${k.last ? " · last used " + esc(when(k.last)) : ""}</span><span class="w12s-sk-act"></span></div>`);
+          row.querySelector(".w12s-sk-name").textContent = k.name;
+          const rn = el(`<button class="w12s-btn">Rename</button>`); rn.onclick = () => { const v = prompt("Name this key:", k.name); if (v && v.trim()) { SecurityKey.rename(k.id, v.trim().slice(0, 40)); paintSk(); } };
+          const rm = el(`<button class="w12s-btn">Remove</button>`); rm.onclick = () => { if (confirm("Remove “" + k.name + "”? You won't be able to sign in with it.")) { SecurityKey.remove(k.id); note("Security key removed."); paintSk(); } };
+          row.querySelector(".w12s-sk-act").append(rn, rm); sl.appendChild(row);
+        });
+        const add = el(`<button class="w12s-btn w12s-btn-accent">${keys.length ? "Add another key" : "Add a security key"}</button>`);
+        add.onclick = () => SecurityKey.add().then((k) => { note("“" + k.name + "” added ✓"); paintSk(); }).catch((e) => { se.textContent = errMsg(e, "The key wasn't added."); });
+        sb.appendChild(add);
+        if (keys.length) { const t = el(`<button class="w12s-btn">Test a key</button>`); t.onclick = () => SecurityKey.verify().then((k) => { se.textContent = ""; note("“" + k.name + "” works ✓"); paintSk(); }).catch((e) => { se.textContent = errMsg(e, "Key not recognized."); }); sb.appendChild(t); }
+      };
+      paintSk();
+      // Password (in addition to the PIN) — stored as a salted PBKDF2 hash.
+      if (isPin && window.PasswordAuth) {
+        const pc = card(`<div class="w12s-row-t">Password</div><div class="w12s-row-s">${PasswordAuth.has() ? "On — you can also sign in with your password." : "Add a password as another way to sign in. Only a salted hash is stored."}</div>
+          <input class="w12s-input" type="password" autocomplete="new-password" placeholder="${PasswordAuth.has() ? "New password" : "Password"}">
+          <input class="w12s-input" type="password" autocomplete="new-password" placeholder="Confirm password">
+          <div class="w12s-err"></div><div class="w12s-fp-btns"><button class="w12s-btn w12s-btn-accent w12s-pw-set">${PasswordAuth.has() ? "Change password" : "Add password"}</button>${PasswordAuth.has() ? `<button class="w12s-btn w12s-pw-rm">Remove</button>` : ""}</div>`);
+        const [p1, p2] = pc.querySelectorAll("input"), pe = pc.querySelector(".w12s-err");
+        pc.querySelector(".w12s-pw-set").onclick = async () => {
+          if (p1.value.length < 4) { pe.textContent = "Use at least 4 characters."; return; }
+          if (p1.value !== p2.value) { pe.textContent = "They don't match. Try again."; return; }
+          const had = PasswordAuth.has();
+          try { await PasswordAuth.set(p1.value); } catch (e) { pe.textContent = e.message; return; }
+          p1.value = p2.value = ""; pe.textContent = ""; note(had ? "Your password was changed." : "Password added ✓"); openSubRef("signin");
+        };
+        const rmb = pc.querySelector(".w12s-pw-rm"); if (rmb) rmb.onclick = () => { if (confirm("Remove your password? You can still sign in with your PIN.")) { PasswordAuth.clear(); note("Password removed."); openSubRef("signin"); } };
+        h.appendChild(pc);
+      }
+      h.appendChild(line("Require sign-in", toggle(!!pr.requireSignIn, (v) => { pr.requireSignIn = v; State.save(); }), "Hide “Skip (test mode)” on the lock screen"));
       h.appendChild(line(isPin ? "PIN (Windows Hello)" : "Password", null, "This is how you sign in on the lock screen"));
       const c = card(`<div class="w12s-row-t">Change your ${isPin ? "PIN" : "password"}</div>
         <input class="w12s-input" type="password" placeholder="New ${isPin ? "PIN" : "password"}" ${isPin ? 'inputmode="numeric"' : ""}>

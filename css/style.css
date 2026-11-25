@@ -92,6 +92,19 @@ html, body {
 .lock-touchid.scanning img { animation: tidPulse .5s ease-in-out infinite; }
 @keyframes tidPulse { 0%,100% { opacity: .5; } 50% { opacity: 1; filter: invert(1) brightness(1.6) drop-shadow(0 0 5px #6cf); } }
 .lock-actions { margin-top: 10px; }
+.lock-actions .btn-text + .btn-text { margin-left: 6px; }
+.lock-form.busy { opacity: .6; pointer-events: none; }
+.lock-card .lock-opts { color: rgba(255,255,255,.9); font-size: .85rem; margin-top: 6px; background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.lock-optrow { display: flex; justify-content: center; gap: 10px; margin-top: 8px; }
+.lock-optrow[hidden], .lock-opts[hidden] { display: none !important; }
+.lock-opt { width: 46px; height: 46px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.lock-opt:hover { background: rgba(255,255,255,.18); }
+.lock-opt.on { border-color: #fff; background: rgba(255,255,255,.22); }
+.lock-webauthn { display: inline-flex; align-items: center; gap: 10px; width: 100%; justify-content: center; padding: 11px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.14); color: #fff; font-size: .98rem; font-weight: 600; cursor: pointer; }
+.lock-webauthn:hover { background: rgba(255,255,255,.24); }
+.lock-webauthn.scanning svg { animation: lockPulse .7s ease-in-out infinite; }
+@keyframes lockPulse { 0%,100% { opacity: .45; } 50% { opacity: 1; filter: drop-shadow(0 0 5px #6cf); } }
+.lock-hint { font-size: .78rem; color: rgba(255,255,255,.65); margin-top: 6px; }
 .lock-actions .btn-text { color: rgba(255,255,255,0.7); font-size: .8rem; }
 .lock-fade { animation: fadeOut 0.35s forwards; }
 .lock-card.shake { animation: shake 0.35s; }
@@ -5131,6 +5144,10 @@ body.dark .bb-s-row:hover,body.dark .bb-s-row.on{background:rgba(255,255,255,.08
 .w12s-card[hidden],.lock-touchid[hidden]{display:none!important}
 .w12s-fp-btns{display:flex;gap:8px}
 .w12s-fp-btns:empty{display:none}
+.w12s-fp-btns{flex-wrap:wrap;margin-top:8px}
+.w12s-sk-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(128,128,128,.18)}
+.w12s-sk-name{font-weight:600}
+.w12s-sk-act{margin-left:auto;display:flex;gap:6px}
 
 /* Apple Pay-style sheet (pretend wallet, in-app) */
 .apay-mask{position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:apayFade .2s ease}
