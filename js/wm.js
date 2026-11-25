@@ -1819,7 +1819,7 @@
   }
 
   function isDefaultInstalled(id) {
-    return ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "acrobat", "qrcode", "grammarly", "achievements", "store__"].includes(id);
+    return ["browser", "chrome", "edge", "settings", "calculator", "mediaplayer", "youtubeApp", "ms365", "notepad", "copilot", "imagestudio", "textgen", "fileexplorer", "duolingo", "blockfinder", "messenger", "word", "powerpoint", "excel", "forms", "clock", "outlook", "onenote", "minecraft", "mclauncher", "xbox", "curseforge", "codeeditor", "vscode", "acrobat", "qrcode", "grammarly", "achievements", "store__"].includes(id) || (window.EXTRA_DEFAULT_APPS || []).includes(id);
   }
 
   function toggleStart() {
