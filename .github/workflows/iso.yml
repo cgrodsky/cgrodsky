@@ -35,7 +35,7 @@ jobs:
           cp iso/* "$RUNNER_TEMP/stage/"
           rm -rf "$RUNNER_TEMP/stage/iso" "$RUNNER_TEMP/stage/.github"
           chmod +x "$RUNNER_TEMP/stage/serve.py" "$RUNNER_TEMP/stage/RUN-Linux.sh" "$RUNNER_TEMP/stage/RUN-macOS.command"
-          BUILD=$(grep -o 'var BUILD = "v=[^"]*"' index.html | sed 's/.*v=//;s/"//')
+          BUILD=$(grep -m1 -o 'var BUILD = "v=[0-9a-z]*"' index.html | head -1 | sed 's/.*v=//;s/"//')
           echo "BUILD=$BUILD" >> "$GITHUB_ENV"
           printf 'Windows 12 disc image\nbuild v=%s\ncommit %s\nbuilt %s UTC\n' "$BUILD" "${GITHUB_SHA::7}" "$(date -u '+%Y-%m-%d %H:%M')" > "$RUNNER_TEMP/stage/VERSION.txt"
           du -sh "$RUNNER_TEMP/stage"
