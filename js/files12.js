@@ -423,6 +423,9 @@
       else if (mod && ev.key.toLowerCase() === "a") { ev.preventDefault(); currentList.forEach((e) => sel.add(key(e))); paintSel(); }
       else if (ev.key === "Backspace") { ev.preventDefault(); $('[data-a="back"]').click(); }
     });
+    // Live refresh when another app (e.g. Terminal) changes the files.
+    const onVfs = () => { if (!body.isConnected) { window.removeEventListener("vfs-change", onVfs); return; } try { render(); } catch (_) {} };
+    window.addEventListener("vfs-change", onVfs);
     render();
   };
   AppRegistry.fileexplorer = AppRegistry.files;
