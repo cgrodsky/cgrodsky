@@ -5837,3 +5837,25 @@ body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
 .uvt-file-x { opacity: 0; color: #71717a; font-size: 16px; line-height: 1; padding: 0 2px; }
 .uvt-file-item:hover .uvt-file-x { opacity: 1; }
 .uvt-file-x:hover { color: #e11d48; }
+
+/* From Uiverse.io by SelfMadeSystem - https://uiverse.io/SelfMadeSystem/green-bobcat-29
+   MIT License, Copyright (c) SelfMadeSystem (SelfMadeSystem)
+   Checkboxes questions in Forms (js/office.js). Classes prefixed "uvc-".
+   The stroke is the Forms teal instead of white so it shows on the light card. */
+.uvc-container { cursor: pointer; }
+.uvc-container input { display: none; }
+.uvc-container svg { overflow: visible; flex: 0 0 auto; }
+.uvc-path {
+  fill: none;
+  stroke: #1a8a8f;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;
+  stroke-dasharray: 241 9999999;
+  stroke-dashoffset: 0;
+}
+.uvc-container input:checked ~ svg .uvc-path {
+  stroke-dasharray: 70.5096664428711 9999999;
+  stroke-dashoffset: -262.2723388671875;
+}

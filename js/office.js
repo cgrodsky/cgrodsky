@@ -640,7 +640,10 @@
           q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="radio" name="q${qi}"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = () => answers[qi] = opt; inp.appendChild(r); });
         } else if (q.type === "checkbox") {
           answers[qi] = [];
-          q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="checkbox"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = (e) => { const a = answers[qi]; if (e.target.checked) a.push(opt); else a.splice(a.indexOf(opt), 1); }; inp.appendChild(r); });
+          /* From Uiverse.io by SelfMadeSystem - https://uiverse.io/SelfMadeSystem/green-bobcat-29
+             MIT License, Copyright (c) SelfMadeSystem (SelfMadeSystem)
+             Animated box-to-tick checkbox. Classes prefixed "uvc-" (styles in css/style.css). */
+          q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt uvc-container"><input type="checkbox"><svg viewBox="0 0 64 64" height="2em" width="2em"><path d="M 0 16 V 56 A 8 8 90 0 0 8 64 H 56 A 8 8 90 0 0 64 56 V 8 A 8 8 90 0 0 56 0 H 8 A 8 8 90 0 0 0 8 V 16 L 32 48 L 64 16 V 8 A 8 8 90 0 0 56 0 H 8 A 8 8 90 0 0 0 8 V 56 A 8 8 90 0 0 8 64 H 56 A 8 8 90 0 0 64 56 V 16" pathLength="575.0541381835938" class="uvc-path"></path></svg> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = (e) => { const a = answers[qi]; if (e.target.checked) a.push(opt); else a.splice(a.indexOf(opt), 1); }; inp.appendChild(r); });
         } else if (q.type === "dropdown") {
           const sel = el(`<select class="fm-p-select"><option value="">Choose</option>${q.options.map((o) => `<option>${escapeHtml(o)}</option>`).join("")}</select>`);
           sel.onchange = () => answers[qi] = sel.value; inp.appendChild(sel);
