@@ -675,7 +675,7 @@
 
   // ---- Fingerprint ----
   function oobeFingerprintIntro() { oobeFingerprintShow(); }
-  // Real enrollment: the browser's WebAuthn prompt (Touch ID / Face ID / Windows Hello).
+  // Two ways: the device's real Touch ID through a passkey, or the Windows Hello pop-up (no passkey).
   function oobeFingerprintShow() {
     const nm = window.TouchID ? TouchID.sensorName() : "Touch ID";
     const node = el(`<div>
@@ -684,23 +684,25 @@
       <p class="sub" id="fpmsg">Tap <b>Set up</b>, then touch the fingerprint sensor a few times until it's captured. No passkey is saved.</p>
       <div class="oobe2-fp-sensor"><div class="oobe2-fp-pad"></div><span class="oobe2-fp-hand">&#128070;</span></div>
       <p class="sub" id="fperr" style="color:#ff8a8a;min-height:1.2em"></p>
-      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><button class="ibtn" id="next">Set up</button></div>
+      <div class="oobe2-actions spread"><button class="oobe2-link" id="skip">Skip</button><span><button class="oobe2-link" id="real" hidden>Use real ${escapeHtml(nm)} (passkey)</button> <button class="ibtn" id="next">Set up</button></span></div>
     </div>`);
-    const next = node.querySelector("#next"), msg = node.querySelector("#fpmsg"), fe = node.querySelector("#fperr");
+    const next = node.querySelector("#next"), real = node.querySelector("#real"), msg = node.querySelector("#fpmsg"), fe = node.querySelector("#fperr");
     node.querySelector("#skip").onclick = () => oobeAlright();
-    if (window.TouchID) TouchID.available().then((ok) => {
-      if (ok) return;
-      msg.textContent = "This browser can't reach a fingerprint reader or face unlock on this device. You can skip this and set it up later in Settings → Accounts → Sign-in options.";
-      next.textContent = "Try anyway";
+    if (window.TouchID && TouchID.passkeyAvailable) TouchID.passkeyAvailable().then((ok) => {
+      if (!ok) return;
+      real.hidden = false;
+      msg.innerHTML = `Use your device's <b>real ${escapeHtml(nm)}</b> (saves a passkey), or tap <b>Set up</b> for the Windows Hello sensor (no passkey).`;
     });
-    next.onclick = () => {
+    const go = (opts, btn) => {
       if (!window.TouchID) { oobeAlright(); return; }
-      next.disabled = true; fe.textContent = "";
-      TouchID.enroll().then(() => oobeFingerprintDone(nm)).catch((e) => {
-        next.disabled = false;
-        fe.textContent = e && e.message === "cancelled" ? "Cancelled — tap Set up to try again, or Skip." : ((e && e.friendly) || "That didn't work.");
+      btn.disabled = true; fe.textContent = "";
+      TouchID.enroll(opts).then(() => oobeFingerprintDone(nm)).catch((e) => {
+        btn.disabled = false;
+        fe.textContent = e && e.message === "cancelled" ? "Cancelled — try again, or Skip." : ((e && e.friendly) || "That didn't work.");
       });
     };
+    next.onclick = () => go(null, next);
+    real.onclick = () => go({ passkey: true }, real); // straight from the tap (Safari needs that)
     oobe(node, { illus: IC.finger, back: oobeBiometric });
   }
   function oobeFingerprintDone(nm) {

@@ -1,8 +1,10 @@
 /* Sign-in methods, all done in the browser:
 
-   • Touch ID / Windows Hello — WITHOUT a passkey: Windows 12's own Windows Hello
-     fingerprint pop-up and (simulated) biometric driver. A web page can only reach the
-     device's real sensor through WebAuthn, which always saves a passkey, so it isn't used.
+   • Touch ID — two ways, your choice when setting it up:
+       – with a passkey: the device's REAL Touch ID / Face ID / Windows Hello through WebAuthn
+         (a web page can only reach the real sensor this way, and it always saves a passkey);
+       – without a passkey: Windows 12's own Windows Hello fingerprint pop-up and
+         (simulated) biometric driver — works anywhere, including VMs.
    • Security key — a WebAuthn "cross-platform authenticator" (USB / NFC /
      Bluetooth key such as a YubiKey or Titan).
    • Password — stored only as a salted PBKDF2-SHA-256 hash.
@@ -285,7 +287,7 @@
     const go = opts && opts.silent ? wait(750) : helloDialog("enroll");
     return go.then(() => {
       const p = profile(); p.touchId = { sim: true, at: Date.now() }; p.fingerprint = true;
-      if (p.webauthn) p.webauthn.platform = []; // drop any passkey made by the earlier version
+      if (p.webauthn) p.webauthn.platform = []; // switching to "no passkey" replaces a passkey setup
       save(); return true;
     });
   }
@@ -310,14 +312,25 @@
     return Promise.resolve(true);
   }
 
+  // Two ways to set up Touch ID — the account uses whichever one was set up last:
+  //   passkey: the device's REAL Touch ID / Face ID through WebAuthn (saves a passkey)
+  //   no passkey: the Windows Hello sensor pop-up above
+  const passkeyOn = () => list("platform").length > 0;
   window.TouchID = {
-    available: () => Promise.resolve(true), // the Windows Hello sensor is always there
-    enrolled: tidEnrolled,
-    enroll: tidEnroll,
-    verify: tidVerify,
+    available: () => Promise.resolve(true),        // the Windows Hello sensor is always there
+    passkeyAvailable: platformAvailable,           // can this browser reach the real sensor?
+    enrolled: () => passkeyOn() || tidEnrolled(),
+    usesPasskey: passkeyOn,
+    // opts.passkey → real Touch ID (call straight from a tap); otherwise the pop-up.
+    enroll: (opts) => {
+      if (opts && opts.passkey) {
+        return register("platform").then((c) => { const p = profile(); delete p.touchId; p.fingerprint = true; store().platform = [c]; save(); return true; });
+      }
+      return tidEnroll(opts);
+    },
+    verify: () => (passkeyOn() ? verify("platform") : tidVerify()),
     forget: () => { const p = profile(); delete p.touchId; p.fingerprint = false; if (p.webauthn) p.webauthn.platform = []; save(); },
     sensorName, driverInfo, installDriverOnce, prompt: helloDialog,
-    usesPasskey: false,
   };
   window.SecurityKey = {
     supported,
@@ -331,6 +344,4 @@
   window.WebAuthnAuth = { supported, platformAvailable, register, verify, remove, list, _cbor: cbor };
   window.PasswordAuth = Password;
 
-  // Someone who set up Touch ID with the passkey version keeps Touch ID — now without the passkey.
-  try { const p = S().profile; if (p && p.webauthn && p.webauthn.platform && p.webauthn.platform.length && !tidEnrolled()) { p.touchId = { sim: true, at: Date.now() }; p.webauthn.platform = []; save(); } } catch (_) {}
 })();
