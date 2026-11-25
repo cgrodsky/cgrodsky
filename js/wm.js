@@ -1072,6 +1072,7 @@
       S().appData.weather = { live: true, ts: Date.now(), temp: cur.temperature, hi, lo, label: cur.shortForecast, icon: mapForecast(cur.shortForecast, cur.isDaytime), city, days };
       State.save();
       const t = taskbar && taskbar.querySelector(".tb-widgets"); if (t) { const w = S().appData.weather; t.innerHTML = (WX_SVG[w.icon] || WX_SVG.sun) + `<span class="tb-wx-temp">${w.temp}&deg;</span>`; }
+      try { window.dispatchEvent(new CustomEvent("weather-change")); } catch (_) {}
       const wp = document.getElementById("widgetsPanel"); if (wp) { wp.classList.add("closing"); setTimeout(() => wp.remove(), 0); toggleWidgets(); }
     } catch (e) { /* keep the demo */ } finally { wxLoading = false; }
   }
@@ -1365,8 +1366,9 @@
     ["pointerup", "pointercancel", "pointerleave"].forEach((ev) => taskbar.addEventListener(ev, (e) => { const b = e.target.closest && e.target.closest(".tb-btn, .tb-copilot"); if (b) b.classList.remove("tb-pressed"); }, true));
     taskbar.querySelector(".tb-search").onclick = (e) => { e.stopPropagation(); toggleSearch(); };
     taskbar.querySelector(".tb-qs").onclick = toggleQuickSettings;
-    taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
-    taskbar.querySelector(".tb-widgets").onclick = toggleWidgets;
+    // js/notifcenter.js and js/widgets12.js replace these flyouts when they are loaded.
+    taskbar.querySelector(".tb-clock").onclick = () => (window.NotifCenter ? NotifCenter.toggle() : toggleNotifCenter());
+    taskbar.querySelector(".tb-widgets").onclick = () => (window.Widgets12 ? Widgets12.toggle() : toggleWidgets());
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
     taskbar.querySelector(".wx-tv-btn").onclick = () => { if (window.WinX) WinX.toggleTaskView(); };
     // Right-click (or long-press on touch): jump list on an app button, layout menu on empty taskbar.
@@ -2065,5 +2067,14 @@
     unpinFromTaskbar: (id) => unpinFromTaskbar(id),
     taskbarPins: () => taskbarPins().slice(),
     showTaskbarMenu: (btn) => showJumpList(btn),
+    // Shell flyout hooks used by js/widgets12.js and js/notifcenter.js.
+    weather: () => weatherToday(),
+    weatherIcon: (k) => WX_SVG[k] || WX_SVG.sun,
+    refreshWeather: () => loadRealWeather(),
+    closeShellFlyouts: () => {
+      ["qsPanel", "notifPanel", "widgetsPanel"].forEach((id) => { const p = document.getElementById(id); if (p) p.remove(); });
+      if (startMenu) startMenu.classList.remove("open");
+      closeSearch();
+    },
   };
 })();

@@ -1128,7 +1128,9 @@
     C.push({ id: "imagegen", name: "Image Studio history", desc: "Images and prompts you generated in Image Studio.", bytes: jsonBytes(arr(ad, "imageGen")) * (arr(ad, "imageGen").length ? 1 : 0), count: arr(ad, "imageGen").length, check: false, run: () => { arr(ad, "imageGen").length = 0; } });
     const th2 = ad.terminal && arr(ad.terminal, "history");
     C.push({ id: "terminal", name: "Terminal command history", desc: "Commands you typed in Terminal, Command Prompt and PowerShell.", bytes: th2 && th2.length ? jsonBytes(th2) : 0, count: th2 ? th2.length : 0, check: false, run: () => { if (th2) th2.length = 0; } });
-    C.push({ id: "notif", name: "Notification history", desc: "Old notifications kept for the Notification Center.", bytes: arr(ad, "notifLog").length ? jsonBytes(ad.notifLog) : 0, count: arr(ad, "notifLog").length, check: true, run: () => { arr(ad, "notifLog").length = 0; } });
+    { const nc = (ad.notifCenter && Array.isArray(ad.notifCenter.items)) ? ad.notifCenter.items : null;
+      const n = arr(ad, "notifLog").length + (nc ? nc.length : 0);
+      C.push({ id: "notif", name: "Notification history", desc: "Old notifications kept for the Notification Center.", bytes: n ? jsonBytes(ad.notifLog) + (nc ? jsonBytes(nc) : 0) : 0, count: n, check: true, run: () => { arr(ad, "notifLog").length = 0; if (nc) nc.length = 0; } }); }
     const bh = ad.browser && arr(ad.browser, "history");
     C.push({ id: "web", name: "Temporary Internet Files", desc: "Browsing history from Edge/Chrome in this desktop and cached weather data.", bytes: (bh && bh.length ? jsonBytes(bh) : 0) + jsonBytes(ad.weather), count: (bh ? bh.length : 0) + (ad.weather ? 1 : 0), check: true, run: () => { if (bh) bh.length = 0; delete ad.weather; } });
     const ch = d.copilot && arr(d.copilot, "history");
