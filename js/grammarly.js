@@ -133,7 +133,7 @@
   const STRONG = {
     "very good": ["excellent", "great"], "very bad": ["terrible", "awful"], "very big": ["huge", "enormous"],
     "very small": ["tiny", "minuscule"], "very happy": ["delighted", "thrilled"], "very sad": ["miserable", "heartbroken"],
-    "very tired": ["exhausted", "drained"], "very important": ["essential", "crucial"], "very hungry": ["starving", "ravenous"],
+    "very tired": ["exhausted", "drained"], "very important": ["crucial", "essential"], "very hungry": ["starving", "ravenous"],
     "very cold": ["freezing", "frigid"], "very hot": ["scorching", "sweltering"], "very old": ["ancient", "aged"],
     "very fast": ["rapid", "swift"], "very pretty": ["beautiful", "gorgeous"], "very scared": ["terrified", "petrified"],
     "very angry": ["furious", "livid"], "very smart": ["brilliant", "clever"], "very interesting": ["fascinating", "intriguing"],
@@ -154,9 +154,34 @@
   const BLAND = {
     nice: ["pleasant", "lovely", "kind"], good: ["solid", "strong", "excellent"], bad: ["poor", "harmful", "flawed"],
     stuff: ["things", "items", "material"], things: ["items", "details", "aspects"], interesting: ["intriguing", "compelling"],
-    big: ["large", "significant", "major"], amazing: ["remarkable", "impressive"], "a lot of": ["many", "much", "plenty of"],
+    big: ["large", "significant", "major"], amazing: ["remarkable", "impressive"],
     awesome: ["impressive", "excellent"],
   };
+
+  // Vocabulary upgrades (Engagement: Vocabulary, shown with a "Pro" badge). [phrase, alternatives, alternatives-after-a/an]
+  const VOCAB = [
+    ["really good", ["excellent", "great"], ["excellent", "perfect"]],
+    ["a lot of", ["many", "much"]],
+  ];
+  Object.keys(STRONG).forEach((p) => {
+    VOCAB.push([p, STRONG[p]]);
+    const r = p.replace(/^very /, "really ");
+    if (!VOCAB.some((v) => v[0] === r)) VOCAB.push([r, STRONG[p]]);
+  });
+  // Weak verb phrases with their inflections.
+  const VERB_VOCAB = [
+    { re: /\b(look|looks|looking|looked)\s+at\b(?!\s+(?:me|him|her|us|them)\b)/gi, phrase: "look at",
+      forms: { look: ["examine", "review"], looks: ["examines", "reviews"], looking: ["examining", "reviewing"], looked: ["examined", "reviewed"] } },
+    { re: /\b(think|thinks|thinking|thought)\s+about\b/gi, phrase: "think about",
+      forms: { think: ["consider"], thinks: ["considers"], thinking: ["considering"], thought: ["considered"] } },
+    { re: /\b(show|shows|showed|shown)(?=\s+that\b)/gi, phrase: "show",
+      forms: { show: ["demonstrate", "reveal"], shows: ["demonstrates", "reveals"], showed: ["demonstrated", "revealed"], shown: ["demonstrated", "revealed"] } },
+  ];
+  // "less" + plural nouns that are NOT countable (or aren't nouns at all).
+  const LESS_OK = new Set(("dollars euros pounds cents bucks hours minutes seconds days weeks months years miles kilometers kilometres " +
+    "meters metres feet inches yards calories degrees percent news mathematics physics economics politics series species means ethics " +
+    "athletics always sometimes perhaps as is was has does this thus its his hers ours yours theirs towards besides unless regardless " +
+    "nevertheless afterwards upwards downwards backwards forwards needs counts matters says").split(/\s+/));
 
   // Hedging language (tone / confidence).
   const HEDGES = ["i think that", "i think", "i believe that", "i believe", "i feel like", "i feel that", "i guess",
@@ -198,7 +223,7 @@
   const CAT_RANK = { correctness: 0, clarity: 1, engagement: 2, delivery: 3 };
   const WEIGHT = { correctness: 4, clarity: 2, engagement: 1.4, delivery: 1.4 };
 
-  const SAMPLE = "i think that teh new office policy is very good, but their are alot of problems with it. In order to recieve a refund, you must fill out a form on a daily basis. Its a hassle and your going to loose time. The budget was approved by the manager. At this point in time nobody has read it , and the deadline is close. We definately need to seperate the the tasks and send an useful update before the meeting, it starts at noon. Honestly i was really surprised that a hour of work was wasted!! This plan is more better then the old one, and we should of seen that sooner.\n\nMaybe we could kind of try a different approach because the current process is taking a large number of hours each week and in my opinion it is basically making everyone feel tired and stressed when they come into work in the morning. Lets talk about it tomorow, i'm gonna bring some ideas";
+  const SAMPLE = "i think that teh new office policy is very good, but their are alot of problems with it. This announcement is going to have a significant affect on everyone’s outlook. Our team has less projects this quarter. Inspect your word choice carefully and find a really good alternative. In order to recieve a refund, you must fill out a form on a daily basis. Its a hassle and your going to loose time. The budget was approved by the manager. At this point in time nobody has read it , and the deadline is close. We definately need to seperate the the tasks and send an useful update before the meeting, it starts at noon. Honestly i was really surprised that a hour of work was wasted!! This plan is more better then the old one, and we should of seen that sooner.\n\nMaybe we could kind of try a different approach because the current process is taking a large number of hours each week and in my opinion it is basically making everyone feel tired and stressed when they come into work in the morning. Lets talk about it tomorow, i'm gonna bring some ideas";
 
   // =====================================================================
   //  Helpers
@@ -291,12 +316,13 @@
   // =====================================================================
   //  The checker
   // =====================================================================
-  function check(text, goals) {
+  function check(text, goals, dict) {
     goals = goals || {};
+    dict = dict instanceof Set ? dict : new Set((dict || []).map((w) => String(w).toLowerCase()));
     const issues = [];
     let order = 0;
     function add(o) {
-      o.pri = CAT_RANK[o.cat] * 1000 + (order++);
+      o.pri = (o.pri0 != null ? o.pri0 : CAT_RANK[o.cat] * 1000) + (order++);
       o.orig = text.slice(o.start, o.end);
       o.fixes = (o.fixes || []).filter((f) => f && text.slice(f.s, f.e) !== f.t);
       issues.push(o);
@@ -306,12 +332,12 @@
     // --- Correctness: spelling -------------------------------------------------
     toks.forEach((t) => {
       const lw = norm(t.w);
-      if (!Object.prototype.hasOwnProperty.call(TYPOS, lw)) return;
+      if (!Object.prototype.hasOwnProperty.call(TYPOS, lw) || dict.has(lw)) return;
       const rep = TYPOS[lw];
-      let title = "Correct your spelling", expl = `“${t.w}” doesn’t appear to be spelled correctly. The correct spelling is “${rep}”.`;
+      let title = "Correct your spelling", expl = `If you don’t want **${t.w}** to be marked as misspelled in the future, you can add it to your personal dictionary.`;
       if (rep.includes("'") && rep.replace(/'/g, "").toLowerCase() === lw) { title = "Add a missing apostrophe"; expl = `Contractions need an apostrophe: “${rep}”.`; }
       else if (rep.includes(" ") && rep.replace(/ /g, "").toLowerCase() === lw) { title = "Separate the words"; expl = `“${rep}” is written as separate words.`; }
-      add({ rule: "spelling", cat: "correctness", start: t.s, end: t.e, title, expl, fixes: [{ s: t.s, e: t.e, t: /^[A-Z]/.test(rep) ? rep : matchCase(t.w, rep) }] });
+      add({ rule: "spelling", cat: "correctness", label: "SPELLING", dictWord: title === "Correct your spelling" ? t.w : null, start: t.s, end: t.e, title, expl, fixes: [{ s: t.s, e: t.e, t: /^[A-Z]/.test(rep) ? rep : matchCase(t.w, rep) }] });
     });
 
     // --- Correctness: lowercase "i" -------------------------------------------
@@ -319,8 +345,8 @@
       const lw = norm(t.w);
       if (t.w[0] !== "i" || !/^i(?:'(?:m|ve|ll|d))?$/.test(lw)) return;
       if (text[t.e] === "." && /[a-z]/i.test(text[t.e + 1] || "")) return; // i.e.
-      add({ rule: "cap-i", cat: "correctness", start: t.s, end: t.e, title: "Capitalize the pronoun",
-        expl: "The pronoun “I” is always capitalized.", fixes: [{ s: t.s, e: t.e, t: "I" + t.w.slice(1) }] });
+      add({ rule: "cap-i", cat: "correctness", label: "CAPITALIZATION", start: t.s, end: t.e, title: "Capitalize the word",
+        expl: isSentenceStart(text, t.s) ? `As the first word of the sentence, **${t.w}** should be capitalized.` : `The pronoun **I** is always capitalized.`, fixes: [{ s: t.s, e: t.e, t: "I" + t.w.slice(1) }] });
     });
 
     // --- Correctness: capitalize the first word of a sentence --------------------
@@ -329,8 +355,8 @@
       if (!isSentenceStart(text, t.s)) return;
       if (text[t.e] === "." && /[a-z]/i.test(text[t.e + 1] || "")) return; // e.g.
       if (/^(?:https?|www)$/i.test(t.w) && /^[:.]/.test(text[t.e] || "")) return;
-      add({ rule: "cap-start", cat: "correctness", start: t.s, end: t.e, title: "Capitalize the first word",
-        expl: "Sentences should begin with a capital letter.", fixes: [{ s: t.s, e: t.e, t: cap(t.w) }] });
+      add({ rule: "cap-start", cat: "correctness", label: "CAPITALIZATION", start: t.s, end: t.e, title: "Capitalize the word",
+        expl: `As the first word of the sentence, **${t.w}** should be capitalized.`, fixes: [{ s: t.s, e: t.e, t: cap(t.w) }] });
     });
 
     // --- Correctness: repeated words -------------------------------------------
@@ -338,8 +364,8 @@
       while ((m = re.exec(text))) {
         const lw = m[1].toLowerCase(); if (lw === "had" || lw === "that") continue;
         const s2 = m.index + m[1].length + m[2].length;
-        add({ rule: "repeat", cat: "correctness", start: s2, end: m.index + m[0].length, title: "Remove the repeated word",
-          expl: `The word “${m[1]}” is repeated. Remove one of them.`, fixes: [{ s: m.index + m[1].length, e: m.index + m[0].length, t: "" }] });
+        add({ rule: "repeat", cat: "correctness", start: s2, end: m.index + m[0].length, title: "Remove the repetition", label: "GRAMMAR",
+          expl: `The word **${m[1]}** is repeated. Remove one of them.`, fixes: [{ s: m.index + m[1].length, e: m.index + m[0].length, t: "" }] });
       } }
 
     // --- Correctness: a / an ------------------------------------------------------
@@ -387,18 +413,18 @@
         title: "Change the word", expl: "Use “too” to mean “excessively” or “also.”" },
       { re: /(\b(?:me|you|us|them|him|her|we)\s+)(to)(\s*[.!?])/gi, to: "too",
         title: "Change the word", expl: "Use “too” to mean “also.”" },
-      { re: /(\b(?:an|the|no|any|positive|negative|side|great|big|huge|lasting)\s+)(affect)(\b)/gi, to: "effect",
-        title: "Change the word", expl: "“Effect” is usually a noun (a result). “Affect” is usually a verb." },
-      { re: /(\b(?:will|would|can|could|may|might|not|does|did|should|must)\s+)(effect)(\b)(?!\s+change)/gi, to: "affect",
-        title: "Change the word", expl: "“Affect” is usually a verb (to influence). “Effect” is usually a noun." },
+      { re: /(\b(?:a|an|the|no|any|this|that|its|their|our|his|her|positive|negative|side|great|big|huge|lasting|significant|major|minor|profound|real|strong|direct|adverse|minimal|dramatic|small|little|net|overall|immediate|long-term|desired|same|domino|ripple|butterfly|calming|cumulative)\s+)(affect)(\b)(?!\s+(?:the|a|an|my|your|our|their|his|her|its|how|whether|everyone|people|us|them|me|you)\b)/gi, to: "effect", label: "SPELLING",
+        title: "Correct your spelling", expl: "It appears that **affect** (a verb) is used where a noun is needed. **Effect** means a result or an influence." },
+      { re: /(\b(?:will|would|can|could|may|might|not|does|did|do|should|must|to|won['’]t|can['’]t|didn['’]t|doesn['’]t)\s+)(effect)(\b)(?!\s+(?:change|changes|a\s+change|real\s+change|reform|reforms)\b)/gi, to: "affect", label: "SPELLING",
+        title: "Correct your spelling", expl: "It appears that **effect** (a noun) is used as a verb. To influence something is to **affect** it." },
       { re: /(\b(?:to|will|would|can|could|might|may|don't|didn't|not|never|gonna)\s+)(loose)(\b)/gi, to: "lose",
         title: "Change the word", expl: "“Lose” means to misplace or fail to win. “Loose” means not tight." },
       { re: /(\b)((?:he|she|it)\s+don['’]t)(\b)/gi, fn: (t) => t.replace(/don['’]t/i, "doesn't"),
-        title: "Fix the verb form", expl: "With he, she, or it, use “doesn’t.”" },
+        title: "Fix the agreement", expl: "With he, she, or it, use **doesn’t**." },
       { re: /(\b)((?:they|we|you)\s+was)(\b)/gi, fn: (t) => t.replace(/was$/i, "were"),
-        title: "Fix the verb form", expl: "With they, we, or you, use “were.”" },
+        title: "Fix the agreement", expl: "With they, we, or you, use **were**." },
       { re: /(\b)((?:he|she)\s+have)(\b)(?!\s+to\b)/gi, fn: (t) => t.replace(/have$/i, "has"),
-        title: "Fix the verb form", expl: "With he or she, use “has.”" },
+        title: "Fix the agreement", expl: "With he or she, use **has**." },
       { re: /(\b)(lets)(\s+(?:go|get|start|see|do|make|try|talk|meet|have|be|eat|play|find|take|keep|chat|discuss)\b)/gi, to: "let's",
         title: "Add an apostrophe", expl: "“Let’s” is short for “let us.”" },
     ];
@@ -407,16 +433,28 @@
       while ((m = r.re.exec(text))) {
         const s = m.index + m[1].length, e = s + m[2].length;
         const rep = r.fn ? r.fn(m[2]) : matchCase(m[2], r.to);
-        add({ rule: "confused", cat: "correctness", start: s, end: e, title: r.title, expl: r.expl, fixes: [{ s, e, t: rep }] });
+        add({ rule: "confused", cat: "correctness", label: r.label || "GRAMMAR", start: s, end: e, title: r.title, expl: r.expl, fixes: [{ s, e, t: rep }] });
         if (m[0].length === 0) r.re.lastIndex++;
       }
     });
+
+    // --- Correctness: less / fewer ----------------------------------------------------
+    { const re = /\b(less)\s+([a-z]+s)\b/gi; let m;
+      while ((m = re.exec(text))) {
+        const noun = m[2].toLowerCase();
+        if (LESS_OK.has(noun) || /(?:ss|us|is|ous|ics|ys|ness)$/.test(noun) || noun.length < 4) continue;
+        if (/\b(?:no|much|more\s+or)\s+$/i.test(text.slice(Math.max(0, m.index - 10), m.index))) continue;
+        const s = m.index, e = s + m[1].length;
+        add({ rule: "lessfewer", cat: "correctness", label: "GRAMMAR", start: s, end: e, title: "Change the quantifier",
+          expl: `It appears that the quantifier ***${m[1]}*** does not fit with the countable noun ***${m[2]}***. Consider changing the quantifier or the noun.`,
+          fixes: [{ s, e, t: matchCase(m[1], "fewer") }] });
+      } }
 
     // --- Correctness: comma after introductory words -----------------------------
     { const re = /(^|[.!?]\s+|\n\s*)(however|therefore|furthermore|moreover|additionally|unfortunately|fortunately|consequently|nevertheless|meanwhile|honestly|personally|basically|otherwise|instead(?!\s+of)|of course|in addition|for example|for instance|in conclusion|in fact|as a result|on the other hand)(?=\s+[A-Za-z])/gi; let m;
       while ((m = re.exec(text))) {
         const s = m.index + m[1].length, e = s + m[2].length;
-        add({ rule: "intro-comma", cat: "correctness", start: s, end: e, title: "Add a comma",
+        add({ rule: "intro-comma", cat: "correctness", label: "PUNCTUATION", start: s, end: e, title: "Add a comma",
           expl: `Put a comma after an introductory word or phrase like “${m[2]}.”`, fixes: [{ s, e, t: m[2] + "," }] });
       } }
 
@@ -424,19 +462,19 @@
     { let m; const re = /(\S)( {2,})(?=\S)/g;
       while ((m = re.exec(text))) {
         const s = m.index + 1, e = s + m[2].length;
-        add({ rule: "double-space", cat: "correctness", start: s, end: e, title: "Remove the extra space",
+        add({ rule: "double-space", cat: "correctness", label: "PUNCTUATION", start: s, end: e, title: "Remove the extra space",
           expl: "There are extra spaces between words. Use a single space.", fixes: [{ s, e, t: " " }] });
       } }
     { let m; const re = /([A-Za-z0-9)])([ \t]+)([,.;:!?])(?![.\d])/g;
       while ((m = re.exec(text))) {
         const s = m.index + 1, e = s + m[2].length + 1;
-        add({ rule: "space-punct", cat: "correctness", start: s, end: e, title: "Remove the space",
+        add({ rule: "space-punct", cat: "correctness", label: "PUNCTUATION", start: s, end: e, title: "Remove the space",
           expl: "Don’t put a space before punctuation.", fixes: [{ s, e, t: m[3] }] });
       } }
     { let m; const re = /([a-z])([,;])(?=[A-Za-z])|([a-z]{2})(\.)(?=[A-Z][a-z])/g;
       while ((m = re.exec(text))) {
         const p = m[2] || m[4]; const s = m.index + (m[1] || m[3]).length;
-        add({ rule: "space-after", cat: "correctness", start: s, end: s + 1, title: "Add a space",
+        add({ rule: "space-after", cat: "correctness", label: "PUNCTUATION", start: s, end: s + 1, title: "Add a space",
           expl: `Add a space after “${p}”.`, fixes: [{ s, e: s + 1, t: p + " " }] });
       } }
 
@@ -445,11 +483,12 @@
       while ((m = re.exec(text))) {
         const c = m.index; const [ss] = sentenceBounds(text, c);
         const prefix = text.slice(ss, c).trim(); const words = prefix.split(/\s+/).filter(Boolean);
-        if (words.length < 3 || SUBORDINATORS.has(words[0].toLowerCase().replace(/[^a-z]/g, ""))) continue;
+        const w0 = words.length ? words[0].toLowerCase().replace(/[^a-z]/g, "") : "";
+        if (words.length < 3 || SUBORDINATORS.has(w0) || /^(?:in|on|at|to|for|with|by|from|during|without|despite|after|before|like|unlike|according|due|following|given|having|being)$/.test(w0)) continue;
         if (/\b(?:said|says|asked|so|and|but|or|yes|no|well)$/i.test(prefix)) continue;
         if (m[2].toLowerCase() === "this" && !/^(is|was)$/i.test(m[3])) continue;
         const pe = c + 1 + m[1].length + m[2].length;
-        add({ rule: "splice", cat: "correctness", start: c, end: c + 1, title: "Fix the comma splice",
+        add({ rule: "splice", cat: "correctness", label: "PUNCTUATION", start: c, end: c + 1, title: "Fix the comma splice",
           expl: "Two complete sentences are joined by only a comma (a comma splice). Use a semicolon or a period instead.",
           fixes: [{ s: c, e: c + 1, t: ";" }, { s: c, e: pe, t: ". " + (m[2] === "i" ? "I" : cap(m[2])) }] });
       } }
@@ -458,7 +497,7 @@
         const c = m.index + 1; const [ss] = sentenceBounds(text, c);
         if (text.slice(ss, c).trim().split(/\s+/).length < 4) continue;
         const e = c + 1 + m[2].length + m[3].length + m[4].length;
-        add({ rule: "splice", cat: "correctness", start: c, end: e, title: "Fix the comma splice",
+        add({ rule: "splice", cat: "correctness", label: "PUNCTUATION", start: c, end: e, title: "Fix the comma splice",
           expl: "When “however” joins two complete sentences, put a semicolon before it and a comma after it.",
           fixes: [{ s: c, e, t: "; " + m[3].toLowerCase() + "," }] });
       } }
@@ -475,7 +514,7 @@
             if (lt && lt.e === trimmed.length) {
               const q = /^(who|what|when|where|why|how|is|are|do|does|did|can|could|would|will|should|shall|may|have|has)\b/i.test(lastSent.text);
               const s = base + lt.s, e = base + lt.e;
-              add({ rule: "end-punct", cat: "correctness", start: s, end: e, title: q ? "Add a question mark" : "Add a period",
+              add({ rule: "end-punct", cat: "correctness", label: "PUNCTUATION", start: s, end: e, title: q ? "Add a question mark" : "Add a period",
                 expl: "This sentence is missing punctuation at the end.", fixes: [{ s, e, t: lt.w + (q ? "?" : ".") }] });
             }
           }
@@ -497,7 +536,7 @@
           const subj = /^(the|a|an|this|that|these|those|my|our|your|his|her|their|its)\b/i.test(pm[1]) ? pm[1].charAt(0).toLowerCase() + pm[1].slice(1) : pm[1];
           fixes.push({ s: ss, e: se, t: cap(pm[4].trim()) + " " + pm[3].toLowerCase() + " " + subj + (pm[5] || ".") });
         }
-        add({ rule: "passive", cat: "clarity", start: s, end: e, title: "Rewrite in active voice",
+        add({ rule: "passive", cat: "clarity", label: "Clarity: Active voice", pro: fixes.length > 0, start: s, end: e, title: "Rewrite for clarity",
           expl: "This phrase is in the passive voice. Active voice is usually clearer and more direct" + (m[3] ? " — make the one doing the action the subject." : "."), fixes });
       } }
 
@@ -509,21 +548,43 @@
         let fix;
         if (rep) fix = { s, e, t: isSentenceStart(text, s) ? cap(rep) : matchCase(m[0], rep) };
         else fix = removal(text, s, e);
-        add({ rule: "wordy", cat: "clarity", start: s, end: e, title: rep ? "Make it concise" : "Remove wordiness",
+        add({ rule: "wordy", cat: "clarity", label: "Clarity: Conciseness", start: s, end: e, title: rep ? "Make it concise" : "Remove wordiness",
           expl: rep ? `“${m[0]}” is wordy. “${rep}” says the same thing in fewer words.` : `“${m[0]}” adds words without adding meaning.`, fixes: [fix] });
       }
     });
 
-    // --- Engagement: intensifier + adjective -> vivid word ------------------------------
-    Object.keys(STRONG).forEach((p) => {
-      const re = phraseRe(p); let m;
+    // --- Engagement: Vocabulary (multi-option, "Pro") -----------------------------------
+    // These outrank clarity rules on overlaps so "a really good" isn't reduced to "remove really".
+    const VPRI = 500;
+    const vocab = (s, e, phrase, fixes, why) => add({ rule: "vocab", cat: "engagement", label: "Engagement: Vocabulary", pro: true, pri0: VPRI,
+      start: s, end: e, title: "Improve word choice", expl: why || `The phrase **${phrase}** is often overused. Consider a more precise alternative to make your writing more engaging.`, fixes });
+    const articleBefore = (s) => /\b(?:a|the|another|quick|close|closer|good|first|last|long|this|that)\s+$/i.test(text.slice(Math.max(0, s - 10), s));
+    VOCAB.forEach(([p, alts, artAlts]) => {
+      const withArt = !/^an?\s/i.test(p);
+      const re = new RegExp("\\b" + (withArt ? "(?:(a|an)\\s+)?" : "()") + phraseSrc(p) + "\\b", "gi"); let m;
       while ((m = re.exec(text))) {
-        const s = m.index, e = s + m[0].length;
-        add({ rule: "vivid", cat: "engagement", start: s, end: e, title: "Choose a more vivid word",
-          expl: `“${m[0]}” is a weak phrase. A single, more precise word makes your writing more engaging.`,
-          fixes: STRONG[p].map((w) => ({ s, e, t: matchCase(m[0], w) })) });
+        const s = m.index, e = s + m[0].length, art = m[1];
+        const body = art ? m[0].slice(m[0].length - m[0].replace(/^an?\s+/i, "").length) : m[0];
+        const fixes = art
+          ? (artAlts || alts).map((w) => ({ s, e, t: matchCase(art, needsAn(w) ? "an" : "a") + " " + w }))
+          : alts.map((w) => ({ s, e, t: isSentenceStart(text, s) ? cap(w) : matchCase(body, w) }));
+        vocab(s, e, body.toLowerCase(), fixes);
       }
     });
+    VERB_VOCAB.forEach((v) => {
+      let m; v.re.lastIndex = 0;
+      while ((m = v.re.exec(text))) {
+        if (articleBefore(m.index)) continue;
+        const s = m.index, e = s + m[0].length, alts = v.forms[m[1].toLowerCase()] || [];
+        vocab(s, e, v.phrase, alts.map((w) => ({ s, e, t: matchCase(m[1], w) })));
+      }
+    });
+    { const re = /\b(inspect|check|review|examine|read)\s+((?:[A-Za-z’']+\s+){1,4}?)carefully\b/gi; let m;
+      while ((m = re.exec(text))) {
+        const s = m.index, e = s + m[0].length;
+        vocab(s, e, m[1].toLowerCase() + " … carefully", [{ s, e, t: matchCase(m[1], "scrutinize") + " " + m[2].trim() }],
+          `**${m[1]} … carefully** can be replaced with a single, more precise verb: **scrutinize**.`);
+      } }
 
     // --- Clarity: intensifiers ------------------------------------------------------
     { const re = new RegExp("\\b(" + INTENSIFIERS.join("|") + ")\\b(?=\\s+[A-Za-z])", "gi"); let m;
@@ -533,7 +594,7 @@
         if (/^(much|well|few|many|same|first|last|own|end|top|beginning|least|best|start)$/i.test(next)) continue;
         if (/\b(?:the|this|that|his|her|its|their|my|your|our)\s+$/i.test(text.slice(Math.max(0, s - 8), s))) continue;
         if (lw === "quite" && /^(a|an)$/i.test(next)) continue;
-        add({ rule: "intensifier", cat: "clarity", start: s, end: e, title: "Remove the intensifier",
+        add({ rule: "intensifier", cat: "clarity", label: "Clarity: Conciseness", start: s, end: e, title: "Remove the intensifier",
           expl: `Intensifiers like “${m[0]}” rarely add meaning. Removing it makes your point stronger and clearer.`, fixes: [removal(text, s, e)] });
       } }
 
@@ -543,7 +604,7 @@
       while ((m = re.exec(text))) {
         const s = m.index, e = s + m[0].length;
         if (p === "good" && /^\s+(morning|afternoon|evening|night|luck|bye)\b/i.test(text.slice(e))) continue;
-        add({ rule: "bland", cat: "engagement", start: s, end: e, title: "Replace the overused word",
+        add({ rule: "bland", cat: "engagement", label: "Engagement: Vocabulary", pro: true, start: s, end: e, title: "Replace the overused word",
           expl: `“${m[0]}” is overused and can make your writing sound bland. Try a more specific word.`,
           fixes: BLAND[p].map((w) => ({ s, e, t: matchCase(m[0], w) })) });
       }
@@ -557,7 +618,7 @@
         const s = m.index, e = s + m[0].length, lw = norm(m[0]).replace(/\s+/g, " ");
         if (lw === "just" && !/^\s+(wanted|checking|following|wondering|thought|think)\b/i.test(text.slice(e))) continue;
         if ((lw === "kind of" || lw === "sort of") && /\b(?:what|this|that|the|a|any|some|which|every|one|same|that|new|different|other)\s+$/i.test(text.slice(Math.max(0, s - 12), s))) continue;
-        add({ rule: "hedge", cat: "delivery", start: s, end: e, title: "Sound more confident",
+        add({ rule: "hedge", cat: "delivery", label: "Delivery: Confidence", start: s, end: e, title: "Sound more confident",
           expl: `Hedging language like “${m[0]}” can make you sound unsure. Remove it to sound more confident.`, fixes: [removal(text, s, e)] });
       }
     }
@@ -570,7 +631,7 @@
         if ((lw === "u" || lw === "ya") && t.w !== lw) return;
         const reps = INFORMAL[lw];
         const fixes = reps.map((r) => r ? { s: t.s, e: t.e, t: isSentenceStart(text, t.s) ? cap(r) : matchCase(t.w, r) } : removal(text, t.s, t.e));
-        add({ rule: "informal", cat: "delivery", start: t.s, end: t.e, title: "Avoid informal language",
+        add({ rule: "informal", cat: "delivery", label: "Delivery: Formality", start: t.s, end: t.e, title: "Avoid informal language",
           expl: `“${t.w}” is informal and may come across as unprofessional.`, fixes });
       });
     }
@@ -578,7 +639,7 @@
       toks.forEach((t) => {
         const lw = norm(t.w);
         if (!Object.prototype.hasOwnProperty.call(CONTRACTIONS, lw)) return;
-        add({ rule: "contraction", cat: "delivery", start: t.s, end: t.e, title: "Expand the contraction",
+        add({ rule: "contraction", cat: "delivery", label: "Delivery: Formality", start: t.s, end: t.e, title: "Expand the contraction",
           expl: "Contractions can sound too casual for formal writing.", fixes: [{ s: t.s, e: t.e, t: isSentenceStart(text, t.s) ? cap(CONTRACTIONS[lw]) : CONTRACTIONS[lw] }] });
       });
     }
@@ -587,7 +648,7 @@
     { const re = /([!?])\1+|\?!+|!\?+/g; let m;
       while ((m = re.exec(text))) {
         const s = m.index, e = s + m[0].length; const one = m[0].includes("?") ? "?" : "!";
-        add({ rule: "punct", cat: "delivery", start: s, end: e, title: "Tone down the punctuation",
+        add({ rule: "punct", cat: "delivery", label: "Delivery: Tone", start: s, end: e, title: "Tone down the punctuation",
           expl: "Repeated punctuation marks can come across as shouting or unprofessional.", fixes: [{ s, e, t: one }] });
       } }
 
@@ -595,7 +656,7 @@
     const limit = goals.audience === "expert" ? 40 : goals.audience === "knowledgeable" ? 35 : 30;
     sentences(text).forEach((st) => {
       const n = (st.text.match(/[A-Za-z0-9’']+/g) || []).length;
-      if (n > limit) add({ rule: "long", cat: "clarity", wide: true, start: st.s, end: st.e, title: "Shorten this sentence",
+      if (n > limit) add({ rule: "long", cat: "clarity", wide: true, start: st.s, end: st.e, title: "Rewrite for clarity", label: "Clarity: Sentence length",
         expl: `This sentence is ${n} words long. Long sentences are hard to follow — consider splitting it into two or more.`, fixes: [] });
     });
 
@@ -687,12 +748,39 @@
     WordChoice: "correctness", Style: "engagement", Enhancement: "engagement", Formatting: "delivery", Tone: "delivery",
   };
   const HARPER_TITLE = {
-    Spelling: "Correct your spelling", Typo: "Fix the typo", Grammar: "Fix the grammar", Agreement: "Fix the agreement",
-    Capitalization: "Fix the capitalization", Punctuation: "Fix the punctuation", BoundaryError: "Fix the word spacing",
-    Usage: "Fix the word usage", Miscellaneous: "Fix the grammar", Nonstandard: "Use the standard form", Regionalism: "Check the spelling variant", Eggcorn: "Fix the expression", Malapropism: "Choose the right word",
-    Readability: "Improve readability", Redundancy: "Remove redundancy", Repetition: "Remove the repetition",
-    WordChoice: "Choose the right word", Style: "Improve the style", Enhancement: "Enhance your writing", Formatting: "Fix the formatting",
+    Spelling: "Correct your spelling", Typo: "Correct your spelling", Grammar: "Fix the grammar", Agreement: "Fix the agreement",
+    Capitalization: "Capitalize the word", Punctuation: "Fix the punctuation", BoundaryError: "Fix the word spacing",
+    Usage: "Change the word", Miscellaneous: "Fix the grammar", Nonstandard: "Change the word", Regionalism: "Check the spelling variant", Eggcorn: "Change the word", Malapropism: "Change the word",
+    Readability: "Rewrite for clarity", Redundancy: "Remove wordiness", Repetition: "Remove the repetition",
+    WordChoice: "Change the word", Style: "Improve the style", Enhancement: "Improve word choice", Formatting: "Fix the formatting",
   };
+  const HARPER_LABEL = {
+    Spelling: "SPELLING", Typo: "SPELLING", BoundaryError: "SPELLING", Eggcorn: "SPELLING", Malapropism: "SPELLING", Regionalism: "SPELLING",
+    Capitalization: "CAPITALIZATION", Punctuation: "PUNCTUATION", WordChoice: "WORD CHOICE", Usage: "WORD CHOICE", Nonstandard: "WORD CHOICE",
+    Readability: "Clarity: Readability", Redundancy: "Clarity: Conciseness", Repetition: "Clarity: Repetition",
+    Style: "Engagement: Style", Enhancement: "Engagement: Vocabulary", Formatting: "Delivery: Formatting", Tone: "Delivery: Tone",
+  };
+  // Damerau-Levenshtein distance (small words only) — used to rank spelling suggestions.
+  function editDist(a, b) {
+    a = a.toLowerCase(); b = b.toLowerCase();
+    const d = []; for (let i = 0; i <= a.length; i++) { d[i] = [i]; }
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+    return d[a.length][b.length];
+  }
+  function rankSpelling(word, reps) {
+    const lw = word.toLowerCase(), known = TYPOS[lw];
+    const pre = (r) => { let k = 0; const x = r.toLowerCase(); while (k < x.length && x[k] === lw[k]) k++; return k; };
+    return reps.map((r, i) => ({ r, i, score: (known && r.toLowerCase() === known.toLowerCase() ? -100 : 0) + editDist(lw, r) * 10 - pre(r) * 2 + Math.abs(r.length - lw.length) + i * 0.5 }))
+      .sort((x, y) => x.score - y.score).map((x) => x.r);
+  }
+  function grammarlyDict() {
+    try { const g = State.data.appData.grammarly; return (g && Array.isArray(g.dictionary)) ? g.dictionary : []; } catch (e) { return []; }
+  }
   const Harper = { state: "idle", linter: null, promise: null, error: null, ms: 0 };
   // Dynamic import via Function so this classic script still parses on browsers without import().
   const dynImport = (u) => (new Function("u", "return import(u)"))(u);
@@ -708,6 +796,8 @@
       const linter = new H.LocalLinter({ binary: slimBinary });
       await linter.setup();
       await linter.lint("Warm up the engine.", { language: "plaintext" });
+      const words = grammarlyDict();
+      if (words.length && linter.importWords) { try { await linter.importWords(words); } catch (e) { /* older build */ } }
       Harper.kinds = H.SuggestionKind || { Replace: 0, Remove: 1, InsertAfter: 2 };
       Harper.linter = linter; Harper.state = "ready"; Harper.ms = Math.round(performance.now() - t0);
       return linter;
@@ -726,8 +816,13 @@
     map.push(u);
     return (i) => map[Math.max(0, Math.min(map.length - 1, i))];
   }
-  async function harperCheck(text) {
+  // Add words to Harper's user dictionary (our own filter below also hides them).
+  async function harperAddWords(words) {
+    if (Harper.linter && Harper.linter.importWords) { try { await Harper.linter.importWords(words); } catch (e) { /* ignore */ } }
+  }
+  async function harperCheck(text, dict) {
     const linter = Harper.linter; if (!linter) return null;
+    dict = dict instanceof Set ? dict : new Set((dict || grammarlyDict()).map((w) => String(w).toLowerCase()));
     const lints = await linter.lint(text, { language: "plaintext" });
     const toU16 = cpMapper(text), K = Harper.kinds, out = [];
     lints.forEach((l) => {
@@ -736,19 +831,33 @@
         const kind = l.lint_kind();
         const cat = HARPER_CAT[kind] || "correctness";
         const orig = text.slice(s, e);
+        const isSpell = kind === "Spelling" || kind === "Typo";
+        if (isSpell && dict.has(orig.toLowerCase())) { try { l.free(); } catch (er) { /* ignore */ } return; }
         const fixes = [];
-        (l.suggestions() || []).slice(0, kind === "Spelling" ? 2 : 3).forEach((sg) => {
-          const k = sg.kind(), rep = sg.get_replacement_text();
+        let sugs = (l.suggestions() || []).map((sg) => { const o = { k: sg.kind(), rep: sg.get_replacement_text() }; try { sg.free(); } catch (er) { /* ignore */ } return o; });
+        if (kind === "Spelling" && /^[A-Za-z']+$/.test(orig) && sugs.length) {
+          const order = rankSpelling(orig, sugs.map((x) => x.rep));
+          sugs = order.map((r) => sugs.find((x) => x.rep === r));
+          const best = editDist(orig, sugs[0].rep);
+          sugs = sugs.filter((x, i) => i === 0 || editDist(orig, x.rep) <= best);
+        }
+        sugs.slice(0, kind === "Spelling" ? 2 : 3).forEach(({ k, rep }) => {
           if (k === K.Remove) {
             let fe = e; if (text[fe] === " " && (s === 0 || /\s/.test(text[s - 1]))) fe++;
             fixes.push({ s, e: fe, t: "" });
           } else if (k === K.InsertAfter) fixes.push({ s, e, t: orig + rep });
           else fixes.push({ s, e, t: rep });
-          try { sg.free(); } catch (er) { /* ignore */ }
         });
         const pretty = (l.lint_kind_pretty && l.lint_kind_pretty()) || kind;
-        out.push({ rule: "harper:" + kind, src: "harper", cat, start: s, end: e, orig, wide: kind === "Readability" || (e - s > 90 && !fixes.length), title: HARPER_TITLE[kind] || pretty,
-          expl: String(l.message() || "").replace(/`([^`]*)`/g, "“$1”").replace(/\*\*([^*]+)\*\*/g, "$1"), fixes: fixes.filter((f) => text.slice(f.s, f.e) !== f.t),
+        let expl = String(l.message() || "").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/`([^`]*)`/g, "**$1**");
+        let title = HARPER_TITLE[kind] || pretty;
+        if (kind === "Spelling") expl = `If you don’t want **${orig}** to be marked as misspelled in the future, you can add it to your personal dictionary.`;
+        if (kind === "Capitalization" && /^[a-z]/.test(orig) && isSentenceStart(text, s)) expl = `As the first word of the sentence, **${orig}** should be capitalized.`;
+        if (kind === "Capitalization" && /^i(?:['’](?:m|ve|ll|d))?$/.test(orig) && !isSentenceStart(text, s)) expl = "The pronoun **I** is always capitalized.";
+        out.push({ rule: "harper:" + kind, src: "harper", cat, start: s, end: e, orig, wide: kind === "Readability" || (e - s > 90 && !fixes.length), title,
+          label: HARPER_LABEL[kind] || (cat === "correctness" ? "GRAMMAR" : CAT_LABEL[cat] + ": " + pretty), pro: kind === "Enhancement" || kind === "Style",
+          dictWord: kind === "Spelling" ? orig : null,
+          expl, fixes: fixes.filter((f) => text.slice(f.s, f.e) !== f.t),
           key: "h:" + kind + "|" + orig.toLowerCase() + "|" + text.slice(Math.max(0, s - 14), s).toLowerCase() });
       } catch (er) { /* skip malformed lint */ }
       try { l.free(); } catch (er) { /* ignore */ }
@@ -758,6 +867,11 @@
   // Harper first; local issues fill in where they don't overlap a Harper span.
   function mergeIssues(harper, local) {
     const out = harper.map((h) => Object.assign({}, h, { end: Math.max(h.end, h.start + 1) }));
+    // Same span + same top fix: keep Harper's issue but use the curated local wording/label.
+    out.forEach((h) => {
+      const twin = local.find((l) => !l.wide && l.start === h.start && l.end === h.end && l.fixes[0] && h.fixes[0] && l.fixes[0].t === h.fixes[0].t);
+      if (twin) Object.assign(h, { title: twin.title, label: twin.label, expl: twin.expl, pro: twin.pro || h.pro });
+    });
     local.forEach((l) => {
       if (l.wide) { if (!out.some((h) => h.wide && l.start < h.end && h.start < l.end)) out.push(l); return; }
       if (!out.some((h) => !h.wide && l.start < h.end && h.start < l.end)) out.push(l);
@@ -770,7 +884,7 @@
   }
 
   // Expose the engine for other apps / tests.
-  window.GrammarlyEngine = { check, stats, score, tone, TYPOS, WORDY, harper: Harper, loadHarper, harperCheck, mergeIssues };
+  window.GrammarlyEngine = { check, stats, score, tone, TYPOS, WORDY, VOCAB, harper: Harper, loadHarper, harperCheck, harperAddWords, mergeIssues, rankSpelling };
 
   // =====================================================================
   //  UI
@@ -806,6 +920,8 @@
     if (!Array.isArray(g.dismissed)) g.dismissed = [];
     if (!g.goals) g.goals = { audience: "general", formality: "neutral", domain: "general", intent: "inform" };
     if (!g.filter) g.filter = "all";
+    if (!Array.isArray(g.dictionary)) g.dictionary = [];
+    if (!Array.isArray(g.ignoredRules)) g.ignoredRules = [];
     return g;
   }
 
@@ -851,6 +967,7 @@
           <div class="gmr-sidescroll">
             <div class="gmr-bulk"></div>
             <div class="gmr-list"></div>
+            <div class="gmr-dots" role="tablist" aria-label="Suggestions"></div>
             <div class="gmr-insights"></div>
           </div>
         </aside>
@@ -865,12 +982,12 @@
     const scoreEl = root.querySelector(".gmr-score"), scoreTxt = root.querySelector(".gmr-head-v"), toneBtn = root.querySelector(".gmr-tone");
     const filtersEl = root.querySelector(".gmr-filters"), listEl = root.querySelector(".gmr-list"), bulkEl = root.querySelector(".gmr-bulk");
     const insightsEl = root.querySelector(".gmr-insights"), modal = root.querySelector(".gmr-modal"), toastEl = root.querySelector(".gmr-toast");
-    const sideScroll = root.querySelector(".gmr-sidescroll");
+    const sideScroll = root.querySelector(".gmr-sidescroll"), dotsEl = root.querySelector(".gmr-dots");
 
     let issues = [], lastText = g.text, activeKey = null, timer = 0, saveTimer = 0, undoBuf = null, toastTimer = 0;
     ta.value = g.text; titleIn.value = g.title;
 
-    const visible = () => issues.filter((i) => !g.dismissed.includes(i.key));
+    const visible = () => issues.filter((i) => !g.dismissed.includes(i.key) && !g.ignoredRules.includes(i.rule));
     const shown = () => visible().filter((i) => g.filter === "all" || i.cat === g.filter);
 
     function save() {
@@ -924,7 +1041,7 @@
     function runCheck() {
       clearTimeout(timer);
       const text = ta.value;
-      const local = check(text, g.goals);
+      const local = check(text, g.goals, g.dictionary);
       const prevH = issues.filter((i) => i.src === "harper" && text.slice(i.start, i.end) === i.orig);
       issues = prevH.length ? mergeIssues(prevH, local) : local;
       lastText = text;
@@ -942,10 +1059,10 @@
       harperBusy = true;
       const text = ta.value;
       let res = null;
-      try { res = await harperCheck(text); } catch (e) { res = null; }
+      try { res = await harperCheck(text, g.dictionary); } catch (e) { res = null; }
       harperBusy = false;
       if (!root.isConnected) return;
-      if (res && ta.value === text) { issues = mergeIssues(res, check(text, g.goals)); renderAll(); }
+      if (res && ta.value === text) { issues = mergeIssues(res, check(text, g.goals, g.dictionary)); renderAll(); }
       if (harperPending) { harperPending = false; runHarper(); }
     }
     function engineChip() {
@@ -1011,19 +1128,86 @@
           : "Loading Harper, the open-source grammar engine… Built-in rules are checking your text meanwhile."}</div>`;
     }
 
-    function fixHTML(iss, f) {
-      const text = ta.value;
-      const del = text.slice(f.s, f.e).trim(), ins = f.t.trim();
-      if (!del && !ins) return `<del class="gmr-ws">extra space</del>`;
-      if (del === ins) return `<del class="gmr-ws">space</del><span class="gmr-arrow">→</span><ins>${esc(ins)}</ins>`;
-      if (!ins) return `<del>${esc(del)}</del>`;
-      if (!del) return `<ins>${esc(ins)}</ins>`;
-      return `<del>${esc(del.length > 60 ? del.slice(0, 57) + "…" : del)}</del><span class="gmr-arrow">→</span><ins>${esc(ins.length > 80 ? ins.slice(0, 77) + "…" : ins)}</ins>`;
+    // ---- suggestion cards ----
+    // Explanation markup: ***x*** = bold italic, **x** = bold, “x” = bold.
+    function richExpl(t) {
+      return esc(t).replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/“([^”]{1,48})”/g, "<strong>$1</strong>");
+    }
+    const clip = (x, n) => (x.length > n ? x.slice(0, n - 1) + "…" : x);
+    function delText(raw, ins) {
+      const t = raw.trim();
+      if (!t || t === ins.trim()) return `<del class="gmr-ws">${raw.replace(/ /g, "␣") || "␣"}</del>`;
+      return `<del>${esc(clip(t, 90))}</del>`;
+    }
+    // The sentence (±6 words) with the flagged text struck through and the fix inserted after it.
+    function previewHTML(iss, plain) {
+      const text = ta.value, f = plain ? null : iss.fixes[0];
+      const s = f ? f.s : iss.start, e = f ? f.e : iss.end;
+      const [ss, se] = sentenceBounds(text, Math.min(s, Math.max(0, text.length - 1)));
+      const leftRaw = text.slice(Math.min(ss, s), s), rightRaw = text.slice(e, Math.max(se, e)).replace(/\n[\s\S]*$/, "");
+      const lm = /(?:\S+\s+){0,6}\S*$/.exec(leftRaw), rm = /^\S*(?:\s+\S+){0,6}/.exec(rightRaw);
+      let left = lm ? lm[0] : "", right = rm ? rm[0] : "";
+      if (iss.wide && !iss.fixes.length) { left = ""; right = ""; }
+      const pre = left.length < leftRaw.trimStart().length ? "…" : "", post = right.length < rightRaw.trimEnd().length ? "…" : "";
+      let mid;
+      if (f) {
+        const raw = text.slice(f.s, f.e), ins = f.t.trim();
+        mid = delText(raw, f.t) + (ins ? ` <ins>${esc(clip(ins, 110))}</ins>` : "");
+        if (!raw.trim() && !ins) mid = `<del class="gmr-ws">${raw.replace(/ /g, "␣")}</del>`;
+      } else mid = `<mark class="gmr-pv-${iss.cat}">${esc(clip(text.slice(s, e), 160))}</mark>`;
+      return `${pre}${esc(left)}${mid}${esc(right)}${post}`;
+    }
+    function chipsHTML(iss) {
+      if (iss.fixes.length < (iss.cat === "engagement" || iss.pro ? 1 : 2)) return "";
+      const f0 = iss.fixes[0], raw = ta.value.slice(f0.s, f0.e);
+      return `<div class="gmr-fixrow">${delText(raw, f0.t)}<span class="gmr-arr" aria-hidden="true">→</span>${iss.fixes.map((f, fi) =>
+        `<button class="gmr-chip" data-fi="${fi}" title="Apply “${esc(f.t.trim() || "remove")}”">${esc(clip(f.t.trim() || "Remove", 60))}</button>`).join("")}</div>`;
+    }
+    const CAT_ICON = {
+      correctness: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="var(--gmr-red-soft)"/><circle cx="10" cy="10" r="6.4" fill="none" stroke="var(--gmr-red)" stroke-width="1.5"/><path d="M7.7 12.9 10 7l2.3 5.9M8.5 11h3" fill="none" stroke="var(--gmr-red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      clarity: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="var(--gmr-blue-soft)"/><circle cx="10" cy="10" r="6.4" fill="none" stroke="var(--gmr-blue)" stroke-width="1.5"/><path d="M7.7 12.9 10 7l2.3 5.9M8.5 11h3" fill="none" stroke="var(--gmr-blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      engagement: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><rect x="5.5" y="2.5" width="9" height="15" rx="4.5" fill="#16D9A7"/><rect x="4" y="9" width="12" height="2" rx="1" fill="#fff"/></svg>`,
+      delivery: `<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9.2" fill="var(--gmr-purple-soft)"/><circle cx="10" cy="10" r="6.4" fill="none" stroke="var(--gmr-purple)" stroke-width="1.5"/><path d="M7.7 12.9 10 7l2.3 5.9M8.5 11h3" fill="none" stroke="var(--gmr-purple)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    };
+    const IC_DICT = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H14v18H6.5A1.5 1.5 0 0 1 5 19.5z"/><path d="M5 18.5A1.5 1.5 0 0 1 6.5 17H14"/><path d="M18.5 3v5M16 5.5h5"/></svg>`;
+    const IC_STAR = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>`;
+    const canDict = (i) => !!(i.dictWord && /^[A-Za-z][A-Za-z'’-]*$/.test(i.dictWord));
+    const labelOf = (i) => i.label || (i.cat === "correctness" ? "GRAMMAR" : CAT_LABEL[i.cat]);
+    let menuKey = null;
+    const isCarousel = () => root.classList.contains("gmr-carousel");
+
+    function cardHTML(i, open) {
+      const lbl = labelOf(i), upper = lbl === lbl.toUpperCase();
+      const chips = open ? chipsHTML(i) : "";
+      return `<div class="gmr-card gmr-c-${i.cat}${open ? " open" : ""}${i.key === activeKey ? " act" : ""}" data-key="${esc(i.key)}" tabindex="0" role="button" aria-expanded="${open}">
+        <div class="gmr-card-top">
+          <span class="gmr-ic">${CAT_ICON[i.cat]}</span>
+          <span class="gmr-card-title">${esc(i.title)}</span>
+          ${i.pro ? `<span class="gmr-pro" title="Premium-style suggestion (free here)">${IC_STAR}Pro</span>` : ""}
+          <button class="gmr-more" data-act="more" aria-label="More options" aria-haspopup="menu" title="More options">⋯</button>
+        </div>
+        ${open ? `<div class="gmr-card-lbl${upper ? " up" : ""}">${esc(lbl)}</div>` : ""}
+        <div class="gmr-pv">${previewHTML(i, !!(chips && (i.cat === "engagement" || i.pro)))}</div>
+        ${open ? `${chips}
+          <p class="gmr-expl">${richExpl(i.expl)}</p>
+          <div class="gmr-card-actions">
+            ${i.fixes.length ? `<button class="gmr-accept" data-act="accept">Accept</button>` : ""}
+            <button class="gmr-dismiss" data-act="dismiss">Dismiss</button>
+            ${canDict(i) ? `<button class="gmr-dictbtn" data-act="adddict" title="Add “${esc(i.dictWord)}” to dictionary" aria-label="Add to dictionary">${IC_DICT}</button>` : ""}
+          </div>` : ""}
+        ${menuKey === i.key ? `<div class="gmr-menu" role="menu">
+            <button role="menuitem" data-act="dismiss">Dismiss</button>
+            ${canDict(i) ? `<button role="menuitem" data-act="adddict">Add to dictionary</button>` : ""}
+            <button role="menuitem" data-act="ignoreall">Ignore all like this</button>
+            ${i.fixes.length ? `<button role="menuitem" data-act="copysug">Copy suggestion</button>` : ""}
+          </div>` : ""}
+      </div>`;
     }
 
     function renderList() {
       const list = shown(); const text = ta.value;
-      bulkEl.innerHTML = "";
+      bulkEl.innerHTML = ""; dotsEl.innerHTML = "";
       if (!text.trim()) {
         listEl.innerHTML = `<div class="gmr-empty">${IC.pen}<b>Nothing to check yet</b><p>Start writing or paste your text, and suggestions will appear here.</p><button class="gmr-btn gmr-btn-pri" data-act="sample">Try sample text</button></div>`;
         return;
@@ -1033,24 +1217,23 @@
         return;
       }
       const fixable = list.filter((i) => i.cat === "correctness" && i.fixes.length);
-      if (fixable.length > 1) bulkEl.innerHTML = `<button class="gmr-bulk-btn" data-act="acceptall">Accept all ${fixable.length} correctness fixes</button>`;
+      if (fixable.length > 1 && !isCarousel()) bulkEl.innerHTML = `<button class="gmr-bulk-btn" data-act="acceptall">Accept all ${fixable.length} correctness fixes</button>`;
       if (!activeKey || !list.some((i) => i.key === activeKey)) activeKey = list[0].key;
-      listEl.innerHTML = list.map((i) => {
-        const open = i.key === activeKey;
-        const sum = i.fixes.length ? fixHTML(i, i.fixes[0]) : `<span class="gmr-sum-txt">${esc(i.orig.length > 42 ? i.orig.slice(0, 40) + "…" : i.orig)}</span>`;
-        return `<div class="gmr-card gmr-c-${i.cat}${open ? " open" : ""}" data-key="${esc(i.key)}" tabindex="0" role="button" aria-expanded="${open}">
-          <div class="gmr-card-top"><span class="gmr-dot"></span><span class="gmr-card-cat">${CAT_LABEL[i.cat]}</span><span class="gmr-card-sep">·</span><span class="gmr-card-title">${esc(i.title)}</span></div>
-          ${open ? "" : `<div class="gmr-card-sum">${sum}</div>`}
-          ${open ? `<div class="gmr-card-body">
-            ${i.fixes.length ? `<div class="gmr-fixes">${i.fixes.map((f, fi) => `<button class="gmr-fix" data-fi="${fi}" title="Apply this suggestion">${fixHTML(i, f)}</button>`).join("")}</div>` : `<div class="gmr-quote">“${esc(i.orig.length > 160 ? i.orig.slice(0, 157) + "…" : i.orig)}”</div>`}
-            <p class="gmr-expl">${esc(i.expl)}</p>
-            <div class="gmr-card-actions">
-              ${i.fixes.length ? `<button class="gmr-btn gmr-btn-pri" data-act="accept">Accept</button>` : `<button class="gmr-btn gmr-btn-pri" data-act="dismiss">Got it</button>`}
-              <button class="gmr-btn" data-act="dismiss">Dismiss</button>
-            </div>
-          </div>` : ""}
-        </div>`;
-      }).join("");
+      const all = isCarousel();
+      const keepLeft = listEl.scrollLeft;
+      listEl.innerHTML = list.map((i) => cardHTML(i, all || i.key === activeKey)).join("");
+      if (all) {
+        listEl.scrollLeft = keepLeft;
+        dotsEl.innerHTML = list.length > 1 ? list.map((i, k) => `<button class="gmr-dot-b" data-dot="${k}" aria-label="Suggestion ${k + 1} of ${list.length}"></button>`).join("") : "";
+        updateDots();
+      }
+    }
+    function updateDots() {
+      if (!isCarousel()) return;
+      const cards = listEl.children; if (!cards.length) return;
+      const w = cards[0].offsetWidth + 12;
+      const idx = Math.max(0, Math.min(cards.length - 1, Math.round(listEl.scrollLeft / w)));
+      [...dotsEl.children].forEach((d, k) => d.classList.toggle("on", k === idx));
     }
 
     function renderAll() { renderBack(); renderHeader(); renderList(); }
@@ -1062,6 +1245,7 @@
     }
     function scrollCardIntoView(key) {
       const c = listEl.querySelector(`.gmr-card[data-key="${CSS.escape(key)}"]`); if (!c) return;
+      if (isCarousel()) { listEl.scrollTo({ left: c.offsetLeft - listEl.offsetLeft - (listEl.clientWidth - c.offsetWidth) / 2, behavior: "smooth" }); return; }
       const top = c.offsetTop - sideScroll.offsetTop, vt = sideScroll.scrollTop, vh = sideScroll.clientHeight;
       if (top < vt || top + c.offsetHeight > vt + vh) sideScroll.scrollTo({ top: Math.max(0, top - 12), behavior: "smooth" });
     }
@@ -1089,6 +1273,18 @@
       replaceRange(f.s, f.e, f.t);
       activeKey = null;
       runCheck();
+    }
+    function addToDict(iss) {
+      const w = iss.dictWord; if (!w) return;
+      if (!g.dictionary.some((x) => x.toLowerCase() === w.toLowerCase())) g.dictionary.push(w.toLowerCase());
+      harperAddWords([w.toLowerCase(), w]);
+      activeKey = null; menuKey = null; runCheck();
+      toast(`Added “${w}” to your dictionary`, { label: "Undo", run: () => { g.dictionary = g.dictionary.filter((x) => x !== w.toLowerCase()); runCheck(); } });
+    }
+    function copyText(t, msg) {
+      const done = () => toast(msg);
+      const fallback = () => { const x = document.createElement("textarea"); x.value = t; x.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(x); x.select(); try { document.execCommand("copy"); } catch (err) { /* ignore */ } x.remove(); done(); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
     }
     function dismiss(iss) {
       if (!g.dismissed.includes(iss.key)) g.dismissed.push(iss.key);
@@ -1121,6 +1317,9 @@
         <div class="gmr-dlg-h"><b>Set goals</b><button class="gmr-x" data-act="close" aria-label="Close">×</button></div>
         <p class="gmr-dlg-sub">Get tailored writing suggestions based on your goals and audience.</p>
         ${Object.keys(GOAL_OPTS).map((k) => `<div class="gmr-goal"><div class="gmr-goal-l">${GOAL_OPTS[k].label}</div><div class="gmr-seg">${GOAL_OPTS[k].opts.map(([v, l]) => `<button data-goal="${k}" data-v="${v}" class="${g.goals[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("")}
+        <div class="gmr-goal"><div class="gmr-goal-l">Personal dictionary &amp; ignored rules</div>
+          <div class="gmr-dlg-sub" style="margin:0 0 6px">${g.dictionary.length ? g.dictionary.map(esc).join(", ") : "No words added yet."}${g.ignoredRules.length ? ` · ${g.ignoredRules.length} rule${g.ignoredRules.length === 1 ? "" : "s"} ignored` : ""}</div>
+          ${g.dictionary.length || g.ignoredRules.length ? `<button class="gmr-btn" data-act="cleardict">Clear dictionary &amp; ignored rules</button>` : ""}</div>
         <div class="gmr-dlg-f"><button class="gmr-btn" data-act="reset">Reset to defaults</button><button class="gmr-btn gmr-btn-pri" data-act="close">Done</button></div>
       </div>`;
     }
@@ -1129,6 +1328,7 @@
       if (e.target === modal || (b && b.dataset.act === "close")) { modal.hidden = true; return; }
       if (!b) return;
       if (b.dataset.goal) { g.goals[b.dataset.goal] = b.dataset.v; openGoals(); runCheck(); }
+      else if (b.dataset.act === "cleardict") { g.dictionary = []; g.ignoredRules = []; if (Harper.linter && Harper.linter.clearWords) Harper.linter.clearWords().catch(() => {}); openGoals(); runCheck(); }
       else if (b.dataset.act === "reset") { g.goals = { audience: "general", formality: "neutral", domain: "general", intent: "inform" }; openGoals(); runCheck(); }
     });
 
@@ -1162,19 +1362,35 @@
       }
       if (act === "goals") { openGoals(); return; }
       if (act === "acceptall") { acceptAll(); return; }
+      if (b && b.dataset.dot != null) { const c = listEl.children[+b.dataset.dot]; if (c) setActive(c.dataset.key, "dot"); return; }
       const card = e.target.closest(".gmr-card");
-      if (!card) { if (e.target.closest(".gmr-tone")) openGoals(); return; }
+      if (!card) { if (menuKey) { menuKey = null; renderList(); } if (e.target.closest(".gmr-tone")) openGoals(); return; }
       const iss = shown().find((i) => i.key === card.dataset.key); if (!iss) return;
+      if (act === "more") { menuKey = menuKey === iss.key ? null : iss.key; renderList(); return; }
+      const hadMenu = menuKey; menuKey = null;
       if (b && b.dataset.fi != null) { accept(iss, +b.dataset.fi); return; }
       if (act === "accept") { accept(iss, 0); return; }
       if (act === "dismiss") { dismiss(iss); return; }
-      if (card.classList.contains("open")) { if (e.target.closest(".gmr-card-top")) { activeKey = "__none__"; renderBack(); renderList(); } return; }
-      setActive(iss.key, "card");
+      if (act === "adddict") { addToDict(iss); return; }
+      if (act === "ignoreall") { if (!g.ignoredRules.includes(iss.rule)) g.ignoredRules.push(iss.rule); activeKey = null; renderAll(); save(); toast("Ignoring all suggestions like this", { label: "Undo", run: () => { g.ignoredRules = g.ignoredRules.filter((r) => r !== iss.rule); renderAll(); save(); } }); return; }
+      if (act === "copysug") { copyText(iss.fixes[0].t.trim(), "Suggestion copied"); renderList(); return; }
+      if (hadMenu) { renderList(); return; }
+      if (card.classList.contains("open") && !isCarousel()) { if (e.target.closest(".gmr-card-top")) { activeKey = "__none__"; renderBack(); renderList(); } return; }
+      if (iss.key !== activeKey) setActive(iss.key, "card");
     });
     listEl.addEventListener("keydown", (e) => {
       const card = e.target.closest(".gmr-card");
       if (card && (e.key === "Enter" || e.key === " ") && e.target === card) { e.preventDefault(); setActive(card.dataset.key, "card"); }
     });
+
+    // Carousel mode for narrow windows (e.g. iPad split view): swipeable cards with page dots.
+    listEl.addEventListener("scroll", () => { if (isCarousel()) requestAnimationFrame(updateDots); }, { passive: true });
+    const applyMode = () => {
+      const on = root.clientWidth > 0 && root.clientWidth < 520;
+      if (on !== isCarousel()) { root.classList.toggle("gmr-carousel", on); renderList(); if (on && activeKey) scrollCardIntoView(activeKey); }
+    };
+    if (window.ResizeObserver) new ResizeObserver(applyMode).observe(root);
+    applyMode();
 
     runCheck();
     if (Harper.state !== "ready") loadHarper().then(() => { if (root.isConnected) runCheck(); });
