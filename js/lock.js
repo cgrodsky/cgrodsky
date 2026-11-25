@@ -69,7 +69,7 @@
     }
     const shake = () => { card.classList.add("shake"); setTimeout(() => card.classList.remove("shake"), 350); };
 
-    function show(m) {
+    function show(m, autoStart) {
       current = m; err.textContent = "";
       optRow.querySelectorAll(".lock-opt").forEach((b) => b.classList.toggle("on", b.dataset.m === m));
       if (m === "pin" || m === "password" || !m) {
@@ -77,6 +77,12 @@
         box.innerHTML = `<form class="lock-form" autocomplete="off">
             <input type="password" placeholder="${pin ? "PIN" : "Password"}" ${pin ? 'inputmode="numeric"' : ""} aria-label="${pin ? "PIN" : "Password"}">
             <button type="submit" class="lock-go" title="Sign in">&#8594;</button></form>`;
+        // Touch ID set up → always show it right here, not only under "Sign-in options".
+        if (methods.includes("touchid")) {
+          const quick = el(`<button type="button" class="lock-touchid"><img src="assets/touchid.png?v=1" alt=""><span>Use ${esc(tidName)}</span></button>`);
+          quick.onclick = () => show("touchid", true);
+          box.appendChild(quick);
+        }
         const inp = box.querySelector("input"), form = box.querySelector("form");
         setTimeout(() => { try { inp.focus(); } catch (_) {} }, 50);
         form.onsubmit = async (e) => {
@@ -106,6 +112,7 @@
             shake();
           });
         };
+        if (autoStart) b.onclick(); // tapped "Use Touch ID": open the sensor straight away
       }
     }
     optBtn.onclick = () => { optRow.hidden = !optRow.hidden; };
@@ -133,7 +140,8 @@
     };
 
     // Start on the method used last time (if it's still set up), else PIN / password.
-    let first = methods.includes(pr.lastSignIn) ? pr.lastSignIn : methods[0] || null;
+    // Touch ID first whenever it's set up (like Windows Hello); else the method used last time.
+    let first = methods.includes("touchid") ? "touchid" : methods.includes(pr.lastSignIn) ? pr.lastSignIn : methods[0] || null;
     show(first);
     // Touch ID set up on another device but not available here → fall back quietly.
     if (methods.includes("touchid") && window.TouchID) TouchID.available().then((ok) => {
