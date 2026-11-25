@@ -1340,7 +1340,7 @@
         <button class="tb-search"><span class="tb-search-ic">${Icon.mini("searchglass", "Search")}</span><span class="tb-search-lbl">Search Anything</span></button>
         <div class="tb-apps">
           <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "winflag", "Windows")}</div>
-          <div class="tb-btn wx-tv-btn" title="Task View (Ctrl+Alt+Up)" aria-label="Task View"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5" width="12" height="11" rx="2"/><path d="M18 8h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1"/></svg></div>
+          <div class="tb-btn wx-tv-btn" title="Task View (Ctrl+Alt+Up)" aria-label="Task View"><svg viewBox="0 0 24 24" width="29" height="29"><defs><linearGradient id="tvDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset="1" stop-color="#1f1f1f"/></linearGradient><linearGradient id="tvLight" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dcdcdc"/></linearGradient></defs><rect x="1.5" y="8" width="14" height="13.5" rx="2.6" fill="url(#tvDark)" stroke="#8a8a8a" stroke-opacity=".55" stroke-width=".5"/><rect x="8" y="2.5" width="14.5" height="13.5" rx="2.6" fill="url(#tvLight)" fill-opacity=".72" stroke="#ffffff" stroke-opacity=".85" stroke-width=".6"/></svg></div>
           ${taskbarPins().map(pinBtnHtml).join("")}
         </div>
       </div>
