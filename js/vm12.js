@@ -50,7 +50,7 @@
         try { localStorage.removeItem(keyFor(d)); } catch (_) {}
         boot.hidden = false; frame.src = src; setState("Installing", true);
       }
-      else if (a === "full") { try { (frame.requestFullscreen || frame.webkitRequestFullscreen || function () {}).call(frame); } catch (_) {} }
+      else if (a === "full") { try { const r = (frame.requestFullscreen || frame.webkitRequestFullscreen || function () {}).call(frame); if (r && r.catch) r.catch(() => {}); } catch (_) {} }
       else if (a === "cad") { boot.hidden = false; frame.src = src; } // back to the VM's lock screen
       else if (a === "off") { setState("Off", false); frame.src = "about:blank"; boot.hidden = false; boot.firstChild.textContent = "The virtual machine is turned off."; setTimeout(() => { if (ref.close) ref.close(); }, 600); }
     });

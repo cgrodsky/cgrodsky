@@ -216,6 +216,7 @@
         { ic: "palette", t: "Colors", s: "Accent color for Windows", expand: buildColors },
         { ic: "brush", t: "Themes", s: "Windows 12 or the classic Windows XP look", expand: buildThemes },
         { ic: "grid", t: "Personalize icons", s: "Change the icon of any app", sub: "icons" },
+        ...(window.Tidy ? [{ ic: "grid", t: "Desktop icons", s: "Choose which shortcuts appear on the desktop", expand: (p) => Tidy.buildSettings(p) }] : []),
         { ic: "corner", t: "Rounded corners", s: "Round the corners of windows and menus", ctl: () => toggle(f.round, (v) => { f.round = v; State.save(); applyUiFx(); }) },
         { ic: "sparkle", t: "Animation effects", s: "Animate windows and controls", ctl: () => toggle(f.anim, (v) => { f.anim = v; State.save(); applyUiFx(); }) },
         { ic: "layers", t: "Shadows", s: "Show shadows under windows and menus", ctl: () => toggle(f.shadow, (v) => { f.shadow = v; State.save(); applyUiFx(); }) },

@@ -8,6 +8,31 @@
   const isRed = (s) => s === 1 || s === 2;
   const RANKS = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
+  // Each font draws the playing-card characters at a different size, so render the
+  // character once onto a canvas, measure its real ink box, and scale it to fill the
+  // card exactly (white face underneath). Cached per character + colour.
+  const CARD_FONT = '"Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", "Noto Sans Symbols 2", "Symbola", sans-serif';
+  const CW = 148, CH = 208; // 2x of the 74x104 card
+  const imgCache = {};
+  function cardImg(ch, color) {
+    const key = ch + color;
+    if (imgCache[key]) return imgCache[key];
+    const c = document.createElement("canvas"); c.width = CW; c.height = CH;
+    const x = c.getContext("2d");
+    const S = 200;
+    x.font = S + "px " + CARD_FONT;
+    const m = x.measureText(ch);
+    const l = m.actualBoundingBoxLeft || 0, w = (l + (m.actualBoundingBoxRight || 0)) || S * 0.7;
+    const a = m.actualBoundingBoxAscent || S * 0.8, h = (a + (m.actualBoundingBoxDescent || 0)) || S;
+    const k = Math.min(CW / w, CH / h);
+    x.fillStyle = "#fff";
+    if (x.roundRect) { x.beginPath(); x.roundRect(3, 3, CW - 6, CH - 6, 12); x.fill(); } else x.fillRect(3, 3, CW - 6, CH - 6);
+    x.font = (S * k) + "px " + CARD_FONT;
+    x.fillStyle = color; x.textBaseline = "alphabetic";
+    x.fillText(ch, (CW - w * k) / 2 + l * k, (CH - h * k) / 2 + a * k);
+    return (imgCache[key] = c.toDataURL());
+  }
+
   function openSolitaire() {
     const ref = cw({ title: "Solitaire", icon: window.Icon ? Icon.mini("solitaire", "Solitaire") : "", width: 860, height: 620, appId: "solitaire" });
     const body = ref.body; body.classList.add("sol-host");
@@ -31,10 +56,17 @@
       render();
     }
 
+    // Cards are drawn with the Unicode "Playing Cards" characters (🂡…🃞, back 🂠).
+    // Each suit is a row of 16 code points: A=1 … 10=A, J=B, (C is the Knight, skipped), Q=D, K=E.
+    // U+FE0E asks for the plain text glyph, not an emoji picture.
+    const SUIT_BASE = [0x1F0A0, 0x1F0B0, 0x1F0C0, 0x1F0D0];
+    const RANK_OFF = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14];
+    const glyph = (card) => String.fromCodePoint(SUIT_BASE[card.s] + RANK_OFF[card.r]) + "︎";
+    const BACK = String.fromCodePoint(0x1F0A0) + "︎";
     function cardHtml(card, extra) {
-      if (!card.up) return `<div class="sol-card sol-back ${extra || ""}"></div>`;
+      if (!card.up) return `<div class="sol-card sol-back ${extra || ""}" aria-label="Face-down card"><img class="sol-uc" alt="" src="${cardImg(BACK, "#2b5ea8")}"></div>`;
       const col = isRed(card.s) ? "sol-red" : "sol-black";
-      return `<div class="sol-card ${col} ${extra || ""}"><span class="sol-corner tl">${RANKS[card.r]}${SUITS[card.s]}</span><span class="sol-pip">${SUITS[card.s]}</span><span class="sol-corner br">${RANKS[card.r]}${SUITS[card.s]}</span></div>`;
+      return `<div class="sol-card ${col} ${extra || ""}" aria-label="${RANKS[card.r]}${SUITS[card.s]}"><img class="sol-uc" alt="${RANKS[card.r]}${SUITS[card.s]}" src="${cardImg(glyph(card), isRed(card.s) ? "#d21f2b" : "#1a1a1a")}"></div>`;
     }
     // Is [cards] a valid descending, alternating-color run?
     function validRun(cards) {
