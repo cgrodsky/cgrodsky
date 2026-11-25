@@ -92,28 +92,54 @@
     // (mouse events aren't delivered during a touch drag on mobile Safari).
     const tb = win.querySelector(".win-titlebar");
     tb.style.touchAction = "none";
-    let dragging = false, sx, sy, sl, st;
+    // A drag only starts after a few pixels of movement, so a plain click on the
+    // titlebar never un-snaps / restores a window. Dragging a maximized or snapped
+    // window restores its pre-snap size under the pointer (like Windows); WinX
+    // (js/winx.js) adds the edge-snap preview and snaps on release.
+    let dragging = false, dragMoved = false, sx, sy, sl, st;
     tb.addEventListener("pointerdown", (e) => {
       if (e.target.closest(".win-controls")) return;
-      if (win.classList.contains("maximized")) return;
-      dragging = true; sx = e.clientX; sy = e.clientY; sl = win.offsetLeft; st = win.offsetTop;
+      if (e.button) return; // right/middle button
+      dragging = true; dragMoved = false; sx = e.clientX; sy = e.clientY; sl = win.offsetLeft; st = win.offsetTop;
     });
     const onDragMove = (e) => {
       if (!dragging) return;
-      win.style.left = Math.max(0, sl + e.clientX - sx) + "px";
+      if (!dragMoved) {
+        if (Math.hypot(e.clientX - sx, e.clientY - sy) < 5) return;
+        dragMoved = true;
+        if (entry.maximized || entry.wxSnap) {
+          const ratio = Math.min(1, Math.max(0, (sx - win.offsetLeft) / Math.max(1, win.offsetWidth)));
+          if (entry.maximized) setMaximized(false);
+          else if (window.WinX) WinX.unsnap(entry);
+          sl = sx - win.offsetWidth * ratio; st = Math.max(0, sy - 18);
+          win.style.left = sl + "px"; win.style.top = st + "px";
+        }
+        if (window.WinX) WinX.dragStart(entry, e);
+      }
+      win.style.left = Math.max(-win.offsetWidth + 80, sl + e.clientX - sx) + "px";
       win.style.top = Math.max(0, st + e.clientY - sy) + "px";
+      if (window.WinX) WinX.dragMove(entry, e);
     };
-    const onDragUp = () => { dragging = false; };
+    const onDragUp = (e) => {
+      if (dragging && dragMoved && window.WinX) WinX.dragEnd(entry, e, e.type === "pointercancel");
+      dragging = false; dragMoved = false;
+    };
     window.addEventListener("pointermove", onDragMove);
     window.addEventListener("pointerup", onDragUp);
+    window.addEventListener("pointercancel", onDragUp);
     // These live on window, so they must be torn down when the window goes away
     // (any removal path), or they pile up and run on every global pointer event.
     win.addEventListener("wm-cleanup", () => {
       window.removeEventListener("pointermove", onDragMove);
       window.removeEventListener("pointerup", onDragUp);
+      window.removeEventListener("pointercancel", onDragUp);
     });
+    // Double-click the titlebar to maximize / restore, like Windows.
+    tb.addEventListener("dblclick", (e) => { if (!e.target.closest(".win-controls") && !opts.noMax) setMaximized(!entry.maximized); });
 
-    const entry = { id: "w" + (++zCounter), win, appId: opts.appId, title: opts.title || "", icon: opts.icon };
+    const entry = { id: "w" + (++zCounter), win, appId: opts.appId, title: opts.title || "", icon: opts.icon, maximized: false, noMax: !!opts.noMax };
+    // Virtual desktops (js/winx.js): a window belongs to the desktop it opened on.
+    entry.desk = window.WinX ? WinX.activeId() : null;
 
     function close() {
       const idx = openWindows.indexOf(entry);
@@ -134,20 +160,29 @@
     entry.close = close;
     controls.querySelector(".close").onclick = () => { if (!opts.noClose) close(); };
     controls.querySelector(".min").onclick = () => { if (opts.noMin) return; win.style.display = "none"; refreshTaskbarActive(); };
-    let maximized = false, prev;
-    controls.querySelector(".max").onclick = () => {
-      if (opts.noMax) return;
-      maximized = !maximized;
-      controls.querySelector(".max").title = maximized ? "Restore down" : "Maximize";
-      if (maximized) {
-        prev = { l: win.style.left, t: win.style.top, w: win.style.width, h: win.style.height };
+    let prev;
+    // Maximize / restore. A snapped window (WinX) restores to its pre-snap size.
+    function setMaximized(on) {
+      on = !!on;
+      if (on === entry.maximized) return;
+      entry.maximized = on;
+      controls.querySelector(".max").title = on ? "Restore down" : "Maximize";
+      if (on) {
+        if (entry.wxSnap && entry.wxPrev) {
+          const p = entry.wxPrev; prev = { l: p.l + "px", t: p.t + "px", w: p.w + "px", h: p.h + "px" };
+          entry.wxSnap = null; win.classList.remove("wx-snapped");
+        } else prev = { l: win.style.left, t: win.style.top, w: win.style.width, h: win.style.height };
         win.classList.add("maximized");
         win.style.left = "0"; win.style.top = "0"; win.style.width = "100%"; win.style.height = "calc(100% - 48px)";
       } else {
         win.classList.remove("maximized");
-        Object.assign(win.style, { left: prev.l, top: prev.t, width: prev.w, height: prev.h });
+        if (prev) Object.assign(win.style, { left: prev.l, top: prev.t, width: prev.w, height: prev.h });
       }
-    };
+    }
+    entry.setMaximized = setMaximized;
+    // The pre-maximize geometry in px (WinX uses it as the pre-snap size).
+    entry.maxPrev = () => prev ? { l: parseFloat(prev.l) || 0, t: parseFloat(prev.t) || 0, w: parseFloat(prev.w) || w, h: parseFloat(prev.h) || h } : null;
+    controls.querySelector(".max").onclick = () => { if (!opts.noMax) setMaximized(!entry.maximized); };
 
     screen().appendChild(win);
     openWindows.push(entry);
@@ -157,6 +192,8 @@
   }
 
   function focusWindow(win) {
+    // Focusing a window that lives on another virtual desktop switches to that desktop.
+    if (window.WinX) { const en = openWindows.find((x) => x.win === win); if (en && !WinX.onActive(en)) WinX.switchTo(en.desk); }
     win.style.zIndex = ++zCounter;
     win.style.display = "";
     refreshTaskbarActive();
@@ -1303,10 +1340,8 @@
         <button class="tb-search"><span class="tb-search-ic">${Icon.mini("searchglass", "Search")}</span><span class="tb-search-lbl">Search Anything</span></button>
         <div class="tb-apps">
           <div class="tb-btn start" title="Start">${Icon.mini(xpOn() ? "xpstart" : "winflag", "Windows")}</div>
-          <div class="tb-btn" data-open="store__" title="Store">${Icon.mini("store__", "Store")}</div>
-          <div class="tb-btn" data-open="edge" title="Microsoft Edge">${Icon.mini("edge", "Microsoft Edge")}</div>
-          <div class="tb-btn" data-open="fileexplorer" title="File Explorer">${Icon.mini("fileexplorer", "File Explorer")}</div>
-          <div class="tb-btn" data-open="photos" title="Photos">${Icon.mini("photos", "Photos")}</div>
+          <div class="tb-btn wx-tv-btn" title="Task View (Ctrl+Alt+Up)" aria-label="Task View"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5" width="12" height="11" rx="2"/><path d="M18 8h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1"/></svg></div>
+          ${taskbarPins().map(pinBtnHtml).join("")}
         </div>
       </div>
       <button class="tb-copilot" data-open="copilot" title="Copilot">${Icon.mini("copilot", "Copilot")}</button>
@@ -1333,13 +1368,28 @@
     taskbar.querySelector(".tb-clock").onclick = toggleNotifCenter;
     taskbar.querySelector(".tb-widgets").onclick = toggleWidgets;
     taskbar.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => open(b.dataset.open));
-    // Right-click: jump list on an app button, layout menu on empty taskbar.
+    taskbar.querySelector(".wx-tv-btn").onclick = () => { if (window.WinX) WinX.toggleTaskView(); };
+    // Right-click (or long-press on touch): jump list on an app button, layout menu on empty taskbar.
     taskbar.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      const btn = e.target.closest(".tb-btn[data-open]");
-      if (btn) showJumpList(btn.dataset.open, btn);
+      const btn = e.target.closest(".tb-btn");
+      if (btn && taskBtnApp(btn)) showJumpList(btn);
       else showTaskbarLayoutMenu(e.clientX);
     });
+    let lpTimer = null, lpX = 0, lpY = 0;
+    const lpCancel = () => { clearTimeout(lpTimer); lpTimer = null; };
+    taskbar.addEventListener("pointerdown", (e) => {
+      lpCancel();
+      if (e.pointerType === "mouse") return;
+      const b = e.target.closest(".tb-btn"); if (!b || !taskBtnApp(b)) return;
+      lpX = e.clientX; lpY = e.clientY;
+      lpTimer = setTimeout(() => { lpTimer = null; lpFired = true; b.classList.remove("tb-pressed"); showJumpList(b); }, 550);
+    });
+    let lpFired = false, lpSwallowUntil = 0;
+    taskbar.addEventListener("pointermove", (e) => { if (lpTimer && Math.hypot(e.clientX - lpX, e.clientY - lpY) > 10) lpCancel(); });
+    ["pointerup", "pointercancel"].forEach((ev) => taskbar.addEventListener(ev, () => { lpCancel(); if (lpFired) { lpFired = false; lpSwallowUntil = Date.now() + 600; } }));
+    // The tap that ends a long-press must not also launch / toggle the app.
+    taskbar.addEventListener("click", (e) => { if (Date.now() < lpSwallowUntil) { lpSwallowUntil = 0; e.stopPropagation(); e.preventDefault(); } }, true);
     applyTaskbarLayout();
     buildStartMenu();
     buildSearchPanel();
@@ -1358,17 +1408,74 @@
     minecraft: [{ label: "Play", act: () => open("minecraft") }],
   };
   function appDisplayName(id) { const a = Catalog.storeApps.find((x) => x.id === id); return a ? a.name : id; }
-  function showJumpList(appId, anchor) {
+  // ---- Taskbar pins (persisted in appData.taskbarPins) ----
+  const DEFAULT_TB_PINS = ["store__", "edge", "fileexplorer", "photos"];
+  const PIN_TITLES = { store__: "Store", edge: "Microsoft Edge", fileexplorer: "File Explorer", photos: "Photos" };
+  function taskbarPins() {
+    if (!S().appData) S().appData = {};
+    if (!Array.isArray(S().appData.taskbarPins)) S().appData.taskbarPins = DEFAULT_TB_PINS.slice();
+    return S().appData.taskbarPins;
+  }
+  function pinTitle(id) { return PIN_TITLES[id] || appDisplayName(id); }
+  function pinBtnHtml(id) { const t = escAttr(pinTitle(id)); return `<div class="tb-btn" data-open="${escAttr(id)}" title="${t}">${Icon.mini(id === "duolingo" ? duoIconKey(false) : id, pinTitle(id))}</div>`; }
+  function pinToTaskbar(appId) {
+    const pins = taskbarPins(); if (!appId || pins.includes(appId)) return;
+    pins.push(appId); State.save();
+    const apps = taskbar.querySelector(".tb-apps") || taskbar;
+    const btn = el(pinBtnHtml(appId)); btn.onclick = () => open(appId);
+    const lastPinned = [...apps.querySelectorAll(".tb-btn[data-open]")].pop();
+    if (lastPinned) lastPinned.after(btn); else apps.appendChild(btn);
+    // Fold the app's running windows into the new pinned button.
+    openWindows.filter((e) => e.appId === appId).forEach((e) => { if (e.taskBtn && !e.pinned) e.taskBtn.remove(); e.taskBtn = null; addTaskButton(e); });
+    refreshTaskbarActive();
+  }
+  function unpinFromTaskbar(appId) {
+    const pins = taskbarPins(); const i = pins.indexOf(appId); if (i < 0) return;
+    pins.splice(i, 1); State.save();
+    const btn = taskbar.querySelector(`.tb-btn[data-open="${appId}"]`); if (btn) btn.remove();
+    // Running windows keep a (now unpinned) button of their own.
+    openWindows.filter((e) => e.taskBtn === btn).forEach((e) => { e.pinned = false; e.taskBtn = null; addTaskButton(e); });
+    refreshTaskbarActive();
+  }
+  // What app a taskbar button stands for: its pinned id, or the running windows behind it.
+  function taskBtnApp(btn) {
+    if (!btn || btn.classList.contains("start") || btn.classList.contains("wx-tv-btn")) return null;
+    const entries = openWindows.filter((e) => e.taskBtn === btn);
+    const appId = btn.dataset.open || (entries[0] && entries[0].appId) || null;
+    if (!appId && !entries.length) return null;
+    return { appId, entries };
+  }
+  function showJumpList(btn) {
     document.querySelectorAll(".jumplist,.tb-layoutmenu").forEach((m) => m.remove());
-    const running = openWindows.some((e) => e.appId === appId);
-    const acts = JUMP_ACTIONS[appId] || [];
-    const jl = el(`<div class="jumplist"></div>`);
-    if (acts.length) { jl.appendChild(el(`<div class="jl-head">${appDisplayName(appId)}</div>`)); acts.forEach((a) => { const b = el(`<button>${a.label}</button>`); b.onclick = () => { jl.remove(); a.act(); }; jl.appendChild(b); }); jl.appendChild(el(`<div class="jl-sep"></div>`)); }
-    const openBtn = el(`<button>Open</button>`); openBtn.onclick = () => { jl.remove(); open(appId); }; jl.appendChild(openBtn);
-    if (running) { const cl = el(`<button>Close all windows</button>`); cl.onclick = () => { jl.remove(); openWindows.filter((e) => e.appId === appId).slice().forEach((e) => e.close && e.close()); }; jl.appendChild(cl); }
+    const info = taskBtnApp(btn); if (!info) return;
+    const appId = info.appId;
+    const zOf = (e) => +e.win.style.zIndex || 0;
+    const here = info.entries.filter((e) => !window.WinX || WinX.onActive(e)).sort((a, b) => zOf(b) - zOf(a));
+    // End task force-closes every window of the app, on every desktop.
+    const all = appId ? openWindows.filter((e) => e.appId === appId) : info.entries.slice();
+    const first = info.entries[0];
+    let name = appId ? (btn.dataset.open ? pinTitle(appId) : appDisplayName(appId)) : "";
+    if (!name || name === appId) name = (first && first.title) || btn.title || appId || "App";
+    const iconHtml = (first && first.icon) || Icon.mini(appId || "app", name);
+    const acts = (appId && JUMP_ACTIONS[appId]) || [];
+    const jl = el(`<div class="jumplist wx-jl"></div>`);
+    const add = (label, fn, cls) => { const b = el(`<button class="${cls || ""}">${label}</button>`); b.onclick = () => { jl.remove(); fn(); }; jl.appendChild(b); return b; };
+    if (acts.length) { jl.appendChild(el(`<div class="jl-head">Tasks</div>`)); acts.forEach((a) => add(a.label, a.act)); jl.appendChild(el(`<div class="jl-sep"></div>`)); }
+    const head = add(`<span class="wx-jl-ic">${iconHtml}</span><span class="wx-jl-name">${escAttr(name)}</span>`, () => { if (appId) open(appId); }, "wx-jl-app");
+    head.title = appId ? "Open a new window" : name;
+    if (appId) {
+      const pinned = taskbarPins().includes(appId);
+      add(pinned ? "Unpin from taskbar" : "Pin to taskbar", () => pinned ? unpinFromTaskbar(appId) : pinToTaskbar(appId));
+    }
+    if (here.length) {
+      // Close goes through each window's own close button, so apps can still ask to save.
+      add(here.length > 1 ? `Close all windows (${here.length})` : "Close window", () => here.forEach((e) => { const c = e.win.querySelector(".win-titlebar .ctl-close"); if (c && !c.disabled) c.click(); else if (e.close) e.close(); }));
+    }
+    if (all.length) add("End task", () => all.slice().forEach((e) => { try { e.close && e.close(); } catch (err) { e.win.remove(); } }), "wx-jl-end");
     screen().appendChild(jl);
-    const r = anchor.getBoundingClientRect();
-    jl.style.left = Math.min(r.left, window.innerWidth - jl.offsetWidth - 8) + "px";
+    jl.style.zIndex = 9600; // above toasts (#notifications is 9500)
+    const r = btn.getBoundingClientRect();
+    jl.style.left = Math.max(8, Math.min(r.left, window.innerWidth - jl.offsetWidth - 8)) + "px";
     jl.style.bottom = (window.innerHeight - r.top + 6) + "px";
     setTimeout(() => document.addEventListener("click", function h(ev) { if (!jl.contains(ev.target)) { jl.remove(); document.removeEventListener("click", h); } }), 0);
   }
@@ -1412,6 +1519,12 @@
   }
 
   function toggleWindow(entry) {
+    // A pinned button points at its app's newest window; prefer one on the
+    // current virtual desktop, otherwise switch to the desktop that has it.
+    if (window.WinX && !WinX.onActive(entry)) {
+      const here = openWindows.filter((x) => x.taskBtn === entry.taskBtn && WinX.onActive(x)).sort((a, b) => (+b.win.style.zIndex || 0) - (+a.win.style.zIndex || 0))[0];
+      if (here) entry = here; else { focusWindow(entry.win); return; }
+    }
     if (entry.win.style.display === "none") focusWindow(entry.win);
     else if (+entry.win.style.zIndex === zCounter) entry.win.style.display = "none";
     else focusWindow(entry.win);
@@ -1421,7 +1534,13 @@
   function refreshTaskbarActive() {
     if (!taskbar) return;
     taskbar.querySelectorAll(".tb-btn").forEach((b) => b.classList.remove("active"));
-    openWindows.forEach((e) => { if (e.taskBtn && e.win.style.display !== "none") e.taskBtn.classList.add("active"); });
+    openWindows.forEach((e) => {
+      if (!e.taskBtn) return;
+      // Only the active virtual desktop's windows show in the taskbar.
+      const here = !window.WinX || WinX.onActive(e);
+      if (!e.pinned) e.taskBtn.classList.toggle("wx-offdesk", !here);
+      if (here && e.win.style.display !== "none") e.taskBtn.classList.add("active");
+    });
   }
 
   function startClock() {
@@ -1936,5 +2055,15 @@
     refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
     refreshTaskbar: refreshTaskbarIcons,
     refreshWifi: () => refreshWifiTray(),
+    // Window-management hooks used by js/winx.js (snap, Alt+Tab, Task View, desktops).
+    windows: () => openWindows,
+    entryFor: (win) => openWindows.find((e) => e.win === win) || null,
+    focusWindow: (win) => focusWindow(win),
+    refreshTaskbarActive: () => refreshTaskbarActive(),
+    topZ: () => zCounter,
+    pinToTaskbar: (id) => pinToTaskbar(id),
+    unpinFromTaskbar: (id) => unpinFromTaskbar(id),
+    taskbarPins: () => taskbarPins().slice(),
+    showTaskbarMenu: (btn) => showJumpList(btn),
   };
 })();

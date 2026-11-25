@@ -1,0 +1,172 @@
+/* WinX — Snap Layouts, Snap Assist, Alt+Tab, Task View, virtual desktops, taskbar End task. */
+
+/* ---------- virtual desktops ---------- */
+.win.wx-offdesk, .taskbar .tb-btn.wx-offdesk { display: none !important; }
+.win.wx-measure { display: flex !important; visibility: hidden !important; }
+.win.wx-snapped { border-radius: 0; }
+
+/* Task View taskbar button + desktop number badge */
+.taskbar .wx-tv-btn { color: var(--text); }
+.taskbar .wx-tv-btn svg { display: block; }
+.taskbar .wx-tv-btn[data-desk]:not([data-desk=""])::before {
+  content: attr(data-desk); position: absolute; right: 3px; top: 3px; min-width: 14px; height: 14px; padding: 0 3px;
+  border-radius: 7px; background: var(--accent); color: #fff; font: 700 9px/14px "Segoe UI", system-ui, sans-serif; text-align: center;
+}
+body.xp-theme .taskbar .wx-tv-btn { color: #fff; }
+/* No iOS callout / text selection on long-press targets */
+.taskbar .tb-btn, .win-controls .ctl-max { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+.wx-desk-hud {
+  position: absolute; left: 50%; bottom: 96px; transform: translate(-50%, 12px); z-index: 9800; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 14px;
+  background: var(--taskbar); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: var(--text);
+  border: 1px solid var(--border); box-shadow: var(--shadow); opacity: 0; transition: opacity .18s ease, transform .18s ease;
+  font-size: .9rem;
+}
+.wx-desk-hud.show { opacity: 1; transform: translate(-50%, 0); }
+.wx-desk-hud.wx-hud-bump { animation: wx-bump .3s ease; }
+@keyframes wx-bump { 30% { margin-left: -10px; } 60% { margin-left: 10px; } }
+.wx-hud-dots { display: flex; gap: 6px; }
+.wx-hud-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); opacity: .45; }
+.wx-hud-dots span.on { background: var(--accent); opacity: 1; width: 18px; border-radius: 4px; }
+
+/* ---------- edge snap preview ---------- */
+.wx-snap-preview {
+  position: absolute; pointer-events: none; border-radius: 10px; opacity: 0;
+  background: rgba(255, 255, 255, .28); border: 1px solid rgba(255, 255, 255, .7);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .25), inset 0 0 0 1px rgba(0, 0, 0, .06);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  transition: left .16s ease, top .16s ease, width .16s ease, height .16s ease, opacity .16s ease;
+}
+.wx-snap-preview.show { opacity: 1; }
+body.dark .wx-snap-preview { background: rgba(60, 60, 60, .35); border-color: rgba(255, 255, 255, .28); }
+
+/* ---------- Snap Layouts flyout ---------- */
+.wx-snapfly {
+  position: absolute; padding: 12px 12px 8px; border-radius: 12px; background: var(--taskbar); color: var(--text);
+  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border: 1px solid var(--border); box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(-4px); transition: opacity .12s ease, transform .12s ease;
+}
+.wx-snapfly.show { opacity: 1; transform: none; }
+.wx-snapfly-grid { display: grid; grid-template-columns: repeat(3, 84px); gap: 10px; }
+.wx-snapfly-hint { font-size: .7rem; color: var(--text-dim); text-align: center; margin-top: 8px; }
+.wx-sl { position: relative; width: 84px; height: 54px; border-radius: 6px; background: rgba(127, 127, 127, .12); border: 1px solid var(--border); }
+.wx-sz {
+  position: absolute; padding: 0; margin: 0; border-radius: 3px; cursor: pointer;
+  background: rgba(127, 127, 127, .32); border: 1px solid rgba(127, 127, 127, .25); transition: background .1s ease;
+}
+.wx-sz:hover, .wx-sz:focus-visible { background: var(--accent); border-color: var(--accent); outline: none; }
+@media (hover: none) { .wx-sl { width: 96px; height: 62px; } .wx-snapfly-grid { grid-template-columns: repeat(3, 96px); } }
+
+/* ---------- shared preview card ---------- */
+.wx-card {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 10px; cursor: pointer;
+  background: transparent; border: 2px solid transparent; color: inherit; font: inherit; text-align: left;
+  transition: background .12s ease, border-color .12s ease;
+}
+.wx-card:hover { background: rgba(127, 127, 127, .16); }
+.wx-card.sel, .wx-card:focus-visible { border-color: var(--accent); background: rgba(127, 127, 127, .14); outline: none; }
+.wx-card-h { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: .8rem; }
+.wx-card-ic { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; align-items: center; justify-content: center; }
+.wx-card-ic img, .wx-card-ic svg, .wx-card-ic .ico-wrap { width: 18px !important; height: 18px !important; font-size: 14px; }
+.wx-card-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx-card-min { font-size: .66rem; opacity: .7; padding: 1px 6px; border-radius: 6px; background: rgba(127, 127, 127, .2); }
+.wx-card-pv { display: flex; align-items: center; justify-content: center; }
+.wx-pv { position: relative; overflow: hidden; pointer-events: none; border-radius: 6px; box-shadow: 0 4px 18px rgba(0, 0, 0, .25); background: var(--window-bg); }
+.wx-pv .win.wx-clone { pointer-events: none; animation: none !important; transition: none !important; box-shadow: none; border-radius: 6px; }
+.wx-pv-ph { background: repeating-linear-gradient(45deg, rgba(127,127,127,.1) 0 10px, rgba(127,127,127,.18) 10px 20px); }
+
+/* ---------- Snap Assist ---------- */
+.wx-assist { position: absolute; inset: 0; }
+.wx-az {
+  position: absolute; border-radius: 10px; border: 1px dashed rgba(127, 127, 127, .6);
+  background: rgba(127, 127, 127, .14); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.wx-az-cur {
+  border: 1px solid var(--border); background: var(--taskbar); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+  box-shadow: var(--shadow); color: var(--text); overflow: auto; display: flex; align-items: center; justify-content: center;
+}
+.wx-az-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-content: center; padding: 16px; }
+
+/* ---------- Alt+Tab ---------- */
+.wx-alttab { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .12); }
+.wx-at-panel {
+  max-width: 92vw; max-height: 80vh; overflow: auto; padding: 14px; border-radius: 14px; color: var(--text);
+  background: var(--taskbar); backdrop-filter: blur(36px); -webkit-backdrop-filter: blur(36px);
+  border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+.wx-at-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.wx-at-card .wx-card-h { max-width: 100%; }
+.wx-at-empty { padding: 28px 40px; color: var(--text-dim); }
+
+/* ---------- Task View ---------- */
+.wx-tv {
+  position: absolute; inset: 0; display: flex; flex-direction: column; color: #fff;
+  background: rgba(20, 24, 32, .55); backdrop-filter: blur(26px) saturate(1.2); -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  opacity: 0; transition: opacity .16s ease;
+}
+.wx-tv.show { opacity: 1; }
+body:not(.dark) .wx-tv { background: rgba(235, 239, 245, .55); color: #1b1b1b; }
+.wx-tv-top { display: flex; align-items: center; justify-content: center; padding: 18px 16px 0; position: relative; min-height: 48px; }
+.wx-tv-title { font-size: 1rem; font-weight: 600; opacity: .85; }
+.wx-tv-x {
+  position: absolute; right: 16px; top: 12px; width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(127, 127, 127, .25); color: inherit; font-size: 1.5rem; line-height: 1;
+}
+.wx-tv-x:hover { background: rgba(127, 127, 127, .4); }
+.wx-tv-grid { flex: 1; min-height: 0; overflow: auto; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 14px; padding: 16px; }
+.wx-tv-empty { font-size: 1rem; opacity: .75; }
+.wx-tv-card { position: relative; color: inherit; touch-action: none; }
+.wx-tv-card .wx-card-h { font-size: .85rem; }
+.wx-card-x {
+  margin-left: auto; width: 26px; height: 26px; border-radius: 6px; border: 0; background: transparent; color: inherit;
+  font-size: 1.1rem; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .1s ease;
+}
+.wx-tv-card:hover .wx-card-x, .wx-tv-card.sel .wx-card-x, .wx-tv-card:focus-within .wx-card-x { opacity: 1; }
+.wx-card-x:hover { background: #e81123; color: #fff; }
+@media (hover: none) { .wx-card-x { opacity: 1; } }
+.wx-tv-card.wx-dragging { z-index: 5; transition: none; pointer-events: none; opacity: .9; }
+.wx-tv.wx-tv-dragging .wx-tv-grid { overflow: visible; }
+.wx-tv-strip {
+  flex: 0 0 auto; display: flex; gap: 14px; justify-content: center; align-items: flex-end; overflow-x: auto;
+  padding: 14px 16px 22px; margin: 0 auto 70px; max-width: 100%;
+  background: rgba(127, 127, 127, .16); border-radius: 16px;
+}
+body.kiosk-mode .wx-tv-strip { margin-bottom: 16px; }
+body.kiosk-mode .wx-tv-x { right: auto; left: 16px; } /* the kiosk "Exit" pill sits top-right */
+.wx-tv-desk, .wx-tv-new {
+  position: relative; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 6px; border-radius: 10px; border: 2px solid transparent; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.wx-tv-desk:hover, .wx-tv-new:hover { background: rgba(127, 127, 127, .2); }
+.wx-tv-desk.on .wx-tv-mini { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wx-tv-desk.wx-dropzone, .wx-tv-new.wx-dropzone { border-color: var(--accent); background: rgba(127, 127, 127, .3); }
+.wx-tv-mini { position: relative; overflow: hidden; border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.wx-tv-miniwin { position: absolute; background: rgba(255, 255, 255, .85); border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
+body.dark .wx-tv-miniwin { background: rgba(60, 60, 60, .92); }
+.wx-tv-plus { display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px dashed rgba(127, 127, 127, .7); background: rgba(127, 127, 127, .12); }
+.wx-tv-name { font-size: .8rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wx-tv-input { font: inherit; font-size: .8rem; width: 140px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--accent); background: var(--bg-elev); color: var(--text); }
+.wx-tv-deskbtns { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; opacity: 0; transition: opacity .1s ease; z-index: 1; }
+.wx-tv-desk:hover .wx-tv-deskbtns, .wx-tv-desk:focus-within .wx-tv-deskbtns { opacity: 1; }
+@media (hover: none) { .wx-tv-deskbtns { opacity: 1; } }
+.wx-tv-deskbtns button {
+  width: 24px; height: 24px; border-radius: 6px; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  background: rgba(30, 30, 30, .7); color: #fff; font-size: 1rem; line-height: 1;
+}
+.wx-tv-deskbtns .wx-tv-close:hover { background: #e81123; }
+.wx-tv-deskbtns .wx-tv-ren:hover { background: var(--accent); }
+
+/* ---------- taskbar jump list (End task) ---------- */
+.jumplist.wx-jl { min-width: 220px; }
+.jumplist.wx-jl .wx-jl-app { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.wx-jl-ic { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; }
+.wx-jl-ic img, .wx-jl-ic svg, .wx-jl-ic .ico-wrap { width: 20px !important; height: 20px !important; }
+.wx-jl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.jumplist.wx-jl .wx-jl-end { color: #d13438; font-weight: 600; }
+.jumplist.wx-jl .wx-jl-end:hover { background: rgba(209, 52, 56, .14); }
+body.dark .jumplist.wx-jl .wx-jl-end { color: #ff6b6f; }
+
+/* Reduced motion */
+body.a11y-reduce-motion .wx-snap-preview, body.a11y-reduce-motion .wx-snapfly, body.a11y-reduce-motion .wx-tv, body.a11y-reduce-motion .wx-desk-hud { transition: none; }
+@media (prefers-reduced-motion: reduce) { .wx-snap-preview, .wx-snapfly, .wx-tv, .wx-desk-hud { transition: none; } }
