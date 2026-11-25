@@ -897,7 +897,7 @@
     const CMD_HELP = [
       ["ATTRIB", "Displays or changes file attributes (+R -R +H -H)."], ["CD / CHDIR", "Displays the name of or changes the current directory (cd.., cd \\)."], ["CHKDSK", "Checks the disk and displays a status report (/f)."], ["CLIP", "Copies piped output to the clipboard (dir | clip)."], ["CLS", "Clears the screen."], ["CMD", "Starts a new instance of the command interpreter."], ["COLOR", "Sets console colors: color 0A, or color green."], ["COPY", "Copies one or more files (wildcards, /y)."], ["DATE / TIME", "Displays the date / time (/t)."], ["DEL / ERASE", "Deletes one or more files (/s /q /f)."], ["DIR", "Lists files and subfolders with sizes and dates (/s /b /w /a)."], ["ECHO", "Displays messages; echo text > file, echo text >> file."], ["EXIT", "Quits the current shell (closes Terminal from cmd)."], ["FC", "Compares two files and displays the differences."], ["FIND", "Searches for a text string: find \"txt\" file, dir | find \"x\"."], ["FINDSTR", "Searches for strings in files (/i /n /s /r /c:\"text\")."], ["HELP", "Provides help: help, or <command> /?."], ["HOSTNAME", "Prints the computer name."], ["IPCONFIG", "Network configuration (/all /flushdns)."], ["MD / MKDIR", "Creates a directory (and parents)."], ["MORE", "Displays output one screen at a time."], ["MOVE", "Moves files and folders, or renames folders."], ["NSLOOKUP", "Looks up a domain name (real DNS-over-HTTPS)."], ["PATH", "Displays or sets the search path."], ["PAUSE", "Waits for Enter."], ["PING", "Real HTTP round-trip check to a host (-n N, -t until Ctrl+C)."], ["RD / RMDIR", "Removes a directory (/s /q)."], ["REN / RENAME", "Renames files (ren *.txt *.md works)."], ["SET / SETX", "Shows, sets or removes environment variables (set /a, set /p)."], ["SHUTDOWN", "/s shut down, /r restart, /l sign out, /t N, /a abort."], ["SORT", "Sorts input (/r)."], ["START", "Opens an app, file, folder or URL."], ["SYSTEMINFO", "Shows real details about this PC and browser."], ["TASKKILL", "Closes an open window: taskkill /im notepad.exe, /pid N, /f."], ["TASKLIST", "Lists running processes and open windows."], ["TIMEOUT", "Waits N seconds (timeout /t 5); Ctrl+C stops it."], ["TITLE", "Sets the window title."], ["TREE", "Graphically displays the folder structure (/f /a)."], ["TYPE", "Displays the contents of a text file."], ["VER", "Displays the Windows version."], ["WHERE", "Finds files on the PATH, or /r dir pattern."], ["WHOAMI", "Prints the current user."], ["XCOPY", "Copies files and directory trees."],
     ];
-    const W12_HELP = [["calc <expr>", "Calculator: calc (2+3)*4  (no args opens Calculator)"], ["curl / wget <url>", "Real HTTP request (-o file saves to disk; wget saves)"], ["open <app>", "Open an app: browser, settings, notepad, copilot..."], ["update", "Get the latest version (when online)"], ["theme auto|light|dark", "Appearance (auto follows your device)"], ["kiosk on|off", "Full-screen single-app lock"], ["accessibility on|off", "High contrast, bigger text, less motion (a11y)"], ["sfc /scannow", "Check & repair C:\\Windows\\System32"], ["factory-reset", "Reset Windows 12 to factory settings"], ["powershell / pwsh", "Start PowerShell (exit returns here)"], ["wsl --install arch", "Install Arch Linux, then run: arch (or wsl / bash)"], ["weather, calendar, last, who, history", "Misc"]];
+    const W12_HELP = [["calc <expr>", "Calculator: calc (2+3)*4  (no args opens Calculator)"], ["curl / wget <url>", "Real HTTP request (-o file saves to disk; wget saves)"], ["open <app>", "Open an app: browser, settings, notepad, copilot..."], ["update", "Get the latest version (when online)"], ["theme auto|light|dark", "Appearance (auto follows your device)"], ["kiosk on|off", "Full-screen single-app lock"], ["accessibility on|off", "High contrast, bigger text, less motion (a11y)"], ["sfc /scannow", "Check & repair C:\\Windows\\System32"], ["factory-reset", "Reset Windows 12 to factory settings"], ["win12 [/fresh]", "Run Windows 12 inside Windows 12 (a VM; /fresh = clean install)"], ["powershell / pwsh", "Start PowerShell (exit returns here)"], ["wsl --install arch", "Install Arch Linux, then run: arch (or wsl / bash)"], ["weather, calendar, last, who, history", "Misc"]];
     function cmdHelp(c) {
       const io = c.io;
       if (c.a[0]) { const n = lc(c.a[0]); const row = CMD_HELP.find(([k]) => k.split(" / ").some((x) => lc(x) === n)); io.out(row ? row[0] + "\n    " + row[1] : `This command is not supported by the help utility.  Try "${n} /?".`); return 0; }
@@ -1236,6 +1236,26 @@
       else c.io.out(t ? `${p2(h12)}:${p2(d.getMinutes())} ${ap}` : `The current time is: ${String(h).padStart(2)}:${p2(d.getMinutes())}:${p2(d.getSeconds())}.${p2(Math.floor(d.getMilliseconds() / 10))}`);
       return 0;
     }
+    // Windows 12 inside Windows 12 (Hyper-V style VM, see js/vm12.js).
+    function vmCmd(c) {
+      const a = (c.a || []).map((x) => lc(String(x)));
+      if (a.some((x) => x === "/?" || x === "-?" || x === "--help" || x === "help")) {
+        c.io.out("Runs Windows 12 as a virtual machine inside this Windows 12.\nThe VM has its own separate files and settings.\n\n  win12            Start (or resume) the VM\n  win12 /fresh     Erase the VM and start from Windows Setup\n\nAlso: vmconnect, or in PowerShell: Start-VM -Name \"Windows 12\" [-Fresh], Get-VM");
+        return 0;
+      }
+      if (!window.VM12) { c.io.err("Hyper-V is not available on this device."); return 1; }
+      const fresh = a.some((x) => x === "/fresh" || x === "--fresh" || x === "-fresh" || x === "fresh" || x === "/new");
+      c.io.out("Starting virtual machine 'Windows 12'" + (fresh ? " with a fresh install" : "") + "...", COL.gray);
+      const r = window.VM12.launch({ fresh });
+      if (r.ok) c.io.out(r.message, COL.green); else c.io.err(r.message);
+      return r.ok ? 0 : 1;
+    }
+    function vmList(c) {
+      const d = (window.WIN12_VM_DEPTH || 0) + 1;
+      let has = false; try { has = !!localStorage.getItem("win12_state_v1__vm" + d); } catch (_) {}
+      c.io.out("\nName        State  CPUUsage(%) MemoryAssigned(M) Uptime   Status             Version\n----        -----  ----------- ----------------- ------   ------             -------\nWindows 12  " + (has ? "Saved  " : "Off    ") + "0           0                 00:00:00 Operating normally 12.0");
+      return 0;
+    }
     const CMD = {
       help: cmdHelp, "/?": cmdHelp, dir: cmdDir, cd: cmdCd, chdir: cmdCd, md: cmdMd, mkdir: cmdMd, rd: cmdRd, rmdir: cmdRd, del: cmdDel, erase: cmdDel,
       copy: (c) => copyOrMove(c, false), move: (c) => copyOrMove(c, true), xcopy: cmdXcopy, robocopy: cmdXcopy, ren: cmdRen, rename: cmdRen, type: cmdType, echo: cmdEcho,
@@ -1252,6 +1272,7 @@
       wsl, install: wsl, arch: (c) => enterArch(c.io), bash: (c) => (TS().archInstalled ? enterArch(c.io) : (c.io.err("'bash' is not recognized as an internal or external command,\noperable program or batch file.\nInstall Linux first: wsl --install arch"), 1)),
       powershell: (c) => enterPS(c.io), pwsh: (c) => enterPS(c.io), cmd: (c) => enterCmd(c.io), timeout: timeoutCmd, pause: async (c) => { await c.io.ask("Press Enter to continue . . . "); return 0; },
       clip, rem: () => 0, vol: (c) => { c.io.out(" Volume in drive C is Local Disk\n Volume Serial Number is 1A2B-3C4D"); return 0; },
+      win12: vmCmd, vmconnect: vmCmd, "vmconnect.exe": vmCmd, "virtmgmt.msc": vmCmd, hyperv: vmCmd,
     };
     function notRecognized(c) {
       const m = mode();
@@ -1536,6 +1557,8 @@
         case "copy-item": return psCopyMove(c, false);
         case "move-item": return psCopyMove(c, true);
         case "rename-item": return psRename(c);
+        case "start-vm": case "vmconnect": case "win12": return vmCmd(c);
+        case "get-vm": return vmList(c);
         case "get-process": return psGetProcess(c);
         case "stop-process": return psStopProcess(c);
         case "get-date": return psGetDate(c);

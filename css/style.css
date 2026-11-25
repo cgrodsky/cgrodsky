@@ -5556,3 +5556,22 @@ body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
 .tid-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .tid-btns button { border: 1px solid rgba(127,127,127,.35); background: rgba(127,127,127,.12); color: inherit; border-radius: 6px; padding: 7px 14px; font-size: .84rem; cursor: pointer; }
 .tid-btns .tid-alt { margin-right: auto; border-color: transparent; background: transparent; color: #3b82f6; padding-left: 0; }
+
+/* Windows 12 VM (Hyper-V style Virtual Machine Connection) */
+.vm12-host { display: flex; flex-direction: column; height: 100%; background: #1b1b1f; color: #e8e8ee; }
+.vm12-bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #26262c; border-bottom: 1px solid rgba(255,255,255,.08); font-size: .78rem; flex-wrap: wrap; }
+.vm12-bar button { border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: inherit; border-radius: 6px; padding: 4px 10px; font-size: .76rem; cursor: pointer; }
+.vm12-bar button:hover { background: rgba(255,255,255,.14); }
+.vm12-bar .vm12-off { border-color: rgba(255,90,90,.5); color: #ff9a9a; }
+.vm12-state { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.vm12-led { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 6px #2ecc71; display: inline-block; }
+.vm12-led.off { background: #777; box-shadow: none; }
+.vm12-name { opacity: .75; }
+.vm12-grow { flex: 1; }
+.vm12-screen { position: relative; flex: 1; background: #000; min-height: 0; }
+.vm12-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.vm12-boot { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: #000; color: #ddd; font-size: .95rem; }
+.vm12-boot small { opacity: .6; font-size: .78rem; }
+.vm12-boot[hidden] { display: none; }
+.vm12-status { padding: 4px 10px; font-size: .7rem; opacity: .7; background: #202026; border-top: 1px solid rgba(255,255,255,.06); }
+.vm12-status code { font-size: .68rem; }

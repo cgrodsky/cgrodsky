@@ -2,7 +2,12 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "win12_state_v1";
+  // A Windows 12 running as a virtual machine inside Windows 12 (index.html?vm=N)
+  // keeps its own separate state, so it never touches the host desktop.
+  const VM_DEPTH = (() => { try { const n = parseInt(new URLSearchParams(location.search).get("vm"), 10); return n > 0 ? Math.min(n, 9) : 0; } catch (e) { return 0; } })();
+  const STORAGE_KEY = "win12_state_v1" + (VM_DEPTH ? "__vm" + VM_DEPTH : "");
+  window.WIN12_STATE_KEY = STORAGE_KEY;
+  window.WIN12_VM_DEPTH = VM_DEPTH;
 
   const defaults = () => ({
     bootCompleted: false,

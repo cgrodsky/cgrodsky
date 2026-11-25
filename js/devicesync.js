@@ -9,7 +9,7 @@
 (function () {
   "use strict";
   const S = () => State.data;
-  const STORAGE_KEY = "win12_state_v1";
+  const STORAGE_KEY = window.WIN12_STATE_KEY || "win12_state_v1";
   const PEER_LIB = "https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js";
   // Unambiguous charset (no 0/O, 1/I/L) for an easy-to-read 5-char code.
   const CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
