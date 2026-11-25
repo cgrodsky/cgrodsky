@@ -131,6 +131,22 @@
     return s;
   }
   const refreshWifi = () => { if (window.WM && WM.refreshWifi) WM.refreshWifi(); };
+  // Network row control: a live real-status badge + the (simulated) Wi-Fi switch. Keeps the row's subtitle live too.
+  function wifiCtl(q) {
+    const wrap = el(`<span class="rad-ctl"><span class="rad-badge"></span></span>`), badge = wrap.firstElementChild;
+    wrap.appendChild(toggle(!!q.wifi, (v) => { q.wifi = v; if (v) q.plane = false; State.save(); refreshWifi(); Radios.emit(); go("network"); }));
+    let seen = false;
+    const paint = () => {
+      const n = Radios.net.info(), conn = Radios.net.isConnected();
+      badge.className = "rad-badge " + (conn ? "on" : "off");
+      badge.textContent = !n.online ? "Offline" : !q.wifi ? "Off" : n.testing ? "Testing…" : n.latency != null ? "Online · " + n.latency + " ms" : "Online";
+      const row = wrap.closest(".w12s-row"), s = row && row.querySelector(".w12s-row-s");
+      if (s) s.textContent = Radios.net.summary();
+    };
+    const off = Radios.on(() => { if (!wrap.isConnected) { if (seen) off(); return; } seen = true; paint(); });
+    paint(); requestAnimationFrame(() => { if (wrap.isConnected) { seen = true; paint(); } });
+    return wrap;
+  }
   const note = (body) => { if (window.Notify) Notify.show({ icon: Icon.mini("settings", "Settings"), title: "Settings", body }); };
 
   // ---------- sections ----------
@@ -169,7 +185,9 @@
         { ic: "info", t: "About", s: "Device specifications, rename PC, Windows specifications", sub: "about" },
       ],
       devices: [
-        { ic: "plus", t: "Add device", s: "Search for new Bluetooth devices", act: () => note(q.bt ? "Searching for devices… nothing found nearby." : "Turn on Bluetooth first.") },
+        window.Radios
+          ? { ic: "plus", t: "Add device", s: Radios.bt.supported() ? "Pair a real Bluetooth device nearby (your browser shows the list)" : "Not available in this browser — open this page in Chrome or Edge", act: () => { if (Radios.bt.supported()) Radios.bt.pair(); else note(Radios.bt.UNSUPPORTED_MSG); } }
+          : { ic: "plus", t: "Add device", s: "Search for new Bluetooth devices", act: () => note(q.bt ? "Searching for devices… nothing found nearby." : "Turn on Bluetooth first.") },
         { ic: "mouse", t: "Mouse", s: "Buttons, pointer speed, scrolling", sub: "mouse" },
         { ic: "keyboard", t: "Devices & drivers", s: "Fingerprint sensor, mouse, keyboard — drivers and status", sub: "devmgr" },
         { ic: "printer", t: "Printers & scanners", s: "Set up and troubleshoot printers" },
@@ -179,12 +197,16 @@
         { ic: "usb", t: "USB", s: "Connect more devices with USB" },
       ],
       network: [
-        { ic: "wifi", t: "Wi-Fi", s: q.wifi ? "Connected to HomeNetwork_5G, secured" : "Off", ctl: () => toggle(!!q.wifi, (v) => { q.wifi = v; if (v) q.plane = false; State.save(); refreshWifi(); go("network"); }) },
-        ...(q.wifi ? [{ ic: "cell", t: "Signal strength", s: "How strong the Wi-Fi signal is", ctl: () => select([["good", "Strong"], ["poor", "Weak"]], q.signal === "poor" ? "poor" : "good", (v) => { q.signal = v; State.save(); refreshWifi(); go("network"); }) }] : []),
+        window.Radios
+          ? { ic: "wifi", t: "Wi-Fi", s: Radios.net.summary(), ctl: () => wifiCtl(q) }
+          : { ic: "wifi", t: "Wi-Fi", s: q.wifi ? "Connected to HomeNetwork_5G, secured" : "Off", ctl: () => toggle(!!q.wifi, (v) => { q.wifi = v; if (v) q.plane = false; State.save(); refreshWifi(); go("network"); }) },
+        ...(window.Radios ? [{ ic: "speed", t: "Run network test", s: "Measure the real latency from this device to this site's server", act: () => Radios.net.test() }] : []),
+        ...(window.Radios ? [{ ic: "wifi", t: "Show available networks", s: "Your real connection, plus simulated networks to join", sub: "wifinets" }] : []),
+        ...(q.wifi ? [{ ic: "cell", t: window.Radios ? "Signal strength (simulated)" : "Signal strength", s: window.Radios ? "Pretend the Wi-Fi signal is weak — the tray icon shows the real state otherwise" : "How strong the Wi-Fi signal is", ctl: () => select([["good", "Strong"], ["poor", "Weak"]], q.signal === "poor" ? "poor" : "good", (v) => { q.signal = v; State.save(); refreshWifi(); go("network"); }) }] : []),
         { ic: "cell", t: "Mobile network", s: "Not connected — get online over a cellular network" },
         { ic: "shield", t: "VPN", s: "Add, connect, manage" },
         { ic: "hotspot", t: "Mobile hotspot", s: "Share your internet connection" },
-        { ic: "plane", t: "Airplane mode", s: q.plane ? "On — all wireless radios are off" : "Stop all wireless communication", ctl: () => toggle(!!q.plane, (v) => { q.plane = v; if (v) { q.wifi = false; q.bt = false; } State.save(); refreshWifi(); go("network"); }) },
+        { ic: "plane", t: "Airplane mode", s: q.plane ? "On — all wireless radios are off" + (window.Radios ? " (simulated; real Bluetooth devices are disconnected)" : "") : "Stop all wireless communication", ctl: () => toggle(!!q.plane, (v) => { q.plane = v; if (v) { q.wifi = false; q.bt = false; if (window.Radios) Radios.bt.setEnabled(false); } State.save(); refreshWifi(); if (window.Radios) Radios.emit(); go("network"); }) },
         { ic: "globe", t: "Proxy", s: "Proxy server for Wi-Fi and Ethernet connections" },
         { ic: "call", t: "Dial-up", s: "Set up a dial-up internet connection" },
         { ic: "sliders", t: "Advanced network settings", s: "View all network adapters, network reset" },
@@ -265,10 +287,33 @@
     if (id === "system") return el(`<div class="w12s-hero"><span class="w12s-hero-ic">${BIG.laptop}</span><div><div class="w12s-hero-big">${esc(userName())}</div><div class="w12s-hero-sub">${esc(userSub())}</div>${S().account ? `<span class="w12s-hero-meta">${esc(deviceName())}</span>` : `<a class="w12s-link" data-go="accounts">Sign in</a>`}</div></div>`);
     if (id === "devices") {
       const h = el(`<div class="w12s-hero"><span class="w12s-hero-ic">${BIG.bluetooth}</span><div style="flex:1"><div class="w12s-hero-sub">My device's name</div><div class="w12s-hero-big">${esc(deviceName())}</div><div class="w12s-hero-sub" style="font-size:.78rem">This is the name other devices see in their Bluetooth list</div><a class="w12s-link" data-sub="about">Rename</a></div><div class="w12s-hero-ctl"><span>Bluetooth</span></div></div>`);
-      h.querySelector(".w12s-hero-ctl").appendChild(toggle(!!q.bt, (v) => { q.bt = v; if (v) q.plane = false; State.save(); refreshWifi(); }));
-      return h;
+      const btToggle = toggle(!!q.bt, (v) => { if (window.Radios) Radios.bt.setEnabled(v); else { q.bt = v; if (v) q.plane = false; State.save(); } refreshWifi(); });
+      h.querySelector(".w12s-hero-ctl").appendChild(btToggle);
+      if (!window.Radios) return h;
+      // Real Bluetooth (Web Bluetooth): device list, pairing status, unsupported message.
+      const wrap = el(`<div class="rad-wrap"></div>`);
+      wrap.append(h, Radios.ui.btPanel());
+      const off = Radios.on(() => { if (!wrap.isConnected) return off(); const inp = btToggle.querySelector("input"); if (inp) inp.checked = !!q.bt; });
+      return wrap;
     }
     if (id === "network") {
+      if (window.Radios) {
+        // Real online/offline status + connection details; the network NAME stays simulated.
+        const wrap = el(`<div class="rad-wrap"><div class="rad-hero-box"></div></div>`), box = wrap.firstElementChild;
+        const paint = () => {
+          const n = Radios.net.info(), conn = Radios.net.isConnected();
+          const sub = !n.online ? "Not connected — this device is offline" : !q.wifi ? (q.plane ? "Airplane mode is on (simulated)" : "Wi-Fi is off (simulated)") : Radios.net.summary();
+          box.innerHTML = "";
+          const h = el(`<div class="w12s-hero"><span class="w12s-hero-ic">${conn ? BIG.wifi : BIG.wifioff}</span><div style="min-width:0"><div class="w12s-hero-sub">${esc(sub)}</div><div class="w12s-hero-big">${conn ? esc(q.ssid || "HomeNetwork_5G") : "No network"}</div>${conn ? `<div class="w12s-hero-sub" style="font-size:.74rem">Network name is simulated — browsers can't read the real Wi-Fi name</div>` : ""}${n.online ? `<a class="w12s-link w12s-wifi-link">${q.wifi ? "Disconnect (simulated)" : "Connect"}</a>` : ""}</div></div>`);
+          const lk = h.querySelector(".w12s-wifi-link");
+          if (lk) lk.onclick = () => { q.wifi = !q.wifi; if (q.wifi) q.plane = false; State.save(); refreshWifi(); Radios.emit(); go("network"); };
+          box.appendChild(h);
+        };
+        paint();
+        const off = Radios.on(() => { if (!wrap.isConnected) return off(); paint(); });
+        wrap.appendChild(Radios.ui.netPanel());
+        return wrap;
+      }
       const h = el(`<div class="w12s-hero"><span class="w12s-hero-ic">${q.wifi ? BIG.wifi : BIG.wifioff}</span><div><div class="w12s-hero-sub">${q.wifi ? "Wi-Fi connected" : (q.plane ? "Airplane mode is on" : "Not connected")}</div><div class="w12s-hero-big">${q.wifi ? "HomeNetwork_5G" : "No network"}</div><a class="w12s-link w12s-wifi-link">${q.wifi ? "Disconnect" : "Connect"}</a></div></div>`);
       h.querySelector(".w12s-wifi-link").onclick = () => { q.wifi = !q.wifi; if (q.wifi) q.plane = false; State.save(); refreshWifi(); go("network"); };
       return h;
@@ -367,6 +412,37 @@
       h.appendChild(line("Primary mouse button", select([["left", "Left"], ["right", "Right"]], d.primary, (v) => { d.primary = v; State.save(); })));
       h.appendChild(line("Mouse pointer speed", slider(1, 11, d.speed, (v) => { d.speed = v; State.save(); })));
       h.appendChild(line("Lines to scroll at a time", slider(1, 10, d.scroll, (v) => { d.scroll = v; State.save(); })));
+    } },
+    wifinets: { title: "Wi-Fi networks", parent: "network", build(h, redraw) {
+      const q = qs();
+      if (!window.Radios) { h.appendChild(line(q.wifi ? "HomeNetwork_5G" : "No network", null, q.wifi ? "Connected, secured" : "Wi-Fi is off")); return; }
+      h.appendChild(el(`<div class="rad-banner rad-info" style="margin-bottom:2px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><div>No web browser can scan for nearby Wi-Fi networks or join one — that's only possible in your device's own settings. The first card is your <b>real</b> connection; the list below it is <b>simulated</b> for fun, and "joining" one only changes the name shown here.</div></div>`));
+      // The real connection (status live; name simulated)
+      const cur = card(`<div class="w12s-row-t">Current connection</div><div class="rad-cur"></div>`), curBox = cur.querySelector(".rad-cur");
+      const paintCur = () => {
+        const conn = Radios.net.isConnected();
+        curBox.innerHTML = `<div class="rad-net-row ${conn ? "on" : ""}"><span class="rad-dev-ic" style="${conn ? "" : "opacity:.45"}">${ic("wifi")}</span><div class="rad-dev-txt"><div class="rad-dev-name">${conn ? esc(q.ssid || "HomeNetwork_5G") : "Not connected"}<span class="rad-tag rad-tag-real">real status</span></div><div class="rad-dev-sub">${esc(Radios.net.summary())}</div></div></div>`;
+      };
+      paintCur(); h.appendChild(cur);
+      let seen = false; const off = Radios.on(() => { if (!cur.isConnected) { if (seen) off(); return; } seen = true; paintCur(); });
+      requestAnimationFrame(() => { if (cur.isConnected) seen = true; });
+      // Simulated nearby networks
+      const nets = [["HomeNetwork_5G", 4, true], ["HomeNetwork", 3, true], ["CoffeeShop_Guest", 2, false], ["NETGEAR-42", 2, true], ["Library-Free-WiFi", 1, false]];
+      const list = card(`<div class="w12s-row-t">Nearby networks <span class="rad-tag">simulated</span></div><div class="rad-devs"></div>`), lb = list.querySelector(".rad-devs");
+      const curName = q.ssid || "HomeNetwork_5G";
+      nets.forEach(([name, bars, secure]) => {
+        const isCur = q.wifi && name === curName;
+        const r = el(`<div class="rad-net-row ${isCur ? "on" : ""}"><span class="rad-dev-ic">${ic("wifi")}</span><div class="rad-dev-txt"><div class="rad-dev-name">${esc(name)}</div><div class="rad-dev-sub">${isCur ? "Shown as your network (simulated name)" : (secure ? "Secured" : "Open") + " · signal " + "▮".repeat(bars) + "▯".repeat(4 - bars)}</div></div><span class="rad-dev-btns"></span></div>`);
+        const b = el(`<button class="w12s-btn">${isCur ? "Disconnect" : "Connect"}</button>`);
+        b.onclick = () => {
+          if (isCur) { q.wifi = false; State.save(); refreshWifi(); Radios.emit(); redraw(); return; }
+          b.disabled = true; b.textContent = "Connecting… (simulated)";
+          setTimeout(() => { q.ssid = name; q.wifi = true; q.plane = false; State.save(); refreshWifi(); Radios.emit(); note("Now showing " + name + " as your network (simulated). Your device's real connection didn't change."); if (h.isConnected) redraw(); }, 1100);
+        };
+        r.querySelector(".rad-dev-btns").appendChild(b);
+        lb.appendChild(r);
+      });
+      h.appendChild(list);
     } },
     background: { title: "Background", parent: "personal", build(h, redraw) {
       const cur = S().desktop.wallpaper || "default";

@@ -87,7 +87,7 @@
       if (d.touchDriver) return ok;
       d.touchDriver = { installed: Date.now() }; State.save();
       const info = driverInfo();
-      const icon = `<img src="assets/touchid.png?v=1" alt="" style="width:100%;height:100%;object-fit:contain">`;
+      const icon = `<img src="assets/touchid.png?v=1" alt="" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;display:block">`;
       if (window.Notify) {
         Notify.show({ icon, title: "Setting up a device", body: "Installing " + info.name + " driver…" });
         setTimeout(() => Notify.show({ icon, title: info.name + " is ready", body: enrolled() ? "You can sign in with your fingerprint." : "Set it up in Settings → Accounts → Sign-in options.", onClick: () => { window.SettingsStartPage = "signin"; if (window.WM) WM.open("settings"); } }), 2600);

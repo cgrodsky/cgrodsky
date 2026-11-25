@@ -1,0 +1,61 @@
+/* Real Bluetooth (Web Bluetooth) + real network status — js/radios.js */
+.rad-wrap { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.rad-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rad-head .w12s-row-t { flex: 1; min-width: 0; }
+.rad-pill { font-size: .72rem; padding: 3px 10px; border-radius: 999px; background: rgba(127,140,180,.18); color: var(--w12s-sub, #666); white-space: nowrap; }
+.rad-pill-ok { background: rgba(56,193,114,.16); color: #1f7a45; }
+.rad-pill-bad { background: rgba(229,72,77,.14); color: #b42318; }
+body.dark .rad-pill-ok { color: #6fdc9b; }
+body.dark .rad-pill-bad { color: #ff8f8f; }
+.rad-banner { display: flex; gap: 10px; align-items: flex-start; font-size: .82rem; line-height: 1.4; padding: 10px 12px; border-radius: 8px; background: rgba(127,140,180,.12); }
+.rad-banner > svg { flex: 0 0 auto; margin-top: 1px; }
+.rad-banner b { font-weight: 600; }
+.rad-warn { background: rgba(255,185,0,.14); }
+.rad-ok { background: rgba(59,145,216,.12); }
+.rad-info { background: rgba(127,140,180,.10); color: var(--w12s-sub, #666); }
+.rad-dim { color: var(--w12s-sub, #777); font-size: .92em; }
+.rad-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.rad-msg { font-size: .82rem; padding: 2px 2px; }
+.rad-msg-err { color: #c42b1c; }
+.rad-msg-ok { color: #1f7a45; }
+body.dark .rad-msg-err { color: #ff8f8f; }
+body.dark .rad-msg-ok { color: #6fdc9b; }
+.rad-devs { display: flex; flex-direction: column; gap: 6px; }
+.rad-empty { font-size: .82rem; color: var(--w12s-sub, #777); padding: 4px 2px; }
+.rad-dev { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 8px; background: rgba(127,140,180,.08); flex-wrap: wrap; }
+.rad-dev.on { background: rgba(59,145,216,.12); }
+.rad-dev-ic { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 50%; background: rgba(127,140,180,.18); }
+.rad-dev.on .rad-dev-ic { background: linear-gradient(100deg,#ad6eca,#3b91d8); color: #fff; }
+.rad-dev-txt { flex: 1; min-width: 140px; }
+.rad-dev-name { font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rad-dev-sub { font-size: .74rem; color: var(--w12s-sub, #777); }
+.rad-dev-batt { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; }
+.rad-batt { display: inline-block; width: 26px; height: 12px; border: 1.5px solid currentColor; border-radius: 3px; padding: 1px; box-sizing: border-box; position: relative; opacity: .85; }
+.rad-batt::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; background: currentColor; border-radius: 0 1px 1px 0; }
+.rad-batt i { display: block; height: 100%; border-radius: 1px; }
+.rad-dev-btns { display: inline-flex; gap: 6px; }
+.rad-spec td:first-child { white-space: nowrap; }
+.rad-ctl { display: inline-flex; align-items: center; gap: 10px; }
+.rad-badge { font-size: .74rem; color: var(--w12s-sub, #777); white-space: nowrap; }
+.rad-badge.on { color: #1f7a45; }
+.rad-badge.off { color: #b42318; }
+body.dark .rad-badge.on { color: #6fdc9b; }
+body.dark .rad-badge.off { color: #ff8f8f; }
+.rad-net-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 8px; background: rgba(127,140,180,.08); }
+.rad-net-row .rad-dev-txt { min-width: 0; }
+.rad-net-row.on { background: rgba(59,145,216,.12); }
+.rad-tag { font-size: .66rem; padding: 1px 7px; border-radius: 999px; background: rgba(127,140,180,.2); color: var(--w12s-sub, #666); margin-left: 6px; vertical-align: 2px; }
+.rad-tag-real { background: rgba(56,193,114,.18); color: #1f7a45; }
+body.dark .rad-tag-real { color: #6fdc9b; }
+
+/* Quick Settings strip */
+.rad-qs { display: flex; flex-direction: column; gap: 6px; margin: -4px 0 12px; }
+.rad-qs-line { display: flex; align-items: center; gap: 8px; font-size: .76rem; padding: 6px 8px; border-radius: 10px; background: rgba(127,140,180,.12); }
+.rad-qs-line.off { opacity: .85; }
+.rad-qs-ic { display: inline-flex; width: 18px; height: 18px; flex: 0 0 auto; }
+.rad-qs-ic svg { width: 18px; height: 18px; }
+.rad-qs-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rad-qs-btn { font: inherit; font-size: .72rem; border: 0; border-radius: 7px; padding: 4px 9px; background: rgba(127,140,180,.22); color: inherit; cursor: pointer; white-space: nowrap; }
+.rad-qs-btn:hover { background: rgba(127,140,180,.36); }
+.rad-qs-btn:disabled { opacity: .55; cursor: default; }
+.rad-qs-msg { font-size: .72rem; line-height: 1.35; padding: 6px 8px; border-radius: 10px; background: rgba(255,185,0,.16); }

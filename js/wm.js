@@ -1111,12 +1111,25 @@
     focus: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>`,
     cast: `<img src="assets/cast.png?v=9" width="20" height="20" alt="Cast" style="object-fit:contain;vertical-align:middle">`,
     access: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M4 8h16M12 8v6M12 14l-3 6M12 14l3 6"/></svg>`,
+    wifiOff: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0" stroke="currentColor" stroke-width="1.9" opacity=".45"/><circle cx="17.5" cy="17.5" r="5" fill="#e5484d"/><path d="M15.6 15.6l3.8 3.8M19.4 15.6l-3.8 3.8" stroke="#fff" stroke-width="1.6"/></svg>`,
   };
 
   // Clean, background-free volume symbol for the tray + quick settings.
   const volSvg = (v) => (v > 0 ? SYS_SVG.volume : SYS_SVG.volumeMuted);
   function qs() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55, signal: "good" }; return S().appData.quickSettings; }
-  function wifiIconKey() { const q = qs(); return (q.wifi && q.signal === "poor") ? "wifi_poor" : "wifi"; }
+  // Real connection state comes from js/radios.js when it is loaded (online/offline, speed, latency).
+  function wifiIconKey() { if (window.Radios) return Radios.net.iconKey(); const q = qs(); return (q.wifi && q.signal === "poor") ? "wifi_poor" : "wifi"; }
+  function wifiConnected() { return window.Radios ? Radios.net.isConnected() : !!qs().wifi; }
+  let _radiosHooked = false;
+  function refreshWifiTray() {
+    const t = taskbar && taskbar.querySelector(".tb-wifi"); if (!t) return;
+    const key = wifiIconKey();
+    // Disconnected: inline SVG so it still draws when the device is really offline (no image fetch needed).
+    if (t.dataset.key !== key) { t.innerHTML = key === "wifi_disabled" ? SYS_SVG.wifiOff : Icon.mini(key, "Wi-Fi"); t.dataset.key = key; }
+    t.style.opacity = window.Radios ? "0.95" : (qs().wifi ? "0.9" : "0.3");
+    t.title = window.Radios ? "Wi-Fi: " + Radios.net.summary() : (qs().wifi ? "Wi-Fi connected" : "Wi-Fi off");
+    if (window.Radios && !_radiosHooked) { _radiosHooked = true; Radios.on(refreshWifiTray); }
+  }
   function notifLog() { if (!S().appData) S().appData = {}; if (!S().appData.notifLog) S().appData.notifLog = []; return S().appData.notifLog; }
 
   // Warm overlay for Night light + dimming for Brightness.
@@ -1154,21 +1167,37 @@
       <div class="qs-foot"><span class="qs-batt"></span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
     </div>`);
     const tilesWrap = panel.querySelector(".qs-tiles");
+    const tileOn = (k) => (k === "wifi" ? wifiConnected() : !!st[k]);
+    const paintRadioTiles = () => {
+      const w = tilesWrap.querySelector(".qs-tile:nth-child(1)"), b = tilesWrap.querySelector(".qs-tile:nth-child(2)"), p = tilesWrap.querySelector(".qs-tile:nth-child(3)");
+      if (w) { w.classList.toggle("on", tileOn("wifi")); w.title = window.Radios ? Radios.net.summary() : ""; }
+      if (b) { b.classList.toggle("on", !!st.bt); b.title = window.Radios ? "Bluetooth: " + Radios.bt.summary() : ""; }
+      if (p) p.classList.toggle("on", !!st.plane);
+    };
     tiles.forEach((t) => {
-      const on = !t.momentary && st[t.k];
+      const on = !t.momentary && tileOn(t.k);
       const b = el(`<button class="qs-tile ${on ? "on" : ""}"><span class="qs-tile-ic">${t.icon}</span><span class="qs-tile-lbl">${t.label}</span></button>`);
       b.onclick = () => {
         if (t.momentary) { Notify.show({ icon: "", title: t.label, body: t.label + " is not available" }); return; }
+        // Real radios: the Bluetooth tile opens the browser's real pairing chooser (or explains why it can't);
+        // the Wi-Fi tile can't switch the real connection, so when the device is offline it says so.
+        if (window.Radios && t.k === "bt") { Radios.ui.quickTile(); State.save(); paintRadioTiles(); refreshWifiTray(); return; }
+        if (window.Radios && t.k === "wifi" && !Radios.net.info().online) { Notify.show({ icon: "", title: "Wi-Fi", body: "This device is offline. Websites can't join Wi-Fi networks — connect in your device's own Wi-Fi settings." }); return; }
         st[t.k] = !st[t.k];
-        if (t.k === "plane" && st.plane) { st.wifi = false; st.bt = false; }
-        State.save(); b.classList.toggle("on", st[t.k]);
-        tilesWrap.querySelector(".qs-tile:nth-child(1)").classList.toggle("on", st.wifi);
-        tilesWrap.querySelector(".qs-tile:nth-child(2)").classList.toggle("on", st.bt);
-        const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = st.wifi ? "0.9" : "0.3";
+        if (t.k === "wifi" && st.wifi) st.plane = false;
+        if (t.k === "plane" && st.plane) { st.wifi = false; st.bt = false; if (window.Radios) Radios.bt.setEnabled(false); }
+        State.save(); b.classList.toggle("on", tileOn(t.k));
+        paintRadioTiles(); refreshWifiTray();
+        if (window.Radios) Radios.emit();
         if (t.k === "night") applyDisplayFx();
       };
       tilesWrap.appendChild(b);
     });
+    if (window.Radios) {
+      tilesWrap.after(Radios.ui.quickStatus());
+      const offR = Radios.on(() => { if (!panel.isConnected) return offR(); paintRadioTiles(); });
+      paintRadioTiles();
+    }
     panel.querySelector(".qs-brightness").oninput = (e) => { st.brightness = +e.target.value; State.save(); applyDisplayFx(); };
     panel.querySelector(".qs-volume").oninput = (e) => {
       st.volume = +e.target.value; State.save();
@@ -1314,7 +1343,7 @@
     applyTaskbarLayout();
     buildStartMenu();
     buildSearchPanel();
-    const wifiIc = taskbar.querySelector(".tb-wifi"); if (wifiIc) wifiIc.style.opacity = qs().wifi ? "0.9" : "0.3";
+    refreshWifiTray();
     refreshBattery(); initBattery();
     applyDisplayFx();
   }
@@ -1906,6 +1935,6 @@
     createWindow, open, buildDesktop, setWindowIcon,
     refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
     refreshTaskbar: refreshTaskbarIcons,
-    refreshWifi: () => { const t = taskbar && taskbar.querySelector(".tb-wifi"); if (!t) return; t.innerHTML = Icon.mini(wifiIconKey(), "Wi-Fi"); t.style.opacity = qs().wifi ? "0.9" : "0.3"; },
+    refreshWifi: () => refreshWifiTray(),
   };
 })();
