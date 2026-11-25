@@ -1102,6 +1102,7 @@
   // ---------------- System tray SVGs ----------------
   const SYS_SVG = {
     volume: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8 8 0 0 1 0 12"/></svg>`,
+    volumeMuted: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>`,
     battery: `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="16" height="9" rx="2"/><rect x="5" y="10" width="10" height="5" rx="1" fill="currentColor" stroke="none"/><path d="M21 11v3" stroke-linecap="round"/></svg>`,
     bt: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 7l8 10-4 3V4l4 3-8 10"/></svg>`,
     plane: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 15v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V8l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5.5L21 15Z"/></svg>`,
@@ -1112,6 +1113,8 @@
     access: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M4 8h16M12 8v6M12 14l-3 6M12 14l3 6"/></svg>`,
   };
 
+  // Clean, background-free volume symbol for the tray + quick settings.
+  const volSvg = (v) => (v > 0 ? SYS_SVG.volume : SYS_SVG.volumeMuted);
   function qs() { if (!S().appData) S().appData = {}; if (!S().appData.quickSettings) S().appData.quickSettings = { wifi: true, bt: false, plane: false, night: false, focus: false, brightness: 90, volume: 55, signal: "good" }; return S().appData.quickSettings; }
   function wifiIconKey() { const q = qs(); return (q.wifi && q.signal === "poor") ? "wifi_poor" : "wifi"; }
   function notifLog() { if (!S().appData) S().appData = {}; if (!S().appData.notifLog) S().appData.notifLog = []; return S().appData.notifLog; }
@@ -1147,7 +1150,7 @@
     const panel = el(`<div id="qsPanel" class="qs-panel">
       <div class="qs-tiles"></div>
       <div class="qs-slider"><span class="qs-sl-ic">${SYS_SVG.sun}</span><input type="range" min="10" max="100" value="${st.brightness}" class="qs-brightness"></div>
-      <div class="qs-slider"><span class="qs-sl-ic qs-vol-ic">${Icon.mini(st.volume > 0 ? "sound_on" : "sound_off", "Volume")}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
+      <div class="qs-slider"><span class="qs-sl-ic qs-vol-ic">${volSvg(st.volume)}</span><input type="range" min="0" max="100" value="${st.volume}" class="qs-volume"></div>
       <div class="qs-foot"><span class="qs-batt"></span><span class="grow"></span><button class="qs-settings" title="All settings">${SYS_SVG.focus}</button></div>
     </div>`);
     const tilesWrap = panel.querySelector(".qs-tiles");
@@ -1169,7 +1172,7 @@
     panel.querySelector(".qs-brightness").oninput = (e) => { st.brightness = +e.target.value; State.save(); applyDisplayFx(); };
     panel.querySelector(".qs-volume").oninput = (e) => {
       st.volume = +e.target.value; State.save();
-      const ic = Icon.mini(st.volume > 0 ? "sound_on" : "sound_off", "Volume");
+      const ic = volSvg(st.volume);
       const slIc = panel.querySelector(".qs-vol-ic"); if (slIc) slIc.innerHTML = ic;
       const trayIc = taskbar && taskbar.querySelector(".tb-vol"); if (trayIc) trayIc.innerHTML = ic;
     };
@@ -1281,7 +1284,7 @@
       <div class="tb-tray">
         <button class="tb-qs" title="Quick settings">
           <span class="tb-wifi">${Icon.mini(wifiIconKey(), "Wi-Fi")}</span>
-          <span class="tb-sysic tb-vol">${Icon.mini(qs().volume > 0 ? "sound_on" : "sound_off", "Volume")}</span>
+          <span class="tb-sysic tb-vol">${volSvg(qs().volume)}</span>
           <span class="tb-sysic tb-batt"></span>
         </button>
         <button class="tb-clock" id="tbClock"></button>

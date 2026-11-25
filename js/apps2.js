@@ -149,6 +149,11 @@
   curl &lt;url&gt; / wget &lt;url&gt;      real HTTP request (CORS permitting)
   last, who                    login history / current user
   open &lt;app&gt;                   browser, settings, calculator, copilot...
+  update                       get the latest version (when online)
+  theme auto|light|dark        appearance (auto follows your device)
+  kiosk on|off                 full-screen single-app lock
+  accessibility on|off         high contrast, bigger text, less motion
+  sfc /scannow                 check &amp; repair C:\\Windows\\System32
   wsl --install arch           install Arch Linux, then run: arch
   history</pre>`),
       cls: () => { out.innerHTML = ""; },
@@ -222,6 +227,33 @@ Ethernet adapter Local Area Connection:
       },
       history: () => history.forEach((h, i) => print(`  ${i + 1}  ${h}`)),
       "factory-reset": () => { window.WM.factoryReset(); },
+      // Pull the latest version from the server (works online). On a read-only
+      // disc / offline there's nothing to fetch.
+      update: () => {
+        print("Checking for updates…");
+        fetch(location.pathname + "?u=" + Date.now(), { cache: "no-store" })
+          .then((r) => (r.ok ? r.text() : Promise.reject()))
+          .then(() => { print("Update server reached. Applying the latest version…", "#16c60c"); tscroll(); setTimeout(() => location.reload(), 800); })
+          .catch(() => { print("Offline, or running from a read-only disc — no update available right now.", "#ffe000"); print("The live version auto-updates when you're online."); tscroll(); });
+      },
+      // Kiosk + accessibility + theme from the command line.
+      kiosk: (a) => { const on = (a[0] || "").toLowerCase() !== "off"; if (window.setKiosk) window.setKiosk(on); print("Kiosk mode " + (on ? "enabled" : "disabled") + ".", "#16c60c"); },
+      accessibility: (a) => { const on = (a[0] || "").toLowerCase() !== "off"; const d = (S().appData.a11y = S().appData.a11y || {}); d.on = on; d.contrast = d.bigText = d.reduceMotion = true; State.save(); if (window.applyTheme) window.applyTheme(); print("Accessibility mode " + (on ? "on" : "off") + ".", "#16c60c"); },
+      a11y: (a) => cmds.accessibility(a),
+      theme: (a) => { const t = (a[0] || "").toLowerCase(); if (["auto", "light", "dark"].indexOf(t) < 0) return print("Usage: theme auto|light|dark", "#ff4b4b"); S().theme = t; State.save(); if (window.applyTheme) window.applyTheme(); if (window.applyWallpaper) window.applyWallpaper(); print("Theme set to " + t + ".", "#16c60c"); },
+      // System File Checker — verifies C:\\Windows\\System32 and repairs it.
+      sfc: (a) => {
+        if ((a[0] || "") !== "/scannow") return print("Usage: sfc /scannow", "#ff4b4b");
+        print("Beginning system scan. This process will take some time.");
+        const steps = ["Verification 25% complete.", "Verification 60% complete.", "Verification 100% complete."];
+        let i = 0; const iv = setInterval(() => {
+          if (i < steps.length) { print(steps[i++]); tscroll(); return; }
+          clearInterval(iv);
+          if (S().systemBroken && window.repairSystem32) { window.repairSystem32(); print("Windows Resource Protection found corrupt files and successfully repaired them. C:\\Windows\\System32 restored.", "#16c60c"); }
+          else print("Windows Resource Protection did not find any integrity violations. C:\\Windows\\System32 is intact.", "#16c60c");
+          tscroll();
+        }, 500);
+      },
     };
 
     function listDir() {

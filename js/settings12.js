@@ -232,7 +232,9 @@
       ],
       access: [
         { ic: "text", t: "Text size", s: "Make text bigger or smaller (" + S().textScale + "%)", ctl: () => slider(80, 180, S().textScale || 100, (v) => { S().textScale = v; document.documentElement.style.setProperty("--scale", v / 100); State.save(); }, 10) },
-        { ic: "contrast", t: "Dark mode", s: "Use dark colors in Windows and apps", ctl: () => toggle(S().theme === "dark", (v) => { S().theme = v ? "dark" : "light"; document.body.classList.toggle("dark", v); State.save(); if (window.applyWallpaper) window.applyWallpaper(); }) },
+        { ic: "contrast", t: "Appearance", s: "Light, dark, or match your device automatically", ctl: () => select([["auto", "Auto (match device)"], ["light", "Light"], ["dark", "Dark"]], (S().theme === "light" || S().theme === "dark") ? S().theme : "auto", (v) => { S().theme = v; State.save(); if (window.applyTheme) window.applyTheme(); if (window.applyWallpaper) window.applyWallpaper(); }) },
+        { ic: "accessibility", t: "Accessibility mode", s: "High contrast, bigger text and reduced motion", ctl: () => toggle(!!(S().appData.a11y && S().appData.a11y.on), (v) => { const a = (S().appData.a11y = S().appData.a11y || {}); a.on = v; a.contrast = a.bigText = a.reduceMotion = true; State.save(); if (window.applyTheme) window.applyTheme(); }) },
+        { ic: "monitor", t: "Kiosk mode", s: "Full screen, single-app lock — hides the taskbar and desktop", ctl: () => toggle(!!(S().appData && S().appData.kiosk), (v) => { if (window.setKiosk) window.setKiosk(v); }) },
         { ic: "keyboard", t: "On-screen keyboard", s: "Type with the mouse or touch", ctl: () => toggle(!!pf.osk, (v) => { pf.osk = v; State.save(); if (window.OSK) (v ? OSK.show() : OSK.hide()); }) },
         { ic: "eye", t: "Visual effects", s: "Animations, transparency, scrollbars", act: () => go("personal") },
         { ic: "pointer", t: "Mouse pointer and touch", s: "Pointer color, size", sub: "mouse" },

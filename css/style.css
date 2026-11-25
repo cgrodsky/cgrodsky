@@ -5515,3 +5515,17 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
 .w12s-syncstatus[data-state="error"] { color: #d83b01; }
 .w12s-codein { font: 700 1.05rem/1 "Consolas", ui-monospace, monospace; letter-spacing: .3em; text-transform: uppercase; width: 150px; text-align: center; }
 .w12s-sync-pw { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+/* Accessibility mode + Kiosk mode */
+body.a11y-contrast { --accent: #ffd400; }
+body.a11y-contrast .win, body.a11y-contrast .w12s-page, body.a11y-contrast .taskbar, body.a11y-contrast .start { filter: contrast(1.18); }
+body.a11y-contrast .win-titlebar, body.a11y-contrast .taskbar { outline: 1px solid rgba(255,255,255,.35); }
+body.a11y-mode :focus-visible { outline: 3px solid #ffd400 !important; outline-offset: 2px; }
+body.a11y-mode .muted, body.a11y-mode .w12s-row-s { opacity: 1; }
+body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+
+body.kiosk-mode .taskbar, body.kiosk-mode .desktop-icons { display: none !important; }
+body.kiosk-mode .win { top: 0 !important; left: 0 !important; }
+.kiosk-exit { position: fixed; top: 10px; right: 10px; z-index: 2147483000; border: 0; border-radius: 18px; padding: 8px 16px; font: 600 13px system-ui, sans-serif; color: #fff; background: rgba(20,20,28,.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,.4); cursor: pointer; opacity: .55; transition: opacity .15s; }
+.kiosk-exit:hover { opacity: 1; }
+body:not(.kiosk-mode) .kiosk-exit { display: none; }

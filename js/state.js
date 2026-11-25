@@ -13,7 +13,7 @@
     region: "United States",
     language: "English (United States)",
     langCode: "en",
-    theme: "light", // light | dark
+    theme: "auto", // light | dark | auto (match the device's light/dark setting)
     accent: "#0067c0", // system accent color
     textScale: 100, // percent
     productKey: null,
