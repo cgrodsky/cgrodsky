@@ -485,9 +485,16 @@
   // ===================== MICROSOFT FORMS =====================
   function newForm() { return { title: "Untitled form", desc: "", questions: [], responses: [] }; }
   const FM_OPT_TYPES = ["choice", "checkbox", "dropdown"];
+  // Faces for "Smiley rating" questions (SVG paths from Uiverse.io JkHuger/silly-insect-34, MIT).
+  const UVR_FACES = [
+    { cls: "super-happy", label: "Happy", d: "M12,17.5C14.33,17.5 16.3,16.04 17.11,14H6.89C7.69,16.04 9.67,17.5 12,17.5M8.5,11A1.5,1.5 0 0,0 10,9.5A1.5,1.5 0 0,0 8.5,8A1.5,1.5 0 0,0 7,9.5A1.5,1.5 0 0,0 8.5,11M15.5,11A1.5,1.5 0 0,0 17,9.5A1.5,1.5 0 0,0 15.5,8A1.5,1.5 0 0,0 14,9.5A1.5,1.5 0 0,0 15.5,11M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" },
+    { cls: "neutral", label: "Neutral", d: "M8.5,11A1.5,1.5 0 0,1 7,9.5A1.5,1.5 0 0,1 8.5,8A1.5,1.5 0 0,1 10,9.5A1.5,1.5 0 0,1 8.5,11M15.5,11A1.5,1.5 0 0,1 14,9.5A1.5,1.5 0 0,1 15.5,8A1.5,1.5 0 0,1 17,9.5A1.5,1.5 0 0,1 15.5,11M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M9,14H15A1,1 0 0,1 16,15A1,1 0 0,1 15,16H9A1,1 0 0,1 8,15A1,1 0 0,1 9,14Z" },
+    { cls: "super-sad", label: "Sad", d: "M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M16.18,7.76L15.12,8.82L14.06,7.76L13,8.82L14.06,9.88L13,10.94L14.06,12L15.12,10.94L16.18,12L17.24,10.94L16.18,9.88L17.24,8.82L16.18,7.76M7.82,12L8.88,10.94L9.94,12L11,10.94L9.94,9.88L11,8.82L9.94,7.76L8.88,8.82L7.82,7.76L6.76,8.82L7.82,9.88L6.76,10.94L7.82,12M12,14C9.67,14 7.69,15.46 6.89,17.5H17.11C16.31,15.46 14.33,14 12,14Z" },
+  ];
   function newQuestion(type) {
     if (FM_OPT_TYPES.indexOf(type) >= 0) return { type: type, q: "Question", options: ["Option 1", "Option 2"], required: false };
     if (type === "rating") return { type: "rating", q: "How would you rate this?", required: false };
+    if (type === "smiley") return { type: "smiley", q: "How do you feel about this?", required: false };
     if (type === "date") return { type: "date", q: "Pick a date", required: false };
     if (type === "paragraph") return { type: "paragraph", q: "Question", required: false };
     return { type: "text", q: "Question", required: false };
@@ -553,6 +560,7 @@
               <option value="checkbox" ${q.type === "checkbox" ? "selected" : ""}>Checkboxes</option>
               <option value="dropdown" ${q.type === "dropdown" ? "selected" : ""}>Dropdown</option>
               <option value="rating" ${q.type === "rating" ? "selected" : ""}>Rating</option>
+              <option value="smiley" ${q.type === "smiley" ? "selected" : ""}>Smiley rating</option>
               <option value="date" ${q.type === "date" ? "selected" : ""}>Date</option>
             </select>
           </div>
@@ -582,6 +590,8 @@
           opts.appendChild(addOpt);
         } else if (q.type === "rating") {
           opts.innerHTML = `<div class="fm-stars">${"<span>&#9733;</span>".repeat(5)}</div>`;
+        } else if (q.type === "smiley") {
+          opts.innerHTML = `<div class="uvr-rating uvr-static">${UVR_FACES.map((f) => `<span class="uvr-lb"><svg class="uvr-svg" viewBox="0 0 24 24"><path d="${f.d}"></path></svg></span>`).join("")}</div>`;
         } else if (q.type === "paragraph") {
           opts.innerHTML = `<textarea class="fm-text-ph" disabled placeholder="Long answer text" rows="2"></textarea>`;
         } else if (q.type === "date") {
@@ -599,6 +609,7 @@
         <button data-t="checkbox">+ Checkboxes</button>
         <button data-t="dropdown">+ Dropdown</button>
         <button data-t="rating">+ Rating</button>
+        <button data-t="smiley">+ Smiley rating</button>
         <button data-t="date">+ Date</button>
       </div>`);
       addWrap.querySelectorAll("button").forEach((b) => b.onclick = () => { form.questions.push(newQuestion(b.dataset.t)); persist(); build(); });
@@ -649,6 +660,17 @@
           sel.onchange = () => answers[qi] = sel.value; inp.appendChild(sel);
         } else if (q.type === "date") {
           const i = el(`<input class="fm-p-text fm-p-date" type="date">`); i.onchange = () => answers[qi] = i.value; inp.appendChild(i);
+        } else if (q.type === "smiley") {
+          /* From Uiverse.io by JkHuger - https://uiverse.io/JkHuger/silly-insect-34
+             MIT License, Copyright (c) JkHuger (JkHuger)
+             Happy / neutral / sad radio for "Smiley rating" questions. Classes prefixed "uvr-"
+             (styles in css/style.css); ids/names are made unique per question. */
+          const nm = "uvr-" + qi + "-" + Math.random().toString(36).slice(2, 7);
+          const box = el(`<div class="uvr-rating"><form class="uvr-rating-form" onsubmit="return false">${UVR_FACES.map((f) => `<label for="${nm}-${f.cls}" class="uvr-lb" title="${f.label}">
+            <input type="radio" name="${nm}" class="uvr-${f.cls}" id="${nm}-${f.cls}" value="${f.label}">
+            <svg class="uvr-svg" viewBox="0 0 24 24"><path d="${f.d}"></path></svg></label>`).join("")}</form></div>`);
+          box.querySelectorAll("input").forEach((r) => r.onchange = () => { if (r.checked) answers[qi] = r.value; });
+          inp.appendChild(box);
         } else if (q.type === "rating") {
           const stars = el(`<div class="fm-p-stars">${[1, 2, 3, 4, 5].map((n) => `<span data-n="${n}">&#9733;</span>`).join("")}</div>`);
           stars.querySelectorAll("span").forEach((sp) => sp.onclick = () => { answers[qi] = +sp.dataset.n; stars.querySelectorAll("span").forEach((s2) => s2.classList.toggle("on", +s2.dataset.n <= answers[qi])); });

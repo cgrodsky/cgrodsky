@@ -5859,3 +5859,39 @@ body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
   stroke-dasharray: 70.5096664428711 9999999;
   stroke-dashoffset: -262.2723388671875;
 }
+
+/* From Uiverse.io by JkHuger - https://uiverse.io/JkHuger/silly-insect-34
+   MIT License, Copyright (c) JkHuger (JkHuger)
+   "Smiley rating" questions in Forms (js/office.js). Classes prefixed "uvr-". */
+.uvr-rating {
+  cursor: pointer;
+  display: inline-block;
+  background-color: rgba(0, 0, 16, 0.8);
+  padding: 0.4rem 0.4rem 0.1rem 0.4rem;
+  border-radius: 2.2rem;
+}
+.uvr-rating-form { display: flex; flex-wrap: wrap; justify-content: center; margin: 0; }
+.uvr-lb { position: relative; }
+.uvr-svg {
+  fill: rgb(242, 242, 242);
+  height: 3.6rem;
+  width: 3.6rem;
+  margin: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.uvr-rating [type="radio"] { position: absolute; opacity: 0; }
+.uvr-rating [type="radio"] + svg { -webkit-transition: all 0.2s; transition: all 0.2s; }
+.uvr-rating .uvr-super-happy:hover + svg,
+.uvr-rating .uvr-super-happy:checked + svg,
+.uvr-rating .uvr-super-happy:focus + svg { fill: rgb(0, 204, 79); transition: 1.5s; }
+.uvr-rating .uvr-neutral:hover + svg,
+.uvr-rating .uvr-neutral:checked + svg,
+.uvr-rating .uvr-neutral:focus + svg { fill: rgb(232, 214, 0); transition: 1.5s; }
+.uvr-rating .uvr-super-sad:hover + svg,
+.uvr-rating .uvr-super-sad:checked + svg,
+.uvr-rating .uvr-super-sad:focus + svg { fill: rgb(239, 42, 16); transition: 1.5s; }
+/* project addition: the faces in the question editor are a static preview */
+.uvr-rating.uvr-static { cursor: default; display: inline-flex; width: max-content; align-self: flex-start; }
+.uvr-rating.uvr-static .uvr-svg { cursor: default; }
