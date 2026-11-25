@@ -14,7 +14,7 @@
 
    Usage:
      const cb = Combobox.create({
-       options: [{ value: "acme", label: "Acme" }, …],
+       options: [{ value: "0", label: "First choice" }, …],   // your own options
        value: "", placeholder: "Select…", label: "Customer",   // label optional
        theme: "light" | "dark" (default: follows body.dark),
        accent: "#8b5cf6",                                       // optional
