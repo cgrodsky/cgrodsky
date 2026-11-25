@@ -613,7 +613,28 @@
       form.questions.forEach((q, qi) => {
         const card = el(`<div class="fm-card"><div class="fm-p-q">${escapeHtml(q.q)}${q.required ? ' <span class="fm-star">*</span>' : ""}</div><div class="fm-p-in"></div></div>`);
         const inp = card.querySelector(".fm-p-in");
-        if (q.type === "text") { const i = el(`<input class="fm-p-text" placeholder="Your answer">`); i.oninput = () => answers[qi] = i.value; inp.appendChild(i); }
+        if (q.type === "text" && /\bname\b/i.test(q.q || "")) {
+          /* From Uiverse.io by nazar-gavrylyk - https://uiverse.io/nazar-gavrylyk/selfish-dragon-54
+             MIT License, Copyright (c) nazar-gavrylyk (Nazar)
+             Used for "name" questions. Classes prefixed "uvn-" (styles in css/style.css). */
+          const lab = el(`<label class="uvn-label">
+            <span class="uvn-icon"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="1.25" d="M7 17v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1a3 3 0 0 0-3-3h-4a3 3 0 0 0-3 3Zm8-9a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path></svg></span>
+            <input type="text" class="uvn-input" placeholder="Enter name" autocomplete="off">
+          </label>`);
+          const i = lab.querySelector("input"); i.oninput = () => answers[qi] = i.value; inp.appendChild(lab);
+        }
+        else if (q.type === "text") {
+          /* From Uiverse.io by Satwinder04 - https://uiverse.io/Satwinder04/pink-bat-77
+             MIT License, Copyright (c) Satwinder04 (Satwinder Singh)
+             Floating-label input for short answers. Classes prefixed "uvs-" (styles in css/style.css). */
+          const id = "uvs-" + qi + "-" + Math.random().toString(36).slice(2, 8);
+          const box = el(`<div class="uvs-input-container">
+            <input type="text" id="${id}" required="">
+            <label for="${id}" class="uvs-label">Enter Text</label>
+            <div class="uvs-underline"></div>
+          </div>`);
+          const i = box.querySelector("input"); i.oninput = () => answers[qi] = i.value; inp.appendChild(box);
+        }
         else if (q.type === "paragraph") { const i = el(`<textarea class="fm-p-text" rows="3" placeholder="Your answer"></textarea>`); i.oninput = () => answers[qi] = i.value; inp.appendChild(i); }
         else if (q.type === "choice") {
           q.options.forEach((opt) => { const r = el(`<label class="fm-p-opt"><input type="radio" name="q${qi}"> <span>${escapeHtml(opt)}</span></label>`); r.querySelector("input").onchange = () => answers[qi] = opt; inp.appendChild(r); });

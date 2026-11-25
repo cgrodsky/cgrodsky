@@ -188,18 +188,55 @@
     body.querySelectorAll(".vs-ab").forEach((b) => b.onclick = () => { view = b.dataset.v; body.querySelectorAll(".vs-ab").forEach((x) => x.classList.toggle("on", x === b)); renderSide(); });
 
     function fileNames() { return Object.keys(p.tree).sort(); }
-    function renderSide() {
-      if (view === "files") {
-        sideEl.innerHTML = `<div class="vs-side-h"><span>Explorer</span><button class="vs-newfile" title="New File">+</button></div><div class="vs-title">${esc(p.name).toUpperCase()}</div><div class="vs-tree"></div>`;
-        const tree = sideEl.querySelector(".vs-tree");
-        fileNames().forEach((nm) => {
-          const lang = langOf(nm);
-          const row = el(`<button class="vs-file ${nm === active ? "on" : ""}">${FILE_ICON[lang] || FILE_ICON.txt}<span class="vs-file-nm">${esc(nm)}</span><span class="vs-file-x" title="Delete">&times;</span></button>`);
-          row.querySelector(".vs-file-nm").onclick = () => openFile(nm);
-          row.querySelector(".vs-file-x").onclick = (e) => { e.stopPropagation(); dlgConfirm("Delete " + nm + "?").then((y) => { if (y) { delete p.tree[nm]; closeTab(nm); State.save(); renderSide(); } }); };
-          tree.appendChild(row);
+
+    /* From Uiverse.io by ashif_6672 - https://uiverse.io/ashif_6672/nice-warthog-84
+       MIT License, Copyright (c) ashif_6672 (Ashif)
+       "Super Awesome File Structure" card, used as the Explorer. Built from the real project
+       files ("a/b/c.js" names become folders). Classes prefixed "uvt-" (styles in css/style.css). */
+    const UVT_FOLDER = `<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 2H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>`;
+    const uvtSvg = (cls, inner) => `<svg class="uvt-icon ${cls}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+    const UVT_FILE = uvtSvg("", `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline>`);
+    const uvtUid = Math.random().toString(36).slice(2, 7);
+    const uvtClosed = new Set(); // folder paths the user collapsed
+    function fileTreeCard() {
+      // Build a nested folder structure from the flat file list.
+      const root = { dirs: {}, files: [] };
+      fileNames().forEach((full) => {
+        const parts = full.split("/"); let node = root;
+        parts.slice(0, -1).forEach((d) => { node = node.dirs[d] || (node.dirs[d] = { dirs: {}, files: [] }); });
+        node.files.push({ name: parts[parts.length - 1], full });
+      });
+      let n = 0;
+      function folderLi(name, node, path) {
+        const id = "uvt-" + uvtUid + "-" + (n++);
+        const li = el(`<li class="uvt-tree-item">
+          <input type="checkbox" id="${id}" class="uvt-tree-toggle" ${uvtClosed.has(path) ? "" : "checked"}>
+          <label for="${id}" class="uvt-tree-label">${uvtSvg("uvt-folder-closed-icon", UVT_FOLDER)}${uvtSvg("uvt-folder-open-icon", UVT_FOLDER + `<path d="M2 10h20"></path>`)}<span></span></label>
+          <div class="uvt-tree-children-wrapper"><ul class="uvt-tree-children"></ul></div>
+        </li>`);
+        li.querySelector(".uvt-tree-label span").textContent = name;
+        li.querySelector(".uvt-tree-toggle").onchange = (e) => { if (e.target.checked) uvtClosed.delete(path); else uvtClosed.add(path); };
+        const ul = li.querySelector(".uvt-tree-children");
+        Object.keys(node.dirs).sort().forEach((d) => ul.appendChild(folderLi(d, node.dirs[d], path + "/" + d)));
+        node.files.forEach((f) => {
+          const fl = el(`<li class="uvt-tree-item"><div class="uvt-file-item ${f.full === active ? "uvt-is-selected" : ""}" title="${esc(f.full)}">${UVT_FILE}<span class="uvt-file-nm"></span><span class="uvt-file-x" title="Delete">&times;</span></div></li>`);
+          fl.querySelector(".uvt-file-nm").textContent = f.name;
+          fl.querySelector(".uvt-file-item").onclick = () => openFile(f.full);
+          fl.querySelector(".uvt-file-x").onclick = (e) => { e.stopPropagation(); dlgConfirm("Delete " + f.full + "?").then((y) => { if (y) { delete p.tree[f.full]; closeTab(f.full); State.save(); renderSide(); } }); };
+          ul.appendChild(fl);
         });
-        sideEl.querySelector(".vs-newfile").onclick = () => dlgInput("New file name", "untitled.js").then((nm) => { if (!nm) return; if (!p.tree[nm]) p.tree[nm] = { type: "file", content: "" }; State.save(); renderSide(); openFile(nm); });
+        return li;
+      }
+      const card = el(`<div class="uvt-tree-container"><ul></ul></div>`);
+      card.querySelector("ul").appendChild(folderLi(p.name, root, ""));
+      return card;
+    }
+    function renderSide() {
+      sideEl.classList.toggle("vs-side-wide", view === "files");
+      if (view === "files") {
+        sideEl.innerHTML = `<div class="vs-side-h"><span>Explorer</span><button class="vs-newfile" title="New File (use folder/name.ext for folders)">+</button></div><div class="uvt-host"></div>`;
+        sideEl.querySelector(".uvt-host").appendChild(fileTreeCard());
+        sideEl.querySelector(".vs-newfile").onclick = () => dlgInput("New file name (folder/name.ext for a folder)", "untitled.js").then((nm) => { nm = (nm || "").replace(/^\/+|\/+$/g, "").replace(/\/{2,}/g, "/"); if (!nm) return; if (!p.tree[nm]) p.tree[nm] = { type: "file", content: "" }; State.save(); renderSide(); openFile(nm); });
       } else if (view === "search") {
         sideEl.innerHTML = `<div class="vs-side-h"><span>Search</span></div><div class="vs-search"><input placeholder="Search"></div><div class="vs-search-res"></div>`;
         const inp = sideEl.querySelector("input"); const res = sideEl.querySelector(".vs-search-res");
