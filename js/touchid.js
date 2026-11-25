@@ -1,59 +1,39 @@
-/* Touch ID (real) — uses the device's built-in fingerprint/face sensor through WebAuthn
-   (passkeys). Works in Safari on an iPad/iPhone/Mac with Touch ID (or Face ID), and on
-   Windows Hello PCs. Nothing leaves the device: the sensor just confirms it's you.
-   When there's no sensor, callers fall back to the pretend scan animation. */
+/* Touch ID — talks to the (simulated) Windows Hello biometric driver only.
+   It does NOT create or use a WebAuthn passkey, so it works the same in a VM
+   (UTM SE, VirtualBox, etc.) or anywhere there's no real sensor: the fingerprint
+   step just contacts the driver, animates, and confirms. Nothing leaves the
+   device and no system passkey prompt is shown. */
 (function () {
   "use strict";
   const S = () => (window.State && State.data) || {};
-  const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  const unb64 = (s) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); };
-  const rand = (n) => crypto.getRandomValues(new Uint8Array(n));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  let availP = null;
-  function available() {
-    if (availP) return availP;
-    availP = (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
-      ? PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(() => false)
-      : Promise.resolve(false);
-    return availP;
-  }
-  const enrolled = () => !!(S().profile && S().profile.touchId && S().profile.touchId.id);
-  // What the sensor is probably called on this device (for labels only).
+  // A simulated biometric sensor/driver is always present.
+  function available() { return Promise.resolve(true); }
+  const enrolled = () => !!(S().profile && S().profile.touchId && (S().profile.touchId.sim || S().profile.touchId.id));
+  // What the sensor is called on this device (for labels only).
   const sensorName = () => /iPad|iPhone|Macintosh/.test(navigator.userAgent) ? "Touch ID" : /Windows/.test(navigator.userAgent) ? "Windows Hello" : "Fingerprint";
 
-  // Register this device's sensor for the current user. Must be called from a tap/click.
+  // "Enroll" = contact the driver and register a fingerprint for this user.
+  // No passkey: just a short driver handshake, then save a local marker.
   function enroll() {
-    const pr = S().profile || {};
-    const name = pr.username || "User";
-    return navigator.credentials.create({ publicKey: {
-      challenge: rand(32),
-      rp: { name: "Windows 12 (web)" },
-      user: { id: rand(16), name: name, displayName: name },
-      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" },
-      timeout: 60000, attestation: "none",
-    } }).then((cred) => {
-      if (!cred) throw new Error("cancelled");
-      S().profile = Object.assign({}, S().profile, { fingerprint: true, touchId: { id: b64(cred.rawId), at: Date.now() } });
+    return wait(750).then(() => {
+      S().profile = Object.assign({}, S().profile, { fingerprint: true, touchId: { sim: true, at: Date.now() } });
       if (window.State) State.save();
       return true;
     });
   }
-  // Ask the sensor to confirm it's the enrolled user. Must be called from a tap/click.
+  // "Verify" = ask the driver to confirm the touch. Always confirms when enrolled.
   function verify() {
     const t = S().profile && S().profile.touchId;
     if (!t) return Promise.reject(new Error("not enrolled"));
-    return navigator.credentials.get({ publicKey: {
-      challenge: rand(32),
-      allowCredentials: [{ type: "public-key", id: unb64(t.id) }],
-      userVerification: "required", timeout: 60000,
-    } }).then((a) => { if (!a) throw new Error("cancelled"); return true; });
+    return wait(650).then(() => true);
   }
   function forget() { if (S().profile) { delete S().profile.touchId; S().profile.fingerprint = false; if (window.State) State.save(); } }
 
-  // ---- "Driver" install: the first time a sensor is found, Windows-style device setup ----
+  // ---- "Driver" install: the first time, Windows-style device setup ----
   function driverInfo() {
-    return { name: sensorName() + " sensor", driver: "Windows Hello biometric driver (WebAuthn)", version: "12.0.26100.1", provider: "Microsoft (web)", date: "11/14/2026" };
+    return { name: sensorName() + " sensor", driver: "Windows Hello biometric driver", version: "12.0.26100.1", provider: "Microsoft (simulated)", date: "11/14/2026" };
   }
   function installDriverOnce() {
     return available().then((ok) => {
