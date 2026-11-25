@@ -1,0 +1,59 @@
+name: Build Windows 12 ISO
+
+# Builds the full Windows 12 disc image (every file in the site + launchers)
+# and publishes it as a GitHub Release download, tag "iso-latest".
+# The ISO is too big to commit (GitHub blocks files over 100 MB), so it is
+# built here instead and attached to the release.
+
+on:
+  push:
+    branches:
+      - claude/windows-12-setup-experience-FsKgd
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: iso
+  cancel-in-progress: true
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install xorriso
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xorriso
+
+      - name: Stage files
+        run: |
+          mkdir -p "$RUNNER_TEMP/stage"
+          git archive --format=tar HEAD | tar -x -C "$RUNNER_TEMP/stage"
+          cp iso/* "$RUNNER_TEMP/stage/"
+          rm -rf "$RUNNER_TEMP/stage/iso" "$RUNNER_TEMP/stage/.github"
+          chmod +x "$RUNNER_TEMP/stage/serve.py" "$RUNNER_TEMP/stage/RUN-Linux.sh" "$RUNNER_TEMP/stage/RUN-macOS.command"
+          BUILD=$(grep -o 'var BUILD = "v=[^"]*"' index.html | sed 's/.*v=//;s/"//')
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          printf 'Windows 12 disc image\nbuild v=%s\ncommit %s\nbuilt %s UTC\n' "$BUILD" "${GITHUB_SHA::7}" "$(date -u '+%Y-%m-%d %H:%M')" > "$RUNNER_TEMP/stage/VERSION.txt"
+          du -sh "$RUNNER_TEMP/stage"
+
+      - name: Build ISO
+        run: |
+          xorriso -as mkisofs -iso-level 3 -J -joliet-long -R -V WINDOWS12 \
+            -o "$RUNNER_TEMP/Windows12.iso" "$RUNNER_TEMP/stage"
+          ls -la "$RUNNER_TEMP/Windows12.iso"
+          sha256sum "$RUNNER_TEMP/Windows12.iso" | tee "$RUNNER_TEMP/Windows12.iso.sha256"
+
+      - name: Publish release "iso-latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete iso-latest --yes --cleanup-tag || true
+          gh release create iso-latest \
+            "$RUNNER_TEMP/Windows12.iso" "$RUNNER_TEMP/Windows12.iso.sha256" \
+            --target "$GITHUB_SHA" \
+            --title "Windows 12 ISO (latest, build v=$BUILD)" \
+            --notes "Full Windows 12 disc image (every file + launchers). Attach Windows12.iso to your VM as a CD/drive, then open START-HERE.txt. Built automatically from commit ${GITHUB_SHA::7}."

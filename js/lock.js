@@ -57,7 +57,13 @@
     if (tid) tid.onclick = () => {
       tid.classList.add("scanning");
       TouchID.verify().then(() => { tid.classList.remove("scanning"); unlock(); })
-        .catch(() => { tid.classList.remove("scanning"); err.textContent = "Fingerprint not recognized — try again or use your " + (pr.authType === "pin" ? "PIN" : "password") + "."; });
+        .catch((e) => {
+          tid.classList.remove("scanning");
+          const why = e && e.message;
+          if (why === "pin") { err.textContent = ""; try { inp.focus(); } catch (_) {} return; }
+          if (why === "cancelled") { err.textContent = ""; return; }
+          err.textContent = "Fingerprint not recognized — try again or use your " + (pr.authType === "pin" ? "PIN" : "password") + ".";
+        });
     };
     // Forgot PIN/password — set a new one without the old (personal sim).
     layer.querySelector(".lock-forgot").onclick = () => {

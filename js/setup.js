@@ -712,7 +712,7 @@
     let pct = 0;
     const iv = setInterval(() => { pct = Math.min(100, pct + 7); ring.style.background = `conic-gradient(#28d0ff ${pct * 3.6}deg,rgba(255,255,255,.12) ${pct * 3.6}deg)`; if (pct >= 100) { clearInterval(iv); finishScan(); } }, 120);
     if (window.TouchID && window.PublicKeyCredential) {
-      TouchID.available().then((ok) => (ok ? TouchID.enroll() : null)).then((res) => { if (res === true) { clearInterval(iv); ring.style.background = "conic-gradient(#28d0ff 360deg,#28d0ff 360deg)"; finishScan(); } }).catch(() => {});
+      TouchID.available().then((ok) => (ok ? TouchID.enroll({ silent: true }) : null)).then((res) => { if (res === true) { clearInterval(iv); ring.style.background = "conic-gradient(#28d0ff 360deg,#28d0ff 360deg)"; finishScan(); } }).catch(() => {});
     }
   }
 

@@ -433,12 +433,16 @@ input[type=range] { width: 100%; }
 .dag-head { display: flex; align-items: center; padding: 2px 6px 8px; cursor: grab; }
 .desk-appgroup.dragging .dag-head { cursor: grabbing; }
 .dag-name { color: #fff; font-size: .82rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-.dag-tiles { display: flex; flex-wrap: wrap; gap: 2px; }
-.dag-tile { width: 78px; text-align: center; padding: 8px 4px; border-radius: 10px; cursor: pointer; }
-.dag-tile:hover { background: rgba(255,255,255,.2); }
-.dag-ic { font-size: 1.8rem; }
-.dag-ic svg, .dag-ic img { width: 40px; height: 40px; }
-.dag-lbl { color: #fff; font-size: .72rem; margin-top: 3px; text-shadow: 0 1px 2px rgba(0,0,0,.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Centered 3-column grid; every icon (static or live like Clock/Calendar) is the same 48px square, centered. */
+.dag-tiles { display: grid; grid-template-columns: repeat(3, 84px); gap: 4px 6px; justify-content: center; }
+.dag-tile { width: 84px; display: flex; flex-direction: column; align-items: center; padding: 10px 4px 8px; border-radius: 12px; cursor: pointer; }
+.dag-tile:hover { background: rgba(255,255,255,.16); }
+.dag-ic { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 0; }
+.dag-ic .ico-wrap { width: 48px !important; height: 48px !important; display: flex !important; align-items: center; justify-content: center; margin: 0 auto; box-shadow: none !important; background: transparent !important; }
+.dag-ic .ico-wrap > img { width: 48px !important; height: 48px !important; object-fit: contain; display: block; }
+.dag-ic .ico-wrap > .ico-fallback { width: 48px !important; height: 48px !important; align-items: center; justify-content: center; }
+.dag-ic .ico-wrap svg { width: 100% !important; height: 100% !important; display: block; }
+.dag-lbl { width: 100%; text-align: center; color: #fff; font-size: .74rem; margin-top: 6px; text-shadow: 0 1px 2px rgba(0,0,0,.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Desktop icon sizes (View submenu) */
 .desktop.icons-sm .dicon .glyph svg, .desktop.icons-sm .dicon .glyph img { width: 32px; height: 32px; }
@@ -5529,3 +5533,26 @@ body.kiosk-mode .win { top: 0 !important; left: 0 !important; }
 .kiosk-exit { position: fixed; top: 10px; right: 10px; z-index: 2147483000; border: 0; border-radius: 18px; padding: 8px 16px; font: 600 13px system-ui, sans-serif; color: #fff; background: rgba(20,20,28,.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,.4); cursor: pointer; opacity: .55; transition: opacity .15s; }
 .kiosk-exit:hover { opacity: 1; }
 body:not(.kiosk-mode) .kiosk-exit { display: none; }
+
+/* Windows Hello / Touch ID pop-up (driver-only, no passkey) */
+.tid-mask { position: fixed; inset: 0; z-index: 2147483500; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: tidIn .18s ease; }
+.tid-mask.tid-out { opacity: 0; transition: opacity .18s; }
+@keyframes tidIn { from { opacity: 0; } to { opacity: 1; } }
+.tid-dlg { width: min(360px, 92vw); background: #f3f3f3; color: #1b1b1b; border-radius: 12px; padding: 18px 22px 16px; box-shadow: 0 24px 60px rgba(0,0,0,.45); text-align: center; font-family: "Segoe UI", system-ui, sans-serif; animation: tidPop .22s ease; }
+@keyframes tidPop { from { transform: scale(.94); opacity: 0; } to { transform: none; opacity: 1; } }
+body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
+.tid-top { font-size: .76rem; text-align: left; opacity: .7; margin-bottom: 10px; }
+.tid-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+.tid-sub { font-size: .84rem; opacity: .8; margin-bottom: 16px; }
+.tid-sensor { position: relative; width: 112px; height: 112px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: #3b82f6; -webkit-tap-highlight-color: transparent; }
+.tid-ring { position: absolute; inset: 0; border-radius: 50%; -webkit-mask: radial-gradient(circle, transparent 52px, #000 53px); mask: radial-gradient(circle, transparent 52px, #000 53px); transition: background .25s; }
+.tid-glyph { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(59,130,246,.1); transition: transform .15s, background .15s; }
+.tid-sensor:hover .tid-glyph { background: rgba(59,130,246,.18); }
+.tid-sensor.tid-pressing .tid-glyph { transform: scale(.92); background: rgba(59,130,246,.28); animation: tidPulse .6s ease-in-out infinite; }
+@keyframes tidPulse { 50% { box-shadow: 0 0 0 10px rgba(59,130,246,.15); } }
+.tid-ok .tid-glyph { background: transparent; }
+.tid-status { font-size: .82rem; min-height: 1.3em; margin: 12px 0 14px; opacity: .85; }
+.tid-ok .tid-status { color: #1e9d57; opacity: 1; font-weight: 600; }
+.tid-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.tid-btns button { border: 1px solid rgba(127,127,127,.35); background: rgba(127,127,127,.12); color: inherit; border-radius: 6px; padding: 7px 14px; font-size: .84rem; cursor: pointer; }
+.tid-btns .tid-alt { margin-right: auto; border-color: transparent; background: transparent; color: #3b82f6; padding-left: 0; }
