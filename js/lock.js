@@ -1,6 +1,6 @@
 /* Lock screen — shown after boot if setup is complete.
    Sign-in options, like Windows 11:
-     PIN · Password · Touch ID (real, via passkey — or the no-passkey pop-up) · Security key (real WebAuthn)
+     PIN · Password · Touch ID (the device's real sensor, via passkey) · Security key (real WebAuthn)
    Passwords set in Settings are checked against a salted hash (js/touchid.js). */
 (function () {
   "use strict";
@@ -80,7 +80,7 @@
         // Touch ID set up → always show it right here, not only under "Sign-in options".
         if (methods.includes("touchid")) {
           const quick = el(`<button type="button" class="lock-touchid"><img src="assets/touchid.png?v=1" alt=""><span>Use ${esc(tidName)}</span></button>`);
-          quick.onclick = () => show("touchid", true);
+          quick.onclick = () => show("touchid", true); // starts the real prompt straight from this tap
           box.appendChild(quick);
         }
         const inp = box.querySelector("input"), form = box.querySelector("form");
@@ -98,7 +98,7 @@
       } else {
         const isKey = m === "key";
         box.innerHTML = `<button type="button" class="lock-webauthn">${IC[m]}<span>${isKey ? "Use your security key" : "Use " + esc(tidName)}</span></button>
-          <div class="lock-hint">${isKey ? "Insert or tap your key when asked, then touch it." : (TouchID.usesPasskey && TouchID.usesPasskey() ? "Your device will ask for your fingerprint or face." : "Touch the fingerprint sensor when it appears.")}</div>`;
+          <div class="lock-hint">${isKey ? "Insert or tap your key when asked, then touch it." : "Your device will ask for your fingerprint or face."}</div>`;
         const b = box.querySelector(".lock-webauthn");
         // WebAuthn must start from a tap (Safari requires it) — no auto-prompt.
         b.onclick = () => {

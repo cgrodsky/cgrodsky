@@ -559,40 +559,27 @@
       const pr = profile(), isPin = pr.authType === "pin";
       const errMsg = (e, fallback) => (e && e.message === "cancelled") ? "" : ((e && e.friendly) || fallback);
       const when = (t) => t ? new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
-      // Touch ID / Windows Hello — no passkey (Windows Hello fingerprint pop-up).
+      // Touch ID / Face ID / Windows Hello — the device's real sensor (WebAuthn passkey).
       const tName = window.TouchID ? TouchID.sensorName() : "Touch ID";
-      const fp = card(`<div class="w12s-row-t">${esc(tName)} (fingerprint)</div><div class="w12s-row-s w12s-fp-s">Checking this device…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
+      const fp = card(`<div class="w12s-row-t">${esc(tName)} (fingerprint or face)</div><div class="w12s-row-s w12s-fp-s">Checking this device…</div><div class="w12s-fp-btns"></div><div class="w12s-err"></div>`);
       h.appendChild(fp);
       const fs = fp.querySelector(".w12s-fp-s"), fb = fp.querySelector(".w12s-fp-btns"), fe = fp.querySelector(".w12s-err");
       const paintFp = () => {
         if (!window.TouchID) { fp.remove(); return; }
-        (TouchID.passkeyAvailable ? TouchID.passkeyAvailable() : Promise.resolve(false)).then((real) => {
+        TouchID.available().then((real) => {
           fb.innerHTML = ""; fe.textContent = "";
-          const on = TouchID.enrolled(), pk = TouchID.usesPasskey && TouchID.usesPasskey();
-          const done = (msg) => () => { note(msg); paintFp(); };
+          const on = TouchID.enrolled();
+          if (!real && !on) { fs.textContent = "Not available in this browser. " + tName + " needs a device with a fingerprint or face sensor, a browser that supports passkeys, and an https page."; return; }
           if (on) {
-            fs.textContent = pk
-              ? "On, with a passkey — your device's real " + tName + " checks your fingerprint or face, and Windows 12 checks the signed answer." + (real ? "" : " (The real sensor isn't reachable in this browser right now.)")
-              : "On, without a passkey — Windows Hello's fingerprint sensor pops up and you touch it.";
+            fs.textContent = "On — your device's real " + tName + " checks your fingerprint or face (through a passkey), and Windows 12 checks the signed answer." + (real ? "" : " The sensor isn't reachable in this browser right now.");
             const t = el(`<button class="w12s-btn">Test it</button>`); t.onclick = () => TouchID.verify().then(() => { fe.textContent = ""; note(tName + " recognized ✓"); }).catch((e) => { fe.textContent = errMsg(e, "Not recognized — try again."); });
-            const sw = pk
-              ? el(`<button class="w12s-btn">Switch to no passkey</button>`)
-              : (real ? el(`<button class="w12s-btn">Use real ${esc(tName)} (passkey)</button>`) : null);
-            if (sw) sw.onclick = () => (pk ? TouchID.enroll() : TouchID.enroll({ passkey: true })).then(done(tName + " updated ✓")).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
-            const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note(tName + " removed."); paintFp(); };
-            fb.append(t); if (sw) fb.append(sw); fb.append(r);
+            const r = el(`<button class="w12s-btn">Remove</button>`); r.onclick = () => { TouchID.forget(); note(tName + " removed. You can also delete its passkey from your device's saved passwords."); paintFp(); };
+            fb.append(t, r);
           } else {
-            fs.textContent = real
-              ? "Use your device's real " + tName + " (saves a passkey), or the Windows Hello sensor pop-up (no passkey)."
-              : "Set up " + tName + " with the Windows Hello sensor pop-up (no passkey). The real sensor needs a browser that supports passkeys on an https page.";
-            if (real) {
-              const a = el(`<button class="w12s-btn w12s-btn-accent">Set up with real ${esc(tName)} (passkey)</button>`);
-              a.onclick = () => TouchID.enroll({ passkey: true }).then(done(tName + " set up ✓")).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
-              fb.append(a);
-            }
-            const s2 = el(`<button class="w12s-btn${real ? "" : " w12s-btn-accent"}">${real ? "Set up without passkey" : "Set up"}</button>`);
-            s2.onclick = () => TouchID.enroll().then(done(tName + " set up ✓")).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
-            fb.append(s2);
+            fs.textContent = "Unlock and pay with your device's real " + tName + ". Setting it up saves a passkey for this site.";
+            const a = el(`<button class="w12s-btn w12s-btn-accent">Set up</button>`);
+            a.onclick = () => TouchID.enroll().then(() => { note(tName + " set up ✓"); paintFp(); }).catch((e) => { fe.textContent = errMsg(e, "Setup didn't finish."); });
+            fb.append(a);
           }
         });
       };

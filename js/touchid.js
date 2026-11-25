@@ -1,10 +1,8 @@
 /* Sign-in methods, all done in the browser:
 
-   • Touch ID — two ways, your choice when setting it up:
-       – with a passkey: the device's REAL Touch ID / Face ID / Windows Hello through WebAuthn
-         (a web page can only reach the real sensor this way, and it always saves a passkey);
-       – without a passkey: Windows 12's own Windows Hello fingerprint pop-up and
-         (simulated) biometric driver — works anywhere, including VMs.
+   • Touch ID / Face ID / Windows Hello — the device's REAL sensor through WebAuthn
+     (a web page can only reach it this way, and that saves a passkey). Where the browser
+     can't reach a sensor (e.g. some VMs), Touch ID isn't offered.
    • Security key — a WebAuthn "cross-platform authenticator" (USB / NFC /
      Bluetooth key such as a YubiKey or Titan).
    • Password — stored only as a salted PBKDF2-SHA-256 hash.
@@ -231,106 +229,23 @@
     if (/Windows/.test(ua)) return "Windows Hello";
     return "Fingerprint";
   }
-
-  // ---------- Touch ID WITHOUT a passkey ----------
-  // Browsers only let a web page reach the real fingerprint sensor through WebAuthn, which
-  // always saves a passkey. So Touch ID here is Windows 12's own Windows Hello sensor: a
-  // pop-up you touch, talking to the (simulated) biometric driver. No passkey, no system
-  // prompt, works the same in a VM. Security keys and passwords above stay real.
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  const FP_SVG = `<svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M14 30c0-10 8-18 18-18s18 8 18 18" opacity=".55"/><path d="M20 38c0-9 5-16 12-16s12 7 12 16"/><path d="M26 42c0-7 2.5-12 6-12s6 5 6 12v4"/><path d="M32 34v16"/><path d="M44 44c0 4-1 7-2 10M20 46c1 3 2 6 4 8" opacity=".7"/></svg>`;
-  const CHECK_SVG = `<svg viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="28" fill="#1e9d57"/><path d="M19 33l9 9 17-19" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  // mode "verify": one touch. mode "enroll": several touches to capture the print.
-  function helloDialog(mode) {
-    return new Promise((resolve, reject) => {
-      document.querySelectorAll(".tid-mask").forEach((m) => m.remove());
-      const enroll = mode === "enroll";
-      const need = enroll ? 4 : 1;
-      const mask = document.createElement("div");
-      mask.className = "tid-mask";
-      mask.innerHTML = `<div class="tid-dlg" role="dialog" aria-label="Windows Security">
-          <div class="tid-top">Windows Security</div>
-          <div class="tid-title">${enroll ? "Set up " + sensorName() : "Making sure it's you"}</div>
-          <div class="tid-sub">${enroll ? "Touch the fingerprint sensor, then lift and touch again until it's captured." : "Touch the fingerprint sensor to continue."}</div>
-          <button class="tid-sensor" type="button" aria-label="Fingerprint sensor"><span class="tid-ring"></span><span class="tid-glyph">${FP_SVG}</span></button>
-          <div class="tid-status">${enroll ? "0 of " + need + " touches" : "Waiting for your finger…"}</div>
-          <div class="tid-btns">${enroll ? "" : `<button class="tid-alt" type="button">Use PIN instead</button>`}<button class="tid-cancel" type="button">Cancel</button></div>
-        </div>`;
-      document.body.appendChild(mask);
-      const dlg = mask.querySelector(".tid-dlg"), sensor = mask.querySelector(".tid-sensor"), ring = mask.querySelector(".tid-ring"), glyph = mask.querySelector(".tid-glyph"), status = mask.querySelector(".tid-status");
-      let touches = 0, busy = false, done = false;
-      const close = () => { mask.classList.add("tid-out"); setTimeout(() => mask.remove(), 180); };
-      const fail = (why) => { if (done) return; done = true; close(); reject(new Error(why || "cancelled")); };
-      mask.querySelector(".tid-cancel").onclick = () => fail("cancelled");
-      const alt = mask.querySelector(".tid-alt"); if (alt) alt.onclick = () => fail("pin");
-      mask.addEventListener("keydown", (e) => { if (e.key === "Escape") fail("cancelled"); });
-      const setRing = (p) => { ring.style.background = `conic-gradient(#3b82f6 ${p * 3.6}deg, rgba(59,130,246,.16) ${p * 3.6}deg)`; };
-      setRing(0);
-      sensor.onclick = async () => {
-        if (busy || done) return;
-        busy = true; sensor.classList.add("tid-pressing");
-        status.textContent = "Contacting the Windows Hello biometric driver…";
-        await wait(enroll ? 420 : 650);
-        touches++; setRing((touches / need) * 100);
-        sensor.classList.remove("tid-pressing"); busy = false;
-        if (touches < need) { status.textContent = touches + " of " + need + " touches — lift and touch again"; return; }
-        done = true;
-        glyph.innerHTML = CHECK_SVG; dlg.classList.add("tid-ok");
-        status.textContent = enroll ? "All set — your fingerprint is ready." : "Fingerprint recognized.";
-        await wait(650); close(); resolve(true);
-      };
-      setTimeout(() => sensor.focus(), 30);
-    });
-  }
-  const tidEnrolled = () => !!(S().profile && S().profile.touchId && S().profile.touchId.sim);
-  function tidEnroll(opts) {
-    const go = opts && opts.silent ? wait(750) : helloDialog("enroll");
-    return go.then(() => {
-      const p = profile(); p.touchId = { sim: true, at: Date.now() }; p.fingerprint = true;
-      if (p.webauthn) p.webauthn.platform = []; // switching to "no passkey" replaces a passkey setup
-      save(); return true;
-    });
-  }
-  function tidVerify() {
-    if (!tidEnrolled()) return Promise.reject(Object.assign(new Error("not enrolled"), { friendly: sensorName() + " isn't set up." }));
-    return helloDialog("verify");
-  }
   function driverInfo() {
-    return { name: sensorName() + " sensor", driver: "Windows Hello biometric driver", version: "12.0.26100.1", provider: "Microsoft (simulated)", date: "11/14/2026" };
-  }
-  function installDriverOnce() {
-    if (!window.State) return Promise.resolve(true);
-    const d = S().appData || (S().appData = {});
-    if (d.touchDriver) return Promise.resolve(true);
-    d.touchDriver = { installed: Date.now() }; State.save();
-    const info = driverInfo();
-    const icon = `<img src="assets/touchid.png?v=1" alt="" style="width:28px;height:28px;max-width:28px;max-height:28px;object-fit:contain;display:block">`;
-    if (window.Notify) {
-      Notify.show({ icon, title: "Setting up a device", body: "Installing " + info.name + " driver…" });
-      setTimeout(() => Notify.show({ icon, title: info.name + " is ready", body: tidEnrolled() ? "You can sign in with your fingerprint." : "Set it up in Settings → Accounts → Sign-in options.", onClick: () => { window.SettingsStartPage = "signin"; if (window.WM) WM.open("settings"); } }), 2600);
-    }
-    return Promise.resolve(true);
+    return { name: sensorName() + " (your device's sensor, via WebAuthn)", driver: "Browser WebAuthn (passkey)", version: "Web Authentication Level 2", provider: "Your browser / operating system", date: "—" };
   }
 
-  // Two ways to set up Touch ID — the account uses whichever one was set up last:
-  //   passkey: the device's REAL Touch ID / Face ID through WebAuthn (saves a passkey)
-  //   no passkey: the Windows Hello sensor pop-up above
-  const passkeyOn = () => list("platform").length > 0;
+  // ---------- Touch ID = the device's REAL sensor (passkey) ----------
+  // Shown only where the browser can reach a real fingerprint / face sensor.
   window.TouchID = {
-    available: () => Promise.resolve(true),        // the Windows Hello sensor is always there
-    passkeyAvailable: platformAvailable,           // can this browser reach the real sensor?
-    enrolled: () => passkeyOn() || tidEnrolled(),
-    usesPasskey: passkeyOn,
-    // opts.passkey → real Touch ID (call straight from a tap); otherwise the pop-up.
-    enroll: (opts) => {
-      if (opts && opts.passkey) {
-        return register("platform").then((c) => { const p = profile(); delete p.touchId; p.fingerprint = true; store().platform = [c]; save(); return true; });
-      }
-      return tidEnroll(opts);
-    },
-    verify: () => (passkeyOn() ? verify("platform") : tidVerify()),
+    available: platformAvailable,
+    passkeyAvailable: platformAvailable,
+    enrolled: () => list("platform").length > 0,
+    usesPasskey: () => true,
+    // Must be called straight from a tap (Safari needs the user gesture). Keeps one credential.
+    enroll: () => register("platform").then((c) => { const p = profile(); store().platform = [c]; p.fingerprint = true; delete p.touchId; save(); return true; }),
+    verify: () => verify("platform"),
     forget: () => { const p = profile(); delete p.touchId; p.fingerprint = false; if (p.webauthn) p.webauthn.platform = []; save(); },
-    sensorName, driverInfo, installDriverOnce, prompt: helloDialog,
+    sensorName, driverInfo,
+    installDriverOnce: () => Promise.resolve(false), // no pretend driver install
   };
   window.SecurityKey = {
     supported,
@@ -344,4 +259,6 @@
   window.WebAuthnAuth = { supported, platformAvailable, register, verify, remove, list, _cbor: cbor };
   window.PasswordAuth = Password;
 
+  // The on-screen sensor is gone: an old "no passkey" setup no longer counts as Touch ID.
+  try { const p = S().profile; if (p && p.touchId) { delete p.touchId; if (!list("platform").length) p.fingerprint = false; save(); } } catch (_) {}
 })();
