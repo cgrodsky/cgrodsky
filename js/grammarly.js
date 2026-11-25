@@ -248,7 +248,7 @@
     let t = "";
     if (isSentenceStart(text, s)) {
       const m = /^[A-Za-z]+/.exec(text.slice(fe));
-      if (m) { t = cap(m[0]); fe += m[0].length; }
+      if (m) { const lw = m[0].toLowerCase(); t = cap(Object.prototype.hasOwnProperty.call(TYPOS, lw) ? TYPOS[lw] : m[0]); fe += m[0].length; }
     }
     return { s: fs, e: fe, t };
   }
@@ -637,7 +637,7 @@
   function score(issues, words) {
     if (!words) return null;
     const w = issues.reduce((a, i) => a + (i.wide ? 1 : WEIGHT[i.cat]), 0);
-    return Math.max(0, Math.min(100, Math.round(100 - (w * 150) / (words + 25))));
+    return Math.max(0, Math.min(100, Math.round(100 - (w * 110) / (words + 25))));
   }
 
   const TONES = {
@@ -684,14 +684,14 @@
     Capitalization: "correctness", Punctuation: "correctness", BoundaryError: "correctness", Usage: "correctness",
     Eggcorn: "correctness", Malapropism: "correctness", Nonstandard: "correctness", Miscellaneous: "correctness",
     Regionalism: "correctness", Readability: "clarity", Redundancy: "clarity", Repetition: "clarity",
-    WordChoice: "engagement", Style: "engagement", Enhancement: "engagement", Formatting: "delivery", Tone: "delivery",
+    WordChoice: "correctness", Style: "engagement", Enhancement: "engagement", Formatting: "delivery", Tone: "delivery",
   };
   const HARPER_TITLE = {
     Spelling: "Correct your spelling", Typo: "Fix the typo", Grammar: "Fix the grammar", Agreement: "Fix the agreement",
     Capitalization: "Fix the capitalization", Punctuation: "Fix the punctuation", BoundaryError: "Fix the word spacing",
-    Usage: "Fix the word usage", Eggcorn: "Fix the expression", Malapropism: "Choose the right word",
+    Usage: "Fix the word usage", Miscellaneous: "Fix the grammar", Nonstandard: "Use the standard form", Regionalism: "Check the spelling variant", Eggcorn: "Fix the expression", Malapropism: "Choose the right word",
     Readability: "Improve readability", Redundancy: "Remove redundancy", Repetition: "Remove the repetition",
-    WordChoice: "Choose a better word", Style: "Improve the style", Enhancement: "Enhance your writing", Formatting: "Fix the formatting",
+    WordChoice: "Choose the right word", Style: "Improve the style", Enhancement: "Enhance your writing", Formatting: "Fix the formatting",
   };
   const Harper = { state: "idle", linter: null, promise: null, error: null, ms: 0 };
   // Dynamic import via Function so this classic script still parses on browsers without import().
@@ -737,7 +737,7 @@
         const cat = HARPER_CAT[kind] || "correctness";
         const orig = text.slice(s, e);
         const fixes = [];
-        (l.suggestions() || []).slice(0, 3).forEach((sg) => {
+        (l.suggestions() || []).slice(0, kind === "Spelling" ? 2 : 3).forEach((sg) => {
           const k = sg.kind(), rep = sg.get_replacement_text();
           if (k === K.Remove) {
             let fe = e; if (text[fe] === " " && (s === 0 || /\s/.test(text[s - 1]))) fe++;
@@ -747,8 +747,8 @@
           try { sg.free(); } catch (er) { /* ignore */ }
         });
         const pretty = (l.lint_kind_pretty && l.lint_kind_pretty()) || kind;
-        out.push({ rule: "harper:" + kind, src: "harper", cat, start: s, end: e, orig, title: HARPER_TITLE[kind] || pretty,
-          expl: l.message(), fixes: fixes.filter((f) => text.slice(f.s, f.e) !== f.t),
+        out.push({ rule: "harper:" + kind, src: "harper", cat, start: s, end: e, orig, wide: kind === "Readability" || (e - s > 90 && !fixes.length), title: HARPER_TITLE[kind] || pretty,
+          expl: String(l.message() || "").replace(/`([^`]*)`/g, "“$1”").replace(/\*\*([^*]+)\*\*/g, "$1"), fixes: fixes.filter((f) => text.slice(f.s, f.e) !== f.t),
           key: "h:" + kind + "|" + orig.toLowerCase() + "|" + text.slice(Math.max(0, s - 14), s).toLowerCase() });
       } catch (er) { /* skip malformed lint */ }
       try { l.free(); } catch (er) { /* ignore */ }
@@ -759,7 +759,7 @@
   function mergeIssues(harper, local) {
     const out = harper.map((h) => Object.assign({}, h, { end: Math.max(h.end, h.start + 1) }));
     local.forEach((l) => {
-      if (l.wide) { out.push(l); return; }
+      if (l.wide) { if (!out.some((h) => h.wide && l.start < h.end && h.start < l.end)) out.push(l); return; }
       if (!out.some((h) => !h.wide && l.start < h.end && h.start < l.end)) out.push(l);
     });
     const seen = new Set();
@@ -776,7 +776,7 @@
   //  UI
   // =====================================================================
   // Fallback mark (assets/grammarly.png — the real logo — takes precedence wherever Icon is used).
-  const LOGO = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="M12.5 1A10.5 10.5 0 0 1 23 11.5v.5A10.5 10.5 0 0 1 12.5 22.5H1V11.5A10.5 10.5 0 0 1 12.5 1z" fill="#078170"/><path d="M16.2 7.6A5.6 5.6 0 1 0 17.9 12H13.2" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="square"/></svg>`;
+  const LOGO = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="M12.5 1A10.5 10.5 0 0 1 23 11.5v.5A10.5 10.5 0 0 1 12.5 22.5H1V11.5A10.5 10.5 0 0 1 12.5 1z" fill="#027E6F"/><path d="M16.2 7.6A5.6 5.6 0 1 0 17.9 12H13.2" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="square"/></svg>`;
   if (window.Icon && Icon.register) Icon.register("grammarly", LOGO);
 
   const IC = {
@@ -785,8 +785,8 @@
     clear: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>`,
     sample: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></svg>`,
     goals: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`,
-    check: `<svg viewBox="0 0 48 48" width="56" height="56" fill="none"><circle cx="24" cy="24" r="22" fill="#078170" opacity=".14"/><circle cx="24" cy="24" r="15" fill="#078170"/><path d="M17 24.5l5 5 9-10" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    pen: `<svg viewBox="0 0 48 48" width="56" height="56" fill="none"><circle cx="24" cy="24" r="22" fill="#078170" opacity=".14"/><path d="M15 33l2.5-7.5L30 13a2.8 2.8 0 0 1 4 4L21.5 29.5zM27.5 15.5l4 4" stroke="#078170" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    check: `<svg viewBox="0 0 48 48" width="56" height="56" fill="none"><circle cx="24" cy="24" r="22" fill="#027E6F" opacity=".14"/><circle cx="24" cy="24" r="15" fill="#027E6F"/><path d="M17 24.5l5 5 9-10" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    pen: `<svg viewBox="0 0 48 48" width="56" height="56" fill="none"><circle cx="24" cy="24" r="22" fill="#027E6F" opacity=".14"/><path d="M15 33l2.5-7.5L30 13a2.8 2.8 0 0 1 4 4L21.5 29.5zM27.5 15.5l4 4" stroke="#027E6F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   };
 
   const GOAL_OPTS = {
@@ -959,7 +959,7 @@
       const st = stats(ta.value), vis = visible();
       const sc = score(vis, st.words);
       const C = 2 * Math.PI * 21, pct = sc == null ? 0 : sc / 100;
-      const col = sc == null ? "var(--gmr-dim)" : sc >= 85 ? "var(--gmr-good)" : sc >= 65 ? "#f2a33a" : "#e5484d";
+      const col = sc == null ? "var(--gmr-dim)" : sc >= 85 ? "var(--gmr-brand)" : sc >= 65 ? "#f2a33a" : "#e5484d";
       scoreEl.innerHTML = `<svg viewBox="0 0 50 50" width="54" height="54"><circle cx="25" cy="25" r="21" fill="none" stroke="var(--gmr-track)" stroke-width="4.5"/>
         <circle cx="25" cy="25" r="21" fill="none" stroke="${col}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="${(C * pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 25 25)"/></svg><b>${sc == null ? "—" : sc}</b>`;
       scoreTxt.textContent = sc == null ? "Start writing" : vis.length === 0 ? "Looking great!" : vis.length + " suggestion" + (vis.length === 1 ? "" : "s");
@@ -1014,6 +1014,8 @@
     function fixHTML(iss, f) {
       const text = ta.value;
       const del = text.slice(f.s, f.e).trim(), ins = f.t.trim();
+      if (!del && !ins) return `<del class="gmr-ws">extra space</del>`;
+      if (del === ins) return `<del class="gmr-ws">space</del><span class="gmr-arrow">→</span><ins>${esc(ins)}</ins>`;
       if (!ins) return `<del>${esc(del)}</del>`;
       if (!del) return `<ins>${esc(ins)}</ins>`;
       return `<del>${esc(del.length > 60 ? del.slice(0, 57) + "…" : del)}</del><span class="gmr-arrow">→</span><ins>${esc(ins.length > 80 ? ins.slice(0, 77) + "…" : ins)}</ins>`;

@@ -70,6 +70,7 @@
     { id: "canva", name: "Canva", cat: "Multimedia", price: 0, builtin: "canva", desc: "Canva — design posts, posters, logos and slides with drag-and-drop." },
     { id: "acrobat", name: "Adobe Acrobat", cat: "Productivity", price: 0, builtin: "acrobat", desc: "Adobe Acrobat — open and read PDF documents." },
     { id: "qrcode", name: "QR Code", cat: "Utilities", price: 0, builtin: "qrcode", desc: "Generate a scannable QR code from any text or link." },
+    { id: "grammarly", name: "Grammarly", cat: "Productivity", price: 0, builtin: "grammarly", desc: "Grammarly — fix spelling, grammar, clarity and tone as you type, with an overall score and tone detector. Powered by the open-source Harper engine, fully offline." },
   ];
 
   // Decorative store listings to fill out the catalog (50+ total).
