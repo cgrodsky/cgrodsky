@@ -5506,3 +5506,12 @@ body.dark .sm12-file:hover{background:rgba(255,255,255,.08)}
 .oobe2-office-row span { font-size: .72rem; line-height: 1.4; color: #b8bed6; }
 .oobe2-office-r { display: inline-flex; align-items: center; gap: 14px; }
 .oobe2-content h1 br { line-height: 1.2; }
+
+/* Device sync / Windows Backup (Settings) */
+.w12s-sync-share { margin-top: 10px; }
+.w12s-synccode { font: 700 2.1rem/1 "Consolas", ui-monospace, monospace; letter-spacing: .35em; text-align: center; padding: 16px 10px 14px; margin: 6px 0 4px; border-radius: 12px; color: #fff; background: linear-gradient(90deg, #0067c0, #7b5cff); box-shadow: 0 6px 20px rgba(123,92,255,.35); user-select: all; }
+.w12s-syncstatus { font-size: .82rem; color: var(--text-dim); margin-top: 8px; min-height: 1.2em; }
+.w12s-syncstatus[data-state="waiting"], .w12s-syncstatus[data-state="sent"], .w12s-syncstatus[data-state="received"] { color: #1e9d57; }
+.w12s-syncstatus[data-state="error"] { color: #d83b01; }
+.w12s-codein { font: 700 1.05rem/1 "Consolas", ui-monospace, monospace; letter-spacing: .3em; text-transform: uppercase; width: 150px; text-align: center; }
+.w12s-sync-pw { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }

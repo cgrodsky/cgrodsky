@@ -214,7 +214,7 @@
         { ic: "key", t: "Sign-in options", s: "PIN, password, Windows Hello", sub: "signin" },
         { ic: "mail", t: "Email & accounts", s: "Accounts used by email, calendar and contacts", sub: "email" },
         { ic: "family", t: "Family", s: "Manage your family group, edit account types and device permissions" },
-        { ic: "cloud", t: "Windows Backup", s: "Back up your files, apps and preferences" },
+        { ic: "cloud", t: "Windows Backup", s: "Back up your desktop, or move it to another device with a code", sub: "devicesync" },
         { ic: "users", t: "Other users", s: "Device access, work or school users, kiosk" },
         { ic: "briefcase", t: "Access work or school", s: "Organization resources like email, apps and the network" },
       ],
@@ -393,6 +393,75 @@
         if (un) un.onclick = () => { const i = S().installedApps.indexOf(a.id); if (i >= 0) S().installedApps.splice(i, 1); State.save(); if (WM.refreshDesktopIcons) WM.refreshDesktopIcons(); note(a.name + " was uninstalled."); redraw(); };
         h.appendChild(r);
       });
+    } },
+    devicesync: { title: "Windows Backup", parent: "accounts", build(h, redraw) {
+      const DS = window.DeviceSync;
+      if (!DS) { h.appendChild(el(`<div class="w12s-row-s">Backup is unavailable on this device.</div>`)); return; }
+      const kind = DS.passwordKind();
+      h.appendChild(card(`<div class="w12s-row-t">Back up &amp; move this desktop</div><div class="w12s-row-s">Copy your files, apps, settings and desktop to another device. The backup is end-to-end encrypted with your ${kind} — the other device has to enter it to restore. Nothing is stored online.</div>`));
+
+      // ---- SHARE (old device) ----
+      const shareCard = card(`<div class="w12s-row-t">Send to another device</div><div class="w12s-row-s">On the device you want to copy, tap Start sharing to get a code, then enter that code on the new device below.</div><div class="w12s-sync-share"></div>`);
+      const sb = shareCard.querySelector(".w12s-sync-share");
+      const startBtn = el(`<button class="w12s-btn w12s-btn-accent">Start sharing</button>`);
+      sb.appendChild(startBtn);
+      startBtn.onclick = async () => {
+        const code = DS.newCode();
+        sb.innerHTML = `<div class="w12s-synccode">${code}</div><div class="w12s-row-s">Enter this code on the new device while this screen stays open.</div><div class="w12s-syncstatus" data-state="starting">Starting…</div>`;
+        const sst = sb.querySelector(".w12s-syncstatus");
+        try { await DS.startShare(code, (st) => { sst.textContent = st.message; sst.dataset.state = st.state; }); }
+        catch (e) { sst.textContent = (e && e.message) || "Couldn't start sharing."; sst.dataset.state = "error"; }
+      };
+      h.appendChild(shareCard);
+
+      // ---- RESTORE (new device) ----
+      const restoreCard = card(`<div class="w12s-row-t">Restore from another device</div><div class="w12s-row-s">Enter the 5-character code shown on your other device (it stays open while you connect).</div>`);
+      const codeIn = el(`<input class="w12s-input w12s-codein" maxlength="5" placeholder="e.g. 7K2QF" autocapitalize="characters" autocomplete="off" spellcheck="false">`);
+      codeIn.oninput = () => { codeIn.value = codeIn.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5); };
+      const connBtn = el(`<button class="w12s-btn w12s-btn-accent">Connect</button>`);
+      const rrow = line("Pairing code", connBtn); rrow.querySelector(".w12s-row-txt").appendChild(codeIn); restoreCard.appendChild(rrow);
+      const rstat = el(`<div class="w12s-syncstatus"></div>`); restoreCard.appendChild(rstat);
+      const pwWrap = el(`<div class="w12s-sync-pw"></div>`); pwWrap.hidden = true; restoreCard.appendChild(pwWrap);
+      connBtn.onclick = async () => {
+        const code = codeIn.value.trim();
+        if (code.length !== 5) { rstat.textContent = "Enter the full 5-character code."; rstat.dataset.state = "error"; return; }
+        rstat.textContent = "Connecting…"; rstat.dataset.state = "connecting"; pwWrap.hidden = true; pwWrap.innerHTML = ""; connBtn.disabled = true;
+        try {
+          await DS.startRestore(code, (st) => {
+            rstat.textContent = st.message; rstat.dataset.state = st.state;
+            if (st.state === "error") connBtn.disabled = false;
+            if (st.state !== "received") return;
+            connBtn.disabled = false;
+            const p = st.payload;
+            pwWrap.hidden = false;
+            pwWrap.innerHTML = `<div class="w12s-row-s">Paired with <b>${esc(p.name || "that device")}</b>. Enter the previous ${esc(p.kind || "password")} to finish restoring.</div>`;
+            const pin = el(`<input class="w12s-input" type="password" placeholder="${p.hasPassword ? "Previous " + esc(p.kind) : "(no password was set — just continue)"}">`);
+            const go = el(`<button class="w12s-btn w12s-btn-accent">Restore desktop</button>`);
+            const err = el(`<div class="w12s-err"></div>`);
+            const prow = line("Previous " + (p.kind || "password"), go); prow.querySelector(".w12s-row-txt").appendChild(pin); pwWrap.append(prow, err);
+            pin.focus();
+            const doRestore = async () => {
+              if (p.hasPassword && !pin.value) { err.textContent = "Enter the previous " + (p.kind || "password") + "."; return; }
+              err.textContent = ""; go.disabled = true; go.textContent = "Restoring…";
+              try { await DS.applyRestore(p, pin.value); /* reloads on success */ }
+              catch (_) { err.textContent = "That " + (p.kind || "password") + " isn't right. Try again."; go.disabled = false; go.textContent = "Restore desktop"; }
+            };
+            go.onclick = doRestore;
+            pin.onkeydown = (e) => { if (e.key === "Enter") doRestore(); };
+          });
+        } catch (e) { rstat.textContent = (e && e.message) || "Couldn't connect."; rstat.dataset.state = "error"; connBtn.disabled = false; }
+      };
+      h.appendChild(restoreCard);
+
+      // ---- file backup (offline fallback) ----
+      const fileCard = card(`<div class="w12s-row-t">Or use a backup file</div><div class="w12s-row-s">Download a backup you can move with AirDrop, email or a USB drive, then restore it on the other device. Works even without a live connection.</div>`);
+      const btns = el(`<span style="display:inline-flex;gap:8px"></span>`);
+      const dl = el(`<button class="w12s-btn">Download backup</button>`); dl.onclick = () => { DS.downloadBackup(); note("Backup downloaded."); };
+      const rf = el(`<button class="w12s-btn">Restore from file…</button>`);
+      rf.onclick = () => { const inp = document.getElementById("globalFileInput"); inp.accept = "application/json,.json"; inp.value = ""; inp.onchange = () => { const fl = inp.files[0]; if (fl) DS.restoreFromFile(fl, (msg) => note(msg)); }; inp.click(); };
+      btns.append(dl, rf);
+      fileCard.appendChild(line("Backup file", btns));
+      h.appendChild(fileCard);
     } },
     yourinfo: { title: "Your info", parent: "accounts", build(h, redraw) {
       const pr = profile();
