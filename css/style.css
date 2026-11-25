@@ -5602,3 +5602,103 @@ body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
 .vm12-boot[hidden] { display: none; }
 .vm12-status { padding: 4px 10px; font-size: .7rem; opacity: .7; background: #202026; border-top: 1px solid rgba(255,255,255,.06); }
 .vm12-status code { font-size: .68rem; }
+
+/* From Uiverse.io by mihocsaszilard - https://uiverse.io/mihocsaszilard/rare-fox-73
+   MIT License, Copyright (c) mihocsaszilard (Mihocsa Szilard)
+   Bank card in the Forge Bank app (js/sites.js). Classes prefixed "fbc-". */
+.fbc-wrap { display: flex; justify-content: center; padding: 18px 0 34px; }
+.fbc-main-container {
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 16px;
+  position: relative;
+  height: 203px;
+  aspect-ratio: 1.579;
+  border-radius: 1em;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 300ms ease-in;
+}
+.fbc-main-container:hover {
+  transform: rotateZ(1deg) rotateY(10deg) scale(1.1);
+  box-shadow: 0 5em 2em #111;
+}
+.fbc-border {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1em;
+  background: linear-gradient(115deg, rgba(0, 0, 0, 0.33) 12%, rgba(255, 255, 255, 0.33) 27%, rgba(255, 255, 255, 0.33) 31%, rgba(0, 0, 0, 0.33) 52%);
+}
+.fbc-border:hover:after {
+  position: absolute;
+  content: " ";
+  height: 50em;
+  aspect-ratio: 1.58;
+  border-radius: 1em;
+  background: linear-gradient(115deg, rgba(0, 0, 0, 1) 42%, rgba(255, 255, 255, 1) 47%, rgba(255, 255, 255, 1) 51%, rgba(0, 0, 0, 1) 52%);
+  animation: fbc-rotate 4s linear infinite;
+  z-index: 1;
+  opacity: 0.05;
+}
+.fbc-card {
+  height: 12.5em;
+  aspect-ratio: 1.586;
+  border-radius: 1em;
+  background-color: #999;
+  opacity: 0.8;
+  background-image: linear-gradient(to right, #777, #777 2px, #999 2px, #999);
+  background-size: 4px 100%;
+}
+.fbc-shadow {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.85em;
+  border: 1px solid #bbb;
+  background:
+    radial-gradient(circle at 100% 100%, #ffffff 0, #ffffff 8px, transparent 8px) 0% 0%/13px 13px no-repeat,
+    radial-gradient(circle at 0 100%, #ffffff 0, #ffffff 8px, transparent 8px) 100% 0%/13px 13px no-repeat,
+    radial-gradient(circle at 100% 0, #ffffff 0, #ffffff 8px, transparent 8px) 0% 100%/13px 13px no-repeat,
+    radial-gradient(circle at 0 0, #ffffff 0, #ffffff 8px, transparent 8px) 100% 100%/13px 13px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 50% 50% / calc(100% - 10px) calc(100% - 26px) no-repeat,
+    linear-gradient(#ffffff, #ffffff) 50% 50% / calc(100% - 26px) calc(100% - 10px) no-repeat,
+    linear-gradient(135deg, rgba(3, 3, 3, 0.5) 0%, transparent 22%, transparent 47%, transparent 73%, rgba(0, 0, 0, 0.5) 100%);
+  box-sizing: border-box;
+}
+.fbc-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 0.6em;
+  border: 1px solid #aaa;
+  box-shadow: -1px -1px 0 #ddd;
+  transform: translate(-50%, -50%);
+  height: 12em;
+  aspect-ratio: 1.604;
+  background-image: linear-gradient(to right, #777, #555 2px, #aaa 2px, #aaa);
+  background-size: 4px 100%;
+}
+.fbc-rev { top: 0.5em; left: 0.75em; color: #ffffff9f; font-size: 1.25em; }
+.fbc-master {
+  position: absolute;
+  bottom: 1.25em;
+  right: 0.5em;
+  background: linear-gradient(90deg, rgba(75, 75, 75, 0.25) 0%, rgba(121, 121, 121, 1) 100%);
+  color: #fff;
+  height: 2.5em;
+  width: 2.5em;
+  border: 1px solid #bbb;
+  border-radius: 50%;
+}
+.fbc-master.fbc-one { right: 2em; }
+.fbc-master-text { bottom: 0.25em; right: 0.8em; font-size: 0.75em; }
+.fbc-ultra-text { top: -4px; right: 1.75em; font-size: 0.5em; color: rgba(255, 255, 255, 0.66); }
+.fbc-ultra-text, .fbc-master-text, .fbc-rev { position: absolute; text-shadow: -1px -1px #333; color: #fff; opacity: 0.75; }
+.fbc-chip { position: absolute; top: 27.5%; left: 8.25%; }
+@keyframes fbc-rotate {
+  0% { transform: translate(-25em, -15em); }
+  20% { transform: translate(25em, 15em); }
+  100% { transform: translate(25em, 15em); }
+}
