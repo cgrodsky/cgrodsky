@@ -5,8 +5,25 @@
   // A Windows 12 running as a virtual machine inside Windows 12 (index.html?vm=N)
   // keeps its own separate state, so it never touches the host desktop.
   const VM_DEPTH = (() => { try { const n = parseInt(new URLSearchParams(location.search).get("vm"), 10); return n > 0 ? Math.min(n, 9) : 0; } catch (e) { return 0; } })();
-  const STORAGE_KEY = "win12_state_v1" + (VM_DEPTH ? "__vm" + VM_DEPTH : "");
+  const BASE_KEY = "win12_state_v1" + (VM_DEPTH ? "__vm" + VM_DEPTH : "");
+  // Multiple user accounts (js/accounts.js): a small registry lists the users; each account keeps
+  // its whole OS state under its own key. Account #1 (the original single user) stays at BASE_KEY,
+  // so existing data never moves; others live at BASE_KEY + "__u<id>". The registry's `current`
+  // picks whose state loads (falls back to #1 if that account's state is missing).
+  const ACCOUNTS_KEY = "win12_accounts_v1" + (VM_DEPTH ? "__vm" + VM_DEPTH : "");
+  const keyFor = (id) => (!id || +id === 1 ? BASE_KEY : BASE_KEY + "__u" + (+id));
+  const ACCOUNT_ID = (() => {
+    try {
+      const r = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "null"), id = r && +r.current;
+      if (id > 1 && Array.isArray(r.users) && r.users.some((u) => u && +u.id === id) && localStorage.getItem(keyFor(id)) != null) return id;
+    } catch (e) {}
+    return 1;
+  })();
+  const STORAGE_KEY = keyFor(ACCOUNT_ID);
   window.WIN12_STATE_KEY = STORAGE_KEY;
+  window.WIN12_BASE_STATE_KEY = BASE_KEY;
+  window.WIN12_ACCOUNTS_KEY = ACCOUNTS_KEY;
+  window.WIN12_ACCOUNT_ID = ACCOUNT_ID;
   window.WIN12_VM_DEPTH = VM_DEPTH;
 
   const defaults = () => ({
@@ -85,10 +102,17 @@
     }
   }
 
+  // Frozen while a restore / account switch reloads the page, so nothing can overwrite
+  // the state that was just written to storage.
+  let frozen = false;
+  const saveListeners = [];
   function save() {
+    if (frozen) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const json = JSON.stringify(data);
+      localStorage.setItem(STORAGE_KEY, json);
       save.warned = false;
+      for (let i = 0; i < saveListeners.length; i++) { try { saveListeners[i](json); } catch (_) {} }
     } catch (e) {
       // Don't fail silently: tell the user once that storage is full.
       if (!save.warned && window.Notify) { save.warned = true; try { Notify.show({ icon: "", title: "Storage is full", body: "Your latest changes couldn't be saved. Delete some big files (photos, videos) to free up space." }); } catch (_) {} }
@@ -209,6 +233,11 @@
   window.State = {
     get data() { return data; },
     save, reset, load,
+    defaults, keyFor,
+    STORAGE_KEY, BASE_KEY, ACCOUNTS_KEY, accountId: ACCOUNT_ID,
+    freeze() { frozen = true; },
+    get frozen() { return frozen; },
+    onSave(fn) { if (typeof fn === "function") saveListeners.push(fn); },
     VALID_KEYS,
     validateKey, redeemKey,
     now, formatClock, formatDate,

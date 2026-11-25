@@ -90,8 +90,10 @@
           const v = inp.value;
           let ok;
           if (!methods.length) ok = true; // no sign-in set up at all
-          else if (pin || !isPinAcct) ok = hasSecret ? v === pr.secret : true;
-          else { form.classList.add("busy"); ok = await PasswordAuth.check(v).catch(() => false); form.classList.remove("busy"); }
+          else if (pin) ok = v === pr.secret;
+          else if (!isPinAcct && hasSecret && v === pr.secret) ok = true;
+          else if (window.PasswordAuth && PasswordAuth.has()) { form.classList.add("busy"); ok = await PasswordAuth.check(v).catch(() => false); form.classList.remove("busy"); }
+          else ok = false;
           if (ok) { err.textContent = ""; unlock(m); }
           else { err.textContent = "Incorrect " + (pin ? "PIN" : "password") + " — try again."; inp.value = ""; shake(); }
         };

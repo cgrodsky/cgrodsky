@@ -7,7 +7,7 @@
   // ======================================================================
   // CrKit — shared helpers for the creative apps
   // ======================================================================
-  const STATE_KEY = "win12_state_v1";
+  const STATE_KEY = window.WIN12_STATE_KEY || "win12_state_v1"; // this account's key (per-user / per-VM)
   const el = (html) => { const d = document.createElement("div"); d.innerHTML = String(html).trim(); return d.firstElementChild; };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -126,6 +126,7 @@
   }
   // State.save() swallows quota errors; this reports them so callers can roll back.
   function trySave() {
+    if (State.frozen) return true; // a restore / account switch is reloading: never overwrite it
     try { localStorage.setItem(STATE_KEY, JSON.stringify(State.data)); return true; }
     catch (e) { return false; }
   }

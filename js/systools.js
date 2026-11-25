@@ -118,7 +118,7 @@
   // Category breakdown of everything in localStorage (sizes are UTF-16 bytes = chars x 2).
   function breakdown() {
     const d = S(), ad = d.appData || {};
-    const ls = lsKeys(), stateKey = ls.keys.find((k) => k.key === "win12_state_v1");
+    const ls = lsKeys(), stateKey = ls.keys.find((k) => k.key === (window.WIN12_STATE_KEY || "win12_state_v1"));
     const root = ad.files && ad.files.root;
     const c = cDrive();
     let userFiles = 0; if (root) Object.keys(root).forEach((k) => { if (k !== "Local Disk (C:)") userFiles += jsonBytes(root[k]); });
@@ -140,7 +140,7 @@
     ];
     const known = cats.reduce((s, x) => s + x.bytes, 0);
     cats.push({ key: "apps", name: "Other app data & settings", bytes: Math.max(0, (stateKey ? stateKey.bytes : 0) - known), color: "#107c10" });
-    const other = ls.keys.filter((k) => k.key !== "win12_state_v1").reduce((s, k) => s + k.bytes, 0);
+    const other = ls.keys.filter((k) => k.key !== (window.WIN12_STATE_KEY || "win12_state_v1")).reduce((s, k) => s + k.bytes, 0);
     cats.push({ key: "otherkeys", name: "Other site data (sign-ins, tokens)", bytes: other, color: "#767676" });
     return { total: ls.total, cats: cats.sort((a, b) => b.bytes - a.bytes), keys: ls.keys };
   }

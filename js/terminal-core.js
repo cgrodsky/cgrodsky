@@ -17,6 +17,9 @@
   const SYS = "Local Disk (C:)";
   const COL = { fg: "#cccccc", green: "#16c60c", red: "#ff4b4b", yellow: "#ffe000", blue: "#3a96ff", gray: "#888888", arch: "#1793d1", cyan: "#61d6d6", white: "#f2f2f2", ps: "#f2f2f2" };
   const CANCEL = { cancelled: true };
+  // Commands added by other files (js/recovery.js, js/accounts.js): window.TerminalExt =
+  // { cmd: { name: fn(c, api) }, ps: { "verb-noun": fn(c, api) } }. They run before the built-ins.
+  const extCmd = (kind, key) => { try { const t = window.TerminalExt && window.TerminalExt[kind]; return (t && Object.prototype.hasOwnProperty.call(t, key) && t[key]) || null; } catch (_) { return null; } };
   const SYS_TS = new Date(2026, 9, 1, 4, 12).getTime();
   const VERSION = "12.0.2026";
   const HOSTNAME = "WIN12-PC";
@@ -693,11 +696,14 @@
       const tIdx = a.indexOf("/t"); const secs = tIdx >= 0 ? Math.max(0, parseInt(a[tIdx + 1], 10) || 0) : (a.includes("/s") || a.includes("/r") ? 1 : 0);
       if (a.includes("/a")) { if (shutdownTimer) { clearTimeout(shutdownTimer); shutdownTimer = null; io.out("The scheduled shutdown was cancelled."); return 0; } io.err("Unable to abort the system shutdown because no shutdown was in progress.(1116)"); return 1; }
       const act = a.includes("/r") || a.includes("/g") ? "r" : a.includes("/s") || a.includes("/p") ? "s" : a.includes("/l") ? "l" : a.includes("/h") ? "h" : null;
-      if (!act) { io.out("Usage: shutdown [/s | /r | /l | /h | /a] [/t xxx]\n\n    /s   Shut down the computer.\n    /r   Full shutdown and restart the computer.\n    /l   Log off (lock).\n    /h   Hibernate (sleep).\n    /a   Abort a pending shutdown (during /t).\n    /t xxx  Set the time-out period before shutdown to xxx seconds."); return 0; }
+      if (a.includes("/o") && act !== "r") { io.err("The /o option must be used with /r.(87)"); return 1; }
+      if (!act) { io.out("Usage: shutdown [/s | /r | /l | /h | /a] [/o] [/t xxx]\n\n    /s   Shut down the computer.\n    /r   Full shutdown and restart the computer.\n    /l   Log off (lock).\n    /h   Hibernate (sleep).\n    /a   Abort a pending shutdown (during /t).\n    /o   With /r: restart to the Advanced Startup (recovery) menu.\n    /t xxx  Set the time-out period before shutdown to xxx seconds."); return 0; }
       const run = () => {
         shutdownTimer = null;
-        if (act === "r") location.reload();
+        if (act === "r" && a.includes("/o") && window.Recovery) window.Recovery.restartToWinRE();
+        else if (act === "r") location.reload();
         else if (act === "s") { const off = document.createElement("div"); off.className = "power-off"; (document.getElementById("screen") || document.body).appendChild(off); setTimeout(() => location.reload(), 1400); }
+        else if (act === "l" && window.Accounts) window.Accounts.signOut();
         else if (act === "l" || act === "h") { if (window.Lock) window.Lock.run(() => {}); }
       };
       if (secs > 1) io.out(`Windows will ${act === "r" ? "restart" : act === "s" ? "shut down" : "sign out"} in ${secs} seconds. Run 'shutdown /a' to cancel.`, COL.yellow);
@@ -1299,6 +1305,8 @@
     async function runCmd(c) {
       const key = lc(c.name);
       if (c.a[0] === "/?" && CMD[key] && key !== "echo") { const row = CMD_HELP.find(([k]) => k.split(" / ").some((x) => lc(x) === key)); c.io.out(row ? row[1] : "No help available for " + c.name + "."); return 0; }
+      const ex = extCmd("cmd", key) || extCmd("cmd", key.replace(/\.exe$/, ""));
+      if (ex) { const r = await ex(c, { mode: "cmd", COL, host: HOSTNAME, userName }); return typeof r === "number" ? r : 0; }
       const fn = CMD[key];
       if (fn) { const r = await fn(c); return typeof r === "number" ? r : 0; }
       return external(c);
@@ -1543,6 +1551,8 @@
       const io = c.io; const n = lc(c.name);
       if (c.words[0].q) { [c.words[0].v].concat(c.a).forEach((x) => io.out(x)); return 0; }
       const k = PS_ALIAS[n] || n;
+      const ex = extCmd("ps", k) || extCmd("cmd", n) || extCmd("cmd", n.replace(/\.exe$/, ""));
+      if (ex) { const r = await ex(c, { mode: "ps", COL, host: HOSTNAME, userName }); return typeof r === "number" ? r : 0; }
       switch (k) {
         case "get-childitem": return psGci(c);
         case "set-location": return psSetLoc(c);

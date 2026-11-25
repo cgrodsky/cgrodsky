@@ -238,7 +238,7 @@
         { ic: "mail", t: "Email & accounts", s: "Accounts used by email, calendar and contacts", sub: "email" },
         { ic: "family", t: "Family", s: "Manage your family group, edit account types and device permissions" },
         { ic: "cloud", t: "Windows Backup", s: "Back up your desktop, or move it to another device with a code", sub: "devicesync" },
-        { ic: "users", t: "Other users", s: "Device access, work or school users, kiosk" },
+        { ic: "users", t: "Other users", s: "Add, remove or change the type of accounts on this PC", sub: "otherusers" },
         { ic: "briefcase", t: "Access work or school", s: "Organization resources like email, apps and the network" },
       ],
       time: [
@@ -319,7 +319,7 @@
       h.querySelector(".w12s-wifi-link").onclick = () => { q.wifi = !q.wifi; if (q.wifi) q.plane = false; State.save(); refreshWifi(); go("network"); };
       return h;
     }
-    if (id === "accounts") return el(`<div class="w12s-hero">${avatar(64)}<div><div class="w12s-hero-big" style="font-size:1.35rem">${esc(userName())}</div><div class="w12s-hero-sub">${esc(userSub())}</div><div class="w12s-hero-sub" style="font-size:.78rem">Administrator</div></div></div>`);
+    if (id === "accounts") return el(`<div class="w12s-hero">${avatar(64)}<div><div class="w12s-hero-big" style="font-size:1.35rem">${esc(userName())}</div><div class="w12s-hero-sub">${esc(userSub())}</div><div class="w12s-hero-sub" style="font-size:.78rem">${window.Accounts ? esc(Accounts.typeLabel()) : "Administrator"}</div></div></div>`);
     if (id === "time") {
       const h = el(`<div class="w12s-hero"><div><span class="w12s-hero-sub">Current device time:</span> <span class="w12s-hero-big w12s-clock"></span></div></div>`);
       const c = h.querySelector(".w12s-clock");
@@ -379,6 +379,7 @@
     recovery: { title: "Recovery", parent: "system", build(h) {
       const b = el(`<button class="w12s-btn w12s-btn-danger">Reset PC</button>`); b.onclick = () => window.WM.factoryReset();
       h.appendChild(line("Reset this PC", b, "Start over: removes your apps, files and settings"));
+      if (window.Recovery) Recovery.settingsRecovery(h, { line, card, el, note });
     } },
     about: { title: "About", parent: "system", build(h) {
       const inp = el(`<input class="w12s-input" maxlength="15" value="${esc(S().deviceName || deviceName())}">`);
@@ -391,6 +392,7 @@
         <tr><td>Edition</td><td>Windows 12 Home</td></tr><tr><td>Version</td><td>26H1 (simulation)</td></tr><tr><td>Registered to</td><td>${esc(userName())}</td></tr></table>
         <p class="w12s-row-s" style="margin-top:8px">A pretend computer made for fun. Not affiliated with Microsoft.</p>
         <p class="w12s-row-s">Some app icons by <a class="w12s-link" style="font-size:inherit" href="https://icons8.com" target="_blank" rel="noopener">Icons8</a>.</p>`));
+      if (window.Recovery) Recovery.settingsAbout(h, { line, card, el, note });
     } },
     devmgr: { title: "Devices & drivers", parent: "devices", build(h) {
       const touch = /iPad|iPhone/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
@@ -663,6 +665,9 @@
     } },
   };
 
+  // Sub-pages added by other files (e.g. js/accounts.js → "otherusers"): window.SettingsSubs[key] = { title, parent, build(h, redraw, helpers) }.
+  const subPage = (k) => SUB[k] || (window.SettingsSubs && Object.prototype.hasOwnProperty.call(window.SettingsSubs, k) && window.SettingsSubs[k]) || null;
+
   // ---------- the app ----------
   AppRegistry.settings = function () {
     const { body } = WM.createWindow({ title: "Settings", icon: Icon.mini("settings", "Settings"), width: 1000, height: 640, appId: "settings" });
@@ -717,14 +722,14 @@
     }
 
     function openSub(key) {
-      const sp = SUB[key]; if (!sp) return;
+      const sp = subPage(key); if (!sp) return;
       markNav(sp.parent); page.innerHTML = ""; page.scrollTop = 0;
       const parent = NAV.find((x) => x.id === sp.parent);
       const head = el(`<h1 class="w12s-title"><a class="w12s-crumb">${esc(parent.name)}</a><span class="w12s-crumb-sep">›</span>${esc(sp.title)}</h1>`);
       head.querySelector(".w12s-crumb").onclick = () => go(sp.parent);
       page.appendChild(head);
       const box = el(`<div class="w12s-list"></div>`); page.appendChild(box);
-      sp.build(box, () => openSub(key));
+      sp.build(box, () => openSub(key), { line, card, el, note, esc, toggle });
       paintUser();
     }
 
@@ -749,7 +754,7 @@
     goRef = go; subRef = openSub;
     paintUser();
     const start = window.SettingsStartPage; window.SettingsStartPage = null;   // e.g. "personal" from the desktop menu
-    if (start && SUB[start]) openSub(start); else go(start && NAV.some((n) => n.id === start) ? start : "system");
+    if (start && subPage(start)) openSub(start); else go(start && NAV.some((n) => n.id === start) ? start : "system");
     requestAnimationFrame(() => markNav(cur));
   };
   // rows built in pages() call go(): route to the most recently opened Settings window
