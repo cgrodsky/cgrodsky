@@ -1,0 +1,77 @@
+/* From Uiverse.io by Javierrocadev - https://uiverse.io/Javierrocadev/tough-mule-12
+   MIT License, Copyright (c) Javierrocadev (Javier Roca)
+   YouTube app video card (js/ytcard.js). Classes prefixed "uvy-". The card keeps the
+   original's 260×170 proportions but fills the grid column width. */
+.uvy-card {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 260 / 170;
+  background-color: #ffb3b3;
+  border-radius: 15px;
+  border: 1px solid rgb(156, 151, 151);
+  position: relative;
+  transition: all .3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.uvy-card__icons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-right: 10px;
+  padding-top: 10px;
+  gap: 10px;
+  opacity: 0;
+  transition: all .3s ease;
+  cursor: pointer;
+}
+
+.uvy-card__time {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem; /* original: 1em of normal text (the thumbnail itself uses a big font) */
+  font-weight: lighter;
+  border-radius: 5px;
+  text-align: center;
+  padding: 2px 8px;
+  color: whitesmoke;
+  background-color: rgb(77, 67, 67);
+}
+.uvy-card__time p { margin: 0; }
+
+.uvy-svg-icon {
+  background-color: rgb(77, 67, 67);
+  fill: #ece6e6;
+  width: 35px;
+  height: 35px;
+  border-radius: 5px;
+  padding: 2px;
+  transition: all .5s ease-in-out;
+  box-sizing: content-box;
+  display: block;
+}
+.uvy-btn { display: block; line-height: 0; border-radius: 5px; }
+.uvy-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+.uvy-card:hover {
+  opacity: 0.8;
+  animation: video 5s ease;
+}
+
+.uvy-card:hover .uvy-card__icons,
+.uvy-card:focus-within .uvy-card__icons {
+  opacity: 1;
+}
+
+/* Touch screens have no hover: keep the buttons visible so they can be tapped. */
+@media (hover: none) {
+  .uvy-card__icons { opacity: 1; }
+}
