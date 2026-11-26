@@ -682,7 +682,7 @@
         const t1 = el(`<button class="st-task">${gi("keyboard", 28)}<span><b>Start On-Screen Keyboard</b><br><span class="st-dim">${pf.osk ? "On — click to turn off" : "Type with touch or the mouse"}</span></span></button>`);
         t1.onclick = () => { pf.osk = !pf.osk; State.save(); if (window.OSK) (pf.osk ? OSK.show() : OSK.hide()); t1.querySelector(".st-dim").textContent = pf.osk ? "On — click to turn off" : "Type with touch or the mouse"; };
         const t2 = el(`<button class="st-task">${gi("sound", 28)}<span><b>Start Narrator</b><br><span class="st-dim">Reads text aloud with your device's voice</span></span></button>`);
-        t2.onclick = () => { try { const u = new SpeechSynthesisUtterance("Narrator is on. Welcome to Windows 12, " + userName() + "."); speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (_) { note("Narrator", "Speech isn't available in this browser.", "controlpanel"); } };
+        t2.onclick = () => { if (window.Narrator) { Narrator.start(); return; } try { const u = new SpeechSynthesisUtterance("Narrator is on. Welcome to Windows 12, " + userName() + "."); speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (_) { note("Narrator", "Speech isn't available in this browser.", "controlpanel"); } };
         tools.append(t1, t2);
         const opts = section(main, "Explore all settings");
         const a = a11y();
@@ -1267,7 +1267,7 @@
         const a = t.slice(4);
         if (a === "uac") uacDialog(document.querySelector("#screen") || document.body);
         else if (a === "osk") { const pf = (S().appData.settings12 = S().appData.settings12 || {}); pf.osk = true; State.save(); if (window.OSK) OSK.show(); }
-        else if (a === "narrator") { try { speechSynthesis.speak(new SpeechSynthesisUtterance("Narrator is on.")); } catch (_) {} }
+        else if (a === "narrator") { if (window.Narrator) Narrator.start(); else try { speechSynthesis.speak(new SpeechSynthesisUtterance("Narrator is on.")); } catch (_) {} }
         else if (a === "lock") { if (window.Lock) Lock.run(() => {}); }
         else if (a === "shutdown") { location.reload(); }
         else if (a === "start") { const b = document.querySelector(".start-btn, .tb-start, [data-open='start']"); if (b) b.click(); }
