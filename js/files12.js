@@ -4,6 +4,8 @@
    (js/zipkit.js, loaded on demand), right-click menus with New ▸ / Open with ▸ / Send to ▸,
    Properties dialogs (files, folders, drives), Recycle Bin for files, read-only / hidden attributes,
    inline rename, undo, drag & drop (mouse, touch long-press-and-drag, and files from the device).
+   Previous Versions / Version history come from File History (js/filehistory.js, loaded from here if
+   index.html doesn't list it).
    Styles: css/style.css (.fx12-*) + css/files12x.css (.fx-*), the latter injected on first open. */
 (function () {
   "use strict";
@@ -413,7 +415,7 @@
     extract: SV('<path d="M4 8h16v12H4zM4 8l2-4h12l2 4M12 11v6M9 14l3 3 3-3"/>', 20), pinO: SV('<path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3z"/>', 20),
     open: SV('<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>', 20), tabnew: SV('<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h7V5M15 13h4M17 11v4"/>', 20),
     pv: SV('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/>', 20), dp: SV('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16M16.5 8.5h2M16.5 11.5h2M16.5 14.5h2"/>', 20),
-    restore: SV('<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/>', 20), gallery: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>', 18),
+    restore: SV('<path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/>', 20), history: SV('<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/>', 20), gallery: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>', 18),
     download: SV('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>', 20), mail: SV('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>', 20),
     desktop: SV('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>', 20), path: SV('<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2M11 13h6M11 16h4"/>', 20),
     undo: SV('<path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/>', 20), selall: SV('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 5-6"/>', 20),
@@ -662,12 +664,13 @@
     ref.win.classList.add("fx-props-win");
     return ref;
   }
-  function tabsUI(host, tabs) {
+  function tabsUI(host, tabs, start) {
     host.innerHTML = `<div class="fx-props"><div class="fx-ptabs" role="tablist">${tabs.map((t, i) => `<button role="tab" class="fx-ptab ${i ? "" : "on"}" data-i="${i}">${esc(t[0])}</button>`).join("")}</div><div class="fx-pbody"></div><div class="fx-pfoot"><button class="fx-btn fx-primary" data-a="ok">OK</button><button class="fx-btn" data-a="cancel">Cancel</button><button class="fx-btn" data-a="apply" disabled>Apply</button></div></div>`;
     const pb = host.querySelector(".fx-pbody");
     const show = (i) => { host.querySelectorAll(".fx-ptab").forEach((b) => b.classList.toggle("on", +b.dataset.i === i)); pb.innerHTML = ""; const c = tabs[i][1](); if (typeof c === "string") pb.innerHTML = c; else if (c) pb.appendChild(c); };
     host.querySelectorAll(".fx-ptab").forEach((b) => (b.onclick = () => show(+b.dataset.i)));
-    show(0);
+    const si = typeof start === "string" ? tabs.findIndex((t) => t[0] === start) : 0;
+    show(si > 0 ? si : 0);
     return host.querySelector(".fx-props");
   }
   const kv = (k, v, cls, rawKey) => `<div class="fx-kv ${cls || ""}"><span>${rawKey ? k : esc(k)}</span><div>${v}</div></div>`;
@@ -699,12 +702,17 @@
     d.querySelectorAll(".fx-who-r").forEach((b) => (b.onclick = () => { d.querySelectorAll(".fx-who-r").forEach((x) => x.classList.toggle("on", x === b)); d.querySelector(".fx-perm-who").textContent = "Permissions for " + who[+b.dataset.i][0]; d.querySelector(".fx-perm-rows").innerHTML = perm(+b.dataset.i !== 3); }));
     return d;
   }
+  // Previous Versions tab: real versions from File History (js/filehistory.js) when it's loaded.
+  function versionsTab(e) {
+    if (window.FileHistory && FileHistory.propertiesPanel && e && e.node && !e.node._ze) { try { return FileHistory.propertiesPanel(e); } catch (er) { console.error(er); } }
+    return versionsHTML(e && e.node);
+  }
   function versionsHTML(n) {
     const vs = Array.isArray(n && n.versions) ? n.versions : [];
     if (!vs.length) return `<p class="fx-sub">Previous versions come from File History or from restore points.</p><div class="fx-versions"><div class="fx-empty-box">There are no previous versions available.</div></div>`;
     return `<p class="fx-sub">Previous versions of this item:</p><div class="fx-versions">${vs.slice().reverse().map((v) => `<div class="fx-ver"><span>${esc(longDate(v.ts))}</span><span>${v.size ? human(v.size) : ""}</span></div>`).join("")}</div>`;
   }
-  function showProperties(list) {
+  function showProperties(list, startTab) {
     list = (list || []).filter((e) => e && e.node && !e.binId && !e.zipPath);
     if (!list.length) return;
     if (list.length === 1 && !list[0].path.length && /^Local Disk \([A-Z]:\)$/.test(list[0].name)) return showDriveProperties(list[0].name);
@@ -767,8 +775,8 @@
       return d;
     };
     const tabs = [["General", general]];
-    if (single) tabs.push(["Details", details], ["Previous Versions", () => versionsHTML(single.node)], ["Security", () => permsHTML(winPath(single.path.concat(single.name)), single.node.readOnly)]);
-    tabsUI(ref.body, tabs);
+    if (single) tabs.push(["Details", details], ["Previous Versions", () => versionsTab(single)], ["Security", () => permsHTML(winPath(single.path.concat(single.name)), single.node.readOnly)]);
+    tabsUI(ref.body, tabs, startTab);
     async function apply() {
       if (!pending) return true;
       if (single && state.name.trim() !== single.name) {
@@ -1883,6 +1891,8 @@
         { t: "Label", ic: I.tag, sub: () => LABELS.map(([k, name, col]) => ({ t: name, ic: `<i class="fx12-dot" style="background:${col}"></i>`, check: n.label === k, fn: () => setLabel(list, n.label === k ? null : k) })).concat(n.label ? ["-", { t: "Remove label", fn: () => setLabel(list, null) }] : []) },
         { t: "Download to this device", ic: I.download, fn: () => downloadSel(list) },
         "-",
+        single && !isF && !x.shortcut && window.FileHistory ? { t: "Version history", ic: I.history, fn: () => FileHistory.openVersions(full) } : null,
+        single && !x.shortcut && !(isF && !e.path.length && /^Local Disk/.test(e.name)) ? { t: "Restore previous versions", ic: I.restore, fn: () => showProperties([e], "Previous Versions") } : null,
         { t: "Properties", ic: I.info, kbd: "Alt+Enter", fn: () => showProperties(list) },
       ];
       popMenu(at, items);
@@ -2155,5 +2165,16 @@
     openWith: (path) => { const n = nodeAt(path); if (n) chooseApp(path[path.length - 1], n, path); },
     restoreFromBin, recycle: (path) => recycle([{ name: path[path.length - 1], path: path.slice(0, -1) }]),
     loadZipKit,
+    // used by File History (js/filehistory.js)
+    nodeAt, ensureFolder, uniqueName, imageThumb, showProperties,
+    openFile: (name, node, path) => openFile(name, node, path),
+    launch: (appId, name, node, path) => launch(appId, name, node, path),
   };
+  // File History hooks every save, so it loads with the desktop (not only when Explorer opens).
+  // index.html may list js/filehistory.js itself; otherwise it's added here once.
+  function loadFileHistory() {
+    if (window.FileHistory || document.querySelector('script[src*="js/filehistory.js"]')) return;
+    const s = document.createElement("script"); s.src = "js/filehistory.js" + VQ; s.async = false; document.head.appendChild(s);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadFileHistory); else setTimeout(loadFileHistory, 0);
 })();
