@@ -555,6 +555,7 @@
     }).catch((e) => fxAlert("Visual Studio Code", esc(e.message)));
   }
   function openViewer(name, node) {
+    if (info(name, node).pdf && window.Browser && Browser.openFileNode) return void Browser.openFileNode(name, node);   // Edge is the PDF handler (js/browser.js)
     nodeURL(name, node).then((u) => {
       if (!u) { fxAlert(name, "This file's contents aren't on this device."); return; }
       const ref = WM.createWindow({ title: name + " - Microsoft Edge", icon: Icon.mini("edge", "Microsoft Edge"), width: Math.min(900, innerWidth - 30), height: Math.min(680, innerHeight - 100), appId: "edge" });

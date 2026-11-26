@@ -29,7 +29,7 @@
           </div>
           <p class="bank-earn-note" id="claimNote"></p>
         </div>
-        <h3>Transactions</h3>
+        <div class="bank-tx-h"><h3>Transactions</h3><a class="bank-stmt" download="Forge Bank statement.pdf" href="#">Download statement (PDF)</a></div>
         <div class="tx-list"></div>
       </div>
     </div>`);
@@ -70,7 +70,17 @@
       };
       list.appendChild(row);
     });
-    ctx.page.appendChild(view);
+    // Statement: a real PDF the browser downloads into the Downloads folder (js/browser.js catches the link).
+    const stmt = view.querySelector(".bank-stmt");
+    if (window.Browser && Browser.makeTextPDF) {
+      const now = new Date(), money = (n) => (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(2);
+      const lines = ["Forge Bank - Account statement", "Checking **** 4242    Statement date: " + now.toLocaleDateString(), "Available balance: " + money(b.balance), "", "Date          Description                                   Amount", "--------------------------------------------------------------------------------"];
+      b.transactions.forEach((tx) => lines.push(new Date(tx.ts || Date.now()).toLocaleDateString().padEnd(14) + (String(tx.item || "") + " (" + (tx.vendor || "") + ")").slice(0, 44).padEnd(46) + (tx.credit ? "+" + money(-tx.amount) : "-" + money(tx.amount)) + (tx.refunded ? "  refunded" : "")));
+      if (!b.transactions.length) lines.push("No transactions in this period.");
+      const pages = []; pages.push(lines.slice(0, 46)); for (let i = 46; i < lines.length; i += 48) pages.push(["Forge Bank - Account statement (continued)", ""].concat(lines.slice(i, i + 46)));
+      try { const u = URL.createObjectURL(Browser.makeTextPDF(pages)); stmt.href = u; setTimeout(() => URL.revokeObjectURL(u), 10 * 60000); } catch (_) { stmt.remove(); }
+    } else stmt.remove();
+    ctx.page.replaceChildren(view);
   }
 
   /* From Uiverse.io by mihocsaszilard - https://uiverse.io/mihocsaszilard/rare-fox-73
@@ -108,7 +118,7 @@
         <p style="opacity:.7;font-size:.8rem;margin-bottom:0">Any username and password works.</p>
       </form></div>`);
     v.querySelector("form").onsubmit = (e) => { e.preventDefault(); session.bank = true; bank(ctx); };
-    ctx.page.appendChild(v);
+    ctx.page.replaceChildren(v);
   }
 
   function revokePurchase(tx) {
