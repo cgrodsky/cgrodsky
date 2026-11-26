@@ -75,3 +75,70 @@
 @media (hover: none) {
   .uvy-card__icons { opacity: 1; }
 }
+
+/* From Uiverse.io by Javierrocadev - https://uiverse.io/Javierrocadev/cowardly-starfish-70
+   MIT License, Copyright (c) Javierrocadev (Javier Roca)
+   Video player card over the YouTube watch-page player (js/ytcard.js). Classes "uvp-".
+   It sits on top of the real video (transparent instead of the original grey, and without
+   the "hover video" placeholder text), keeps the layout, hover fade and shadow, and its
+   bar follows the real playback position instead of a fixed 25 s animation. */
+.yt-video.uvp-host .vp-bar { display: none; }           /* the card's controls replace it */
+.uvp-card {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 15px;
+  padding: 10px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0px 0px 1px black;
+  transition: all .2s ease-in;
+  pointer-events: none;                                  /* clicks reach the video / big play button */
+  box-sizing: border-box;
+}
+.yt-video:has(.yt-ad) .uvp-card { display: none; }       /* not during the ad */
+.uvp-up { display: flex; flex-direction: row; justify-content: space-between; }
+.uvp-up .uvp-right { display: flex; gap: 20px; }
+.uvp-playbar { flex-grow: 1; display: flex; justify-content: center; align-items: end; }
+.uvp-bar {
+  width: 100%;
+  height: 8px;
+  margin-bottom: 8px;
+  background-color: rgba(170, 163, 163, 0.356);
+  position: relative;
+}
+.uvp-bar .uvp-fill {
+  position: absolute; left: 0; top: 0;
+  min-width: 10px;
+  width: 0;
+  height: 8px;
+  background: rgb(167, 57, 57);
+  transition: width .2s linear;
+}
+.uvp-down { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
+.uvp-down__icons { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; }
+.uvp-svg-icon.uvp-pause { width: 50px; height: 50px; fill: rgb(241, 239, 239); }
+.uvp-time { font-size: .85em; margin: 0; }
+.uvp-svg-icon {
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border-radius: 50%;
+  fill: rgb(241, 239, 239);
+  cursor: pointer;
+  pointer-events: auto;
+  box-sizing: content-box;
+}
+.uvp-svg-icon.uvp-muted .uvp-wave { opacity: .25; }
+.uvp-card > * { opacity: 0; transition: all .2s ease-in; }
+.yt-video:hover .uvp-card > *, .yt-video.uvp-show .uvp-card > *, .uvp-card:focus-within > * { opacity: 1; }
+.yt-video:hover .uvp-card, .yt-video.uvp-show .uvp-card { box-shadow: inset 0px 10px 36px -13px rgba(0,0,0,0.75); }
+.uvp-svg-icon:hover { background-color: rgba(3, 5, 5, 0.5); }
+.uvp-svg-icon:focus-visible { outline: 2px solid #fff; }
+.uvp-menu[hidden] { display: none !important; }
+.uvp-menu { position: absolute; top: 52px; right: 10px; display: flex; flex-direction: column; background: rgba(28, 28, 28, .92); border-radius: 10px; padding: 6px; pointer-events: auto; opacity: 1 !important; }
+.uvp-menu button { background: none; border: 0; color: #fff; text-align: left; padding: 8px 14px; border-radius: 6px; font: inherit; font-size: .85rem; cursor: pointer; }
+.uvp-menu button:hover { background: rgba(255, 255, 255, .12); }
+/* keep the player's own "Muted" label clear of the share button */
+.yt-video.uvp-host.vp-muted::after { left: 50%; transform: translateX(-50%); }
