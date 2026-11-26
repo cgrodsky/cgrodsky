@@ -185,6 +185,7 @@
         <div class="rc-modal-body">${opts.title ? `<h2 class="rc-modal-title">${esc(opts.title)}</h2>` : ""}<div class="rc-modal-content"></div></div>
         <div class="rc-modal-foot"></div></div></div>`);
       const content = dim.querySelector(".rc-modal-content"), foot = dim.querySelector(".rc-modal-foot");
+      if (opts.uac) { try { const a = new Audio("assets/uac.mp3?v=1"); a.volume = 0.7; a.play().catch(function () {}); } catch (e) {} }   // Windows UAC chime
       if (typeof opts.html === "string") content.innerHTML = opts.html; else if (opts.html) content.appendChild(opts.html);
       let done = false;
       const close = (v) => { if (done) return; done = true; dim.classList.add("rc-out"); setTimeout(() => dim.remove(), 160); document.removeEventListener("keydown", onKey, true); resolve(v); };
