@@ -2251,6 +2251,8 @@
 
   window.WM = {
     createWindow, open, buildDesktop, setWindowIcon,
+    // This PC's battery as the taskbar shows it: { level 0..1, charging, real } — real = reported by the browser, else the sim's own.
+    battery: () => ({ level: batt.level, charging: !!batt.charging, real: !!batt.real }),
     refreshDesktopIcons: () => { if (desktop) renderDesktopIcons(); },
     refreshTaskbar: refreshTaskbarIcons,
     refreshWifi: () => refreshWifiTray(),
