@@ -1,0 +1,46 @@
+/* Ctrl+Alt+Del security screen. cad- prefix. */
+.cad-screen {
+  position: fixed; inset: 0; z-index: 2147483200;
+  background: linear-gradient(135deg, #1f4e8c 0%, #123a6b 55%, #0c2a52 100%);
+  color: #fff; font-family: "Segoe UI", system-ui, sans-serif;
+  display: flex; flex-direction: column; opacity: 0; transition: opacity .18s ease;
+  -webkit-user-select: none; user-select: none;
+}
+.cad-screen.on { opacity: 1; }
+:root[data-theme="dark"] .cad-screen, body.dark .cad-screen {
+  background: linear-gradient(135deg, #101216 0%, #15171c 60%, #0a0b0e 100%);
+}
+.cad-center { flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 clamp(24px, 12vw, 220px); }
+.cad-list { list-style: none; margin: 0 0 8px; padding: 0; width: min(460px, 86vw); }
+.cad-list li { border-top: 1px solid rgba(255, 255, 255, .16); }
+.cad-list li:last-child { border-bottom: 1px solid rgba(255, 255, 255, .16); }
+.cad-opt {
+  width: 100%; text-align: left; background: transparent; border: 0; color: #fff;
+  font-size: 19px; font-weight: 400; padding: 16px 12px; cursor: pointer; border-radius: 4px;
+}
+.cad-opt:hover, .cad-opt:focus-visible { background: rgba(255, 255, 255, .14); outline: none; }
+.cad-cancel {
+  margin-top: 22px; background: transparent; border: 1px solid rgba(255, 255, 255, .5);
+  color: #fff; font-size: 15px; padding: 9px 26px; border-radius: 4px; cursor: pointer;
+}
+.cad-cancel:hover { background: rgba(255, 255, 255, .14); }
+.cad-bottom { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 20px clamp(20px, 6vw, 56px); }
+.cad-user { display: flex; align-items: center; gap: 12px; font-size: 16px; }
+.cad-ava { width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, .22); display: inline-flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; }
+.cad-icons { display: flex; align-items: center; gap: 10px; }
+.cad-ic {
+  width: 46px; height: 46px; border-radius: 6px; border: 0; background: transparent; color: #fff;
+  font-size: 22px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.cad-ic:hover { background: rgba(255, 255, 255, .16); }
+.cad-pw-menu {
+  position: fixed; z-index: 2147483210; background: #2b2b2b; color: #fff; border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5); padding: 6px; min-width: 160px; border: 1px solid rgba(255,255,255,.1);
+}
+.cad-pw-menu button { display: block; width: 100%; text-align: left; background: transparent; border: 0; color: #fff; font-size: 14px; padding: 10px 14px; border-radius: 5px; cursor: pointer; }
+.cad-pw-menu button:hover { background: rgba(255, 255, 255, .14); }
+
+@media (max-width: 560px) {
+  .cad-center { padding: 0 24px; }
+  .cad-opt { font-size: 17px; }
+}

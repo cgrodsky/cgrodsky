@@ -161,6 +161,7 @@
         const mb = el(`<button type="button" role="menuitemcheckbox"></button>`); mb.textContent = l; mb.setAttribute("aria-checked", String(!!o()[k]));
         ui(mb, "click", () => { set("osk." + k, !o()[k]); optMenu.remove(); optMenu = null; if (k === "predict") predict(); }); optMenu.appendChild(mb);
       });
+      const cad = el(`<button type="button" role="menuitem">Ctrl + Alt + Del</button>`); ui(cad, "click", () => { optMenu.remove(); optMenu = null; if (window.SecScreen) SecScreen.show(); }); optMenu.appendChild(cad);
       const st = el(`<button type="button" role="menuitem">Keyboard settings…</button>`); ui(st, "click", () => { optMenu.remove(); optMenu = null; A11y.openPage("ax-keyboard"); }); optMenu.appendChild(st);
       ui(optMenu, "pointerdown", (e) => e.preventDefault());
       A11y.layer().appendChild(optMenu);
