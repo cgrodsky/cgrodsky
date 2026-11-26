@@ -1456,11 +1456,12 @@
     function ensure() {
       const tray = document.querySelector(".taskbar .tb-tray");
       const mine = document.querySelector(".ptz-tray");
-      const want = !!(tray && window.State && State.data && store().tray && !kiosk() && desktopReady());
+      const inst = !!(window.State && State.data && State.data.installedApps && State.data.installedApps.indexOf("powertoys") >= 0);
+      const want = !!(tray && window.State && State.data && inst && store().tray && !kiosk() && desktopReady());
       if (!want) { if (mine) mine.remove(); return; }
       if (mine && mine.parentNode === tray) return;
       if (mine) mine.remove();
-      const b = el(`<button class="ptz-tray" type="button" title="PowerToys" aria-label="PowerToys quick access"><img src="assets/powertoys.png" alt="" draggable="false"></button>`);
+      const b = el(`<button class="ptz-tray" type="button" title="PowerToys" aria-label="PowerToys quick access"><img src="assets/powertoys.png?v=17" alt="" draggable="false"></button>`);
       b.onclick = (e) => { e.stopPropagation(); if (trayFly) closeTrayFly(); else openFly(b); };
       tray.insertBefore(b, tray.firstChild);
     }
@@ -1748,7 +1749,18 @@
       Catalog.storeApps.push({ id: "powertoys", name: "PowerToys", cat: "Utilities", price: 0, builtin: "powertoys",
         desc: "Microsoft PowerToys: Color Picker, Always on Top, PowerRename, Text Extractor (OCR) and Shortcut Guide. Shortcuts: Ctrl+Alt+Shift+C, Ctrl+Alt+T, Ctrl+Alt+Shift+N, Ctrl+Alt+Shift+T, Ctrl+Alt+Shift+/." });
     }
-    const ex = (window.EXTRA_DEFAULT_APPS = window.EXTRA_DEFAULT_APPS || []); if (ex.indexOf("powertoys") < 0) ex.push("powertoys");
+    // PowerToys is NOT installed by default — it's available to install from the Store.
+    // One-time cleanup: drop a prior auto-install so existing setups stop showing it, but only
+    // once (ptNoDefault flag), so anyone who installs it from the Store afterwards keeps it.
+    try {
+      const d = State.data; d.appData = d.appData || {};
+      if (window.EXTRA_DEFAULT_APPS) { const j = EXTRA_DEFAULT_APPS.indexOf("powertoys"); if (j >= 0) EXTRA_DEFAULT_APPS.splice(j, 1); }
+      if (!d.appData.ptNoDefault) {
+        d.appData.ptNoDefault = true;
+        if (d.installedApps) { const k = d.installedApps.indexOf("powertoys"); if (k >= 0) d.installedApps.splice(k, 1); }
+        if (State.save) State.save();
+      }
+    } catch (e) {}
   } catch (e) {}
   if (document.body) ensureCss(); else document.addEventListener("DOMContentLoaded", ensureCss);
 
