@@ -77,6 +77,9 @@
   const PACKS = [
     { id: "win-light", name: "Windows (light)", mode: "light", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "assets/wall4.jpg" }, thumb: "assets/wall4.jpg" },
     { id: "win-dark", name: "Windows (dark)", mode: "dark", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "default" }, thumb: "assets/wall3.jpg" },
+    // Nostalgia editions — original homage wallpapers (not Microsoft's own images).
+    { id: "win11", name: "Windows 11 (Bloom)", mode: "light", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: P("win11_bloom") }, thumb: T("win11_bloom") },
+    { id: "win10", name: "Windows 10 (Hero)", mode: "dark", accent: "#0078d7", cursor: "white", bg: { mode: "picture", wallpaper: P("win10_hero") }, thumb: T("win10_hero") },
     { id: "glow", name: "Glow", mode: "dark", accent: "#8a5cf6", cursor: "white", bg: { mode: "slideshow", images: [P("glow1"), P("glow2"), P("glow3")], interval: 30, shuffle: false } },
     { id: "motion", name: "Captured Motion", mode: "dark", accent: "#e3008c", cursor: "white", bg: { mode: "slideshow", images: [P("motion1"), P("motion2"), P("motion3")], interval: 30, shuffle: false } },
     { id: "sunrise", name: "Sunrise", mode: "light", accent: "#da3b01", cursor: "white", bg: { mode: "slideshow", images: [P("dyn_sunrise"), P("spot_ridges"), P("spot_dunes")], interval: 30, shuffle: false } },
