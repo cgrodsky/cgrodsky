@@ -206,6 +206,7 @@
     { id: "youtubeApp", name: "YouTube" },
     { id: "copilot", name: "Copilot" },
     { id: "settings", name: "Settings" },
+    { id: "godmode", name: "God Mode" },
     { id: "calculator", name: "Calculator" },
     { id: "mclauncher", name: "Minecraft" },
     { id: "xbox", name: "Xbox" },

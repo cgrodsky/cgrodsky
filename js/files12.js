@@ -381,6 +381,7 @@
       return `<span class="fx-lnkwrap" style="width:${s}px;height:${s}px">${inner}${SHORTCUT_BADGE}</span>`;
     }
     if (node.type === "folder") {
+      if (window.GodMode && GodMode.isGuidFolder(name)) return `<span class="fx12-appic" style="width:${s}px;height:${s}px">${Icon.mini("godmode", "God Mode")}</span>`;
       const f = FP(); const src = (f.FOLDER_ICON[name] || "assets/folder.png") + "?v=" + f.FICONV;
       return `<img class="fx12-img" src="${src}" alt="" style="width:${s}px;height:${s}px">`;
     }
@@ -1220,7 +1221,7 @@
       return list.sort((a, b) => fold(a) - fold(b) || dir * (V.sort === "date" || V.sort === "size" ? -by(a, b) : by(a, b)));
     }
     const key = (e) => e.binId ? "bin:" + e.binId : e.zipPath ? "zip:" + e.zipPath.join("/") + "::" + e.inner.join("/") : e.path.concat(e.name).join("/");
-    const dispName = (e) => { if (e.node.kind === "shortcut") return e.name.replace(/\.lnk$/i, ""); if (!V.showExt && e.node.type === "file" && /.\.[^.]+$/.test(e.name)) return e.name.replace(/\.[^.]+$/, ""); return e.name; };
+    const dispName = (e) => { if (window.GodMode && e.node.type === "folder" && GodMode.isGuidFolder(e.name)) { const base = e.name.replace(/\.\{[0-9A-Fa-f-]+\}$/, ""); return base || "God Mode"; } if (e.node.kind === "shortcut") return e.name.replace(/\.lnk$/i, ""); if (!V.showExt && e.node.type === "file" && /.\.[^.]+$/.test(e.name)) return e.name.replace(/\.[^.]+$/, ""); return e.name; };
 
     function itemEl(e, lay) {
       const k = key(e), isF = e.node.type === "folder";
@@ -1614,7 +1615,7 @@
         if (e.node.type === "folder") return go({ kind: "zip", path: e.zipPath.slice(), inner: e.inner.slice() });
         return openZipEntry(e);
       }
-      if (e.node.type === "folder") return openFolder(e.path.concat(e.name));
+      if (e.node.type === "folder") { if (window.GodMode && GodMode.isGuidFolder(e.name)) return GodMode.open(); return openFolder(e.path.concat(e.name)); }
       const x = info(e.name, e.node);
       if (x.zip) { e.node.atime = Date.now(); return go({ kind: "zip", path: e.path.concat(e.name), inner: [] }); }
       if (place().kind === "gallery" && x.img && window.CrPhotos) { e.node.atime = Date.now(); return CrPhotos.openNode(e.name, guardRO(e.name, e.node)); }
