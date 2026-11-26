@@ -307,10 +307,16 @@
   }
   // Era taskbar look (Windows 10 full-width/left-aligned/dark, Windows 11 floating/centered).
   // Re-render the taskbar Start button so it swaps between the XP logo and the Windows flag live.
+  function startIconKey() {
+    const d = S().desktop || {};
+    if (d.xpTheme) return "xpstart";                                   // Windows XP logo
+    if (d.taskbarStyle === "win10" || d.taskbarStyle === "win11") return "win11flag"; // 4-pane flag (whitened for Win10 via CSS)
+    return "winflag";                                                  // Windows 12 logo (default)
+  }
   function refreshStartIcon() {
     try {
       const sb = document.querySelector(".taskbar .tb-btn.start");
-      if (sb && window.Icon) sb.innerHTML = Icon.mini(S().desktop && S().desktop.xpTheme ? "xpstart" : "winflag", "Windows");
+      if (sb && window.Icon) sb.innerHTML = Icon.mini(startIconKey(), "Start");
     } catch (e) {}
   }
   function applyTaskbarStyle() {
@@ -1234,7 +1240,7 @@
   try {
     if (window.WM && typeof WM.buildDesktop === "function" && !WM.buildDesktop.__pz) {
       const ob = WM.buildDesktop;
-      WM.buildDesktop = function () { const r = ob.apply(this, arguments); try { tbObsFor = null; hookTaskbar(); applyHdr(); applyTaskbarStyle(); setTimeout(() => { applyWp(); queueLayout(); }, 0); } catch (_) {} return r; };
+      WM.buildDesktop = function () { const r = ob.apply(this, arguments); try { tbObsFor = null; hookTaskbar(); applyHdr(); applyTaskbarStyle(); refreshStartIcon(); setTimeout(() => { applyWp(); queueLayout(); }, 0); } catch (_) {} return r; };
       Object.keys(ob).forEach((k) => { WM.buildDesktop[k] = ob[k]; });
       WM.buildDesktop.__pz = true;
     }
