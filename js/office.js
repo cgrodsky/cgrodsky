@@ -491,10 +491,64 @@
     { cls: "neutral", label: "Neutral", d: "M8.5,11A1.5,1.5 0 0,1 7,9.5A1.5,1.5 0 0,1 8.5,8A1.5,1.5 0 0,1 10,9.5A1.5,1.5 0 0,1 8.5,11M15.5,11A1.5,1.5 0 0,1 14,9.5A1.5,1.5 0 0,1 15.5,8A1.5,1.5 0 0,1 17,9.5A1.5,1.5 0 0,1 15.5,11M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M9,14H15A1,1 0 0,1 16,15A1,1 0 0,1 15,16H9A1,1 0 0,1 8,15A1,1 0 0,1 9,14Z" },
     { cls: "super-sad", label: "Sad", d: "M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M16.18,7.76L15.12,8.82L14.06,7.76L13,8.82L14.06,9.88L13,10.94L14.06,12L15.12,10.94L16.18,12L17.24,10.94L16.18,9.88L17.24,8.82L16.18,7.76M7.82,12L8.88,10.94L9.94,12L11,10.94L9.94,9.88L11,8.82L9.94,7.76L8.88,8.82L7.82,7.76L6.76,8.82L7.82,9.88L6.76,10.94L7.82,12M12,14C9.67,14 7.69,15.46 6.89,17.5H17.11C16.31,15.46 14.33,14 12,14Z" },
   ];
+  /* Numeric input — ported from a React/Tailwind/shadcn component ("NumericInput") to plain JS.
+     −/+ buttons around a number box, a focus ring, a fill bar showing where the value sits
+     between min and max, and the min/max labels. Typed values outside min..max are ignored
+     (like the original); −/+ clamp to the range. Classes "sni-" (css/style.css). */
+  function fmNumericInput(q, onChange, disabled) {
+    const min = +q.min, max = +q.max, step = +q.step || 1;
+    let value = Math.min(max, Math.max(min, +q.def));
+    const root = el(`<div class="sni-root"><div class="sni-rel">
+        <div class="sni-box">
+          <button type="button" class="sni-btn" aria-label="Decrement button">-</button>
+          <input type="number" class="sni-input" min="${min}" max="${max}" step="${step}" value="${value}">
+          <button type="button" class="sni-btn" aria-label="Increment button">+</button>
+        </div>
+        <div class="sni-track"><div class="sni-fill"></div></div>
+        <div class="sni-ends"><span>${min}</span><span>${max}</span></div>
+      </div></div>`);
+    const box = root.querySelector(".sni-box"), input = root.querySelector(".sni-input"), fill = root.querySelector(".sni-fill");
+    const [dec, inc] = root.querySelectorAll(".sni-btn");
+    const round = (v) => Math.round(v * 1e10) / 1e10;
+    const set = (v, fromTyping) => { value = round(v); if (!fromTyping) input.value = value; fill.style.width = ((value - min) / (max - min) * 100) + "%"; if (onChange) onChange(value); };
+    if (disabled) { [dec, inc, input].forEach((x) => x.disabled = true); }
+    dec.onclick = () => set(Math.max(value - step, min));
+    inc.onclick = () => set(Math.min(value + step, max));
+    input.oninput = () => { const v = Number.parseFloat(input.value); if (!Number.isNaN(v) && v >= min && v <= max) set(v, true); };
+    input.onblur = () => { box.classList.remove("sni-focus"); input.value = value; };
+    input.onfocus = () => box.classList.add("sni-focus");
+    fill.style.width = ((value - min) / (max - min) * 100) + "%";
+    return root;
+  }
+  /* Quick info — ported from a React/shadcn label pattern ("v-label-14": Field + Label + Input).
+     One question, several short fields as "Label | input" rows (label right-aligned in a
+     100px column). Classes "svl-" (css/style.css). */
+  function fmQuickInfo(q, onChange) {
+    const vals = {};
+    const uid = "svl" + Math.random().toString(36).slice(2, 8);
+    const root = el(`<div class="svl-pattern"></div>`);
+    q.fields.forEach((f, i) => {
+      const id = uid + "-" + i;
+      const row = el(`<div class="svl-field"><label class="svl-label" for="${id}"></label><input class="svl-input" id="${id}"></div>`);
+      row.querySelector("label").textContent = f.label;
+      const inp = row.querySelector("input");
+      inp.type = f.type || "text"; inp.placeholder = f.placeholder || ""; inp.dataset.label = f.label;
+      if (inp.type === "email") inp.autocomplete = "email";
+      inp.oninput = () => { vals[f.label] = inp.value; onChange(Object.assign({}, vals)); };
+      root.appendChild(row);
+    });
+    return root;
+  }
   function newQuestion(type) {
     if (FM_OPT_TYPES.indexOf(type) >= 0) return { type: type, q: "Question", options: ["Option 1", "Option 2"], required: false };
     if (type === "rating") return { type: "rating", q: "How would you rate this?", required: false };
     if (type === "smiley") return { type: "smiley", q: "How do you feel about this?", required: false };
+    if (type === "number") return { type: "number", q: "Pick a number", min: 0, max: 100, step: 1, def: 50, required: false };
+    if (type === "info") return { type: "info", q: "Your details", required: false, fields: [
+      { label: "First name", placeholder: "Jane", type: "text" },
+      { label: "Last name", placeholder: "Smith", type: "text" },
+      { label: "Email", placeholder: "jane@example.com", type: "email" },
+    ] };
     if (type === "date") return { type: "date", q: "Pick a date", required: false };
     if (type === "paragraph") return { type: "paragraph", q: "Question", required: false };
     return { type: "text", q: "Question", required: false };
@@ -561,6 +615,8 @@
               <option value="dropdown" ${q.type === "dropdown" ? "selected" : ""}>Dropdown</option>
               <option value="rating" ${q.type === "rating" ? "selected" : ""}>Rating</option>
               <option value="smiley" ${q.type === "smiley" ? "selected" : ""}>Smiley rating</option>
+              <option value="number" ${q.type === "number" ? "selected" : ""}>Number</option>
+              <option value="info" ${q.type === "info" ? "selected" : ""}>Quick info</option>
               <option value="date" ${q.type === "date" ? "selected" : ""}>Date</option>
             </select>
           </div>
@@ -576,7 +632,40 @@
         card.querySelector(".fm-req input").onchange = (e) => { q.required = e.target.checked; persist(); };
         card.querySelector(".fm-del").onclick = () => { form.questions.splice(qi, 1); persist(); build(); };
         const opts = card.querySelector(".fm-q-opts");
-        if (FM_OPT_TYPES.indexOf(q.type) >= 0) {
+        if (q.type === "number") {
+          const num = (k, lbl) => `<label class="fm-numset"><span>${lbl}</span><input type="number" data-k="${k}" value="${escapeHtml(String(q[k]))}" step="any"></label>`;
+          opts.innerHTML = `<div class="fm-numsets">${num("min", "Minimum")}${num("max", "Maximum")}${num("step", "Step")}${num("def", "Starts at")}</div><div class="fm-numprev"></div><div class="fm-err" style="color:#b42318;font-size:.8rem"></div>`;
+          const prev = opts.querySelector(".fm-numprev"), errEl = opts.querySelector(".fm-err");
+          const paint = () => { prev.innerHTML = ""; prev.appendChild(fmNumericInput(q, null, true)); };
+          opts.querySelectorAll("input").forEach((inp) => inp.onchange = () => {
+            const v = parseFloat(inp.value); errEl.textContent = "";
+            if (!Number.isFinite(v)) { errEl.textContent = "Type a number."; inp.value = q[inp.dataset.k]; return; }
+            const nq = Object.assign({}, q, { [inp.dataset.k]: v });
+            if (!(nq.max > nq.min)) { errEl.textContent = "Maximum must be bigger than minimum."; inp.value = q[inp.dataset.k]; return; }
+            if (!(nq.step > 0)) { errEl.textContent = "Step must be more than 0."; inp.value = q[inp.dataset.k]; return; }
+            nq.def = Math.min(nq.max, Math.max(nq.min, nq.def));
+            Object.assign(q, nq); persist(); opts.querySelector('[data-k="def"]').value = q.def; paint();
+          });
+          paint();
+        } else if (q.type === "info") {
+          const draw = () => {
+            opts.innerHTML = `<div class="fm-infoedit">${q.fields.map((f, fi) => `<div class="fm-inforow" data-i="${fi}">
+              <input class="fm-info-l" value="${escapeHtml(f.label)}" placeholder="Label">
+              <input class="fm-info-p" value="${escapeHtml(f.placeholder || "")}" placeholder="Example answer">
+              <select class="fm-info-t">${[["text", "Text"], ["email", "Email"], ["tel", "Phone"], ["number", "Number"], ["date", "Date"], ["url", "Website"]].map(([v, l]) => `<option value="${v}" ${(f.type || "text") === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+              <button class="fm-opt-x" title="Remove field" ${q.fields.length < 2 ? "disabled" : ""}>&times;</button></div>`).join("")}</div>
+              <button class="fm-addopt">+ Add field</button><div class="fm-numprev"></div>`;
+            opts.querySelectorAll(".fm-inforow").forEach((row) => {
+              const f = q.fields[+row.dataset.i];
+              row.querySelector(".fm-info-l").oninput = (e) => { f.label = e.target.value; persist(); };
+              row.querySelector(".fm-info-p").oninput = (e) => { f.placeholder = e.target.value; persist(); };
+              row.querySelector(".fm-info-t").onchange = (e) => { f.type = e.target.value; persist(); };
+              row.querySelector(".fm-opt-x").onclick = () => { q.fields.splice(+row.dataset.i, 1); persist(); draw(); };
+            });
+            opts.querySelector(".fm-addopt").onclick = () => { q.fields.push({ label: "Field " + (q.fields.length + 1), placeholder: "", type: "text" }); persist(); draw(); };
+          };
+          draw();
+        } else if (FM_OPT_TYPES.indexOf(q.type) >= 0) {
           const marker = q.type === "checkbox" ? "sq" : q.type === "dropdown" ? "num" : "dot";
           q.options.forEach((opt, oi) => {
             const mk = marker === "num" ? `<span class="fm-opt-num">${oi + 1}.</span>` : `<span class="fm-opt-dot ${marker === "sq" ? "sq" : ""}"></span>`;
@@ -610,6 +699,8 @@
         <button data-t="dropdown">+ Dropdown</button>
         <button data-t="rating">+ Rating</button>
         <button data-t="smiley">+ Smiley rating</button>
+        <button data-t="number">+ Number</button>
+        <button data-t="info">+ Quick info</button>
         <button data-t="date">+ Date</button>
       </div>`);
       addWrap.querySelectorAll("button").forEach((b) => b.onclick = () => { form.questions.push(newQuestion(b.dataset.t)); persist(); build(); });
@@ -668,6 +759,12 @@
           sel.onchange = () => answers[qi] = sel.value; inp.appendChild(sel);
         } else if (q.type === "date") {
           const i = el(`<input class="fm-p-text fm-p-date" type="date">`); i.onchange = () => answers[qi] = i.value; inp.appendChild(i);
+        } else if (q.type === "number") {
+          answers[qi] = q.def;
+          inp.appendChild(fmNumericInput(q, (v) => { answers[qi] = v; }));
+        } else if (q.type === "info") {
+          answers[qi] = {};
+          inp.appendChild(fmQuickInfo(q, (vals) => { answers[qi] = vals; }));
         } else if (q.type === "smiley") {
           /* From Uiverse.io by JkHuger - https://uiverse.io/JkHuger/silly-insect-34
              MIT License, Copyright (c) JkHuger (JkHuger)
@@ -688,7 +785,13 @@
       });
       const submit = el(`<button class="fm-submit">Submit</button>`);
       submit.onclick = () => {
-        for (let i = 0; i < form.questions.length; i++) { const a = answers[i]; const empty = a == null || a === "" || (Array.isArray(a) && !a.length); if (form.questions[i].required && empty) { toast("Please answer required questions"); return; } }
+        for (let i = 0; i < form.questions.length; i++) {
+          const a = answers[i], fq = form.questions[i];
+          const empty = fq.type === "info" ? fq.fields.some((f) => !String((a || {})[f.label] || "").trim()) : (a == null || a === "" || (Array.isArray(a) && !a.length));
+          if (fq.required && empty) { toast("Please answer required questions"); return; }
+        }
+        const bad = [...wrap.querySelectorAll(".svl-input")].find((x) => x.value && !x.checkValidity());
+        if (bad) { toast("Check “" + (bad.dataset.label || "a field") + "”: " + bad.validationMessage); bad.focus(); return; }
         form.responses.push({ at: Date.now(), answers }); persist();
         wrap.replaceWith(el(`<div class="fm-thanks"><div class="fm-thanks-ic">${Icon.mini("forms", "Forms")}</div><h2>Thanks!</h2><p>Your response was recorded.</p></div>`));
       };
@@ -708,6 +811,7 @@
           let v = r.answers[qi];
           if (Array.isArray(v)) v = v.join(", ");
           if (v == null || v === "") return;
+          if (v && typeof v === "object") { const parts = Object.keys(v).filter((k) => String(v[k]).trim()).map((k) => k + ": " + v[k]); if (!parts.length) return; v = parts.join(" · "); }
           list.appendChild(el(`<div class="fm-resp">${q.type === "rating" ? "&#9733; " + escapeHtml(String(v)) : escapeHtml(String(v))}</div>`));
         });
         if (!list.children.length) list.innerHTML = `<div class="muted">No answers</div>`;

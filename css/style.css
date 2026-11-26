@@ -5962,3 +5962,41 @@ body.dark .tid-dlg { background: #2b2b2b; color: #f2f2f2; }
 .hk-cb-check { color: var(--hk-accent); font-size: 12px; }
 /* Forms: the combobox sits at a comfortable width in a question card */
 .fm-p-combo { max-width: 320px; }
+
+/* Forms "Number" question — numeric input ported from a React/Tailwind component
+   (NumericInput). Tailwind zinc palette as plain CSS; classes "sni-". */
+.sni-root { width: 100%; max-width: 20rem; }
+.sni-rel { position: relative; }
+.sni-box { display: flex; align-items: center; border-radius: .5rem; border: 1px solid #e4e4e7; background: #fff; overflow: hidden; }
+.sni-box.sni-focus { box-shadow: 0 0 0 2px #d4d4d8; }
+.sni-btn { padding: .5rem .75rem; background: transparent; border: 0; color: #71717a; font: inherit; font-size: 1rem; cursor: pointer; transition: background-color .15s, color .15s; }
+.sni-btn:hover { background: #f4f4f5; }
+.sni-btn:disabled { cursor: default; }
+.sni-input { width: 100%; text-align: center; border: none; background: transparent; outline: none; color: #18181b; font: inherit; font-size: 1rem; -moz-appearance: textfield; appearance: textfield; padding: .5rem 0; }
+.sni-input::-webkit-outer-spin-button, .sni-input::-webkit-inner-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+.sni-track { margin-top: .5rem; height: .375rem; border-radius: 9999px; background: #f4f4f5; overflow: hidden; }
+.sni-fill { height: 100%; background: #d4d4d8; transition: all .2s; }
+.sni-ends { margin-top: .25rem; display: flex; justify-content: space-between; font-size: .75rem; color: #a1a1aa; }
+body.dark .sni-box { border-color: #27272a; background: rgba(0,0,0,.05); }
+body.dark .sni-box.sni-focus { box-shadow: 0 0 0 2px #3f3f46; }
+body.dark .sni-btn { color: #a1a1aa; } body.dark .sni-btn:hover { background: #27272a; }
+body.dark .sni-input { color: #f4f4f5; } body.dark .sni-track { background: #27272a; } body.dark .sni-fill { background: #52525b; } body.dark .sni-ends { color: #71717a; }
+/* number settings in the question editor */
+.fm-numsets { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.fm-numset { display: flex; flex-direction: column; gap: 3px; font-size: .78rem; color: #555; }
+.fm-numset input { width: 90px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+
+/* Forms "Quick info" question — label pattern ported from a React/shadcn component
+   (v-label-14: Field + Label + shadcn Input). Classes "svl-". */
+.svl-pattern { width: 100%; max-width: 24rem; display: flex; flex-direction: column; gap: .75rem; }
+.svl-field { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 1rem; }
+.svl-label { text-align: right; font-size: .875rem; font-weight: 500; line-height: 1; color: #09090b; }
+.svl-input { display: flex; height: 2.5rem; width: 100%; box-sizing: border-box; border-radius: .375rem; border: 1px solid #e4e4e7; background: #fff; padding: .5rem .75rem; font: inherit; font-size: .875rem; color: #09090b; }
+.svl-input::placeholder { color: #71717a; }
+.svl-input:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #18181b; }
+.svl-input:disabled { cursor: not-allowed; opacity: .5; }
+/* editing the fields */
+.fm-infoedit { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.fm-inforow { display: grid; grid-template-columns: 1fr 1fr 110px 28px; gap: 6px; align-items: center; }
+.fm-inforow input, .fm-inforow select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; font-size: .85rem; min-width: 0; }
+@media (max-width: 520px) { .svl-field { grid-template-columns: 80px 1fr; gap: .6rem; } .fm-inforow { grid-template-columns: 1fr 1fr; } }
