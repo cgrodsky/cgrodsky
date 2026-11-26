@@ -119,7 +119,12 @@
     stage.innerHTML = "";
     const v = el(`<video class="dv-video" controls playsinline autoplay src="${esc(src.url)}"></video>`);
     stage.appendChild(v);
-    if (src.name) stage.appendChild(el(`<div class="dv-note">${esc(src.name)}</div>`));
+    // Real AirPlay / Remote Playback: hand this clip to the OS so a TV or speaker can play it.
+    try { if (window.Cast) Cast.attach(v, src.name || ""); } catch (e) {}
+    const row = el(`<div class="dv-castrow"></div>`);
+    if (src.name) row.appendChild(el(`<div class="dv-note">${esc(src.name)}</div>`));
+    try { if (window.Cast && Cast.supported()) row.appendChild(Cast.buttonFor(v, src.name || "")); } catch (e) {}
+    if (row.children.length) stage.appendChild(row);
     v.addEventListener("error", () => { if (!stage.querySelector(".dv-err")) stage.appendChild(el(`<div class="dv-note dv-err">This video couldn't be played (the format may be unsupported, or a URL's server blocks cross-origin playback).</div>`)); });
     const pl = v.play && v.play(); if (pl && pl.catch) pl.catch(() => {});
   }

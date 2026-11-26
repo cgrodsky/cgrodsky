@@ -1231,6 +1231,7 @@
       const on = !t.momentary && tileOn(t.k);
       const b = el(`<button class="qs-tile ${on ? "on" : ""}"><span class="qs-tile-ic">${t.icon}</span><span class="qs-tile-lbl">${t.label}</span></button>`);
       b.onclick = () => {
+        if (t.k === "cast") { panel.remove(); if (window.Cast) Cast.tileClick(); else Notify.show({ icon: "", title: "Cast", body: "Cast isn't available." }); return; }
         if (t.momentary) { Notify.show({ icon: "", title: t.label, body: t.label + " is not available" }); return; }
         // Real radios: the Bluetooth tile opens the browser's real pairing chooser (or explains why it can't);
         // the Wi-Fi tile can't switch the real connection, so when the device is offline it says so.
