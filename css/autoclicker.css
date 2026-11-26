@@ -1,0 +1,34 @@
+/* Auto Clicker (OP). ac- prefix. */
+.ac-win { padding: 18px; font-family: "Segoe UI", system-ui, sans-serif; color: var(--text, #1b1b1f); display: flex; flex-direction: column; gap: 12px; height: 100%; box-sizing: border-box; }
+.ac-title { font-size: 18px; font-weight: 700; }
+.ac-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.ac-row input {
+  width: 96px; height: 34px; border-radius: 7px; border: 1px solid var(--border, #d0d0d7);
+  background: var(--bg-elev, #fff); color: inherit; padding: 0 10px; font-size: 14px; text-align: right;
+}
+.ac-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.ac-presets button {
+  flex: 1 1 auto; min-width: 48px; height: 32px; border-radius: 7px; border: 1px solid var(--border, #d0d0d7);
+  background: var(--bg-elev, #f3f3f6); color: inherit; cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.ac-presets button:hover { background: var(--window-bg, #e8e8ee); }
+.ac-start {
+  height: 46px; border: 0; border-radius: 9px; cursor: pointer; font-size: 16px; font-weight: 700; color: #fff;
+  background: linear-gradient(#2d8cff, #1f6feb); box-shadow: 0 3px 0 #1657c0; margin-top: 2px;
+}
+.ac-start:active { transform: translateY(2px); box-shadow: 0 1px 0 #1657c0; }
+.ac-start.ac-on { background: linear-gradient(#ff5a5a, #e23b3b); box-shadow: 0 3px 0 #b02626; }
+.ac-count { text-align: center; font-size: 13px; color: var(--text-dim, #6b6b76); }
+.ac-help { font-size: 12px; line-height: 1.5; color: var(--text-dim, #6b6b76); background: var(--bg-elev, #f5f5f8); border-radius: 8px; padding: 10px 12px; }
+
+.ac-badge {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 2147483400;
+  background: rgba(20, 20, 24, .92); color: #fff; font: 600 13px/1 "Segoe UI", system-ui, sans-serif;
+  padding: 10px 16px; border-radius: 999px; box-shadow: 0 8px 30px rgba(0, 0, 0, .4);
+  pointer-events: none; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255, 255, 255, .18);
+  animation: acPulse 1s ease-in-out infinite;
+}
+.ac-badge b { color: #ffd34d; font-size: 14px; }
+@keyframes acPulse { 0%, 100% { box-shadow: 0 8px 30px rgba(0, 0, 0, .4), 0 0 0 0 rgba(255, 90, 90, .5); } 50% { box-shadow: 0 8px 30px rgba(0, 0, 0, .4), 0 0 0 6px rgba(255, 90, 90, 0); } }
+
+body.dark .ac-help, .dark .ac-help { background: rgba(255, 255, 255, .06); }
