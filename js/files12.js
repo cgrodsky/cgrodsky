@@ -814,6 +814,19 @@
     const r = 15.915, total = parts.reduce((s, p) => s + p.v, 0) || 1; let off = 25;
     return `<svg viewBox="0 0 42 42" width="${size}" height="${size}" class="fx-pie" role="img" aria-label="Drive usage">${parts.map((p) => { const pct = (p.v / total) * 100; const s = `<circle cx="21" cy="21" r="${r}" fill="none" stroke="${p.c}" stroke-width="10" stroke-dasharray="${p.v ? Math.max(pct, 1.5) : 0} ${100 - (p.v ? Math.max(pct, 1.5) : 0)}" stroke-dashoffset="${off}"/>`; off -= pct; return s; }).join("")}</svg>`;
   }
+  // Real disk usage for the C: drive — this origin's actual storage quota/usage from the browser.
+  let _diskP = null;
+  function realDisk() {
+    if (_diskP) return _diskP;
+    const GB = 1073741824;
+    _diskP = ((navigator.storage && navigator.storage.estimate) ? navigator.storage.estimate() : Promise.resolve(null))
+      .then((est) => {
+        if (!est || !est.quota) return null;
+        const totalGB = est.quota / GB, usedGB = (est.usage || 0) / GB;
+        return { totalGB, usedGB, freeGB: Math.max(0, totalGB - usedGB), bytesTotal: est.quota, bytesUsed: est.usage || 0, pct: Math.min(100, Math.max(1, Math.round(usedGB / totalGB * 100))) };
+      }).catch(() => null);
+    return _diskP;
+  }
   function showDriveProperties(driveName) {
     const L = (/\(([A-Z]):\)/.exec(driveName) || [, "C"])[1];
     const labels = AD().driveLabels || (AD().driveLabels = {});
@@ -1256,12 +1269,12 @@
         s1.appendChild(grid(currentList)); view.appendChild(s1);
         const s2 = section("Devices and drives", I.drive);
         const drives = el(`<div class="fx12-drives"></div>`);
-        let used = 0; try { used = JSON.stringify(S()).length; } catch (_) {}
-        const cFree = Math.max(1, 32.6 - used / 1e6).toFixed(1);
         const labels = AD().driveLabels || {};
-        [["Local Disk (C:)", true, cFree, 143], ["Local Disk (D:)", false, "185.3", 216]].forEach(([name, win, free, total]) => {
+        [["Local Disk (C:)", true, "32.6", 143], ["Local Disk (D:)", false, "185.3", 216]].forEach(([name, win, free, total]) => {
           const pct = Math.round((1 - free / total) * 100); const L = name.match(/\(([A-Z]):\)/)[1];
           const d = el(`<div class="fx12-drive" tabindex="0" data-drive="${name}" data-drop='${esc(JSON.stringify([name]))}'><span class="fx12-drive-ic">${DRIVE_SVG(win)}</span><div class="fx12-drive-tx"><div class="fx12-drive-n">${esc(labels[L] || "Local Disk")} (${L}:)</div><div class="fx12-drive-bar"><i style="width:${pct}%"></i></div><div class="fx12-drive-s">${free} GB free of ${total} GB</div></div></div>`);
+          // C: shows the real browser storage estimate (this origin's actual quota/usage).
+          if (win) realDisk().then((st) => { if (!st || !d.isConnected) return; const s = d.querySelector(".fx12-drive-s"), bar = d.querySelector(".fx12-drive-bar i"); if (s) s.textContent = st.freeGB.toFixed(1) + " GB free of " + st.totalGB.toFixed(st.totalGB < 10 ? 1 : 0) + " GB"; if (bar) bar.style.width = st.pct + "%"; });
           const openD = () => { if (!r[name]) { r[name] = { type: "folder", children: {} }; State.save(); } openFolder([name]); };
           d.onclick = (e) => { if (Date.now() < swallowUntil) return; openD(); }; d.onkeydown = (e) => { if (e.key === "Enter") openD(); };
           const menu = () => [{ t: "Open", b: true, fn: openD }, { t: "Open in new tab", ic: I.tabnew, fn: () => newTab({ kind: "folder", path: [name] }) }, "-", { t: "Copy as path", ic: I.path, fn: () => copyText(L + ":\\") }, { t: "Properties", ic: I.info, kbd: "Alt+Enter", fn: () => showDriveProperties(name) }];

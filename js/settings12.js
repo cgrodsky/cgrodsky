@@ -386,8 +386,8 @@
       const save = el(`<button class="w12s-btn">Rename this PC</button>`); save.onclick = () => { S().deviceName = inp.value.trim() || deviceName(); State.save(); note("Your PC is now called " + S().deviceName + "."); };
       const r = line("Device name", save); r.querySelector(".w12s-row-txt").appendChild(inp); h.appendChild(r);
       h.appendChild(card(`<div class="w12s-row-t">Device specifications</div><table class="w12s-spec">
-        <tr><td>Device name</td><td>${esc(S().deviceName || deviceName())}</td></tr><tr><td>Processor</td><td>Cameron Systems Virtual CPU @ 3.40 GHz</td></tr>
-        <tr><td>Installed RAM</td><td>16.0 GB</td></tr><tr><td>System type</td><td>64-bit operating system</td></tr></table>`));
+        <tr><td>Device name</td><td>${esc(S().deviceName || deviceName())}</td></tr><tr><td>Processor</td><td>${esc(navigator.hardwareConcurrency ? navigator.hardwareConcurrency + " logical processors (reported by the browser)" : "Virtual processor")}</td></tr>
+        <tr><td>Installed RAM</td><td>${esc(navigator.deviceMemory ? navigator.deviceMemory.toFixed(1) + " GB" : "Not reported by this browser")}</td></tr><tr><td>System type</td><td>${esc((/arm|aarch/i.test(navigator.userAgent) || /Mac|iP(hone|ad)/.test(navigator.platform) ? "64-bit operating system, ARM-based processor" : "64-bit operating system, x64-based processor"))}</td></tr></table>`));
       h.appendChild(card(`<div class="w12s-row-t">Windows specifications</div><table class="w12s-spec">
         <tr><td>Edition</td><td>Windows 12 Home</td></tr><tr><td>Version</td><td>26H1 (simulation)</td></tr><tr><td>Registered to</td><td>${esc(userName())}</td></tr></table>
         <p class="w12s-row-s" style="margin-top:8px">A pretend computer made for fun. Not affiliated with Microsoft.</p>
