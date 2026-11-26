@@ -148,7 +148,9 @@
     try { if (navigator.storage && navigator.storage.estimate) return await navigator.storage.estimate(); } catch (_) {}
     return null;
   }
-  window.SysTools = { deviceName, setDeviceName, userName, fmtBytes, setTheme, resolveTheme, setWallpaper, setAccent, setTextScale, openSettings, installedList, uninstall, publisher, isInstalled, uacLevel, elevate, breakdown, lsKeys, estimate, jsonBytes, fx, qs, a11y, safeWall };
+  window.SysTools = { deviceName, setDeviceName, userName, fmtBytes, setTheme, resolveTheme, setWallpaper, setAccent, setTextScale, openSettings, installedList, uninstall, publisher, isInstalled, uacLevel, elevate, breakdown, lsKeys, estimate, jsonBytes, fx, qs, a11y, safeWall,
+    // shared with Storage Sense (js/sysutil2.js): the same clean-up categories as Disk Cleanup
+    cleanupCats: (system) => cleanupCats(system), tempTargets: () => tempTargets(), walkFiles };
 
   // ---------- generic little icons (24 viewbox, colored) ----------
   const G = {
@@ -195,6 +197,9 @@
     explorer: '<path d="M2 6h7l2 2h11v11H2z" fill="#ffc83d"/><path d="M2 9h20v10H2z" fill="#ffd96a"/>',
     mail: '<rect x="2" y="5" width="20" height="14" rx="2" fill="#0078d4"/><path d="M2 7l10 6 10-6" stroke="#fff" stroke-width="1.5" fill="none"/>',
     defender: '<path d="M12 2l8.5 3v6.5c0 5.2-3.6 8.7-8.5 10.5-4.9-1.8-8.5-5.3-8.5-10.5V5z" fill="#0b63ce"/><path d="M12 2v20" stroke="#fff" stroke-width="1"/>',
+    bitlocker: '<rect x="2" y="7" width="17" height="10" rx="2" fill="#8a94a6"/><rect x="4" y="12.5" width="12" height="2.5" rx="1" fill="#5a6477"/><rect x="12" y="11" width="10" height="9" rx="1.6" fill="#ffb900"/><path d="M14 11V9a3 3 0 0 1 6 0v2" stroke="#6b5000" stroke-width="1.6" fill="none"/><circle cx="17" cy="15.5" r="1.3" fill="#6b5000"/>',
+    indexing: '<rect x="3" y="3" width="13" height="17" rx="1.5" fill="#fff" stroke="#6b7a90"/><path d="M6 7h7M6 10h7M6 13h4" stroke="#9aa6b8" stroke-width="1.4"/><circle cx="16" cy="15" r="4.2" fill="#fff" stroke="#0067c0" stroke-width="2"/><path d="M19 18l3 3" stroke="#0067c0" stroke-width="2.2" stroke-linecap="round"/>',
+    taskschd: '<rect x="3" y="4" width="18" height="17" rx="2" fill="#fff" stroke="#6b7a90"/><rect x="3" y="4" width="18" height="4.5" rx="2" fill="#0067c0"/><circle cx="15" cy="15" r="4.6" fill="#fff" stroke="#0067c0" stroke-width="1.5"/><path d="M15 12.4V15l2 1.3" stroke="#222" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M6 12h3M6 15h2.5M6 18h3" stroke="#9aa6b8" stroke-width="1.3"/>',
   };
   const gi = (k, s) => `<svg class="st-gi" viewBox="0 0 24 24" width="${s || 24}" height="${s || 24}">${G[k] || G.software}</svg>`;
 
@@ -202,7 +207,7 @@
   //  CONTROL PANEL
   // =====================================================================
   const CATS = [
-    { id: "system", name: "System and Security", ic: "security", links: [["Review your computer's status", "open:security"], ["Back up your files", "set:devicesync"], ["Troubleshoot common computer problems", "set:troubleshoot"]] },
+    { id: "system", name: "System and Security", ic: "security", links: [["Review your computer's status", "open:security"], ["Back up your files", "set:devicesync"], ["Manage BitLocker", "page:bitlocker"], ["Troubleshoot common computer problems", "set:troubleshoot"]] },
     { id: "network", name: "Network and Internet", ic: "network", links: [["View network status and tasks", "page:network"]] },
     { id: "hardware", name: "Hardware and Sound", ic: "hardware", links: [["View devices and printers", "page:devices"], ["Add a device", "act:pair"]] },
     { id: "programs", name: "Programs", ic: "programs", links: [["Uninstall a program", "page:programs"]] },
@@ -214,6 +219,9 @@
   const ITEMS = [
     { id: "admintools", name: "Windows Tools", cat: "system", ic: "tools", go: "page:admintools", desc: "Administrative tools: Event Viewer, Registry Editor, Disk Cleanup…" },
     { id: "backup", name: "Backup and Restore", cat: "system", ic: "backup", go: "set:devicesync", desc: "Back up this desktop or restore it on another device" },
+    { id: "bitlocker", name: "BitLocker Drive Encryption", cat: "system", ic: "bitlocker", go: "page:bitlocker", desc: "Protect your files with real AES-256 encryption (password + recovery key)" },
+    { id: "indexing", name: "Indexing Options", cat: "system", ic: "indexing", go: "page:indexing", desc: "Change how Windows indexes files to search faster" },
+    { id: "taskschd", name: "Task Scheduler", cat: "system", ic: "taskschd", go: "open:taskschd", desc: "Schedule tasks to run automatically" },
     { id: "datetime", name: "Date and Time", cat: "clock", ic: "clock", go: "page:datetime", desc: "Set the date, time and time zone" },
     { id: "devmgr", name: "Device Manager", cat: "hardware", ic: "hardware", go: "open:devicemanager", desc: "View and update your hardware's settings and drivers" },
     { id: "devices", name: "Devices and Printers", cat: "hardware", ic: "devices", go: "page:devices", desc: "View and manage devices, printers and print jobs" },
@@ -238,8 +246,8 @@
     { id: "firewall", name: "Windows Defender Firewall", cat: "system", ic: "firewall", go: "page:firewall", desc: "Protect your computer from network threats" },
     { id: "mail", name: "Mail (Microsoft Outlook)", cat: "users", ic: "mail", go: "open:outlook", desc: "Email profiles" },
   ];
-  const PAGE_TITLE = { home: "Control Panel", all: "All Control Panel Items", programs: "Programs and Features", updates: "Installed Updates", system: "System", devices: "Devices and Printers", network: "Network and Sharing Center", personalization: "Personalization", datetime: "Date and Time", region: "Region", ease: "Ease of Access Center", users: "User Accounts", firewall: "Windows Defender Firewall", admintools: "Windows Tools", fonts: "Fonts", power: "Power Options" };
-  const PAGE_CAT = { programs: "programs", updates: "programs", system: "system", firewall: "system", admintools: "system", devices: "hardware", power: "hardware", network: "network", personalization: "appearance", fonts: "appearance", datetime: "clock", region: "clock", ease: "ease", users: "users" };
+  const PAGE_TITLE = { home: "Control Panel", all: "All Control Panel Items", programs: "Programs and Features", updates: "Installed Updates", system: "System", devices: "Devices and Printers", network: "Network and Sharing Center", personalization: "Personalization", datetime: "Date and Time", region: "Region", ease: "Ease of Access Center", users: "User Accounts", firewall: "Windows Defender Firewall", admintools: "Windows Tools", fonts: "Fonts", power: "Power Options", bitlocker: "BitLocker Drive Encryption", indexing: "Indexing Options" };
+  const PAGE_CAT = { programs: "programs", updates: "programs", system: "system", firewall: "system", admintools: "system", bitlocker: "system", indexing: "system", devices: "hardware", power: "hardware", network: "network", personalization: "appearance", fonts: "appearance", datetime: "clock", region: "clock", ease: "ease", users: "users" };
 
   function openControlPanel(startPage) {
     const ref = WM.createWindow({ title: "Control Panel", icon: Icon.mini("controlpanel", "Control Panel"), width: Math.min(900, window.innerWidth - 30), height: Math.min(600, window.innerHeight - 90), appId: "controlpanel" });
@@ -719,13 +727,14 @@
       // ---------------- Windows Tools / Administrative Tools ----------------
       admintools(main) {
         main.appendChild(el(`<p class="st-dim">Tools for system administrators and advanced users.</p>`));
-        const tools = [["Control Panel", "controlpanel"], ["Device Manager", "devicemanager"], ["Disk Cleanup", "cleanmgr"], ["Disk Management", "diskmgmt"], ["Event Viewer", "eventviewer"], ["Registry Editor", "regedit"], ["Run", "run"], ["System Information", "msinfo32"], ["Task Manager", "taskmanager"], ["Command Prompt", "terminal"], ["Windows PowerShell", "powershell"], ["Windows Security", "security"], ["File Explorer", "fileexplorer"]];
+        const tools = [["Control Panel", "controlpanel"], ["Device Manager", "devicemanager"], ["Disk Cleanup", "cleanmgr"], ["Disk Management", "diskmgmt"], ["Event Viewer", "eventviewer"], ["Registry Editor", "regedit"], ["Run", "run"], ["System Information", "msinfo32"], ["Task Manager", "taskmanager"], ["Task Scheduler", "taskschd"], ["Command Prompt", "terminal"], ["Windows PowerShell", "powershell"], ["Windows Security", "security"], ["File Explorer", "fileexplorer"]];
         const g = el(`<div class="st-cp-items"></div>`);
         tools.forEach(([n, id]) => { const b = el(`<button class="st-cp-item"><span>${Icon.mini(id, n)}</span><span class="st-cp-itemname">${esc(n)}</span></button>`); b.onclick = () => WM.open(id); g.appendChild(b); });
         main.appendChild(g);
       },
       // ---------------- Fonts (real: fonts loaded by this page + device font checks) ----------------
-      fonts(main) {
+      fonts(main, side, nav) {
+        if (window.SysUtil2 && SysUtil2.cp) return SysUtil2.cp.fonts(main, side, nav);   // install / uninstall fonts (js/sysutil2.js)
         main.appendChild(el(`<p class="st-dim">Preview fonts available to this desktop. Web fonts are loaded by the page; system fonts are detected on your device.</p>`));
         const g = el(`<div class="st-fonts"></div>`); main.appendChild(g);
         const fams = new Set();
@@ -735,7 +744,8 @@
         if (!fams.size) g.appendChild(el(`<div class="st-empty">No fonts reported by this browser.</div>`));
       },
       // ---------------- Power (real Battery Status API when available) ----------------
-      power(main, side) {
+      power(main, side, nav) {
+        if (window.SysUtil2 && SysUtil2.cp) return SysUtil2.cp.power(main, side, nav);    // power plans + hibernate (js/sysutil2.js)
         sideLink(side, "Power & battery in Settings", () => openSettings("power"));
         const box = el(`<div class="st-dim">Checking battery…</div>`); main.appendChild(box);
         if (navigator.getBattery) navigator.getBattery().then((b) => {
@@ -744,6 +754,15 @@
         }).catch(() => { box.textContent = "Battery information isn't available."; });
         else box.textContent = "This browser doesn't share battery information (Safari and Firefox keep it private). Your device's own battery icon shows the real level.";
         section(main, "Choose or customize a power plan", `<label class="st-check"><input type="radio" name="pp" checked> Balanced (recommended)</label><label class="st-check"><input type="radio" name="pp"> Power saver</label>`);
+      },
+      // ---------------- BitLocker Drive Encryption / Indexing Options (js/sysutil2.js) ----------------
+      bitlocker(main, side, nav) {
+        if (window.SysUtil2 && SysUtil2.cp) return SysUtil2.cp.bitlocker(main, side, nav);
+        main.appendChild(el(`<div class="st-empty">BitLocker Drive Encryption is still loading. Try again in a moment.</div>`));
+      },
+      indexing(main, side, nav) {
+        if (window.SysUtil2 && SysUtil2.cp) return SysUtil2.cp.indexing(main, side, nav);
+        main.appendChild(el(`<div class="st-empty">Indexing Options is still loading. Try again in a moment.</div>`));
       },
     };
   }
@@ -1119,7 +1138,15 @@
     const d = S(), ad = d.appData || (d.appData = {});
     const C = [];
     const bin = (d.desktop && d.desktop.bin) || [];
-    C.push({ id: "bin", name: "Recycle Bin", desc: "The Recycle Bin contains shortcuts you've deleted from the desktop. Emptying it removes them for good.", bytes: jsonBytes(bin) * (bin.length ? 1 : 0), count: bin.length, check: false, run: () => { d.desktop.bin = []; if (WM.refreshDesktopIcons) WM.refreshDesktopIcons(); } });
+    // The file Recycle Bin (js/files12.js keeps deleted files in appData.fileBin); their IndexedDB bytes are freed too.
+    const fbin = Array.isArray(ad.fileBin) ? ad.fileBin : [];
+    const blobIds = []; const ids = (n) => { if (!n) return; if (typeof n.blob === "string") blobIds.push(n.blob); if (n.type === "folder") Object.values(n.children || {}).forEach(ids); };
+    const nodeSize = (n) => !n ? 0 : n.type === "folder" ? Object.values(n.children || {}).reduce((s, x) => s + nodeSize(x), 0) : (typeof n.size === "number" && (n.blob || !n.content) ? n.size : jsonBytes(n));
+    C.push({ id: "bin", name: "Recycle Bin", desc: "The Recycle Bin contains files and shortcuts you've deleted. Emptying it removes them for good (Storage Sense can do this automatically for old items).", bytes: (bin.length ? jsonBytes(bin) : 0) + fbin.reduce((s, b) => s + nodeSize(b && b.node), 0), count: bin.length + fbin.length, check: false,
+      run: async () => {
+        d.desktop.bin = []; if (WM.refreshDesktopIcons) WM.refreshDesktopIcons();
+        if (fbin.length) { fbin.forEach((b) => ids(b && b.node)); ad.fileBin = []; State.save(); try { window.dispatchEvent(new Event("vfs-change")); } catch (_) {} if (window.SysUtil2 && SysUtil2.gcBlobs) await SysUtil2.gcBlobs(blobIds); }
+      } });
     const tmp = tempTargets();
     C.push({ id: "temp", name: "Temporary files", desc: "Files in C:\\Windows\\Temp, AppData\\Local\\Temp and other .tmp files that apps don't need anymore.", bytes: tmp.reduce((s, t) => s + jsonBytes(t.kids[t.name]), 0), count: tmp.length, check: true, run: () => tempTargets().forEach((t) => { delete t.kids[t.name]; }) });
     const th = thumbTargets();
@@ -1217,11 +1244,11 @@
   // =====================================================================
   //  RUN dialog (overrides the one in js/tools.js)
   // =====================================================================
-  const SET_URI = { display: "display", "personalization-background": "background", personalization: "personal", "personalization-colors": "personal", colors: "personal", themes: "personal", network: "network", "network-wifi": "wifinets", "network-status": "network", bluetooth: "devices", connecteddevices: "devices", "mousetouchpad": "mouse", about: "about", dateandtime: "datetime", regionformatting: "language", "regionlanguage": "language", windowsupdate: "update", "windowsupdate-history": "uphistory", appsfeatures: "installed", "apps-features": "installed", apps: "apps", privacy: "privacy", easeofaccess: "access", accessibility: "access", yourinfo: "yourinfo", signinoptions: "signin", sound: "sound", notifications: "notifications", storagesense: "storage", powersleep: "power", batterysaver: "power", gaming: "gaming", "gaming-gamebar": "gaming", accounts: "accounts", emailandaccounts: "email", recovery: "recovery", troubleshoot: "troubleshoot", activation: "activation", backup: "devicesync", multitasking: "multitask", system: "system", "": "system" };
+  const SET_URI = { display: "display", "personalization-background": "background", personalization: "personal", "personalization-colors": "personal", colors: "personal", themes: "personal", network: "network", "network-wifi": "wifinets", "network-status": "network", bluetooth: "devices", connecteddevices: "devices", "mousetouchpad": "mouse", about: "about", dateandtime: "datetime", regionformatting: "language", "regionlanguage": "language", windowsupdate: "update", "windowsupdate-history": "uphistory", appsfeatures: "installed", "apps-features": "installed", apps: "apps", privacy: "privacy", easeofaccess: "access", accessibility: "access", yourinfo: "yourinfo", signinoptions: "signin", sound: "sound", notifications: "notifications", storagesense: "su-storagesense", storagepolicies: "su-storagesense", "storage-categories": "su-storagecats", fonts: "su-fonts", "cortana-windowssearch": "su-searching", "search-permissions": "su-searching", powersleep: "power", batterysaver: "power", gaming: "gaming", "gaming-gamebar": "gaming", accounts: "accounts", emailandaccounts: "email", recovery: "recovery", troubleshoot: "troubleshoot", activation: "activation", backup: "devicesync", multitasking: "multitask", system: "system", "": "system" };
   const RUN = {
     calc: "calculator", calculator: "calculator", notepad: "notepad", write: "word", wordpad: "word", cmd: "terminal", command: "terminal", terminal: "terminal", wt: "terminal", powershell: "powershell", pwsh: "powershell", "powershell_ise": "powershell",
     regedit: "regedit", regedt32: "regedit", control: "controlpanel", "control panel": "controlpanel", devmgmt: "devicemanager", "devmgmt.msc": "devicemanager", "hdwwiz.cpl": "devicemanager", eventvwr: "eventviewer", "eventvwr.msc": "eventviewer",
-    "diskmgmt.msc": "diskmgmt", diskmgmt: "diskmgmt", cleanmgr: "cleanmgr", taskmgr: "taskmanager", "task manager": "taskmanager", explorer: "fileexplorer", mspaint: "paint", paint: "paint", winver: "winver", msinfo32: "msinfo32",
+    "diskmgmt.msc": "diskmgmt", diskmgmt: "diskmgmt", "taskschd.msc": "taskschd", taskschd: "taskschd", "task scheduler": "taskschd", "control schedtasks": "taskschd", "srchadmin.dll": "cp:indexing", "rundll32.exe shell32.dll,control_rundll srchadmin.dll": "cp:indexing", "control /name microsoft.indexingoptions": "cp:indexing", cleanmgr: "cleanmgr", taskmgr: "taskmanager", "task manager": "taskmanager", explorer: "fileexplorer", mspaint: "paint", paint: "paint", winver: "winver", msinfo32: "msinfo32",
     "compmgmt.msc": "cp:admintools", "control admintools": "cp:admintools", "appwiz.cpl": "cp:programs", "control appwiz.cpl": "cp:programs", "ncpa.cpl": "cp:network", "sysdm.cpl": "cp:system", "timedate.cpl": "cp:datetime", "intl.cpl": "cp:region", "desk.cpl": "cp:personalization", "control desktop": "cp:personalization", "control color": "cp:personalization",
     "firewall.cpl": "cp:firewall", "wf.msc": "cp:firewall", "control printers": "cp:devices", "control userpasswords": "cp:users", "control userpasswords2": "cp:users", netplwiz: "cp:users", "access.cpl": "cp:ease", "utilman": "cp:ease", "control fonts": "cp:fonts", fonts: "cp:fonts", "powercfg.cpl": "cp:power", "main.cpl": "set:mouse", "mmsys.cpl": "set:sound", "inetcpl.cpl": "edge",
     useraccountcontrolsettings: "act:uac", osk: "act:osk", narrator: "act:narrator", "shutdown": "act:shutdown", logoff: "act:lock", "rundll32.exe user32.dll,lockworkstation": "act:lock",
@@ -1277,8 +1304,8 @@
     };
     // ms-settings:<page>
     let m;
-    if ((m = lc.match(/^ms-settings:([a-z-]*)/))) { const pg = SET_URI[m[1]]; openSettings(pg || "system"); return { ok: true }; }
-    if ((m = lc.match(/^control(?:\.exe)? \/name microsoft\.(\w+)/))) { const map = { programsandfeatures: "programs", system: "system", devicemanager: "dev", networkandsharingcenter: "network", personalization: "personalization", dateandtime: "datetime", regionandlanguage: "region", easeofaccesscenter: "ease", useraccounts: "users", windowsfirewall: "firewall", administrativetools: "admintools", devicesandprinters: "devices", fonts: "fonts", poweroptions: "power" }; const pg = map[m[1]]; if (pg === "dev") WM.open("devicemanager"); else openControlPanel(pg || "home"); return { ok: true }; }
+    if ((m = lc.match(/^ms-settings:([a-z-]*)/))) { let pg = SET_URI[m[1]]; if (pg && /^su-/.test(pg) && !(window.SettingsSubs && window.SettingsSubs[pg])) pg = pg === "su-fonts" ? "personal" : pg === "su-searching" ? "privacy" : "storage"; openSettings(pg || "system"); return { ok: true }; }
+    if ((m = lc.match(/^control(?:\.exe)? \/name microsoft\.(\w+)/))) { const map = { programsandfeatures: "programs", system: "system", devicemanager: "dev", networkandsharingcenter: "network", personalization: "personalization", dateandtime: "datetime", regionandlanguage: "region", easeofaccesscenter: "ease", useraccounts: "users", windowsfirewall: "firewall", administrativetools: "admintools", devicesandprinters: "devices", fonts: "fonts", poweroptions: "power", bitlockerdriveencryption: "bitlocker", indexingoptions: "indexing" }; const pg = map[m[1]]; if (pg === "dev") WM.open("devicemanager"); else openControlPanel(pg || "home"); return { ok: true }; }
     const elevated = opts && opts.admin;
     const go = (fn) => { if (elevated) elevate({ name: cmd, publisher: "Microsoft Windows", iconKey: "run" }, fn); else fn(); };
     if (RUN[key]) { go(() => doTarget(RUN[key])); return { ok: true }; }
@@ -1348,6 +1375,17 @@
     });
     return ref;
   };
+
+  // Storage Sense, Task Scheduler, BitLocker, power plans, Fonts and Search indexing live in js/sysutil2.js
+  // (+ css/sysutil2.css). index.html may list it; otherwise it's loaded from here once.
+  (function loadSysUtil2() {
+    const go = () => {
+      if (window.SysUtil2 || document.querySelector('script[src*="js/sysutil2.js"]')) return;
+      let v = ""; try { const me = document.querySelector('script[src*="js/systools.js"]'); const m = me && me.src.match(/[?&]v=([^&#]+)/); v = m ? "?v=" + m[1] : ""; } catch (_) {}
+      const sc = document.createElement("script"); sc.src = "js/sysutil2.js" + v; sc.async = false; document.head.appendChild(sc);
+    };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else setTimeout(go, 0);
+  })();
 
   // Ctrl+Alt+R opens Run (Win+R is handled by js/tools.js and calls AppRegistry.run, which is this one).
   document.addEventListener("keydown", (e) => {
