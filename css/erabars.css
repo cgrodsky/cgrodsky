@@ -1,0 +1,58 @@
+/* Era taskbars for the Windows 10 / Windows 11 theme packs (js/personalize.js sets body.era-win10 / .era-win11).
+   Windows 11 = the default floating, centered, rounded dock (no overrides needed).
+   Windows 10 = a full-width, left-aligned, dark bar with a square white Start and a "Type here to search" box. */
+
+body.era-win10 .taskbar.tb-float {
+  height: 48px; bottom: 0; left: 0; right: 0; padding: 0 6px 0 0;
+  background: rgba(22, 24, 30, .94); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  justify-content: flex-start; gap: 0;
+}
+/* flatten the floating pill into an inline left strip */
+body.era-win10 .tb-dock {
+  background: transparent; border: 0; box-shadow: none; border-radius: 0;
+  padding: 0; height: 48px; gap: 0;
+}
+/* let Start + apps become direct flex items so Start can sit leftmost, then search, task view, pins */
+body.era-win10 .tb-dock .tb-apps { display: contents; }
+body.era-win10 .tb-dock .tb-btn.start { order: 0; }
+body.era-win10 .tb-dock .tb-search { order: 1; }
+body.era-win10 .tb-dock .tb-btn.wx-tv-btn { order: 2; }
+body.era-win10 .tb-dock .tb-btn[data-open] { order: 3; }
+
+/* square white Start flag */
+body.era-win10 .taskbar .tb-btn.start { width: 48px; height: 48px; border-radius: 0; margin: 0; }
+body.era-win10 .taskbar .tb-btn.start:hover { background: rgba(255, 255, 255, .12); }
+body.era-win10 .taskbar .tb-btn.start .ico-img,
+body.era-win10 .taskbar .tb-btn.start .ico-fallback { filter: brightness(0) invert(1); }
+
+/* square app buttons */
+body.era-win10 .taskbar .tb-btn { width: 46px; height: 48px; border-radius: 0; }
+body.era-win10 .taskbar .tb-btn.active { background: rgba(255, 255, 255, .14); }
+
+/* the Win10 search box */
+body.era-win10 .tb-search {
+  height: 32px; border-radius: 2px; background: #fff; color: #333; border: 0;
+  margin: 0 6px; min-width: 200px; padding: 0 12px;
+}
+body.era-win10 .tb-search:hover { background: #fff; }
+body.era-win10 .tb-search-ic svg { filter: none; }
+body.era-win10 .tb-search-lbl { font-size: 0; }
+body.era-win10 .tb-search-lbl::after { content: "Type here to search"; font-size: .8rem; color: #555; }
+
+/* Copilot stands in for Cortana — inline square, not a floating circle */
+body.era-win10 .tb-copilot {
+  position: static; width: 46px; height: 48px; border-radius: 0;
+  background: transparent; border: 0; box-shadow: none; backdrop-filter: none;
+}
+body.era-win10 .tb-copilot:hover { transform: none; background: rgba(255, 255, 255, .12); }
+
+/* the floating weather widget is gone in the Win10 look */
+body.era-win10 .tb-widgets { display: none; }
+
+/* tray + clock on the solid bar */
+body.era-win10 .tb-tray { bottom: 0; height: 48px; right: 8px; align-items: center; }
+body.era-win10 .tb-float .tb-clock { bottom: 0; }
+
+/* keep windows/start menu clear of the solid 48px bar */
+body.era-win10 .start-menu { bottom: 54px; }

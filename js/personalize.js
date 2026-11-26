@@ -78,8 +78,8 @@
     { id: "win-light", name: "Windows (light)", mode: "light", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "assets/wall4.jpg" }, thumb: "assets/wall4.jpg" },
     { id: "win-dark", name: "Windows (dark)", mode: "dark", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "default" }, thumb: "assets/wall3.jpg" },
     // Nostalgia editions — original homage wallpapers (not Microsoft's own images).
-    { id: "win11", name: "Windows 11 (Bloom)", mode: "light", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: P("win11_bloom") }, thumb: T("win11_bloom") },
-    { id: "win10", name: "Windows 10 (Hero)", mode: "dark", accent: "#0078d7", cursor: "white", bg: { mode: "picture", wallpaper: P("win10_hero") }, thumb: T("win10_hero") },
+    { id: "win11", name: "Windows 11 (Bloom)", mode: "light", accent: "#0067c0", cursor: "white", taskbar: "win11", bg: { mode: "picture", wallpaper: P("win11_bloom") }, thumb: T("win11_bloom") },
+    { id: "win10", name: "Windows 10 (Hero)", mode: "dark", accent: "#0078d7", cursor: "white", taskbar: "win10", bg: { mode: "picture", wallpaper: P("win10_hero") }, thumb: T("win10_hero") },
     { id: "glow", name: "Glow", mode: "dark", accent: "#8a5cf6", cursor: "white", bg: { mode: "slideshow", images: [P("glow1"), P("glow2"), P("glow3")], interval: 30, shuffle: false } },
     { id: "motion", name: "Captured Motion", mode: "dark", accent: "#e3008c", cursor: "white", bg: { mode: "slideshow", images: [P("motion1"), P("motion2"), P("motion3")], interval: 30, shuffle: false } },
     { id: "sunrise", name: "Sunrise", mode: "light", accent: "#da3b01", cursor: "white", bg: { mode: "slideshow", images: [P("dyn_sunrise"), P("spot_ridges"), P("spot_dunes")], interval: 30, shuffle: false } },
@@ -305,11 +305,21 @@
     if (last && themeSig(last) === sig) return last.id;   // the theme last applied / saved, if nothing changed since
     const t = all.find((x) => themeSig(x) === sig); return t ? t.id : null;
   }
+  // Era taskbar look (Windows 10 full-width/left-aligned/dark, Windows 11 floating/centered).
+  function applyTaskbarStyle() {
+    const style = (S().desktop && S().desktop.taskbarStyle) || "";
+    const b = document.body.classList;
+    b.remove("era-win10", "era-win11");
+    if (style === "win10") b.add("era-win10");
+    else if (style === "win11") b.add("era-win11");
+  }
   function applyTheme(t) {
     if (!t) return;
     if (t.mode === "light" || t.mode === "dark") S().theme = t.mode;
     if (t.accent) { S().accent = t.accent; document.documentElement.style.setProperty("--accent", t.accent); }
     S().desktop.xpTheme = !!t.xp;
+    S().desktop.taskbarStyle = t.taskbar || "";
+    applyTaskbarStyle();
     if (t.cursor && window.A11y && A11y.set) { try { A11y.set("ptr.style", t.cursor, { now: true }); } catch (_) {} }
     const bg = Object.assign({}, t.bg || { mode: "picture", wallpaper: "default" });
     if (bg.mode === "slideshow" && bg.source === "folder") setBg({ mode: "slideshow", source: "folder", folder: bg.folder || ["Pictures"], interval: bg.interval, shuffle: bg.shuffle, fit: bg.fit });
@@ -1216,7 +1226,7 @@
   try {
     if (window.WM && typeof WM.buildDesktop === "function" && !WM.buildDesktop.__pz) {
       const ob = WM.buildDesktop;
-      WM.buildDesktop = function () { const r = ob.apply(this, arguments); try { tbObsFor = null; hookTaskbar(); applyHdr(); setTimeout(() => { applyWp(); queueLayout(); }, 0); } catch (_) {} return r; };
+      WM.buildDesktop = function () { const r = ob.apply(this, arguments); try { tbObsFor = null; hookTaskbar(); applyHdr(); applyTaskbarStyle(); setTimeout(() => { applyWp(); queueLayout(); }, 0); } catch (_) {} return r; };
       Object.keys(ob).forEach((k) => { WM.buildDesktop[k] = ob[k]; });
       WM.buildDesktop.__pz = true;
     }
