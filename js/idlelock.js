@@ -44,6 +44,8 @@
     { id: "mystify", name: "Mystify" },
     { id: "photos", name: "Photos" },
     { id: "ribbons", name: "Ribbons" },
+    { id: "bounce", name: "Bounce" },
+    { id: "matrix", name: "Matrix" },
   ];
   const SAVER_NAME = (id) => (SAVERS.find((s) => s.id === id) || SAVERS[0]).name;
   const DEF_OPTS = {
@@ -52,6 +54,8 @@
     mystify: { shapes: 2, trail: 12 },
     ribbons: { count: 5, width: 14 },
     photos: { folder: "Pictures", speed: "medium", shuffle: true },
+    bounce: { speed: 6, celebrate: true },
+    matrix: { speed: 6, color: "#20e020" },
     blank: {},
   };
   const TIMEOUTS = [[1, "1 minute"], [2, "2 minutes"], [3, "3 minutes"], [5, "5 minutes"], [10, "10 minutes"], [15, "15 minutes"], [20, "20 minutes"], [25, "25 minutes"], [30, "30 minutes"], [45, "45 minutes"], [60, "1 hour"], [120, "2 hours"], [180, "3 hours"], [240, "4 hours"], [300, "5 hours"], [0, "Never"]];
@@ -451,13 +455,95 @@
   function makeRenderer(type, cv, opts, env) {
     const g = cv.getContext("2d");
     const k = env.reduced ? 0.25 : 1;     // reduced motion: everything much slower
-    const R = { text3d: text3d, blank: blank, bubbles: bubbles, mystify: mystify, photos: photos, ribbons: ribbons }[type] || blank;
+    const R = { text3d: text3d, blank: blank, bubbles: bubbles, mystify: mystify, photos: photos, ribbons: ribbons, bounce: bounce, matrix: matrix }[type] || blank;
     return R(cv, g, opts || {}, Object.assign({ k }, env));
   }
 
   function blank(cv, g) {
     return { step() { g.fillStyle = "#000"; g.fillRect(0, 0, cv.width, cv.height); }, destroy() {} };
   }
+
+  // DVD-style bouncing Windows logo: changes colour on every wall hit, celebrates a corner hit.
+  function bounce(cv, g, o, env) {
+    const spd = (Math.max(1, Math.min(10, +o.speed || 6)) / 6) * env.k;
+    let x, y, vx, vy, hue, flash, celebrated;
+    function logoSize() { return Math.max(44, Math.min(cv.width, cv.height) * 0.16); }
+    function init() {
+      const s = logoSize();
+      x = rnd(0, cv.width - s * 1.2); y = rnd(0, cv.height - s * 1.3);
+      const base = Math.min(cv.width, cv.height) * 0.12 * spd, a = rnd(0.5, 1.1);
+      vx = base * Math.cos(a) * (Math.random() < 0.5 ? -1 : 1);
+      vy = base * Math.sin(a) * (Math.random() < 0.5 ? -1 : 1);
+      hue = rnd(0, 360); flash = 0; celebrated = 0;
+    }
+    init();
+    function drawLogo(cx, cy, s, col, glow) {
+      // The Windows four-pane flag, tilted, in a single DVD-logo colour.
+      g.save(); g.translate(cx, cy);
+      if (glow) { g.shadowColor = col; g.shadowBlur = s * 0.5; }
+      g.transform(1, 0.08, -0.14, 1, 0, 0);
+      const gap = s * 0.08, pane = (s - gap) / 2;
+      g.fillStyle = col;
+      [[0, 0], [pane + gap, 0], [0, pane + gap], [pane + gap, pane + gap]].forEach(([px, py]) => {
+        g.beginPath(); roundRect(g, px - s / 2, py - s / 2, pane, pane, pane * 0.12); g.fill();
+      });
+      g.restore();
+      g.shadowBlur = 0;
+      g.fillStyle = col; g.font = "600 " + Math.round(s * 0.2) + "px 'Segoe UI', system-ui, sans-serif";
+      g.textAlign = "center"; g.fillText("Windows 12", cx, cy + s * 0.8);
+    }
+    return {
+      resize: init,
+      step(dt) {
+        const W = cv.width, H = cv.height, s = logoSize(), span = s * 1.25, sp = dt / 1000;
+        g.fillStyle = "#05060a"; g.fillRect(0, 0, W, H);
+        x += vx * sp; y += vy * sp;
+        let hitX = false, hitY = false;
+        if (x < 0) { x = 0; vx = Math.abs(vx); hitX = true; } else if (x > W - span) { x = W - span; vx = -Math.abs(vx); hitX = true; }
+        if (y < 0) { y = 0; vy = Math.abs(vy); hitY = true; } else if (y > H - span) { y = H - span; vy = -Math.abs(vy); hitY = true; }
+        if (hitX || hitY) { hue = (hue + rnd(40, 110)) % 360; if (hitX && hitY && o.celebrate) { flash = 1; celebrated++; } }
+        flash = Math.max(0, flash - sp * 0.6);
+        const col = `hsl(${hue | 0} 85% ${55 + flash * 20}%)`;
+        if (flash > 0.02) { // corner-hit celebration: expanding rings
+          g.strokeStyle = `hsla(${hue | 0} 90% 70% / ${flash})`; g.lineWidth = 3;
+          for (let r = 0; r < 3; r++) { g.beginPath(); g.arc(x + span / 2, y + span / 2, s * (0.7 + r * 0.6) * (1.2 - flash), 0, 6.28); g.stroke(); }
+        }
+        drawLogo(x + span / 2, y + s / 2, s, col, flash > 0.02);
+        if (celebrated && o.celebrate) { g.fillStyle = "rgba(255,255,255,.5)"; g.font = "600 13px 'Segoe UI',system-ui,sans-serif"; g.textAlign = "right"; g.fillText("corner hits: " + celebrated, W - 16, H - 14); }
+      },
+      destroy() {},
+    };
+  }
+
+  // The Matrix: columns of falling glyphs. Also the `matrix` terminal command.
+  function matrix(cv, g, o, env) {
+    const GLYPHS = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶ01234789ABCDEFZ:.=*+-<>¦｜╌".split("");
+    const base = (/** colour */ o.color) || "#20e020";
+    const spd = (Math.max(1, Math.min(10, +o.speed || 6)) / 6) * env.k;
+    let fs, cols, drops;
+    function init() {
+      fs = Math.max(12, Math.round(Math.min(cv.width, cv.height) / 42));
+      cols = Math.ceil(cv.width / fs); drops = [];
+      for (let i = 0; i < cols; i++) drops.push(rnd(-40, 0));
+    }
+    init();
+    return {
+      resize: init,
+      step(dt) {
+        const W = cv.width, H = cv.height, sp = Math.min(2, dt / 16);
+        g.fillStyle = "rgba(0,8,0,0.09)"; g.fillRect(0, 0, W, H);
+        g.font = fs + "px 'Consolas','Courier New',monospace"; g.textAlign = "start";
+        for (let i = 0; i < cols; i++) {
+          const ch = GLYPHS[(Math.random() * GLYPHS.length) | 0], xx = i * fs, yy = drops[i] * fs;
+          if (yy > 0) { g.fillStyle = "rgba(200,255,200,0.95)"; g.fillText(ch, xx, yy); g.fillStyle = base; g.fillText(GLYPHS[(Math.random() * GLYPHS.length) | 0], xx, yy - fs); }
+          drops[i] += 0.55 * spd;
+          if (yy > H && Math.random() > 0.975) drops[i] = rnd(-30, 0);
+        }
+      },
+      destroy() {},
+    };
+  }
+  function roundRect(g, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
   function bubbles(cv, g, o, env) {
     const N = { few: 7, some: 12, lots: 20 }[o.count] || 12;
@@ -861,6 +947,12 @@
     else if (type === "ribbons") body = `
       ${fld("Number of ribbons", `<input type="range" min="1" max="12" data-k="count" value="${+o.count || 5}">`)}
       ${fld("Ribbon width", `<input type="range" min="4" max="40" data-k="width" value="${+o.width || 14}">`)}`;
+    else if (type === "bounce") body = `
+      ${fld("Speed", `<input type="range" min="1" max="10" data-k="speed" value="${+o.speed || 6}">`)}
+      <label class="il-chk"><input type="checkbox" data-k="celebrate" ${o.celebrate ? "checked" : ""}> Celebrate a corner hit</label>`;
+    else if (type === "matrix") body = `
+      ${fld("Speed", `<input type="range" min="1" max="10" data-k="speed" value="${+o.speed || 6}">`)}
+      ${fld("Rain colour", `<input type="color" data-k="color" value="${esc(o.color || "#20e020")}">`)}`;
     else if (type === "photos") {
       const folders = ["Pictures", "Desktop", "Downloads", "OneDrive", "Documents"];
       body = `${fld("Use pictures from", `<select class="il-sel" data-k="folder">${opt(folders.map((f) => [f, f]), o.folder)}</select>`)}

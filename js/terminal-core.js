@@ -1364,6 +1364,9 @@
       powershell: (c) => enterPS(c.io, "5.1"), pwsh: (c) => enterPS(c.io, "7"), cmd: (c) => enterCmd(c.io), timeout: timeoutCmd, pause: async (c) => { await c.io.ask("Press Enter to continue . . . "); return 0; },
       clip, rem: () => 0, vol: (c) => { c.io.out(" Volume in drive C is Local Disk\n Volume Serial Number is 1A2B-3C4D"); return 0; },
       win12: vmCmd, vmconnect: vmCmd, "vmconnect.exe": vmCmd, "virtmgmt.msc": vmCmd, hyperv: vmCmd,
+      matrix: (c) => { if (window.IdleLock) { IdleLock.preview("matrix"); c.io.out("Wake up, Neo…  (tap the screen or press a key to exit the Matrix)", COL.green); } else c.io.err("matrix: the screen-saver engine isn't loaded."); return 0; },
+      dvd: (c) => { if (window.IdleLock) { IdleLock.preview("bounce"); c.io.out("Bouncing the logo… wait for the corner. Tap or press a key to exit."); } else c.io.err("dvd: the screen-saver engine isn't loaded."); return 0; },
+      screensaver: (c) => { if (window.IdleLock) IdleLock.preview(); else c.io.err("screensaver: engine not loaded."); return 0; },
     };
     function notRecognized(c) {
       const m = mode();
