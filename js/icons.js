@@ -4,7 +4,7 @@
   "use strict";
   let n = 0;
   // Bump when an assets/<key>.png icon changes — image URLs aren't covered by index.html's ?v=
-  const ICONV = "15";
+  const ICONV = "16";
 
   // Each entry is a tasteful 2-stop gradient pair for richer fallback icons.
   const palette = [
@@ -32,7 +32,7 @@
   const aliases = {};
   function alias(from, to) { aliases[String(from).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = String(to).toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
   // Icons that have a classic variant when the Windows XP theme is enabled.
-  const XP_ICONS = { paint: "paint_xp", outlook: "outlook_xp" };
+  const XP_ICONS = { paint: "paint_xp", outlook: "outlook_xp", winflag: "xpstart" };
   function xpOn() { try { return !!(window.State && State.data.desktop && State.data.desktop.xpTheme); } catch (e) { return false; } }
   function resolveKey(k) { let key = k; if (aliases[key]) key = aliases[key]; if (xpOn() && XP_ICONS[key]) key = XP_ICONS[key]; return key; }
 

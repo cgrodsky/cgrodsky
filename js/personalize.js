@@ -306,6 +306,13 @@
     const t = all.find((x) => themeSig(x) === sig); return t ? t.id : null;
   }
   // Era taskbar look (Windows 10 full-width/left-aligned/dark, Windows 11 floating/centered).
+  // Re-render the taskbar Start button so it swaps between the XP logo and the Windows flag live.
+  function refreshStartIcon() {
+    try {
+      const sb = document.querySelector(".taskbar .tb-btn.start");
+      if (sb && window.Icon) sb.innerHTML = Icon.mini(S().desktop && S().desktop.xpTheme ? "xpstart" : "winflag", "Windows");
+    } catch (e) {}
+  }
   function applyTaskbarStyle() {
     const style = (S().desktop && S().desktop.taskbarStyle) || "";
     const b = document.body.classList;
@@ -325,6 +332,7 @@
     if (bg.mode === "slideshow" && bg.source === "folder") setBg({ mode: "slideshow", source: "folder", folder: bg.folder || ["Pictures"], interval: bg.interval, shuffle: bg.shuffle, fit: bg.fit });
     else setBg(Object.assign(bg, { xp: !!t.xp }));
     try { if (window.applyTheme) window.applyTheme(); } catch (_) {}
+    refreshStartIcon();
     pz().theme.current = t.id || null; save();
     try { window.dispatchEvent(new CustomEvent("theme-change", { detail: { id: t.id } })); } catch (_) {}
   }
