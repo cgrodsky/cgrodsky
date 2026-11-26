@@ -78,8 +78,8 @@
     { id: "win-light", name: "Windows (light)", mode: "light", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "assets/wall4.jpg" }, thumb: "assets/wall4.jpg" },
     { id: "win-dark", name: "Windows (dark)", mode: "dark", accent: "#0067c0", cursor: "white", bg: { mode: "picture", wallpaper: "default" }, thumb: "assets/wall3.jpg" },
     // Nostalgia editions — original homage wallpapers (not Microsoft's own images).
-    { id: "win11", name: "Windows 11 (Bloom)", mode: "light", accent: "#0067c0", cursor: "white", taskbar: "win11", bg: { mode: "picture", wallpaper: P("win11_bloom") }, thumb: T("win11_bloom") },
-    { id: "win10", name: "Windows 10 (Hero)", mode: "dark", accent: "#0078d7", cursor: "white", taskbar: "win10", bg: { mode: "picture", wallpaper: P("win10_hero") }, thumb: T("win10_hero") },
+    { id: "win11", name: "Windows 11 (Bloom)", mode: "light", accent: "#0067c0", cursor: "white", taskbar: "win11", bg: { mode: "picture", wallpaper: P("win11_bloom") + "?2" }, thumb: T("win11_bloom") + "?2" },
+    { id: "win10", name: "Windows 10 (Hero)", mode: "dark", accent: "#0078d7", cursor: "white", taskbar: "win10", bg: { mode: "picture", wallpaper: P("win10_hero") + "?2" }, thumb: T("win10_hero") + "?2" },
     { id: "glow", name: "Glow", mode: "dark", accent: "#8a5cf6", cursor: "white", bg: { mode: "slideshow", images: [P("glow1"), P("glow2"), P("glow3")], interval: 30, shuffle: false } },
     { id: "motion", name: "Captured Motion", mode: "dark", accent: "#e3008c", cursor: "white", bg: { mode: "slideshow", images: [P("motion1"), P("motion2"), P("motion3")], interval: 30, shuffle: false } },
     { id: "sunrise", name: "Sunrise", mode: "light", accent: "#da3b01", cursor: "white", bg: { mode: "slideshow", images: [P("dyn_sunrise"), P("spot_ridges"), P("spot_dunes")], interval: 30, shuffle: false } },
@@ -1232,6 +1232,21 @@
     }
   } catch (_) {}
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
+  // One-time cache-bust: the Windows 10/11 wallpapers were replaced with the real images at
+  // the same path, so browsers that cached the old art need a fresh URL. Rewrite any stored
+  // reference to the versioned URL and re-apply, so it corrects itself on next load.
+  (function migrateEraWallpapers() {
+    try {
+      const map = { "assets/pz/win10_hero.jpg": "assets/pz/win10_hero.jpg?2", "assets/pz/win11_bloom.jpg": "assets/pz/win11_bloom.jpg?2" };
+      let changed = false;
+      const d = S().desktop;
+      if (d && map[d.wallpaper]) { d.wallpaper = map[d.wallpaper]; changed = true; }
+      const b = pz().bg;
+      if (b && Array.isArray(b.recent)) b.recent = b.recent.map((x) => map[x] || x);
+      const cur = pz().theme && pz().theme.custom;
+      if (changed) { save(); setTimeout(() => { try { if (window.WM && WM.applyWallpaper) WM.applyWallpaper(); else applyWp(); } catch (e) {} }, 0); }
+    } catch (e) {}
+  })();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
   window.addEventListener("load", () => { wrapOpeners(); });
 
