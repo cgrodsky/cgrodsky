@@ -386,7 +386,7 @@
     }
     const ext = extOf(name);
     const img = (src) => `<img class="fx12-img" src="${src}" alt="" style="width:${s}px;height:${s}px">`;
-    if (node.kind === "image" || IMG.includes(ext)) return node.src ? `<img class="fx12-img fx12-thumb" src="${esc(node.src)}" alt="" style="width:${s}px;height:${s}px">` : img("assets/file_image.png?v=1");
+    if (node.kind === "image" || IMG.includes(ext)) return node.src ? `<img class="fx12-img fx12-thumb" src="${esc(node.src)}" alt="" style="width:${s}px;height:${s}px" onerror="this.onerror=null;this.classList.remove('fx12-thumb');this.src='assets/file_image.png?v=2'">` : img("assets/file_image.png?v=2");
     if (ext === "zip") return `<span class="fx-zipic" style="width:${s}px;height:${s}px">${img("assets/folder.png?v=" + FP().FICONV)}<i></i></span>`;
     if (ARCH.includes(ext)) return img("assets/file_rar.png?v=1");
     if (CODE.includes(ext)) return img("assets/file_code.png?v=1");
