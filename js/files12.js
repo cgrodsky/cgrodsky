@@ -574,6 +574,7 @@
     { id: "word", name: "Word", ok: (x) => x.kind === "word" || x.kind === "text" || ["txt", "md", "rtf", "docx", "doc"].includes(x.ext), open: (n, node) => Office.openWord({ name: n, node }), avail: () => !!(window.Office && Office.openWord) },
     { id: "excel", name: "Excel", ok: (x) => x.kind === "xlsx" || x.ext === "xlsx", open: (n, node) => Office.openExcel({ name: n, node }), avail: () => !!(window.Office && Office.openExcel) },
     { id: "powerpoint", name: "PowerPoint", ok: (x) => x.kind === "pptx" || x.ext === "pptx", open: (n, node) => Office.openPowerPoint({ name: n, node }), avail: () => !!(window.Office && Office.openPowerPoint) },
+    { id: "drivevideo", name: "Video", ok: (x) => x.media === "video", open: (n, node) => { if (window.DriveVideo && DriveVideo.openNode) DriveVideo.openNode(n, node); else rawOpen(n, node); }, avail: () => has("drivevideo") },
     { id: "photos", name: "Photos", ok: (x) => x.img || x.media === "video", open: (n, node) => { if (window.CrPhotos && info(n, node).img) CrPhotos.openNode(n, node); else rawOpen(n, node); }, avail: () => !!window.CrPhotos },
     { id: "paint", name: "Paint", ok: (x) => x.img && x.ext !== "svg", open: (n, node, path) => nodeURL(n, node).then((u) => { if (u) AppRegistry.paint({ open: { url: u, name: n, path: node.readOnly || node.__fxClone ? null : path } }); }), avail: () => has("paint") },
     { id: "mediaplayer", name: "Media Player", ok: (x) => !!x.media, open: (n, node) => { if (window.CrMedia) CrMedia.openNode(n, node); else rawOpen(n, node); }, avail: () => !!window.CrMedia },
@@ -604,6 +605,7 @@
     if (pick && appById(pick) && appById(pick).avail()) return launch(pick, name, node, path);
     if (x.zip && path) { window.FilesStartPath = path.slice(); WM.open("fileexplorer"); return; }
     if (x.pdf) return launch("edge", name, node, path);
+    if (x.media === "video" && window.DriveVideo && DriveVideo.openNode) { node.atime = Date.now(); DriveVideo.openNode(name, node, path); return; }   // Video app is the player for all non-YouTube videos (js/drivevideo.js)
     node.atime = Date.now();
     rawOpen(name, guardRO(name, node));
   }
