@@ -376,16 +376,20 @@
   // ======================================================================
   function closeMyMenus() { document.querySelectorAll(".dx-menu").forEach((m) => m.remove()); }
 
+  // The gadget rows use the OS's real colourful icons (not emoji, which render flat/monochrome).
+  function gIcon(key, name) { return `<span class="dx-gic">${window.Icon ? Icon.mini(key, name) : ""}</span>`; }
+  const GADGET_ICON = { clock: "clock", weather: "weather", system: "taskmanager", notes: "stickynotes" };
+
   // Standalone popup (used by the + affordance). Right-click uses the injected items.
   function openAddMenu(anchorRect, flip) {
     closeMyMenus();
     const menu = el(`<div class="dx-menu dx-menu-pop gbs-skip" role="menu"></div>`);
     const item = (label, fn) => { const b = el(`<button type="button" role="menuitem">${label}</button>`); b.onclick = () => { closeMyMenus(); fn(); }; menu.appendChild(b); };
     menu.appendChild(el(`<div class="dx-menu-h">Add gadget</div>`));
-    item("🕐 Clock", () => addGadget("clock"));
-    item("⛅ Weather", () => addGadget("weather"));
-    item("📊 System meter", () => addGadget("system"));
-    item("🗒️ Notes", () => addGadget("notes"));
+    item(gIcon("clock", "Clock") + "<span>Clock</span>", () => addGadget("clock"));
+    item(gIcon("weather", "Weather") + "<span>Weather</span>", () => addGadget("weather"));
+    item(gIcon("taskmanager", "System meter") + "<span>System meter</span>", () => addGadget("system"));
+    item(gIcon("stickynotes", "Notes") + "<span>Notes</span>", () => addGadget("notes"));
     menu.appendChild(el(`<div class="dx-menu-sep"></div>`));
     menu.appendChild(el(`<div class="dx-menu-h">Sticky note</div>`));
     const row = el(`<div class="dx-menu-colors"></div>`);
@@ -431,10 +435,10 @@
     const mk = (html, fn, arrow) => { const b = el(`<button type="button" class="dx-injected${arrow ? " has-sub" : ""}">${html}</button>`); if (arrow) { b.onmouseenter = fn; } else if (fn) { b.onclick = () => { menu.remove(); document.querySelectorAll(".desk-ctx,.dx-submenu").forEach((m) => m.remove()); fn(); }; b.addEventListener("mouseenter", () => document.querySelectorAll(".dx-submenu,.desk-submenu").forEach((m) => m.remove())); } return b; };
 
     const gadgetBtn = mk(iconRow(ICN.gadget, "Add gadget", true), () => openSubmenu(gadgetBtn, [
-      ["🕐 Clock", () => addGadget("clock")],
-      ["⛅ Weather", () => addGadget("weather")],
-      ["📊 System meter", () => addGadget("system")],
-      ["🗒️ Notes", () => addGadget("notes")],
+      [gIcon("clock", "Clock") + "Clock", () => addGadget("clock")],
+      [gIcon("weather", "Weather") + "Weather", () => addGadget("weather")],
+      [gIcon("taskmanager", "System meter") + "System meter", () => addGadget("system")],
+      [gIcon("stickynotes", "Notes") + "Notes", () => addGadget("notes")],
     ]), true);
     const noteBtn = mk(iconRow(ICN.note, "New sticky note", true), () => openSubmenu(noteBtn,
       STICKY_COLORS.map((c) => [c.charAt(0).toUpperCase() + c.slice(1), () => addSticky(c)])
