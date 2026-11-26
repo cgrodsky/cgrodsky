@@ -1,0 +1,73 @@
+/* Taskbar thumbnail previews + taskbar context menu (js/tbpreview.js).
+   All classes are prefixed tbp-. Colours reuse the shell's CSS variables so
+   light and dark themes both work with no extra rules. */
+
+/* ---- preview popup ---- */
+.tbp-preview {
+  position: fixed; z-index: 9700; display: flex; gap: 10px;
+  padding: 10px; border-radius: 14px;
+  background: var(--taskbar); backdrop-filter: blur(22px);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  max-width: calc(100vw - 16px); overflow-x: auto;
+  animation: tbp-pop .12s ease;
+}
+@keyframes tbp-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.tbp-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px; border-radius: 10px; cursor: pointer;
+  background: var(--window-bg); border: 1px solid var(--border);
+  transition: background .12s ease, border-color .12s ease, box-shadow .12s ease;
+  outline: none; flex: 0 0 auto;
+}
+.tbp-card:hover, .tbp-card:focus-visible {
+  background: var(--bg-elev); border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tbp-head { display: flex; align-items: center; gap: 6px; max-width: 220px; }
+.tbp-ic { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.tbp-ic svg, .tbp-ic img { width: 16px; height: 16px; display: block; }
+.tbp-title {
+  flex: 1 1 auto; min-width: 0; font-size: .78rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tbp-close {
+  flex: 0 0 auto; width: 20px; height: 20px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-dim); cursor: pointer;
+  font-size: .72rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+  transition: background .12s ease, color .12s ease;
+}
+.tbp-close:hover { background: #e81123; color: #fff; }
+
+/* The scaled snapshot of a window body */
+.tbp-shot {
+  position: relative; overflow: hidden; border-radius: 7px;
+  background: var(--window-bg); border: 1px solid var(--border);
+  pointer-events: none; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .06);
+}
+.tbp-clone { position: absolute; left: 0; top: 0; pointer-events: none; }
+.tbp-iconshot {
+  width: 160px; height: 96px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--bg-elev), var(--window-bg));
+}
+.tbp-bigicon { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; opacity: .9; }
+.tbp-bigicon svg, .tbp-bigicon img { width: 44px; height: 44px; }
+
+/* ---- taskbar empty-area context menu ---- */
+.tbp-ctx {
+  position: fixed; z-index: 9700; min-width: 210px; padding: 6px;
+  border-radius: 12px; background: var(--window-bg);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  animation: tbp-pop .1s ease;
+}
+.tbp-ctx-item {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  color: var(--text); font-size: .84rem; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+}
+.tbp-ctx-item:hover, .tbp-ctx-item:focus-visible { background: var(--accent); color: #fff; outline: none; }
+.tbp-ctx-sep { height: 1px; margin: 5px 8px; background: var(--border); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tbp-preview, .tbp-ctx { animation: none; }
+}
