@@ -159,15 +159,22 @@
   //  PHONE LINK
   // ================================================================================================
   const PL = (function () {
-    const st = { phase: "off", code: null, hostRef: null, sess: null, phone: null, err: "", carriers: [], incoming: new Map() };
+    const st = { phase: "off", code: null, hostRef: null, sess: null, phone: null, err: "", carriers: [], incoming: new Map(), sending: new Map(), rd: null };
     const listeners = new Set();
     const emit = () => listeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
+    let emitT = 0; const emitSoon = () => { if (emitT) return; emitT = setTimeout(() => { emitT = 0; emit(); }, 120); };
     const data = () => store().phone;
     const phoneUrl = (code) => new URL("phone.html#" + code, document.baseURI).href;
+    const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const phoneName = () => (st.phone && st.phone.name) || "Your phone";
+    const pushMsg = (x) => { const d = data(); d.msgs.push(x); if (d.msgs.length > 300) d.msgs.splice(0, d.msgs.length - 300); save(); };
 
     async function start() {
       if (st.hostRef) return;
-      st.code = P().newCode(); st.phase = "starting"; st.err = ""; emit();
+      // A stable code, so the Phone Link app on the phone can reconnect with one tap. Every new
+      // connection still has to be confirmed here with the 6-digit number.
+      const d = data(); if (!d.code || !P().validCode(d.code)) { d.code = P().newCode(); save(); }
+      st.code = d.code; st.phase = "starting"; st.err = ""; emit();
       const ref = await startHost("pl", st.code, Object.assign(myInfo("pc"), { onSession, onStatus: (s) => { if (s.error) { st.err = s.error; st.phase = "error"; emit(); } } }));
       if (!ref) return;
       st.hostRef = ref; st.carriers = ref.carriers; st.phase = st.sess ? st.phase : "waiting";
@@ -179,72 +186,208 @@
       if (st.sess && !st.sess.closed) { sess.send({ t: "busy" }); setTimeout(() => sess.close(), 300); return; }
       st.sess = sess; st.phase = "confirm"; st.phone = Object.assign({ name: sess.peer.name }, sess.peer.info || {});
       sess.onMessage(onMsg);
-      sess.onClose(() => { if (st.sess !== sess) return; st.sess = null; const was = st.phase; st.phase = st.hostRef ? "waiting" : "off"; if (was === "paired") { toast.ic = "phonelink"; toast("Phone Link", (st.phone && st.phone.name || "Your phone") + " disconnected."); log("Information", "PhoneLink", 210, "Phone disconnected."); } emit(); });
+      sess.onClose(() => {
+        if (st.sess !== sess) return;
+        if (st.rd) { const r = st.rd; st.rd = null; try { r.sub._end(); } catch (_) {} }
+        st.sess = null; st.incoming.clear(); st.sending.clear();
+        const was = st.phase; st.phase = st.hostRef ? "waiting" : "off";
+        if (was === "paired") { toast.ic = "phonelink"; toast("Phone Link", phoneName() + " disconnected."); log("Information", "PhoneLink", 210, "Phone disconnected."); }
+        emit();
+      });
       toast.ic = "phonelink"; toast("Phone Link", "A phone wants to connect — check the number in Phone Link.", () => open());
       emit();
     }
     function confirm(ok) {
       const s = st.sess; if (!s) return;
       if (!ok) { s.send({ t: "reject" }); setTimeout(() => s.close(), 200); st.sess = null; st.phase = "waiting"; emit(); return; }
-      s.send({ t: "paired", pc: pcName(), user: userName() });
+      s.send({ t: "paired", pc: pcName(), user: userName(), code: st.code });
       st.phase = "paired"; data().last = { name: st.phone.name, at: Date.now() }; save();
       log("Information", "PhoneLink", 200, "Paired with " + st.phone.name + " (end-to-end encrypted, confirmation " + s.sas + ").");
-      // the code has been used: stop advertising it (a new one is made when the phone disconnects and you pair again)
       emit();
     }
     function onMsg(m, bytes) {
       if (st.phase !== "paired") return; // nothing is accepted before you confirm the number
+      if (m.rd) { if (st.rd) st.rd.sub._in(m, bytes); return; } // remote-desktop traffic → the screen-share session
+      if (m.t === "rd-req") { startScreen("phone"); return; }
       const d = data();
-      if (m.t === "info") { st.phone = Object.assign(st.phone || {}, { name: String(m.name || st.phone.name).slice(0, 60), battery: m.battery, charging: m.charging, platform: m.platform }); emit(); }
+      if (m.t === "info") { st.phone = Object.assign(st.phone || {}, { name: String(m.name || phoneName()).slice(0, 60), battery: m.battery, charging: m.charging, platform: m.platform }); emit(); }
       else if (m.t === "msg") {
-        const x = { id: m.id || Date.now(), from: "phone", text: String(m.text || "").slice(0, 4000), ts: Date.now() };
-        d.msgs.push(x); if (d.msgs.length > 300) d.msgs.splice(0, d.msgs.length - 300); save();
-        toast.ic = "phonelink"; toast((st.phone && st.phone.name) || "Phone", x.text, () => open("messages")); emit();
+        const x = { id: String(m.id || newId("p")), from: "phone", text: String(m.text || "").slice(0, 4000), ts: Date.now() };
+        pushMsg(x);
+        toast.ic = "phonelink"; toast(phoneName(), x.text, () => open("messages")); emit();
+      } else if (m.t === "react") {
+        const x = d.msgs.find((y) => String(y.id) === String(m.id)); if (!x) return;
+        x.react = x.react || {};
+        if (TAP[m.r]) x.react.phone = m.r; else delete x.react.phone;
+        save(); emit();
+        if (TAP[m.r] && x.from === "pc") { toast.ic = "phonelink"; toast(phoneName(), TAP_LABEL[m.r] + " " + (x.photo ? "a photo" : "“" + String(x.text || "").slice(0, 60) + "”"), () => open("messages")); }
       } else if (m.t === "notif") {
         const n = { id: Date.now(), app: String(m.app || "Phone").slice(0, 40), title: String(m.title || "").slice(0, 120), body: String(m.body || "").slice(0, 400), ts: Date.now() };
         d.notifs.unshift(n); d.notifs.length = Math.min(d.notifs.length, 60); save();
-        toast.ic = "phonelink"; toast(n.app + " · " + ((st.phone && st.phone.name) || "Phone"), (n.title ? n.title + " — " : "") + n.body, () => open("notifs")); emit();
+        toast.ic = "phonelink"; toast(n.app + " · " + phoneName(), (n.title ? n.title + " — " : "") + n.body, () => open("notifs")); emit();
       } else if (m.t === "photo-begin") {
-        st.incoming.set(m.id, { name: m.name, mime: m.mime, size: m.size, parts: [], got: 0 }); emit();
+        st.incoming.set(m.id, { name: String(m.name || "photo.jpg"), mime: m.mime, size: m.size, parts: [], got: 0 }); emit();
       } else if (m.t === "photo-chunk" && bytes) {
-        const f = st.incoming.get(m.id); if (!f) return; f.parts.push(bytes); f.got += bytes.length; emit();
+        const f = st.incoming.get(m.id); if (!f) return; f.parts.push(bytes); f.got += bytes.length; emitSoon();
       } else if (m.t === "photo-end") {
         const f = st.incoming.get(m.id); if (!f) return; st.incoming.delete(m.id);
         const all = new Uint8Array(f.got); let k = 0; f.parts.forEach((p) => { all.set(p, k); k += p.length; });
         saveIncoming(["Pictures"], { name: f.name, mime: f.mime }, all).then((name) => {
-          d.photos.unshift({ name, at: Date.now(), size: all.length }); d.photos.length = Math.min(d.photos.length, 200); save();
+          d.photos.unshift({ name, at: Date.now(), size: all.length }); d.photos.length = Math.min(d.photos.length, 200);
+          pushMsg({ id: String(m.id), from: "phone", photo: name, ts: Date.now() });
           st.sess && st.sess.send({ t: "photo-saved", id: m.id, name });
-          toast.ic = "phonelink"; toast("Photo from " + ((st.phone && st.phone.name) || "your phone"), name + " was saved to Pictures.", () => openFolder(["Pictures"]));
+          toast.ic = "phonelink"; toast("Photo from " + phoneName(), name + " was saved to Pictures.", () => open("messages"));
           log("Information", "PhoneLink", 220, "Received photo " + name + " (" + fmtSize(all.length) + ") into Pictures.");
           emit();
         });
+      } else if (m.t === "photo-got") {
+        const x = d.msgs.find((y) => String(y.id) === String(m.id)); if (x) { x.delivered = true; save(); emit(); }
       }
     }
     function sendText(text) {
       text = String(text || "").trim(); if (!text || !st.sess || st.phase !== "paired") return false;
-      const x = { id: Date.now(), from: "pc", text: text.slice(0, 4000), ts: Date.now() };
+      const x = { id: newId("c"), from: "pc", text: text.slice(0, 4000), ts: Date.now() };
       st.sess.send({ t: "msg", id: x.id, text: x.text });
-      data().msgs.push(x); save(); emit(); return true;
+      pushMsg(x); emit(); return true;
     }
-    function disconnect() { if (st.sess) { st.sess.send({ t: "bye" }); st.sess.close(); st.sess = null; } stop(); st.phase = "off"; st.code = null; emit(); }
+    // Send photos to the phone. items: [{ name, mime, bytes }]. Each also appears in the Messages thread.
+    async function sendPhotos(items) {
+      for (const it of items) {
+        if (!st.sess || st.phase !== "paired") break;
+        const id = newId("c");
+        const t = await thumbOf(new Blob([it.bytes], { type: it.mime || "image/jpeg" }));
+        pushMsg({ id, from: "pc", photo: it.name, thumb: t ? t.src : null, ts: Date.now() });
+        st.sending.set(id, 0); emit();
+        st.sess.send({ t: "photo-begin", id, name: it.name, mime: it.mime || "image/jpeg", size: it.bytes.length });
+        const CH = 64 * 1024;
+        for (let o = 0; o < it.bytes.length; o += CH) {
+          if (!st.sess) break;
+          await st.sess.send({ t: "photo-chunk", id }, it.bytes.subarray(o, o + CH));
+          st.sending.set(id, Math.min(1, (o + CH) / it.bytes.length)); emitSoon();
+        }
+        if (st.sess) await st.sess.send({ t: "photo-end", id });
+        st.sending.delete(id); emit();
+        log("Information", "PhoneLink", 221, "Sent photo " + it.name + " (" + fmtSize(it.bytes.length) + ") to " + phoneName() + ".");
+      }
+    }
+    async function sendFiles(fileList) {
+      const items = [];
+      for (const f of fileList) { if (!/^image\//.test(f.type || "") && !/\.(jpe?g|png|gif|webp|heic|bmp)$/i.test(f.name)) continue; items.push({ name: f.name || "photo.jpg", mime: f.type || "image/jpeg", bytes: new Uint8Array(await f.arrayBuffer()) }); }
+      if (items.length) await sendPhotos(items);
+    }
+    function react(id, r) {
+      const x = data().msgs.find((y) => String(y.id) === String(id)); if (!x || !st.sess || st.phase !== "paired") return;
+      x.react = x.react || {};
+      const nr = x.react.pc === r ? null : r;
+      if (nr) x.react.pc = nr; else delete x.react.pc;
+      st.sess.send({ t: "react", id: String(x.id), r: nr });
+      save(); emit();
+    }
+
+    // ---------------- remote desktop over the Phone Link connection ----------------
+    // The screen-share core (shared with Quick Assist) runs on a sub-session: its messages ride the
+    // paired, encrypted Phone Link channel tagged rd:1, and stopping it doesn't unpair the phone.
+    function makeSub(base) {
+      const mh = [], ch = []; let closed = false;
+      const sub = {
+        peer: base.peer, sas: base.sas,
+        get closed() { return closed || base.closed; },
+        send: (m, b) => (closed ? Promise.resolve(false) : base.send(Object.assign({}, m, { rd: 1 }), b)),
+        onMessage: (f) => { mh.push(f); }, onClose: (f) => { ch.push(f); },
+        buffered: () => (base.buffered ? base.buffered() : 0),
+        close: () => { if (closed) return; closed = true; try { base.send({ t: "rd-end" }); } catch (_) {} ch.forEach((f) => { try { f(); } catch (_) {} }); },
+        _in: (m, b) => mh.forEach((f) => { try { f(m, b); } catch (e) { console.warn(e); } }),
+        _end: () => { if (closed) return; closed = true; ch.forEach((f) => { try { f(); } catch (_) {} }); },
+      };
+      return sub;
+    }
+    async function startScreen(by) {
+      if (!st.sess || st.phase !== "paired" || st.rd) return;
+      const name = phoneName();
+      if (by === "phone") {
+        const ok = await dialog({ title: name + " wants to see this PC", html: `<p>Show this PC's screen on ${esc(name)}? It can watch your screen, and it has to ask separately before it can control it. You can stop at any time from the bar at the top of the screen.</p>`, buttons: [{ t: "Allow", v: true, primary: true }, { t: "Decline", v: false }], cancel: false, local: true, host: document.body });
+        if (!ok || !st.sess) { if (st.sess) st.sess.send({ t: "share-declined", rd: 1 }); return; }
+      }
+      const sub = makeSub(st.sess); const mine = { sub, at: Date.now() }; st.rd = mine;
+      const clear = () => { if (st.rd === mine) { st.rd = null; emit(); } };
+      sub.onClose(clear);
+      emit();
+      // The PC here IS this Windows 12 page: render it directly (no extra browser screen-picker prompt; works on iPad too).
+      const s = await Share.startSharing(sub, { app: "Phone Link", icon: "phonelink", method: "snap", onStop: clear });
+      if (!s) { clear(); sub.close(); return; }
+      log("Information", "PhoneLink", 230, "Showing this PC on " + name + " (Phone Link remote desktop).");
+      emit();
+    }
+    function stopScreen() {
+      const r = st.rd; if (!r) return;
+      const a = Share.active();
+      if (a && a.sess === r.sub) a.stop("user"); else r.sub.close();
+      st.rd = null; emit();
+    }
+    function disconnect() { stopScreen(); if (st.sess) { st.sess.send({ t: "bye" }); st.sess.close(); st.sess = null; } stop(); st.phase = "off"; st.code = null; emit(); }
 
     // ---------------- app window ----------------
     let win = null;
     function open(tab) {
       if (win && win.body.isConnected) { win.focus(); win.win.style.display = ""; if (tab) win.setTab(tab); return; }
-      const ref = WM.createWindow({ title: "Phone Link", icon: Icon.mini("phonelink", "Phone Link"), width: Math.min(900, innerWidth - 30), height: Math.min(620, innerHeight - 90), appId: "phonelink", onClose: () => { listeners.delete(paint); win = null; } });
-      win = ref; let cur = tab || "messages";
+      const ref = WM.createWindow({ title: "Phone Link", icon: Icon.mini("phonelink", "Phone Link"), width: Math.min(920, innerWidth - 30), height: Math.min(640, innerHeight - 90), appId: "phonelink", onClose: () => { listeners.delete(paint); win = null; } });
+      win = ref; let cur = tab || "messages"; let draft = "";
       ref.body.classList.add("cn-app", "cn-pl");
       ref.setTab = (t) => { cur = t; paint(); };
+      const picsKids = () => (nodeAtPath(["Pictures"]) || {}).children || {};
+      function closePicker() { document.querySelectorAll(".cn-tb-pick").forEach((p) => p.remove()); }
+      function openPicker(bub, x) {
+        closePicker();
+        const mine = x.react && x.react.pc;
+        const pk = el(`<div class="cn-tb-pick gbs-skip" role="menu" aria-label="React">${TAP_IDS.map((r) => `<button type="button" role="menuitem" class="${mine === r ? "on" : ""}" data-r="${r}" title="${TAP_LABEL[r]}" aria-label="${TAP_LABEL[r]}">${TAP[r]}</button>`).join("")}${x.photo && x.from === "phone" ? `<button type="button" class="cn-tb-open" title="Open photo">Open</button>` : ""}</div>`);
+        pk.querySelectorAll("[data-r]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); closePicker(); react(x.id, b.dataset.r); }));
+        const op = pk.querySelector(".cn-tb-open"); if (op) op.onclick = (e) => { e.stopPropagation(); closePicker(); const n = picsKids()[x.photo]; if (n) VFS.openNode(x.photo, n); };
+        ref.body.appendChild(pk);
+        const r = bub.getBoundingClientRect(), hr = ref.body.getBoundingClientRect();
+        let left = (x.from === "pc" ? r.right - pk.offsetWidth : r.left) - hr.left; left = Math.max(6, Math.min(left, hr.width - pk.offsetWidth - 6));
+        let top = r.top - hr.top - pk.offsetHeight - 6; if (top < 4) top = r.bottom - hr.top + 6;
+        pk.style.left = left + "px"; pk.style.top = top + "px";
+        setTimeout(() => document.addEventListener("pointerdown", function h(ev) { if (!pk.contains(ev.target)) { closePicker(); document.removeEventListener("pointerdown", h, true); } }, true), 0);
+      }
+      function bubbleEl(x) {
+        const b = el(`<div class="cn-bub ${x.from === "pc" ? "me" : "them"}${x.photo ? " cn-bub-ph" : ""}" tabindex="0" role="button" aria-haspopup="menu"></div>`);
+        b.dataset.id = x.id;
+        if (x.photo) {
+          const n = x.from === "phone" ? picsKids()[x.photo] : null; const src = x.thumb || (n && n.src);
+          if (src) { const im = document.createElement("img"); im.alt = x.photo; im.src = src; b.appendChild(im); } else { const s = document.createElement("span"); s.textContent = x.photo; b.appendChild(s); }
+        } else { const s = document.createElement("span"); s.textContent = x.text; b.appendChild(s); }
+        const pct = st.sending.get(x.id);
+        const t = document.createElement("time"); t.textContent = clock(x.ts) + (pct != null ? " · Sending " + Math.round(pct * 100) + "%" : x.from === "pc" && x.photo && x.delivered ? " · Delivered" : ""); b.appendChild(t);
+        const rs = x.react ? [["pc", x.react.pc], ["phone", x.react.phone]].filter((p) => TAP[p[1]]) : [];
+        if (rs.length) b.appendChild(el(`<span class="cn-tb" aria-label="${rs.map((p) => (p[0] === "pc" ? "You: " : phoneName() + ": ") + TAP_LABEL[p[1]]).join(", ")}">${rs.map((p) => `<i class="cn-tb-i ${p[0] === "pc" ? "mine" : ""}">${TAP[p[1]]}</i>`).join("")}</span>`));
+        b.onclick = () => openPicker(b, x);
+        b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPicker(b, x); } });
+        return b;
+      }
+      async function pickFromPictures() {
+        const kids = picsKids();
+        const names = Object.keys(kids).filter((k) => kids[k] && kids[k].type === "file" && (kids[k].kind === "image" || /\.(jpe?g|png|gif|webp|bmp)$/i.test(k))).slice(0, 60);
+        const body = el(`<div class="cn-picgrid">${names.length ? "" : `<div class="cn-empty">No pictures in your Pictures folder yet.</div>`}</div>`);
+        const chosen = new Set();
+        names.forEach((nm) => { const n = kids[nm]; const t = el(`<button type="button" class="cn-pl-ph" title="${esc(nm)}">${n.src ? `<img alt="" src="${esc(n.src)}">` : `<span>${esc(nm)}</span>`}<i>${esc(nm)}</i></button>`); t.onclick = () => { if (chosen.has(nm)) chosen.delete(nm); else chosen.add(nm); t.classList.toggle("on", chosen.has(nm)); }; body.appendChild(t); });
+        const ok = await dialog({ title: "Send pictures to " + phoneName(), body, buttons: [{ t: "Send", v: true, primary: true }, { t: "Cancel", v: false }], cancel: false });
+        if (!ok || !chosen.size) return;
+        const items = [];
+        for (const nm of chosen) { try { const p = await packNode(nm, kids[nm]); items.push({ name: nm, mime: p.meta.mime, bytes: p.bytes }); } catch (e) { toast("Phone Link", e.message || String(e)); } }
+        sendPhotos(items);
+      }
       function paint() {
         if (!ref.body.isConnected) return;
         const ph = st.phone || {}, d = data();
         if (st.phase !== "paired") { paintPair(); return; }
+        const keepDraft = ref.body.querySelector(".cn-chat-in .cn-input"); if (keepDraft) draft = keepDraft.value;
+        const hadFocus = keepDraft && document.activeElement === keepDraft;
+        closePicker();
         const batt = ph.battery == null ? "Battery not reported by the phone's browser" : Math.round(ph.battery * 100) + "%" + (ph.charging ? " · charging" : "");
         ref.body.innerHTML = `<div class="cn-pl-wrap">
           <aside class="cn-pl-side">
             <div class="cn-pl-phone"><div class="cn-pl-phone-ic">${PHONE_SVG}</div><b class="cn-pl-name"></b><span class="cn-pl-batt"></span><span class="cn-ok-dot">Connected · end-to-end encrypted</span></div>
-            <nav class="cn-tabs" role="tablist">${[["messages", "Messages"], ["photos", "Photos"], ["notifs", "Notifications"], ["calls", "Calls"]].map(([k, n]) => `<button role="tab" data-t="${k}" class="${cur === k ? "on" : ""}" aria-selected="${cur === k}">${n}${k === "notifs" && d.notifs.length ? ` <i class="cn-badge">${d.notifs.length}</i>` : ""}</button>`).join("")}</nav>
+            <nav class="cn-tabs" role="tablist">${[["messages", "Messages"], ["photos", "Photos"], ["screen", "Remote desktop"], ["notifs", "Notifications"], ["calls", "Calls"]].map(([k, n]) => `<button role="tab" data-t="${k}" class="${cur === k ? "on" : ""}" aria-selected="${cur === k}">${n}${k === "notifs" && d.notifs.length ? ` <i class="cn-badge">${d.notifs.length}</i>` : ""}${k === "screen" && st.rd ? ` <i class="cn-badge cn-live">Live</i>` : ""}</button>`).join("")}</nav>
             <button class="cn-btn cn-pl-disc">Disconnect</button>
           </aside>
           <main class="cn-pl-main"></main></div>`;
@@ -253,22 +396,46 @@
         ref.body.querySelectorAll(".cn-tabs [data-t]").forEach((b) => (b.onclick = () => { cur = b.dataset.t; paint(); }));
         ref.body.querySelector(".cn-pl-disc").onclick = () => disconnect();
         const main = ref.body.querySelector(".cn-pl-main");
+        const filePick = (onFiles) => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.multiple = true; i.onchange = () => { const fs = [...(i.files || [])]; if (fs.length) onFiles(fs); }; i.click(); };
         if (cur === "messages") {
-          main.innerHTML = `<div class="cn-chat-h"><b>Phone Link messages</b><span>Text between this PC and the Phone Link page on your phone. These are not SMS — browsers can't read or send your phone's texts.</span></div><div class="cn-chat" role="log" aria-live="polite"></div><form class="cn-chat-in"><input class="cn-input" placeholder="Message your phone" aria-label="Message" maxlength="4000"><button class="cn-btn cn-primary" type="submit">Send</button></form>`;
-          const log = main.querySelector(".cn-chat");
-          d.msgs.slice(-200).forEach((x) => { const b = el(`<div class="cn-bub ${x.from === "pc" ? "me" : "them"}"><span></span><time></time></div>`); b.firstChild.textContent = x.text; b.lastChild.textContent = clock(x.ts); log.appendChild(b); });
-          if (!d.msgs.length) log.appendChild(el(`<div class="cn-empty">No messages yet. Type below, or send one from the phone.</div>`));
-          log.scrollTop = log.scrollHeight;
-          const inp = main.querySelector("input");
-          main.querySelector("form").onsubmit = (e) => { e.preventDefault(); if (sendText(inp.value)) { inp.value = ""; setTimeout(() => { const i2 = ref.body.querySelector(".cn-chat-in input"); if (i2) i2.focus(); }, 0); } };
-          if (!isTouch()) setTimeout(() => inp.focus(), 0);
+          main.innerHTML = `<div class="cn-chat-h"><b>Messages</b><span>Phone Link messages and photos between this PC and your phone. Select a message to react. (Not SMS — browsers can't read or send your phone's texts.)</span></div><div class="cn-chat" role="log" aria-live="polite"></div><form class="cn-chat-in"><button type="button" class="cn-btn cn-attach" title="Send photos" aria-label="Send photos">${CAM_SVG}</button><input class="cn-input" placeholder="Message ${esc(ph.name || "your phone")}" aria-label="Message" maxlength="4000"><button class="cn-btn cn-primary" type="submit">Send</button></form>`;
+          const lg = main.querySelector(".cn-chat");
+          d.msgs.slice(-200).forEach((x) => lg.appendChild(bubbleEl(x)));
+          [...st.incoming.entries()].forEach(([id, f]) => lg.appendChild(el(`<div class="cn-bub them cn-bub-inc"><span>Receiving ${esc(f.name)}… ${f.size ? Math.round(f.got / f.size * 100) : 0}%</span></div>`)));
+          if (!d.msgs.length && !st.incoming.size) lg.appendChild(el(`<div class="cn-empty">No messages yet. Type below, send a photo, or message from the phone.</div>`));
+          lg.scrollTop = lg.scrollHeight;
+          const inp = main.querySelector(".cn-input"); inp.value = draft;
+          main.querySelector("form").onsubmit = (e) => { e.preventDefault(); if (sendText(inp.value)) { draft = ""; inp.value = ""; setTimeout(() => { const i2 = ref.body.querySelector(".cn-chat-in .cn-input"); if (i2) i2.focus(); }, 0); } };
+          main.querySelector(".cn-attach").onclick = () => filePick((fs) => sendFiles(fs));
+          if (hadFocus || !isTouch()) setTimeout(() => { try { inp.focus(); } catch (_) {} }, 0);
         } else if (cur === "photos") {
-          const inc = [...st.incoming.values()];
-          main.innerHTML = `<div class="cn-chat-h"><b>Photos</b><span>Tap “Send photos” on your phone. Each photo is saved to <a href="#" class="cn-link cn-open-pics">Pictures</a> on this PC.</span></div>${inc.map((f) => `<div class="cn-prog"><span>${esc(f.name)}</span><progress max="${f.size || 1}" value="${f.got}"></progress></div>`).join("")}<div class="cn-pl-grid"></div>`;
+          const inc = [...st.incoming.values()], outgoing = [...st.sending.entries()];
+          main.innerHTML = `<div class="cn-chat-h"><b>Photos</b><span>Photos from your phone are saved to <a href="#" class="cn-link cn-open-pics">Pictures</a>. Photos you send appear on the phone, where you can save them.</span></div>
+            <div class="cn-row cn-pl-sendrow"><button class="cn-btn cn-primary cn-send-dev">${CAM_SVG}<span>Send photos to phone</span></button><button class="cn-btn cn-send-pics">From Pictures…</button></div>
+            ${inc.map((f) => `<div class="cn-prog"><span>From phone: ${esc(f.name)}</span><progress max="${f.size || 1}" value="${f.got}"></progress></div>`).join("")}
+            ${outgoing.map(([id, p]) => { const x = d.msgs.find((y) => y.id === id); return `<div class="cn-prog"><span>To phone: ${esc(x ? x.photo : "photo")}</span><progress max="1" value="${p}"></progress></div>`; }).join("")}
+            <h4 class="cn-sub-h">From your phone</h4><div class="cn-pl-grid cn-g-in"></div>
+            <h4 class="cn-sub-h">Sent to your phone</h4><div class="cn-pl-grid cn-g-out"></div>`;
           main.querySelector(".cn-open-pics").onclick = (e) => { e.preventDefault(); openFolder(["Pictures"]); };
-          const grid = main.querySelector(".cn-pl-grid"); const kids = (nodeAtPath(["Pictures"]) || {}).children || {};
-          d.photos.slice(0, 60).forEach((p) => { const n = kids[p.name]; const t = el(`<button class="cn-pl-ph" title="${esc(p.name)}">${n && n.src ? `<img alt="" src="${esc(n.src)}">` : `<span>${esc(p.name)}</span>`}<i>${esc(p.name)}</i></button>`); t.onclick = () => { if (n) VFS.openNode(p.name, n); }; grid.appendChild(t); });
-          if (!d.photos.length && !inc.length) grid.appendChild(el(`<div class="cn-empty">No photos yet.</div>`));
+          main.querySelector(".cn-send-dev").onclick = () => filePick((fs) => sendFiles(fs));
+          main.querySelector(".cn-send-pics").onclick = () => pickFromPictures();
+          const gin = main.querySelector(".cn-g-in"), gout = main.querySelector(".cn-g-out"), kids = picsKids();
+          d.photos.slice(0, 60).forEach((p) => { const n = kids[p.name]; const t = el(`<button class="cn-pl-ph" title="${esc(p.name)}">${n && n.src ? `<img alt="" src="${esc(n.src)}">` : `<span>${esc(p.name)}</span>`}<i>${esc(p.name)}</i></button>`); t.onclick = () => { if (n) VFS.openNode(p.name, n); }; gin.appendChild(t); });
+          if (!d.photos.length) gin.appendChild(el(`<div class="cn-empty">No photos from your phone yet.</div>`));
+          const sent = d.msgs.filter((x) => x.from === "pc" && x.photo).slice(-60).reverse();
+          sent.forEach((x) => gout.appendChild(el(`<div class="cn-pl-ph" title="${esc(x.photo)}">${x.thumb ? `<img alt="" src="${esc(x.thumb)}">` : `<span>${esc(x.photo)}</span>`}<i>${esc(x.photo)}${x.delivered ? " ✓" : ""}</i></div>`)));
+          if (!sent.length) gout.appendChild(el(`<div class="cn-empty">Nothing sent yet.</div>`));
+        } else if (cur === "screen") {
+          if (st.rd) {
+            main.innerHTML = `<div class="cn-chat-h"><b>Remote desktop</b><span>${esc(ph.name || "Your phone")} is viewing this PC.</span></div><div class="cn-rd-live"><span class="cn-banner-dot"></span><div><b>Sharing this PC with ${esc(ph.name || "your phone")}</b><span>It has to ask before it can control your mouse and keyboard. The bar at the top of the screen shows who's connected, and lets you take back control or stop.</span></div></div><button class="cn-btn cn-danger cn-rd-stop">Stop sharing</button>`;
+            main.querySelector(".cn-rd-stop").onclick = () => stopScreen();
+          } else {
+            main.innerHTML = `<div class="cn-chat-h"><b>Remote desktop</b><span>See and use this PC from your phone, over the same encrypted Phone Link connection.</span></div>
+              <ol class="cn-steps"><li>Select <b>Show this PC on my phone</b>, or tap <b>PC screen</b> on your phone (you'll be asked to allow it here).</li><li>Your phone shows this PC's screen live.</li><li>To use the mouse and keyboard from the phone, it asks for control — you approve that separately.</li></ol>
+              <button class="cn-btn cn-primary cn-rd-go">Show this PC on my phone</button>
+              <div class="cn-note">Showing your phone's screen on this PC isn't possible: phone browsers can't capture their own screen.</div>`;
+            main.querySelector(".cn-rd-go").onclick = () => startScreen("pc");
+          }
         } else if (cur === "notifs") {
           main.innerHTML = `<div class="cn-chat-h"><b>Notifications</b><span>Notifications sent from the Phone Link page on your phone. Other apps' notifications stay on the phone — a web page can't read them.</span></div><div class="cn-nlist"></div>${d.notifs.length ? `<button class="cn-btn cn-clear">Clear all</button>` : ""}`;
           const L = main.querySelector(".cn-nlist");
@@ -276,7 +443,7 @@
           if (!d.notifs.length) L.appendChild(el(`<div class="cn-empty">No notifications.</div>`));
           const c = main.querySelector(".cn-clear"); if (c) c.onclick = () => { d.notifs = []; save(); paint(); };
         } else {
-          main.innerHTML = `<div class="cn-chat-h"><b>Calls</b><span>Not available.</span></div><div class="cn-note">Calling needs a Bluetooth link to your phone's cellular radio, which web browsers can't use. Phone Link here does photos, Phone Link messages and notifications from the phone page — honestly, nothing more.</div>`;
+          main.innerHTML = `<div class="cn-chat-h"><b>Calls</b><span>Not available.</span></div><div class="cn-note">Calling needs a Bluetooth link to your phone's cellular radio, which web browsers can't use. Phone Link here does messages, photos both ways, reactions, notifications and remote desktop.</div>`;
         }
       }
       function paintPair() {
@@ -284,9 +451,9 @@
         ref.body.innerHTML = `<div class="cn-pair">
           <div class="cn-pair-l">
             <h2>Link your phone</h2>
-            <ol class="cn-steps"><li>On your phone, open the camera and scan this QR code (or visit the link below).</li><li>The Phone Link page opens in the phone's browser and connects directly to this PC.</li><li>Check that both screens show the same 6-digit number, then select <b>Yes, they match</b>.</li></ol>
+            <ol class="cn-steps"><li>On your phone, open the camera and scan this QR code (or visit the link below).</li><li>The Phone Link app opens in the phone's browser and connects directly to this PC. Add it to your home screen to reconnect with one tap next time.</li><li>Check that both screens show the same 6-digit number, then select <b>Yes, they match</b>.</li></ol>
             <div class="cn-pair-status" role="status"></div>
-            <div class="cn-privacy">${LOCK_SVG}<span>End-to-end encrypted. The phone connects straight to this PC (WebRTC); PeerJS's free broker only introduces the two devices and never sees your photos or messages. Nothing is stored online.</span></div>
+            <div class="cn-privacy">${LOCK_SVG}<span>End-to-end encrypted. The phone connects straight to this PC (WebRTC); PeerJS's free broker only introduces the two devices and never sees your photos, messages or screen. Nothing is stored online.</span></div>
           </div>
           <div class="cn-pair-r"><div class="cn-qr"></div><div class="cn-code-row">Code <b class="cn-code"></b></div><a class="cn-link cn-url" target="_blank" rel="noopener"></a></div></div>`;
         const status = ref.body.querySelector(".cn-pair-status"), qr = ref.body.querySelector(".cn-qr");
@@ -297,19 +464,32 @@
         } else qr.innerHTML = `<div class="cn-spin"></div>`;
         if (st.phase === "confirm" && st.sess) {
           status.innerHTML = `<div class="cn-confirm"><div>Does <b></b> show this number?</div>${sasHtml(st.sess.sas)}<div class="cn-row"><button class="cn-btn cn-primary" data-a="yes">Yes, they match</button><button class="cn-btn" data-a="no">No</button></div></div>`;
-          status.querySelector("b").textContent = st.phone && st.phone.name || "your phone";
+          status.querySelector("b").textContent = phoneName();
           status.querySelector('[data-a="yes"]').onclick = () => confirm(true);
           status.querySelector('[data-a="no"]').onclick = () => confirm(false);
         } else if (st.phase === "error") status.innerHTML = `<div class="cn-err">${esc(st.err)}</div><button class="cn-btn cn-retry">Try again</button>`;
         else status.innerHTML = `<div class="cn-wait"><span class="cn-spin sm"></span>${st.phase === "starting" ? "Getting a pairing code…" : "Waiting for your phone…"}</div>${st.err ? `<div class="cn-warn">${esc(st.err)}</div>` : ""}${data().last ? `<div class="cn-sub">Last paired: ${esc(data().last.name)} · ${new Date(data().last.at).toLocaleDateString()}</div>` : ""}`;
-        const r = status.querySelector(".cn-retry"); if (r) r.onclick = () => { stop(); st.phase = "off"; start(); };
+        const r = status.querySelector(".cn-retry"); if (r) r.onclick = () => { stop(); data().code = null; st.phase = "off"; start(); };
       }
       listeners.add(paint);
       paint();
       if (!st.hostRef && st.phase !== "paired") start();
     }
-    return { open, start, stop, disconnect, sendText, confirm, state: () => st, on: (f) => { listeners.add(f); return () => listeners.delete(f); }, phoneUrl };
+    return { open, start, stop, disconnect, sendText, sendPhotos, react, startScreen, stopScreen, confirm, state: () => st, on: (f) => { listeners.add(f); return () => listeners.delete(f); }, phoneUrl };
   })();
+
+  // Tapback reactions (like Messages) — drawn as SVG so they look the same everywhere.
+  const TAP_IDS = ["heart", "like", "dislike", "laugh", "emph", "question"];
+  const TAP_LABEL = { heart: "Loved", like: "Liked", dislike: "Disliked", laugh: "Laughed at", emph: "Emphasized", question: "Questioned" };
+  const TAP = {
+    heart: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20.5C5.5 16 2.5 12.4 2.5 8.7 2.5 6 4.6 4 7.2 4c1.9 0 3.6 1 4.8 2.7C13.2 5 14.9 4 16.8 4c2.6 0 4.7 2 4.7 4.7 0 3.7-3 7.3-9.5 11.8z" fill="#ff4d6d"/></svg>`,
+    like: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 10v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zm2 0 4.2-7.1a1.6 1.6 0 0 1 2.9 1.2L15 9h5a2 2 0 0 1 2 2.3l-1.3 7.2A2 2 0 0 1 18.7 20H9z" fill="currentColor"/></svg>`,
+    dislike: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M17 14V4h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm-2 0-4.2 7.1a1.6 1.6 0 0 1-2.9-1.2L9 15H4a2 2 0 0 1-2-2.3l1.3-7.2A2 2 0 0 1 5.3 4H15z" fill="currentColor"/></svg>`,
+    laugh: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><text x="12" y="11" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text><text x="12" y="20" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text></svg>`,
+    emph: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 3h3l-.6 12H8.6zM13 3h3l-.6 12h-1.8z" fill="#ff6b3d"/><circle cx="9.5" cy="19" r="1.7" fill="#ff6b3d"/><circle cx="14.5" cy="19" r="1.7" fill="#ff6b3d"/></svg>`,
+    question: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8.5 8.5a3.5 3.5 0 1 1 5.4 2.9c-1.1.8-1.9 1.5-1.9 3V15" fill="none" stroke="#3b82f6" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="19.5" r="1.6" fill="#3b82f6"/></svg>`,
+  };
+  const CAM_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>`;
 
   const PHONE_SVG = `<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><rect x="13" y="4" width="22" height="40" rx="4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M21 9h6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="38" r="1.8" fill="currentColor"/></svg>`;
   const LOCK_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
@@ -610,7 +790,7 @@
         if (why !== "closed") { sess.send({ t: "share-stop" }); setTimeout(() => sess.close(), 300); }
         if (active === s) active = null;
         log("Information", "QuickAssist", 404, "Screen sharing ended (" + why + ").");
-        if (why === "helper" || why === "closed") { toast.ic = "quickassist"; toast("Quick Assist", "Screen sharing with " + who + " has ended."); }
+        if (why === "helper" || why === "closed") { toast.ic = o.icon || "quickassist"; toast(o.app || "Quick Assist", "Screen sharing with " + who + " has ended."); }
         o.onStop && o.onStop(why);
       }
       sess.onClose(() => stop("closed"));
@@ -989,7 +1169,7 @@
       const add = (o) => { if (!Catalog.storeApps.find((a) => a.id === o.id)) Catalog.storeApps.push(o); (window.EXTRA_DEFAULT_APPS = window.EXTRA_DEFAULT_APPS || []).push(o.id); };
       // the old decorative "Phone Link" listing becomes the real app
       const old = Catalog.storeApps.find((a) => a.name === "Phone Link" && a.decorative);
-      if (old) { old.builtin = "phonelink"; delete old.decorative; old.desc = "Pair your phone with a QR code: photos to Pictures, Phone Link messages and notifications. End-to-end encrypted."; if (Icon.alias) Icon.alias(old.id, "phonelink"); }
+      if (old) { (window.EXTRA_DEFAULT_APPS = window.EXTRA_DEFAULT_APPS || []).push(old.id); old.builtin = "phonelink"; delete old.decorative; old.desc = "Pair your phone with a QR code: messages with reactions, photos both ways, notifications and remote desktop. End-to-end encrypted."; if (Icon.alias) Icon.alias(old.id, "phonelink"); }
       else add({ id: "phonelink", name: "Phone Link", cat: "System", price: 0, builtin: "phonelink", desc: "Pair your phone with a QR code: photos, Phone Link messages and notifications." });
       add({ id: "nearbyshare", name: "Nearby Sharing", cat: "System", price: 0, builtin: "nearbyshare", desc: "Send files to another Windows 12 device by its 5-character code. End-to-end encrypted." });
       add({ id: "quickassist", name: "Quick Assist", cat: "System", price: 0, builtin: "quickassist", desc: "Get or give help by sharing a screen, with optional remote control." });

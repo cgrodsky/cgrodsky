@@ -289,3 +289,38 @@ body.dark .pr-badge-sim { color: #fce100; background: rgba(252,225,0,.12); }
   .cn-tabs button { min-height: 44px; }
   .vc-ib { width: 40px; height: 40px; }
 }
+
+/* Phone Link: photos in the thread, tapback reactions, remote desktop tab */
+.cn-bub { position: relative; cursor: pointer; }
+.cn-bub:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cn-bub-ph { padding: 4px; background: transparent !important; }
+.cn-bub-ph img { display: block; max-width: 220px; max-height: 220px; border-radius: 12px; }
+.cn-bub-ph time { padding: 0 6px; color: var(--text-dim); }
+.cn-bub-inc { opacity: .75; font-style: italic; }
+.cn-tb { position: absolute; top: -12px; display: flex; gap: 2px; }
+.cn-bub.me .cn-tb { left: -10px; }
+.cn-bub.them .cn-tb { right: -10px; }
+.cn-tb-i { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-elev, #fff); color: #555; box-shadow: 0 1px 4px rgba(0,0,0,.25); border: 2px solid var(--window-bg, #f3f3f3); font-style: normal; }
+.cn-tb-i.mine { background: var(--accent); color: #fff; }
+.cn-tb-i svg { width: 14px; height: 14px; }
+.cn-chat { padding-top: 16px; }
+.cn-tb-pick { position: absolute; z-index: 20; display: flex; gap: 2px; padding: 5px; border-radius: 999px; background: var(--bg-elev, #fff); box-shadow: 0 8px 26px rgba(0,0,0,.28); border: 1px solid rgba(127,127,127,.2); }
+.cn-tb-pick button { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: #555; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.cn-tb-pick button:hover { background: rgba(127,127,127,.15); }
+.cn-tb-pick button.on { background: var(--accent); color: #fff; }
+.cn-tb-pick svg { width: 20px; height: 20px; }
+.cn-tb-pick .cn-tb-open { width: auto; padding: 0 12px; border-radius: 999px; font: 600 12px "Segoe UI", system-ui, sans-serif; color: inherit; }
+body.dark .cn-tb-i, body.dark .cn-tb-pick button { color: #ddd; }
+.cn-attach { display: inline-flex; align-items: center; justify-content: center; padding: 0 10px; }
+.cn-pl-sendrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
+.cn-pl-sendrow .cn-btn { display: inline-flex; align-items: center; gap: 7px; }
+.cn-sub-h { margin: 10px 0 2px; font-size: .85rem; color: var(--text-dim); font-weight: 600; }
+.cn-picgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 50vh; overflow: auto; min-width: min(460px, 80vw); }
+.cn-picgrid .cn-pl-ph.on { outline: 3px solid var(--accent); outline-offset: -3px; }
+.cn-badge.cn-live { background: #d13438; color: #fff; }
+.cn-rd-live { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 10px; background: rgba(209,52,56,.08); border: 1px solid rgba(209,52,56,.3); }
+.cn-rd-live > div { display: flex; flex-direction: column; gap: 3px; }
+.cn-rd-live span:not(.cn-banner-dot) { font-size: .85rem; color: var(--text-dim); }
+.cn-pl-main .cn-rd-go, .cn-pl-main .cn-rd-stop { align-self: flex-start; }
+.cn-bub-ph img { min-width: 140px; width: auto; object-fit: cover; }
+.cn-bub-ph > span { display: inline-block; padding: 8px 12px; border-radius: 12px; background: rgba(127,127,127,.16); color: var(--text, inherit); }

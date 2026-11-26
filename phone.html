@@ -5,23 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
 <meta name="referrer" content="no-referrer" />
-<title>Link to Windows 12</title>
-<!-- Phone Link companion page. Opened on the phone from the QR code in Windows 12's Phone Link app
-     (phone.html#CODE). It connects straight to that PC over WebRTC (PeerJS's free broker only
-     introduces the two devices), agrees an end-to-end key and shows a 6-digit number to compare.
-     No analytics, no accounts, no other network requests. -->
+<meta name="theme-color" content="#0067c0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Phone Link" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<link rel="manifest" href="phone.webmanifest" />
+<link rel="apple-touch-icon" href="assets/phonelink.png" />
+<link rel="icon" href="assets/phonelink.png" />
+<title>Phone Link</title>
+<!-- Phone Link companion app. Opened on the phone from the QR code in Windows 12's Phone Link
+     (phone.html#CODE), or from the home screen once added. It connects straight to that PC over
+     WebRTC (PeerJS's free broker only introduces the two devices), agrees an end-to-end key and
+     shows a 6-digit number to compare. Messages with reactions, photos both ways, notifications to
+     the PC, and remote desktop (view, and with permission control, the PC). No analytics, no
+     accounts, no other network requests. -->
 <style>
   :root { --bg: #f3f3f3; --card: #fff; --text: #1b1b1b; --dim: #5d5d5d; --line: #e3e3e3; --accent: #0067c0; --me: #0067c0; --them: #e9e9ef; --ok: #0f7b0f; --bad: #c42b1c; }
   @media (prefers-color-scheme: dark) { :root { --bg: #1c1c1c; --card: #2b2b2b; --text: #f3f3f3; --dim: #b3b3b3; --line: #3c3c3c; --accent: #4cc2ff; --me: #0a5aa8; --them: #3a3a3a; --ok: #6ccb5f; --bad: #ff99a4; } }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; }
-  body { font: 16px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); -webkit-text-size-adjust: 100%; }
+  body { font: 16px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); -webkit-text-size-adjust: 100%; }
   header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
-  header .logo { width: 26px; height: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-  header .logo i { background: linear-gradient(135deg, #2f9be0, #6a5cff); border-radius: 2px; }
+  header img { width: 28px; height: 28px; border-radius: 7px; }
   header h1 { font-size: 1.05rem; margin: 0; flex: 1; }
   header .pc { font-size: .8rem; color: var(--dim); text-align: right; }
-  main { flex: 1; overflow: auto; padding: 16px; }
+  main { flex: 1; overflow: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
   .card h2 { font-size: 1.1rem; margin: 0 0 8px; }
   .dim { color: var(--dim); font-size: .88rem; }
@@ -31,37 +40,67 @@
   @media (prefers-color-scheme: dark) { button.primary, .btn.primary { color: #000; } }
   button:disabled { opacity: .5; }
   input, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); min-height: 44px; }
-  .row { display: flex; gap: 8px; align-items: center; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .row > input { flex: 1; }
   .tabs { display: flex; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-  .tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 10px 4px; font-size: .85rem; color: var(--dim); }
-  .tabs button.on { color: var(--accent); font-weight: 600; box-shadow: inset 0 3px 0 var(--accent); }
-  .chat { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
-  .bub { max-width: 80%; padding: 8px 12px; border-radius: 16px; white-space: pre-wrap; word-wrap: break-word; }
+  .tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 8px 2px 6px; font-size: .74rem; color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 52px; }
+  .tabs button svg { width: 22px; height: 22px; }
+  .tabs button.on { color: var(--accent); font-weight: 600; }
+  .chat { display: flex; flex-direction: column; gap: 10px; padding: 14px 4px 8px; }
+  .bub { position: relative; max-width: 80%; padding: 8px 12px; border-radius: 16px; white-space: pre-wrap; word-wrap: break-word; cursor: pointer; user-select: none; -webkit-user-select: none; }
   .bub.me { align-self: flex-end; background: var(--me); color: #fff; border-bottom-right-radius: 4px; }
   .bub.them { align-self: flex-start; background: var(--them); border-bottom-left-radius: 4px; }
-  .bub time { display: block; font-size: .7rem; opacity: .7; margin-top: 2px; }
-  .compose { display: flex; gap: 8px; padding: 10px 16px; background: var(--card); border-top: 1px solid var(--line); }
-  .compose input { flex: 1; }
+  .bub.ph { padding: 3px; background: transparent !important; }
+  .bub.ph img { display: block; min-width: 150px; max-width: 230px; max-height: 260px; object-fit: cover; border-radius: 14px; background: var(--them); }
+  .bub.ph time { padding: 0 6px; color: var(--dim); }
+  .bub time { display: block; font-size: .7rem; opacity: .75; margin-top: 2px; }
+  .tb { position: absolute; top: -13px; display: flex; gap: 2px; }
+  .bub.me .tb { left: -10px; } .bub.them .tb { right: -10px; }
+  .tb i { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--card); color: var(--dim); border: 2px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,.25); font-style: normal; }
+  .tb i.mine { background: var(--accent); color: #fff; }
+  .tb svg { width: 15px; height: 15px; }
+  .pick { position: fixed; z-index: 50; display: flex; gap: 2px; padding: 6px; border-radius: 999px; background: var(--card); box-shadow: 0 10px 30px rgba(0,0,0,.3); border: 1px solid var(--line); }
+  .pick button { width: 42px; height: 42px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--dim); display: inline-flex; align-items: center; justify-content: center; }
+  .pick button.on { background: var(--accent); color: #fff; }
+  .pick button svg { width: 22px; height: 22px; }
+  .pick .sv { width: auto; padding: 0 12px; border-radius: 999px; font-size: .82rem; font-weight: 600; color: var(--text); }
+  .compose { display: flex; gap: 8px; padding: 10px 12px; background: var(--card); border-top: 1px solid var(--line); align-items: center; }
+  .compose input[type=text] { flex: 1; }
+  .compose .att { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   .status { display: flex; gap: 10px; align-items: center; }
   .spin { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; flex: none; }
   @keyframes sp { to { transform: rotate(360deg); } }
   .err { color: var(--bad); }
-  .ok { color: var(--ok); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin-top: 12px; }
   .grid figure { margin: 0; position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--them); }
   .grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .grid figcaption { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; padding: 2px 4px; background: rgba(0,0,0,.55); color: #fff; }
+  .grid figcaption { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; padding: 2px 4px; background: rgba(0,0,0,.55); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid a { color: inherit; }
   progress { width: 100%; height: 6px; accent-color: var(--accent); }
   .hidden { display: none !important; }
   .note { font-size: .8rem; color: var(--dim); margin-top: 10px; }
   label.f { display: block; margin: 10px 0 4px; font-size: .88rem; color: var(--dim); }
   .file-btn { display: block; text-align: center; }
   .file-btn input { display: none; }
+  h3.sub { font-size: .9rem; margin: 18px 0 0; color: var(--dim); }
+  /* PC screen viewer */
+  #vScreen { padding: 0; }
+  .vbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .vbar .st { flex: 1 1 100%; font-size: .85rem; color: var(--dim); }
+  .vbar button { padding: 8px 12px; min-height: 40px; font-size: .88rem; }
+  .stage { position: relative; background: #000; touch-action: none; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+  .stage canvas { display: block; width: 100%; height: auto; }
+  .stage.zoom { overflow: auto; touch-action: pan-x pan-y; display: block; }
+  .stage.zoom canvas { width: 200%; }
+  .stage .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #ddd; font-size: .95rem; }
+  .stage.ctl { box-shadow: inset 0 0 0 3px #ff4b4b; }
+  #kbin { position: absolute; left: -9999px; top: 0; width: 10px; opacity: 0; }
+  .install { display: flex; gap: 12px; align-items: center; }
+  .install img { width: 44px; height: 44px; border-radius: 10px; }
 </style>
 </head>
 <body>
-  <header><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span><h1>Link to Windows 12</h1><span class="pc" id="pcName"></span></header>
+  <header><img src="assets/phonelink.png" alt="" /><h1>Phone Link</h1><span class="pc" id="pcName"></span></header>
   <main id="main">
     <section id="vConnect" class="card">
       <h2>Connect to your PC</h2>
@@ -70,7 +109,11 @@
       <label class="f" for="devName">This phone's name (shown on the PC)</label>
       <input id="devName" maxlength="40" autocomplete="off">
       <div class="status" id="st" role="status" aria-live="polite"></div>
-      <p class="note">End-to-end encrypted. Your phone connects directly to the PC (WebRTC). PeerJS's free broker only introduces the two devices; it never sees your photos or messages. Nothing is uploaded or stored anywhere else.</p>
+      <p class="note">End-to-end encrypted. Your phone connects directly to the PC (WebRTC). PeerJS's free broker only introduces the two devices; it never sees your photos, messages or screen. Nothing is uploaded or stored anywhere else.</p>
+    </section>
+    <section id="vInstall" class="card hidden">
+      <div class="install"><img src="assets/phonelink.png" alt=""><div><b>Add Phone Link to your home screen</b><div class="dim" id="instTxt"></div></div></div>
+      <div class="row" style="margin-top:10px"><button class="primary hidden" id="instBtn">Install</button></div>
     </section>
     <section id="vConfirm" class="card hidden">
       <h2>Check the number</h2>
@@ -79,15 +122,21 @@
       <div class="status"><span class="spin"></span><span>Waiting for the PC…</span></div>
     </section>
     <section id="vMsgs" class="hidden">
-      <p class="dim" style="margin-top:0">Phone Link messages — text between this page and your PC. These aren't SMS.</p>
+      <p class="dim" style="margin-top:0">Messages and photos between this phone and your PC. Tap a message to react. These aren't SMS.</p>
       <div class="chat" id="chat" role="log" aria-live="polite"></div>
     </section>
     <section id="vPhotos" class="card hidden">
-      <h2>Send photos</h2>
-      <p class="dim">Pick photos and they're saved to <b>Pictures</b> on your PC.</p>
-      <label class="btn primary file-btn">Choose photos<input id="pick" type="file" accept="image/*" multiple></label>
+      <h2>Photos</h2>
+      <p class="dim">Send photos to <b>Pictures</b> on your PC. Photos your PC sends show up here and in Messages — tap one to save it.</p>
+      <label class="btn primary file-btn">Send photos to PC<input id="pick" type="file" accept="image/*" multiple></label>
       <div id="prog"></div>
-      <div class="grid" id="sent"></div>
+      <h3 class="sub">From your PC</h3><div class="grid" id="recv"></div><p class="dim hidden" id="recvNone">Nothing yet.</p>
+      <h3 class="sub">Sent to your PC</h3><div class="grid" id="sent"></div>
+    </section>
+    <section id="vScreen" class="hidden">
+      <div class="vbar"><span class="st" id="vst">See and use your PC from here.</span><button class="primary" id="vGo">View my PC</button><button id="vCtl" class="hidden">Request control</button><button id="vKbd" class="hidden">Keyboard</button><button id="vZoom" class="hidden">Zoom</button><button id="vStop" class="hidden">Stop</button></div>
+      <div class="stage" id="stage"><canvas id="cv"></canvas><div class="msg" id="vmsg">Tap <b>&nbsp;View my PC&nbsp;</b> — your PC will ask you to allow it.</div><input id="kbin" aria-label="Type on the PC" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+      <p class="note" style="padding:0 16px">With control: tap to click, drag to move, press and hold to right-click. Turn your phone sideways for a bigger view.</p>
     </section>
     <section id="vNotify" class="card hidden">
       <h2>Send a notification</h2>
@@ -100,16 +149,42 @@
       <button id="disc">Disconnect</button>
     </section>
   </main>
-  <form class="compose hidden" id="compose"><input id="msg" placeholder="Message your PC" aria-label="Message" maxlength="4000" autocomplete="off"><button class="primary" type="submit">Send</button></form>
-  <nav class="tabs hidden" id="tabs" role="tablist"><button data-v="vMsgs" class="on" role="tab">Messages</button><button data-v="vPhotos" role="tab">Photos</button><button data-v="vNotify" role="tab">Notify PC</button></nav>
+  <form class="compose hidden" id="compose"><button type="button" class="att" id="att" aria-label="Send photos" title="Send photos"></button><input id="attIn" type="file" accept="image/*" multiple hidden><input type="text" id="msg" placeholder="Message your PC" aria-label="Message" maxlength="4000" autocomplete="off"><button class="primary" type="submit">Send</button></form>
+  <nav class="tabs hidden" id="tabs" role="tablist"></nav>
 <script src="js/p2p12.js"></script>
 <script>
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const show = (id) => ["vConnect", "vConfirm", "vMsgs", "vPhotos", "vNotify"].forEach((v) => $(v).classList.toggle("hidden", v !== id));
+  const VIEWS = ["vConnect", "vConfirm", "vMsgs", "vPhotos", "vScreen", "vNotify"];
+  const show = (id) => VIEWS.forEach((v) => $(v).classList.toggle("hidden", v !== id));
   const st = $("st");
-  const status = (html, spin) => { st.innerHTML = (spin ? '<span class="spin"></span>' : "") + "<span></span>"; st.lastChild.textContent = html; };
+  const status = (txt, spin) => { st.innerHTML = (spin ? '<span class="spin"></span>' : "") + "<span></span>"; st.lastChild.textContent = txt; };
+  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const clock = (ts) => new Date(ts || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  // ---- icons (SVG, never emoji) ----
+  const I = {
+    msg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 8"/></svg>',
+    pc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+    cam: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>',
+  };
+  const TAP_IDS = ["heart", "like", "dislike", "laugh", "emph", "question"];
+  const TAP_LABEL = { heart: "Love", like: "Like", dislike: "Dislike", laugh: "Ha ha", emph: "Emphasize", question: "Question" };
+  const TAP = {
+    heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5C5.5 16 2.5 12.4 2.5 8.7 2.5 6 4.6 4 7.2 4c1.9 0 3.6 1 4.8 2.7C13.2 5 14.9 4 16.8 4c2.6 0 4.7 2 4.7 4.7 0 3.7-3 7.3-9.5 11.8z" fill="#ff4d6d"/></svg>',
+    like: '<svg viewBox="0 0 24 24"><path d="M7 10v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zm2 0 4.2-7.1a1.6 1.6 0 0 1 2.9 1.2L15 9h5a2 2 0 0 1 2 2.3l-1.3 7.2A2 2 0 0 1 18.7 20H9z" fill="currentColor"/></svg>',
+    dislike: '<svg viewBox="0 0 24 24"><path d="M17 14V4h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm-2 0-4.2 7.1a1.6 1.6 0 0 1-2.9-1.2L9 15H4a2 2 0 0 1-2-2.3l1.3-7.2A2 2 0 0 1 5.3 4H15z" fill="currentColor"/></svg>',
+    laugh: '<svg viewBox="0 0 24 24"><text x="12" y="11" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text><text x="12" y="20" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text></svg>',
+    emph: '<svg viewBox="0 0 24 24"><path d="M8 3h3l-.6 12H8.6zM13 3h3l-.6 12h-1.8z" fill="#ff6b3d"/><circle cx="9.5" cy="19" r="1.7" fill="#ff6b3d"/><circle cx="14.5" cy="19" r="1.7" fill="#ff6b3d"/></svg>',
+    question: '<svg viewBox="0 0 24 24"><path d="M8.5 8.5a3.5 3.5 0 1 1 5.4 2.9c-1.1.8-1.9 1.5-1.9 3V15" fill="none" stroke="#3b82f6" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="19.5" r="1.6" fill="#3b82f6"/></svg>',
+  };
+  $("att").innerHTML = I.cam;
+  const TABS = [["vMsgs", "Messages", I.msg], ["vPhotos", "Photos", I.photo], ["vScreen", "PC screen", I.pc], ["vNotify", "Notify PC", I.bell]];
+  $("tabs").innerHTML = TABS.map(([v, n, ic]) => `<button data-v="${v}" role="tab">${ic}<span>${n}</span></button>`).join("");
+
   function guessName() {
     const ua = navigator.userAgent;
     if (/iPhone/.test(ua)) return "iPhone";
@@ -123,10 +198,25 @@
   $("devName").value = LS.get("w12phone_name") || guessName();
   $("devName").addEventListener("change", () => LS.set("w12phone_name", $("devName").value.trim()));
   const hashCode = P2P12.normCode(decodeURIComponent((location.hash || "").slice(1)));
-  $("code").value = hashCode;
+  const savedCode = P2P12.normCode(LS.get("w12phone_code") || "");
+  $("code").value = hashCode || savedCode;
   $("code").addEventListener("input", () => { $("code").value = P2P12.normCode($("code").value); });
 
+  // ---- install as an app ----
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; paintInstall(); });
+  function paintInstall() {
+    if (standalone) { $("vInstall").classList.add("hidden"); return; }
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
+    $("instTxt").textContent = installEvt ? "Install it like an app and reconnect to your PC with one tap." : ios ? "In Safari, tap Share, then Add to Home Screen. It opens like an app and reconnects to your PC with one tap." : "Use your browser's menu → Install app / Add to Home screen.";
+    $("instBtn").classList.toggle("hidden", !installEvt);
+    $("vInstall").classList.toggle("hidden", paired || $("vConnect").classList.contains("hidden"));
+  }
+  $("instBtn").onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch (_) {} installEvt = null; paintInstall(); };
+
   let sess = null, paired = false, battery = null;
+  const msgs = new Map(); // id → { from, react: { pc, phone }, el }
   async function connect() {
     const code = P2P12.normCode($("code").value);
     if (!P2P12.validCode(code)) { status("Type the 5-character code shown in Phone Link on your PC."); return; }
@@ -134,36 +224,108 @@
     const name = ($("devName").value.trim() || guessName()).slice(0, 40);
     try {
       sess = await P2P12.join("pl", code, { name, role: "phone", info: { platform: navigator.platform || "", touch: true } });
-    } catch (e) { status(e.message || String(e)); $("go").disabled = false; return; }
-    $("sas").textContent = sess.sas; show("vConfirm");
+    } catch (e) { status((e.message || String(e)) + (code === savedCode && !hashCode ? " Make sure Phone Link is open on your PC." : "")); $("go").disabled = false; return; }
+    $("sas").textContent = sess.sas; show("vConfirm"); $("vInstall").classList.add("hidden");
+    LS.set("w12phone_code", code);
     sess.onMessage(onMsg);
     sess.onClose(() => {
-      const was = paired; paired = false; sess = null;
-      $("tabs").classList.add("hidden"); $("compose").classList.add("hidden"); show("vConnect"); $("go").disabled = false;
+      const was = paired; paired = false; sess = null; viewerEnd("The connection to your PC ended.");
+      $("tabs").classList.add("hidden"); $("compose").classList.add("hidden"); show("vConnect"); $("go").disabled = false; paintInstall();
       status(was ? "Disconnected from your PC. Select Connect to link again." : "The PC closed the connection.");
     });
   }
-  function onMsg(m) {
+  function onMsg(m, bytes) {
+    if (m.rd) { viewerMsg(m, bytes); return; }
     if (m.t === "paired") {
       paired = true; $("pcName").textContent = (m.pc || "PC") + (m.user ? " · " + m.user : "");
       $("tabs").classList.remove("hidden"); tab("vMsgs"); sendInfo();
     } else if (m.t === "reject" || m.t === "busy") {
       status(m.t === "busy" ? "Another phone is already linked to this PC." : "The PC said the numbers didn't match. Try again.");
       show("vConnect"); $("go").disabled = false; try { sess && sess.close(); } catch (_) {}
-    } else if (m.t === "msg" && paired) { bubble(String(m.text || ""), "them"); if (navigator.vibrate) try { navigator.vibrate(60); } catch (_) {} }
-    else if (m.t === "photo-saved") { const f = document.querySelector('[data-pid="' + m.id + '"] figcaption'); if (f) f.textContent = "✓ " + m.name; }
+    } else if (!paired) return;
+    else if (m.t === "msg") { bubble({ id: String(m.id), from: "pc", text: String(m.text || "") }); buzz(); }
+    else if (m.t === "react") { const x = msgs.get(String(m.id)); if (x) { if (TAP[m.r]) x.react.pc = m.r; else delete x.react.pc; paintReact(x); if (m.r) buzz(); } }
+    else if (m.t === "photo-saved") { const f = document.querySelector('#sent [data-pid="' + m.id + '"] figcaption'); if (f) f.textContent = "Saved · " + m.name; const x = msgs.get(String(m.id)); if (x && x.timeEl) x.timeEl.textContent = clock(x.ts) + " · Saved to Pictures"; }
+    else if (m.t === "photo-begin") { inc.set(m.id, { name: String(m.name || "photo.jpg"), mime: m.mime || "image/jpeg", size: m.size || 0, parts: [], got: 0, bar: progBar("From PC: " + (m.name || "photo")) }); }
+    else if (m.t === "photo-chunk" && bytes) { const f = inc.get(m.id); if (!f) return; f.parts.push(bytes); f.got += bytes.length; if (f.size) f.bar.value = f.got / f.size; }
+    else if (m.t === "photo-end") {
+      const f = inc.get(m.id); if (!f) return; inc.delete(m.id); f.bar.parentNode && f.bar.parentNode.remove();
+      const blob = new Blob(f.parts, { type: f.mime }), url = URL.createObjectURL(blob);
+      bubble({ id: String(m.id), from: "pc", photo: { url, name: f.name } }); addRecv(url, f.name); buzz();
+      sess && sess.send({ t: "photo-got", id: m.id });
+    }
+    else if (m.t === "rd-end") viewerEnd("Your PC stopped sharing.");
     else if (m.t === "bye") { try { sess.close(); } catch (_) {} }
   }
-  function bubble(text, who) {
-    const b = document.createElement("div"); b.className = "bub " + who; b.textContent = text;
-    const t = document.createElement("time"); t.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); b.appendChild(t);
+  const inc = new Map();
+  const buzz = () => { if (navigator.vibrate) try { navigator.vibrate(40); } catch (_) {} };
+  function progBar(label) { const w = document.createElement("div"); w.className = "dim"; w.textContent = label; const b = document.createElement("progress"); b.max = 1; b.value = 0; w.appendChild(b); $("prog").appendChild(w); return b; }
+
+  // ---- messages, photo bubbles, reactions ----
+  function bubble(o) {
+    const x = { id: o.id, from: o.from, react: {}, ts: Date.now(), photo: o.photo };
+    const b = document.createElement("div"); b.className = "bub " + (o.from === "me" ? "me" : "them") + (o.photo ? " ph" : ""); b.dataset.id = o.id;
+    b.setAttribute("role", "button"); b.tabIndex = 0;
+    if (o.photo) { const im = document.createElement("img"); im.alt = o.photo.name || "Photo"; im.src = o.photo.url; b.appendChild(im); }
+    else { const s = document.createElement("span"); s.textContent = o.text; b.appendChild(s); }
+    const t = document.createElement("time"); t.textContent = clock(x.ts) + (o.note ? " · " + o.note : ""); b.appendChild(t); x.timeEl = t;
+    b.onclick = (e) => { e.stopPropagation(); openPick(b, x); };
+    x.el = b; msgs.set(o.id, x);
     $("chat").appendChild(b); $("main").scrollTop = $("main").scrollHeight;
+    return x;
   }
+  function paintReact(x) {
+    const old = x.el.querySelector(".tb"); if (old) old.remove();
+    const rs = [["me", x.react.phone], ["pc", x.react.pc]].filter((p) => TAP[p[1]]);
+    if (!rs.length) return;
+    const w = document.createElement("span"); w.className = "tb";
+    w.innerHTML = rs.map((p) => `<i class="${p[0] === "me" ? "mine" : ""}">${TAP[p[1]]}</i>`).join("");
+    x.el.appendChild(w);
+  }
+  function closePick() { document.querySelectorAll(".pick").forEach((p) => p.remove()); }
+  function openPick(b, x) {
+    closePick();
+    const pk = document.createElement("div"); pk.className = "pick"; pk.setAttribute("role", "menu");
+    pk.innerHTML = TAP_IDS.map((r) => `<button type="button" data-r="${r}" class="${x.react.phone === r ? "on" : ""}" aria-label="${TAP_LABEL[r]}">${TAP[r]}</button>`).join("") + (x.photo && x.from === "pc" ? `<button type="button" class="sv">Save</button>` : "");
+    pk.querySelectorAll("[data-r]").forEach((btn) => (btn.onclick = (e) => {
+      e.stopPropagation(); closePick(); if (!sess || !paired) return;
+      const nr = x.react.phone === btn.dataset.r ? null : btn.dataset.r;
+      if (nr) x.react.phone = nr; else delete x.react.phone;
+      paintReact(x); sess.send({ t: "react", id: x.id, r: nr });
+    }));
+    const sv = pk.querySelector(".sv"); if (sv) sv.onclick = (e) => { e.stopPropagation(); closePick(); savePhoto(x.photo.url, x.photo.name); };
+    document.body.appendChild(pk);
+    const r = b.getBoundingClientRect();
+    let left = x.from === "me" ? r.right - pk.offsetWidth : r.left; left = Math.max(8, Math.min(left, innerWidth - pk.offsetWidth - 8));
+    let top = r.top - pk.offsetHeight - 8; if (top < 8) top = r.bottom + 8;
+    pk.style.left = left + "px"; pk.style.top = top + "px";
+  }
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest(".pick")) closePick(); }, true);
+  $("main").addEventListener("scroll", closePick);
+  async function savePhoto(url, name) {
+    try {
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], name || "photo.jpg", { type: blob.type || "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } // iPhone: Save Image
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = url; a.download = name || "photo.jpg"; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function addRecv(url, name) {
+    $("recvNone").classList.add("hidden");
+    const fig = document.createElement("figure"); const img = document.createElement("img"); img.alt = ""; img.src = url; fig.appendChild(img);
+    const cap = document.createElement("figcaption"); cap.textContent = "Tap to save"; fig.appendChild(cap);
+    fig.onclick = () => savePhoto(url, name);
+    $("recv").prepend(fig);
+  }
+
   function tab(v) {
     document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
     show(v); $("compose").classList.toggle("hidden", v !== "vMsgs");
+    $("main").style.padding = v === "vScreen" ? "0" : "";
+    if (v === "vPhotos") $("recvNone").classList.toggle("hidden", $("recv").children.length > 0);
+    if (v === "vMsgs") $("main").scrollTop = $("main").scrollHeight;
   }
-  document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => tab(b.dataset.v)));
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) tab(b.dataset.v); });
   async function sendInfo() {
     if (!sess || !paired) return;
     const name = ($("devName").value.trim() || guessName()).slice(0, 40);
@@ -175,8 +337,11 @@
   if (navigator.getBattery) navigator.getBattery().then((b) => { battery = b; ["levelchange", "chargingchange"].forEach((ev) => b.addEventListener(ev, sendInfo)); sendInfo(); }).catch(() => {});
   $("compose").onsubmit = (e) => {
     e.preventDefault(); const t = $("msg").value.trim(); if (!t || !sess || !paired) return;
-    sess.send({ t: "msg", id: Date.now(), text: t }); bubble(t, "me"); $("msg").value = "";
+    const id = newId("p");
+    sess.send({ t: "msg", id, text: t }); bubble({ id, from: "me", text: t }); $("msg").value = "";
   };
+  $("att").onclick = () => $("attIn").click();
+  $("attIn").onchange = () => { const fs = [...$("attIn").files]; $("attIn").value = ""; sendPhotos(fs); };
   $("nSend").onclick = () => {
     if (!sess || !paired) return;
     const title = $("nTitle").value.trim(), body = $("nBody").value.trim();
@@ -186,7 +351,7 @@
   };
   $("disc").onclick = () => { if (sess) { sess.send({ t: "bye" }); setTimeout(() => sess && sess.close(), 200); } };
 
-  // Photos: HEIC (iPhone) is converted to JPEG when the browser can decode it; everything else is sent as is.
+  // Photos to the PC: HEIC (iPhone) is converted to JPEG when the browser can decode it.
   async function toSendable(file) {
     if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)) {
       try {
@@ -197,26 +362,114 @@
     }
     return { blob: file, name: file.name || "photo.jpg", mime: file.type || "image/jpeg" };
   }
-  $("pick").onchange = async () => {
-    const files = [...$("pick").files]; $("pick").value = "";
+  async function sendPhotos(files) {
     for (const f of files) {
       if (!sess || !paired) break;
-      const it = await toSendable(f), id = "p" + Date.now() + Math.random().toString(36).slice(2, 6);
+      const it = await toSendable(f), id = newId("p"), url = URL.createObjectURL(it.blob);
+      const x = bubble({ id, from: "me", photo: { url, name: it.name }, note: "Sending…" });
       const fig = document.createElement("figure"); fig.dataset.pid = id;
-      const img = document.createElement("img"); img.alt = ""; img.src = URL.createObjectURL(it.blob); fig.appendChild(img);
+      const img = document.createElement("img"); img.alt = ""; img.src = url; fig.appendChild(img);
       const cap = document.createElement("figcaption"); cap.textContent = "Sending…"; fig.appendChild(cap); $("sent").prepend(fig);
-      const bar = document.createElement("progress"); bar.max = 1; bar.value = 0; $("prog").appendChild(bar);
+      const bar = progBar("To PC: " + it.name);
       const bytes = new Uint8Array(await it.blob.arrayBuffer());
       sess.send({ t: "photo-begin", id, name: it.name, mime: it.mime, size: bytes.length });
       const CH = 64 * 1024;
       for (let o = 0; o < bytes.length; o += CH) { if (!sess) break; await sess.send({ t: "photo-chunk", id }, bytes.subarray(o, o + CH)); bar.value = Math.min(1, (o + CH) / bytes.length); }
       if (sess) await sess.send({ t: "photo-end", id });
-      bar.remove(); cap.textContent = "Sent";
+      bar.parentNode && bar.parentNode.remove(); cap.textContent = "Sent"; x.timeEl.textContent = clock(x.ts) + " · Sent";
     }
+  }
+  $("pick").onchange = () => { const fs = [...$("pick").files]; $("pick").value = ""; sendPhotos(fs); };
+
+  // ---- remote desktop: view (and with permission, control) the PC ----
+  const V = { on: false, sharing: false, ctl: "none", frames: 0, zoom: false };
+  const cv = $("cv"), g = cv.getContext("2d"), stage = $("stage");
+  function vpaint(msg) {
+    $("vGo").classList.toggle("hidden", V.on);
+    $("vStop").classList.toggle("hidden", !V.on);
+    $("vCtl").classList.toggle("hidden", !V.sharing);
+    $("vZoom").classList.toggle("hidden", !V.sharing);
+    $("vKbd").classList.toggle("hidden", V.ctl !== "on");
+    $("vCtl").textContent = V.ctl === "on" ? "Stop controlling" : V.ctl === "asking" ? "Waiting…" : "Request control";
+    $("vCtl").disabled = V.ctl === "asking";
+    $("vZoom").textContent = V.zoom ? "Fit" : "Zoom";
+    stage.classList.toggle("ctl", V.ctl === "on");
+    stage.classList.toggle("zoom", V.zoom);
+    $("vst").textContent = !V.on ? "See and use your PC from here." : !V.sharing ? "Waiting for your PC to allow it…" : V.paused ? "Your PC paused sharing." : V.ctl === "on" ? "You're controlling your PC." : "Viewing your PC's screen.";
+    const m = $("vmsg");
+    if (msg != null) m.textContent = msg;
+    else if (V.frames) m.textContent = "";
+    m.classList.toggle("hidden", !m.textContent);
+  }
+  $("vGo").onclick = () => { if (!sess || !paired) return; V.on = true; V.sharing = false; V.frames = 0; V.ctl = "none"; sess.send({ t: "rd-req" }); vpaint("Asking your PC — allow it there."); };
+  $("vStop").onclick = () => { if (sess) sess.send({ t: "leave", rd: 1 }); viewerEnd("You stopped viewing your PC."); };
+  $("vCtl").onclick = () => { if (!sess) return; if (V.ctl === "on") { V.ctl = "none"; sess.send({ t: "ctl-release", rd: 1 }); } else { V.ctl = "asking"; sess.send({ t: "ctl-req", rd: 1 }); } vpaint(); };
+  $("vZoom").onclick = () => { V.zoom = !V.zoom; vpaint(); };
+  function viewerEnd(msg) { if (!V.on && !V.sharing) return; V.on = false; V.sharing = false; V.ctl = "none"; vpaint(msg || ""); }
+  let drawing = false, pending = null;
+  async function draw(m, bytes) {
+    if (drawing) { pending = [m, bytes]; return; }
+    drawing = true;
+    try {
+      const bmp = await createImageBitmap(new Blob([bytes], { type: "image/jpeg" }));
+      if (cv.width !== m.w || cv.height !== m.h) { cv.width = m.w; cv.height = m.h; }
+      g.drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
+      V.frames++; if (V.frames === 1) vpaint();
+    } catch (_) {}
+    drawing = false;
+    if (pending) { const p = pending; pending = null; draw(p[0], p[1]); }
+  }
+  function viewerMsg(m, bytes) {
+    if (m.t === "share-start") { V.on = true; V.sharing = true; V.frames = 0; tab("vScreen"); vpaint("Loading your PC's screen…"); }
+    else if (m.t === "frame" && bytes) { if (V.on) draw(m, bytes); }
+    else if (m.t === "share-paused") { V.paused = !!m.paused; vpaint(); }
+    else if (m.t === "ctl-ok") { V.ctl = "on"; vpaint(); buzz(); }
+    else if (m.t === "ctl-no") { V.ctl = "none"; vpaint(); $("vst").textContent = "Your PC declined control."; }
+    else if (m.t === "ctl-revoked") { V.ctl = "none"; vpaint(); $("vst").textContent = "Your PC took back control."; }
+    else if (m.t === "share-declined") viewerEnd("Your PC declined to share its screen.");
+    else if (m.t === "share-error") viewerEnd(m.msg || "Your PC couldn't share its screen.");
+    else if (m.t === "share-stop") viewerEnd("Your PC stopped sharing.");
+  }
+  const norm = (e) => {
+    const r = cv.getBoundingClientRect(); if (!cv.width || !r.width) return null;
+    const nx = (e.clientX - r.left) / r.width, ny = (e.clientY - r.top) / r.height;
+    if (nx < 0 || ny < 0 || nx > 1 || ny > 1) return null;
+    return { nx, ny };
   };
+  const sendIn = (o) => { if (sess && V.ctl === "on") sess.send(Object.assign({ t: "in", rd: 1 }, o)); };
+  let tp = null;
+  stage.addEventListener("pointerdown", (e) => {
+    if (V.ctl !== "on" || V.zoom) return; const p = norm(e); if (!p) return; e.preventDefault();
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+    tp = { x: e.clientX, y: e.clientY, p, drag: false, long: false, last: 0 };
+    tp.timer = setTimeout(() => { if (!tp || tp.drag) return; tp.long = true; sendIn({ e: "down", b: 2, nx: p.nx, ny: p.ny }); sendIn({ e: "up", b: 2, nx: p.nx, ny: p.ny }); buzz(); }, 550);
+  });
+  stage.addEventListener("pointermove", (e) => {
+    if (!tp || V.ctl !== "on") return; const p = norm(e); if (!p) return;
+    if (!tp.drag && Math.hypot(e.clientX - tp.x, e.clientY - tp.y) > 10) { tp.drag = true; clearTimeout(tp.timer); sendIn({ e: "down", b: 0, nx: tp.p.nx, ny: tp.p.ny }); }
+    const now = performance.now(); if (tp.drag && now - tp.last > 40) { tp.last = now; sendIn({ e: "move", nx: p.nx, ny: p.ny }); }
+  });
+  const endTouch = (e) => {
+    if (!tp) return; clearTimeout(tp.timer); const p = norm(e) || tp.p;
+    if (tp.drag) sendIn({ e: "up", b: 0, nx: p.nx, ny: p.ny });
+    else if (!tp.long) { sendIn({ e: "move", nx: tp.p.nx, ny: tp.p.ny }); sendIn({ e: "down", b: 0, nx: tp.p.nx, ny: tp.p.ny }); sendIn({ e: "up", b: 0, nx: tp.p.nx, ny: tp.p.ny }); }
+    tp = null;
+  };
+  stage.addEventListener("pointerup", endTouch);
+  stage.addEventListener("pointercancel", () => { if (tp) clearTimeout(tp.timer); tp = null; });
+  stage.addEventListener("contextmenu", (e) => e.preventDefault());
+  const kbin = $("kbin");
+  $("vKbd").onclick = () => { kbin.value = ""; kbin.focus(); };
+  kbin.addEventListener("keydown", (e) => { if (V.ctl !== "on" || !sess) return; if (["Enter", "Backspace", "Tab", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) { e.preventDefault(); sess.send({ t: "key", rd: 1, key: e.key, code: e.code }); } });
+  kbin.addEventListener("input", (e) => { if (V.ctl !== "on" || !sess) return; const d = e.data || kbin.value; for (const ch of d || "") sess.send({ t: "key", rd: 1, key: ch }); kbin.value = ""; });
+
   $("go").onclick = connect;
   $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
-  if (hashCode && P2P12.validCode(hashCode)) connect(); else status("");
+  paintInstall();
+  // From the QR code, or opened as an app with a remembered PC: connect straight away.
+  if (hashCode && P2P12.validCode(hashCode)) connect();
+  else if (standalone && P2P12.validCode(savedCode)) connect();
+  else status(savedCode ? "Your PC's code is filled in — select Connect." : "");
 })();
 </script>
 </body>
