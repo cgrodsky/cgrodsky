@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="referrer" content="no-referrer" />
+<title>Link to Windows 12</title>
+<!-- Phone Link companion page. Opened on the phone from the QR code in Windows 12's Phone Link app
+     (phone.html#CODE). It connects straight to that PC over WebRTC (PeerJS's free broker only
+     introduces the two devices), agrees an end-to-end key and shows a 6-digit number to compare.
+     No analytics, no accounts, no other network requests. -->
+<style>
+  :root { --bg: #f3f3f3; --card: #fff; --text: #1b1b1b; --dim: #5d5d5d; --line: #e3e3e3; --accent: #0067c0; --me: #0067c0; --them: #e9e9ef; --ok: #0f7b0f; --bad: #c42b1c; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1c1c; --card: #2b2b2b; --text: #f3f3f3; --dim: #b3b3b3; --line: #3c3c3c; --accent: #4cc2ff; --me: #0a5aa8; --them: #3a3a3a; --ok: #6ccb5f; --bad: #ff99a4; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 16px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); -webkit-text-size-adjust: 100%; }
+  header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+  header .logo { width: 26px; height: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  header .logo i { background: linear-gradient(135deg, #2f9be0, #6a5cff); border-radius: 2px; }
+  header h1 { font-size: 1.05rem; margin: 0; flex: 1; }
+  header .pc { font-size: .8rem; color: var(--dim); text-align: right; }
+  main { flex: 1; overflow: auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .dim { color: var(--dim); font-size: .88rem; }
+  .sas { display: block; font: 600 2.2rem/1.2 ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: .12em; text-align: center; margin: 14px 0; color: var(--accent); }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 10px 16px; min-height: 44px; cursor: pointer; }
+  button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.primary, .btn.primary { color: #000; } }
+  button:disabled { opacity: .5; }
+  input, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); min-height: 44px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > input { flex: 1; }
+  .tabs { display: flex; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 10px 4px; font-size: .85rem; color: var(--dim); }
+  .tabs button.on { color: var(--accent); font-weight: 600; box-shadow: inset 0 3px 0 var(--accent); }
+  .chat { display: flex; flex-direction: column; gap: 6px; padding-bottom: 8px; }
+  .bub { max-width: 80%; padding: 8px 12px; border-radius: 16px; white-space: pre-wrap; word-wrap: break-word; }
+  .bub.me { align-self: flex-end; background: var(--me); color: #fff; border-bottom-right-radius: 4px; }
+  .bub.them { align-self: flex-start; background: var(--them); border-bottom-left-radius: 4px; }
+  .bub time { display: block; font-size: .7rem; opacity: .7; margin-top: 2px; }
+  .compose { display: flex; gap: 8px; padding: 10px 16px; background: var(--card); border-top: 1px solid var(--line); }
+  .compose input { flex: 1; }
+  .status { display: flex; gap: 10px; align-items: center; }
+  .spin { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; flex: none; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .err { color: var(--bad); }
+  .ok { color: var(--ok); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin-top: 12px; }
+  .grid figure { margin: 0; position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--them); }
+  .grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .grid figcaption { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; padding: 2px 4px; background: rgba(0,0,0,.55); color: #fff; }
+  progress { width: 100%; height: 6px; accent-color: var(--accent); }
+  .hidden { display: none !important; }
+  .note { font-size: .8rem; color: var(--dim); margin-top: 10px; }
+  label.f { display: block; margin: 10px 0 4px; font-size: .88rem; color: var(--dim); }
+  .file-btn { display: block; text-align: center; }
+  .file-btn input { display: none; }
+</style>
+</head>
+<body>
+  <header><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span><h1>Link to Windows 12</h1><span class="pc" id="pcName"></span></header>
+  <main id="main">
+    <section id="vConnect" class="card">
+      <h2>Connect to your PC</h2>
+      <p class="dim">Open <b>Phone Link</b> on your Windows 12 PC and scan its QR code, or type the 5-character code it shows.</p>
+      <div class="row"><input id="code" maxlength="5" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Code" aria-label="Pairing code"><button class="primary" id="go">Connect</button></div>
+      <label class="f" for="devName">This phone's name (shown on the PC)</label>
+      <input id="devName" maxlength="40" autocomplete="off">
+      <div class="status" id="st" role="status" aria-live="polite"></div>
+      <p class="note">End-to-end encrypted. Your phone connects directly to the PC (WebRTC). PeerJS's free broker only introduces the two devices; it never sees your photos or messages. Nothing is uploaded or stored anywhere else.</p>
+    </section>
+    <section id="vConfirm" class="card hidden">
+      <h2>Check the number</h2>
+      <p class="dim">Make sure your PC shows the same number, then select <b>Yes, they match</b> on the PC.</p>
+      <span class="sas" id="sas"></span>
+      <div class="status"><span class="spin"></span><span>Waiting for the PC…</span></div>
+    </section>
+    <section id="vMsgs" class="hidden">
+      <p class="dim" style="margin-top:0">Phone Link messages — text between this page and your PC. These aren't SMS.</p>
+      <div class="chat" id="chat" role="log" aria-live="polite"></div>
+    </section>
+    <section id="vPhotos" class="card hidden">
+      <h2>Send photos</h2>
+      <p class="dim">Pick photos and they're saved to <b>Pictures</b> on your PC.</p>
+      <label class="btn primary file-btn">Choose photos<input id="pick" type="file" accept="image/*" multiple></label>
+      <div id="prog"></div>
+      <div class="grid" id="sent"></div>
+    </section>
+    <section id="vNotify" class="card hidden">
+      <h2>Send a notification</h2>
+      <p class="dim">It pops up on your PC and appears in Phone Link › Notifications. (A web page can't read your other apps' notifications.)</p>
+      <label class="f" for="nTitle">Title</label><input id="nTitle" maxlength="120" placeholder="Reminder">
+      <label class="f" for="nBody">Message</label><textarea id="nBody" rows="3" maxlength="400" placeholder="Pick up milk on the way home"></textarea>
+      <div style="margin-top:12px"><button class="primary" id="nSend">Send to PC</button> <span id="nSt" class="dim"></span></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <p class="dim" id="battLine"></p>
+      <button id="disc">Disconnect</button>
+    </section>
+  </main>
+  <form class="compose hidden" id="compose"><input id="msg" placeholder="Message your PC" aria-label="Message" maxlength="4000" autocomplete="off"><button class="primary" type="submit">Send</button></form>
+  <nav class="tabs hidden" id="tabs" role="tablist"><button data-v="vMsgs" class="on" role="tab">Messages</button><button data-v="vPhotos" role="tab">Photos</button><button data-v="vNotify" role="tab">Notify PC</button></nav>
+<script src="js/p2p12.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const show = (id) => ["vConnect", "vConfirm", "vMsgs", "vPhotos", "vNotify"].forEach((v) => $(v).classList.toggle("hidden", v !== id));
+  const st = $("st");
+  const status = (html, spin) => { st.innerHTML = (spin ? '<span class="spin"></span>' : "") + "<span></span>"; st.lastChild.textContent = html; };
+  function guessName() {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return "iPhone";
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && "ontouchend" in document)) return "iPad";
+    const m = ua.match(/Android[^;)]*;\s*([^;)]+?)(?:\s+Build|\))/);
+    if (m && m[1] && !/^(K|wv|Linux|U)$/i.test(m[1].trim())) return m[1].trim().slice(0, 30);
+    if (/Android/.test(ua)) return "Android phone";
+    return "Phone";
+  }
+  const LS = { get: (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
+  $("devName").value = LS.get("w12phone_name") || guessName();
+  $("devName").addEventListener("change", () => LS.set("w12phone_name", $("devName").value.trim()));
+  const hashCode = P2P12.normCode(decodeURIComponent((location.hash || "").slice(1)));
+  $("code").value = hashCode;
+  $("code").addEventListener("input", () => { $("code").value = P2P12.normCode($("code").value); });
+
+  let sess = null, paired = false, battery = null;
+  async function connect() {
+    const code = P2P12.normCode($("code").value);
+    if (!P2P12.validCode(code)) { status("Type the 5-character code shown in Phone Link on your PC."); return; }
+    $("go").disabled = true; status("Connecting…", true);
+    const name = ($("devName").value.trim() || guessName()).slice(0, 40);
+    try {
+      sess = await P2P12.join("pl", code, { name, role: "phone", info: { platform: navigator.platform || "", touch: true } });
+    } catch (e) { status(e.message || String(e)); $("go").disabled = false; return; }
+    $("sas").textContent = sess.sas; show("vConfirm");
+    sess.onMessage(onMsg);
+    sess.onClose(() => {
+      const was = paired; paired = false; sess = null;
+      $("tabs").classList.add("hidden"); $("compose").classList.add("hidden"); show("vConnect"); $("go").disabled = false;
+      status(was ? "Disconnected from your PC. Select Connect to link again." : "The PC closed the connection.");
+    });
+  }
+  function onMsg(m) {
+    if (m.t === "paired") {
+      paired = true; $("pcName").textContent = (m.pc || "PC") + (m.user ? " · " + m.user : "");
+      $("tabs").classList.remove("hidden"); tab("vMsgs"); sendInfo();
+    } else if (m.t === "reject" || m.t === "busy") {
+      status(m.t === "busy" ? "Another phone is already linked to this PC." : "The PC said the numbers didn't match. Try again.");
+      show("vConnect"); $("go").disabled = false; try { sess && sess.close(); } catch (_) {}
+    } else if (m.t === "msg" && paired) { bubble(String(m.text || ""), "them"); if (navigator.vibrate) try { navigator.vibrate(60); } catch (_) {} }
+    else if (m.t === "photo-saved") { const f = document.querySelector('[data-pid="' + m.id + '"] figcaption'); if (f) f.textContent = "✓ " + m.name; }
+    else if (m.t === "bye") { try { sess.close(); } catch (_) {} }
+  }
+  function bubble(text, who) {
+    const b = document.createElement("div"); b.className = "bub " + who; b.textContent = text;
+    const t = document.createElement("time"); t.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); b.appendChild(t);
+    $("chat").appendChild(b); $("main").scrollTop = $("main").scrollHeight;
+  }
+  function tab(v) {
+    document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+    show(v); $("compose").classList.toggle("hidden", v !== "vMsgs");
+  }
+  document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => tab(b.dataset.v)));
+  async function sendInfo() {
+    if (!sess || !paired) return;
+    const name = ($("devName").value.trim() || guessName()).slice(0, 40);
+    const info = { t: "info", name, platform: navigator.platform || "" };
+    if (battery) { info.battery = battery.level; info.charging = battery.charging; }
+    $("battLine").textContent = battery ? "Battery " + Math.round(battery.level * 100) + "%" + (battery.charging ? " (charging)" : "") + " — shared with your PC." : "This browser doesn't report the battery level, so the PC won't show it.";
+    sess.send(info);
+  }
+  if (navigator.getBattery) navigator.getBattery().then((b) => { battery = b; ["levelchange", "chargingchange"].forEach((ev) => b.addEventListener(ev, sendInfo)); sendInfo(); }).catch(() => {});
+  $("compose").onsubmit = (e) => {
+    e.preventDefault(); const t = $("msg").value.trim(); if (!t || !sess || !paired) return;
+    sess.send({ t: "msg", id: Date.now(), text: t }); bubble(t, "me"); $("msg").value = "";
+  };
+  $("nSend").onclick = () => {
+    if (!sess || !paired) return;
+    const title = $("nTitle").value.trim(), body = $("nBody").value.trim();
+    if (!title && !body) { $("nSt").textContent = "Type a title or a message."; return; }
+    sess.send({ t: "notif", app: "Phone", title, body }); $("nSt").textContent = "Sent."; $("nBody").value = "";
+    setTimeout(() => { $("nSt").textContent = ""; }, 2500);
+  };
+  $("disc").onclick = () => { if (sess) { sess.send({ t: "bye" }); setTimeout(() => sess && sess.close(), 200); } };
+
+  // Photos: HEIC (iPhone) is converted to JPEG when the browser can decode it; everything else is sent as is.
+  async function toSendable(file) {
+    if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)) {
+      try {
+        const bmp = await createImageBitmap(file); const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height; c.getContext("2d").drawImage(bmp, 0, 0);
+        const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.9));
+        if (blob) return { blob, name: file.name.replace(/\.(heic|heif)$/i, "") + ".jpg", mime: "image/jpeg" };
+      } catch (_) {}
+    }
+    return { blob: file, name: file.name || "photo.jpg", mime: file.type || "image/jpeg" };
+  }
+  $("pick").onchange = async () => {
+    const files = [...$("pick").files]; $("pick").value = "";
+    for (const f of files) {
+      if (!sess || !paired) break;
+      const it = await toSendable(f), id = "p" + Date.now() + Math.random().toString(36).slice(2, 6);
+      const fig = document.createElement("figure"); fig.dataset.pid = id;
+      const img = document.createElement("img"); img.alt = ""; img.src = URL.createObjectURL(it.blob); fig.appendChild(img);
+      const cap = document.createElement("figcaption"); cap.textContent = "Sending…"; fig.appendChild(cap); $("sent").prepend(fig);
+      const bar = document.createElement("progress"); bar.max = 1; bar.value = 0; $("prog").appendChild(bar);
+      const bytes = new Uint8Array(await it.blob.arrayBuffer());
+      sess.send({ t: "photo-begin", id, name: it.name, mime: it.mime, size: bytes.length });
+      const CH = 64 * 1024;
+      for (let o = 0; o < bytes.length; o += CH) { if (!sess) break; await sess.send({ t: "photo-chunk", id }, bytes.subarray(o, o + CH)); bar.value = Math.min(1, (o + CH) / bytes.length); }
+      if (sess) await sess.send({ t: "photo-end", id });
+      bar.remove(); cap.textContent = "Sent";
+    }
+  };
+  $("go").onclick = connect;
+  $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+  if (hashCode && P2P12.validCode(hashCode)) connect(); else status("");
+})();
+</script>
+</body>
+</html>
