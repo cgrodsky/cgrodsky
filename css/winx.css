@@ -73,7 +73,8 @@ body.dark .wx-snap-preview { background: rgba(60, 60, 60, .35); border-color: rg
 .wx-card-min { font-size: .66rem; opacity: .7; padding: 1px 6px; border-radius: 6px; background: rgba(127, 127, 127, .2); }
 .wx-card-pv { display: flex; align-items: center; justify-content: center; }
 .wx-pv { position: relative; overflow: hidden; pointer-events: none; border-radius: 6px; box-shadow: 0 4px 18px rgba(0, 0, 0, .25); background: var(--window-bg); }
-.wx-pv .win.wx-clone { pointer-events: none; animation: none !important; transition: none !important; box-shadow: none; border-radius: 6px; }
+/* The preview clones the window BODY (.win-body.wx-clone), so the app content fills the tile. */
+.wx-pv .wx-clone { pointer-events: none; animation: none !important; transition: none !important; box-shadow: none; border-radius: 6px; background: var(--window-bg); }
 .wx-pv-ph { background: repeating-linear-gradient(45deg, rgba(127,127,127,.1) 0 10px, rgba(127,127,127,.18) 10px 20px); }
 
 /* ---------- Snap Assist ---------- */
@@ -167,6 +168,44 @@ body.dark .wx-tv-miniwin { background: rgba(60, 60, 60, .92); }
 .jumplist.wx-jl .wx-jl-end:hover { background: rgba(209, 52, 56, .14); }
 body.dark .jumplist.wx-jl .wx-jl-end { color: #ff6b6f; }
 
+/* ---------- Task View: per-desktop background picker ---------- */
+.wx-wallpick {
+  position: absolute; padding: 10px; border-radius: 12px; background: var(--taskbar); color: var(--text);
+  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.wx-wallpick-h { font-size: .72rem; color: var(--text-dim); margin: 0 2px 8px; }
+.wx-wallpick-grid { display: grid; grid-template-columns: repeat(4, 46px); gap: 8px; }
+.wx-wallsw {
+  width: 46px; height: 32px; padding: 0; border-radius: 7px; cursor: pointer; background-size: cover; background-position: center;
+  border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .4);
+}
+.wx-wallsw:hover, .wx-wallsw:focus-visible { outline: none; border-color: var(--accent); }
+.wx-wallsw.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+.wx-wall-default { display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 600; color: var(--text); background: rgba(127, 127, 127, .18); }
+@media (hover: none) { .wx-wallpick-grid { grid-template-columns: repeat(4, 54px); } .wx-wallsw { width: 54px; height: 38px; } }
+
+/* ---------- Task View: reorder desktops ---------- */
+.wx-tv-desk { touch-action: none; }
+.wx-tv-desk.wx-desk-dragging { z-index: 6; cursor: grabbing; opacity: .92; transition: none; }
+.wx-tv-desk.wx-desk-dragging .wx-tv-mini { outline-color: var(--accent); }
+
+/* ---------- Snap groups: taskbar "restore group" chip ---------- */
+.wx-grpfly {
+  position: fixed; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px;
+  border-radius: 12px; background: var(--taskbar); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow);
+  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+  opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;
+}
+.wx-grpfly.show { opacity: 1; transform: none; }
+.wx-grpprev { position: relative; width: 108px; height: 68px; border-radius: 6px; background: rgba(127, 127, 127, .14); border: 1px solid var(--border); overflow: hidden; }
+.wx-grpz { position: absolute; border-radius: 3px; background: var(--accent); opacity: .72; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25); transform: scale(.94); }
+.wx-grprestore {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 0; border-radius: 8px; cursor: pointer;
+  font: inherit; font-size: .78rem; font-weight: 600; background: var(--accent); color: #fff;
+}
+.wx-grprestore:hover, .wx-grprestore:focus-visible { outline: none; filter: brightness(1.08); }
+.wx-grpn { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: rgba(255, 255, 255, .28); font-size: .66rem; line-height: 16px; text-align: center; }
+
 /* Reduced motion */
-body.a11y-reduce-motion .wx-snap-preview, body.a11y-reduce-motion .wx-snapfly, body.a11y-reduce-motion .wx-tv, body.a11y-reduce-motion .wx-desk-hud { transition: none; }
-@media (prefers-reduced-motion: reduce) { .wx-snap-preview, .wx-snapfly, .wx-tv, .wx-desk-hud { transition: none; } }
+body.a11y-reduce-motion .wx-snap-preview, body.a11y-reduce-motion .wx-snapfly, body.a11y-reduce-motion .wx-tv, body.a11y-reduce-motion .wx-desk-hud, body.a11y-reduce-motion .wx-grpfly { transition: none; }
+@media (prefers-reduced-motion: reduce) { .wx-snap-preview, .wx-snapfly, .wx-tv, .wx-desk-hud, .wx-grpfly { transition: none; } }

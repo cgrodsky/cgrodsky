@@ -8,6 +8,12 @@
      Ctrl+Alt+Tab        switcher that stays open (arrows / Tab + Enter, or click)
      Ctrl+Alt+Up, Win+Tab   Task View   (Ctrl+Alt+Down / Esc closes it)
      Ctrl+Alt+Left/Right, Ctrl+Win+Left/Right   previous / next desktop
+     Win+Left/Right  snap the focused window to a side; press again to cycle the
+                     width: half -> third -> two-thirds (see SNAP SCHEME below).
+     Win+Up/Down     after a side-snap: top / bottom quarter; otherwise maximize /
+                     minimize (restore a maximized window first).
+     Ctrl+Alt+Shift+Arrow is the no-Win-key alternative for all of the above
+     (Ctrl+Alt+Arrow without Shift is kept for switching desktops).
 */
 (function () {
   "use strict";
@@ -49,9 +55,47 @@
   }
   function deskWindows(id) { return wins().filter((e) => (e.desk || activeId()) === id); }
 
+  // ---- per-desktop wallpaper ----
+  // Each desktop may carry its own optional `wallpaper` (an assets/ path, data:/http
+  // URL, or a CSS color). With none set it falls back to the global wallpaper. On
+  // switch we apply the active desktop's wallpaper; the Task View minis use the same.
+  function isImgWp(wp) { return typeof wp === "string" && (wp.startsWith("data:") || wp.startsWith("http") || wp.startsWith("assets/")); }
+  function globalWallpaperCss() {
+    try { const pz = window.Personalize && Personalize.wallpaperCss && Personalize.wallpaperCss(); if (pz) return pz; } catch (e) {}
+    const wp = S().desktop && S().desktop.wallpaper;
+    if (!wp || wp === "default") return "url(assets/wall3.jpg) center/cover";
+    return isImgWp(wp) ? `url(${wp}) center/cover` : wp;
+  }
+  function deskWallpaperCss(id) {
+    const d = deskById(id); const wp = d && d.wallpaper;
+    if (!wp || wp === "default") return globalWallpaperCss();
+    return isImgWp(wp) ? `url(${wp}) center/cover` : wp;
+  }
+  let lastWpSig = null;
+  function applyDeskWallpaper() {
+    const desk = document.querySelector(".desktop"); if (!desk) return;
+    const d = deskById(activeId()); const wp = (d && d.wallpaper) || "default";
+    // Keyed by the resolved wallpaper so repeated applyDesktop() calls (rename, reorder,
+    // move window) don't re-trigger a crossfade when the background hasn't changed.
+    const sig = wp === "default" ? "global" : wp;
+    if (sig === lastWpSig) return;
+    lastWpSig = sig;
+    // No custom wallpaper: let the window manager restore the global one (keeps
+    // slideshow / spotlight / crossfade behaviour intact).
+    if (wp === "default") { if (window.WM && WM.applyWallpaper) WM.applyWallpaper(); else desk.style.background = globalWallpaperCss(); return; }
+    desk.style.background = isImgWp(wp) ? `url(${wp}) center/cover` : wp;
+  }
+  function setDeskWallpaper(id, wp) {
+    const d = deskById(id); if (!d) return;
+    if (!wp || wp === "default") delete d.wallpaper; else d.wallpaper = wp;
+    State.save();
+    if (id === activeId()) applyDeskWallpaper();
+  }
+
   // Show only the active desktop's windows (minimized state is left alone).
   function applyDesktop() {
     wins().forEach((e) => e.win.classList.toggle("wx-offdesk", !onActive(e)));
+    applyDeskWallpaper();
     if (window.WM && WM.refreshTaskbarActive) WM.refreshTaskbarActive();
     const tv = document.querySelector(".taskbar .wx-tv-btn");
     if (tv) { const d = store(); const i = d.list.findIndex((x) => x.id === d.active); tv.dataset.desk = d.list.length > 1 ? String(i + 1) : ""; tv.title = "Task View (Ctrl+Alt+Up)" + (d.list.length > 1 ? " · " + deskById(d.active).name : ""); }
@@ -67,6 +111,7 @@
     const outgoing = wins().filter((e) => onActive(e) && !isMin(e));
     slideAnims.forEach((a) => { try { a.cancel(); } catch (e) {} }); slideAnims = [];
     d.active = id; State.save();
+    applyDeskWallpaper(); // show the incoming desktop's wallpaper right away
     const animate = opts.animate !== false && !reduceMotion() && typeof Element.prototype.animate === "function";
     if (animate) {
       const W = (scr() && scr().clientWidth) || window.innerWidth;
@@ -127,16 +172,19 @@
   //  Live previews: a scaled-down, non-interactive clone of a window
   // =====================================================================
   function makePreview(e, boxW, boxH) {
-    const src = e.win;
-    const hidden = !src.offsetWidth;
-    if (hidden) src.classList.add("wx-measure");
+    const win = e.win;
+    const hidden = !win.offsetWidth;
+    if (hidden) win.classList.add("wx-measure");
+    // Snapshot the window BODY (the app's content). The card header already shows the
+    // icon + title, so cloning the body alone keeps the thumbnail clean and lighter.
+    const src = win.querySelector(".win-body") || win;
     const { w, h } = { w: src.offsetWidth || 600, h: src.offsetHeight || 400 };
     // Note scroll offsets (the clone's element list stays index-aligned with the source).
     const all = src.querySelectorAll("*"), scrolls = [];
     for (let i = 0; i < all.length; i++) { const n = all[i]; if (n.scrollTop || n.scrollLeft) scrolls.push([i, n.scrollTop, n.scrollLeft]); }
     const srcCanvases = [...src.querySelectorAll("canvas")].map((c) => ({ c, cw: c.offsetWidth, ch: c.offsetHeight }));
     const clone = src.cloneNode(true);
-    if (hidden) src.classList.remove("wx-measure");
+    if (hidden) win.classList.remove("wx-measure");
     // Sanitize BEFORE it touches the document: no duplicate ids, no radio-group
     // stealing, no reloading iframes, no media playback.
     clone.removeAttribute("id");
@@ -156,10 +204,10 @@
         c.getContext("2d").drawImage(s.c, 0, 0, c.width, c.height);
       } catch (err) { /* tainted / lost context: leave blank */ }
     });
-    clone.classList.remove("wx-offdesk", "wx-measure", "wx-snapped");
+    clone.classList.remove("wx-offdesk", "wx-measure", "wx-snapped", "maximized");
     clone.classList.add("wx-clone");
     const k = Math.min(boxW / w, boxH / h);
-    Object.assign(clone.style, { position: "absolute", left: "0", top: "0", width: w + "px", height: h + "px", transform: `scale(${k})`, transformOrigin: "0 0", zIndex: "auto", display: "flex", margin: "0" });
+    Object.assign(clone.style, { position: "absolute", left: "0", top: "0", width: w + "px", height: h + "px", transform: `scale(${k})`, transformOrigin: "0 0", zIndex: "auto", margin: "0" });
     const wrap = el(`<div class="wx-pv" aria-hidden="true"></div>`);
     wrap.style.width = Math.round(w * k) + "px"; wrap.style.height = Math.round(h * k) + "px";
     wrap.setAttribute("inert", "");
@@ -205,8 +253,9 @@
   }
   function unsnap(e) {
     if (!e || !e.wxSnap) return;
-    const p = e.wxPrev; e.wxSnap = null; e.win.classList.remove("wx-snapped");
+    const p = e.wxPrev; e.wxSnap = null; e.wxKb = null; e.win.classList.remove("wx-snapped");
     if (p) { e.win.style.width = p.w + "px"; e.win.style.height = p.h + "px"; }
+    dropFromGroups(e); // leaving a layout breaks the snap group
   }
   function maximizeFrom(e, pre) {
     if (!e.setMaximized || e.noMax) return;
@@ -215,6 +264,164 @@
     e.setMaximized(true);
   }
   window.addEventListener("resize", () => { wins().forEach((e) => { if (e.wxSnap) { const r = fracRect(e.wxSnap.f); Object.assign(e.win.style, { left: r.l + "px", top: r.t + "px", width: r.w + "px", height: r.h + "px" }); } }); });
+
+  // =====================================================================
+  //  Snap groups — windows snapped into one layout are remembered together,
+  //  so a taskbar button in the group can "restore group" (raise them all).
+  //  Stored in State.data.appData.snapGroups = [{ id, members:[{winId,f}] }].
+  //  A group needs >= 2 live members; it is pruned when windows close / unsnap.
+  // =====================================================================
+  let grpSeq = 1, assistGroupId = null;
+  function groupStore() { if (!S().appData) S().appData = {}; if (!Array.isArray(S().appData.snapGroups)) S().appData.snapGroups = []; return S().appData.snapGroups; }
+  function liveEntryById(id) { return wins().find((e) => e.id === id) || null; }
+  function entriesInGroup(g) { return g.members.map((m) => liveEntryById(m.winId)).filter(Boolean); }
+  function groupFor(entry) { return entry && entry.id ? groupStore().find((g) => g.members.some((m) => m.winId === entry.id)) || null : null; }
+  function pruneGroups() {
+    const gs = groupStore();
+    gs.forEach((g) => { g.members = g.members.filter((m) => liveEntryById(m.winId)); });
+    const kept = gs.filter((g) => g.members.length >= 2);
+    if (kept.length !== gs.length) { S().appData.snapGroups = kept; }
+    return S().appData.snapGroups;
+  }
+  function upsertGroup(entries) {
+    entries = (entries || []).filter((e) => e && e.id && e.win && e.win.isConnected && e.wxSnap);
+    const seen = new Set(); entries = entries.filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)));
+    if (entries.length < 2) return;
+    const gs = groupStore();
+    const ids = entries.map((e) => e.id);
+    gs.forEach((g) => { g.members = g.members.filter((m) => !ids.includes(m.winId)); });
+    let g = assistGroupId ? gs.find((x) => x.id === assistGroupId) : null;
+    if (!g) { g = { id: "sg" + grpSeq++, members: [] }; gs.push(g); assistGroupId = g.id; }
+    g.members = entries.map((e) => ({ winId: e.id, f: e.wxSnap.f.slice() }));
+    S().appData.snapGroups = gs.filter((x) => x.members.length >= 2);
+    State.save();
+  }
+  function dropFromGroups(e) {
+    if (!e || !e.id || !(S().appData && S().appData.snapGroups)) return;
+    const gs = S().appData.snapGroups; let changed = false;
+    gs.forEach((g) => { const n = g.members.length; g.members = g.members.filter((m) => m.winId !== e.id); if (g.members.length !== n) changed = true; });
+    const kept = gs.filter((g) => g.members.length >= 2);
+    if (changed || kept.length !== gs.length) { S().appData.snapGroups = kept; State.save(); }
+  }
+  function restoreGroup(g) {
+    const members = g.members.map((m) => ({ e: liveEntryById(m.winId), f: m.f })).filter((x) => x.e);
+    if (members.length < 2) return;
+    members.forEach(({ e, f }) => {
+      if (e.desk && e.desk !== activeId()) moveWindow(e, activeId()); // bring the whole group onto the current desktop
+      if (e.win.style.display === "none") e.win.style.display = "";
+      if (f && canSnap(e)) snap(e, f); else if (window.WM) WM.focusWindow(e.win);
+    });
+    members.forEach(({ e }) => { if (window.WM) WM.focusWindow(e.win); }); // raise them above everything else, in order
+  }
+
+  // ---- taskbar hover affordance: "restore group" over a grouped app button ----
+  // Appended to document.body (not #screen) with a z above the taskbar thumbnail
+  // previews (js/tbpreview.js, .tbp-preview at z 9700): #screen is a fixed stacking
+  // context with z:auto, so a chip inside it can't paint over a body-level popup.
+  // When that preview is showing, the chip sits above it so the two don't fight.
+  let grpFly = null, grpForBtn = null, grpShowT = null, grpHideT = null, grpReposT = null;
+  const tbBtnOf = (t) => (t && t.closest ? t.closest(".taskbar .tb-btn") : null);
+  function groupForBtn(btn) { pruneGroups(); const ents = wins().filter((e) => e.taskBtn === btn); for (const e of ents) { const g = groupFor(e); if (g) return g; } return null; }
+  function scheduleGrpHide() { clearTimeout(grpHideT); grpHideT = setTimeout(hideGrpFly, 260); }
+  function hideGrpFly() { clearTimeout(grpShowT); clearTimeout(grpHideT); clearTimeout(grpReposT); if (grpFly) { const f = grpFly; f.classList.remove("show"); setTimeout(() => f.remove(), 140); } grpFly = null; grpForBtn = null; }
+  function positionGrpFly(f, btn) {
+    const r = btn.getBoundingClientRect(), fw = f.offsetWidth, fh = f.offsetHeight;
+    let left = r.left + r.width / 2 - fw / 2; left = Math.max(8, Math.min(window.innerWidth - fw - 8, left));
+    // If a taskbar thumbnail preview is open above this button, sit above it instead.
+    let anchorTop = r.top;
+    const tbp = document.querySelector(".tbp-preview");
+    if (tbp) { const tr = tbp.getBoundingClientRect(); if (tr.height && tr.left < r.right + 8 && tr.right > r.left - 8) anchorTop = Math.min(anchorTop, tr.top); }
+    let top = anchorTop - fh - 8; if (top < 8) top = r.bottom + 8;
+    f.style.left = left + "px"; f.style.top = top + "px";
+  }
+  function showGrpFly(btn) {
+    const g = groupForBtn(btn); if (!g) return;
+    if (grpFly && grpForBtn === btn) return;
+    hideGrpFly(); grpForBtn = btn;
+    const ents = entriesInGroup(g);
+    const tiles = g.members.map((m) => { const f = m.f || [0, 0, 1, 1]; return `<span class="wx-grpz" style="left:${f[0] * 100}%;top:${f[1] * 100}%;width:${f[2] * 100}%;height:${f[3] * 100}%"></span>`; }).join("");
+    const f = grpFly = el(`<div class="wx-grpfly" role="dialog" aria-label="Snap group"><div class="wx-grpprev">${tiles}</div><button class="wx-grprestore">Restore group<span class="wx-grpn">${ents.length}</span></button></div>`);
+    f.style.zIndex = "9900"; // above .tbp-preview (9700), at document.body level
+    f.querySelector(".wx-grprestore").onclick = (ev) => { ev.stopPropagation(); hideGrpFly(); restoreGroup(g); };
+    f.addEventListener("pointerenter", () => clearTimeout(grpHideT));
+    f.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") scheduleGrpHide(); });
+    document.body.appendChild(f);
+    positionGrpFly(f, btn);
+    void f.offsetWidth; f.classList.add("show");
+    // The thumbnail preview may open a moment later; re-anchor above it once it's there.
+    clearTimeout(grpReposT);
+    grpReposT = setTimeout(() => { if (grpFly === f) { positionGrpFly(f, btn); grpReposT = setTimeout(() => { if (grpFly === f) positionGrpFly(f, btn); }, 260); } }, 200);
+  }
+  document.addEventListener("pointerover", (ev) => {
+    if (ev.pointerType !== "mouse") return;
+    const b = tbBtnOf(ev.target); if (!b || !groupForBtn(b)) return;
+    clearTimeout(grpHideT); clearTimeout(grpShowT);
+    grpShowT = setTimeout(() => { if (b.matches(":hover")) showGrpFly(b); }, 380);
+  }, true);
+  document.addEventListener("pointerout", (ev) => {
+    if (ev.pointerType !== "mouse") return;
+    const b = tbBtnOf(ev.target); if (!b) return;
+    if (ev.relatedTarget && (b.contains(ev.relatedTarget) || (grpFly && grpFly.contains(ev.relatedTarget)))) return;
+    clearTimeout(grpShowT); if (grpFly) scheduleGrpHide();
+  }, true);
+  // Touch / click a grouped taskbar button: let the taskbar's own click run, but
+  // surface the chip briefly so the group is reachable without a mouse hover.
+  document.addEventListener("pointerdown", (ev) => {
+    if (grpFly && !grpFly.contains(ev.target) && !tbBtnOf(ev.target)) hideGrpFly();
+    if (ev.pointerType === "mouse") return;
+    const b = tbBtnOf(ev.target); if (b && groupForBtn(b)) setTimeout(() => showGrpFly(b), 0);
+  }, true);
+
+  // =====================================================================
+  //  Keyboard snapping — halves, thirds, two-thirds and quarters.
+  //
+  //  SNAP SCHEME (focused window; Win+Arrow, or Ctrl+Alt+Shift+Arrow):
+  //    Win+Left / Win+Right set the side. The FIRST press is a half. Pressing the
+  //    same side again cycles the width:  half -> third -> two-thirds -> half.
+  //    (Pressing the opposite side jumps straight to that side's half.)
+  //    Win+Up / Win+Down, once a window is side-snapped, step the vertical zone to a
+  //    quarter (always half-width):  half -> top quarter -> (Up) maximize;
+  //                                  half -> bottom quarter -> (Down) minimize.
+  //    From a quarter, Left/Right expands back to a half on that side first.
+  //    With no snap: Win+Up maximizes, Win+Down minimizes (a maximized window
+  //    restores on Win+Down first).
+  // =====================================================================
+  const KBW = { half: 0.5, third: 1 / 3, twothird: 2 / 3 };
+  function kbFrac(st) {
+    const w = KBW[st.size] || 0.5;
+    const left = st.side === "left" ? 0 : 1 - w;
+    const top = st.vert === "bottom" ? 0.5 : 0, h = st.vert === "full" ? 1 : 0.5;
+    return [left, top, w, h];
+  }
+  function focusedEntry() { return wins().filter((e) => onActive(e) && !isMin(e)).sort((a, b) => zOf(b) - zOf(a))[0] || null; }
+  function minimizeEntry(e) { const b = e.win.querySelector(".win-titlebar .ctl-min"); if (b && !b.disabled) b.click(); }
+  function kbSnap(e, key) {
+    const vertical = key === "ArrowUp" || key === "ArrowDown";
+    let st = (e.wxKb && e.wxSnap) ? e.wxKb : null; // only trust kb-state while still snapped
+    if (vertical) {
+      if (!st) {
+        if (e.maximized) { if (key === "ArrowDown" && e.setMaximized) e.setMaximized(false); return; }
+        if (key === "ArrowUp") maximizeFrom(e); else minimizeEntry(e);
+        return;
+      }
+      if (key === "ArrowUp") {
+        if (st.vert === "bottom") st.vert = "full";
+        else if (st.vert === "full") { st.vert = "top"; st.size = "half"; }
+        else { e.wxKb = null; maximizeFrom(e); return; } // top quarter -> maximize
+      } else {
+        if (st.vert === "top") st.vert = "full";
+        else if (st.vert === "full") { st.vert = "bottom"; st.size = "half"; }
+        else { minimizeEntry(e); return; } // bottom quarter -> minimize
+      }
+    } else {
+      const side = key === "ArrowLeft" ? "left" : "right";
+      if (!st || st.side !== side) st = { side: side, size: "half", vert: "full" };
+      else if (st.vert !== "full") { st.vert = "full"; st.size = "half"; } // quarter -> half
+      else st.size = st.size === "half" ? "third" : st.size === "third" ? "twothird" : "half";
+    }
+    e.wxKb = st;
+    snap(e, kbFrac(st));
+  }
 
   // ---- drag a window to an edge / corner ----
   let drag = null;
@@ -329,6 +536,7 @@
   function closeAssist() { if (assist) { assist.remove(); assist = null; } }
   function snapAssist(zones, used) {
     closeAssist();
+    assistGroupId = null; // a fresh Snap Assist session builds one snap group
     zones = zones.slice(); used = used.slice();
     const candidates = () => wins().filter((x) => onActive(x) && canSnap(x) && !used.includes(x)).sort((a, b) => zOf(b) - zOf(a));
     if (!zones.length || !candidates().length) return;
@@ -356,7 +564,9 @@
             card.onclick = (ev) => {
               ev.stopPropagation();
               if (isMin(x) && window.WM) WM.focusWindow(x.win);
-              snap(x, z); used.push(x); zones.shift(); render();
+              snap(x, z); used.push(x); zones.shift();
+              upsertGroup(used); // remember these windows as a snap group
+              render();
             };
             grid.appendChild(card);
           });
@@ -424,6 +634,7 @@
   function toggleTaskView() { if (tv) closeTaskView(); else openTaskView(); }
   function openTaskView() {
     if (!desktopReady()) return;
+    if (tv) closeTaskView(); // never stack two Task View overlays
     closeAll("tv");
     const ov = el(`<div class="wx-tv" role="dialog" aria-label="Task View">
       <div class="wx-tv-top"><span class="wx-tv-title"></span><button class="wx-tv-x" title="Close Task View (Esc)" aria-label="Close Task View">&times;</button></div>
@@ -439,7 +650,7 @@
     renderTaskView();
     requestAnimationFrame(() => ov.classList.add("show"));
   }
-  function closeTaskView() { if (!tv) return; const o = tv.el; tv = null; o.classList.remove("show"); setTimeout(() => o.remove(), reduceMotion() ? 0 : 160); }
+  function closeTaskView() { if (!tv) return; hideWallPick(); const o = tv.el; tv = null; o.classList.remove("show"); setTimeout(() => o.remove(), reduceMotion() ? 0 : 160); }
   function renderTaskView() {
     if (!tv) return;
     renderTvGrid(tv.shown);
@@ -521,10 +732,9 @@
     });
   }
   function deskMini(id, w, h) {
-    const desk = document.querySelector(".desktop");
     const mini = el(`<div class="wx-tv-mini"></div>`);
     mini.style.width = w + "px"; mini.style.height = h + "px";
-    if (desk) mini.style.background = desk.style.background || getComputedStyle(desk).background;
+    mini.style.background = deskWallpaperCss(id); // each desktop's own wallpaper (falls back to global)
     mini.style.backgroundSize = "cover"; mini.style.backgroundPosition = "center";
     const s = scr(); const kx = w / s.clientWidth, ky = h / s.clientHeight;
     deskWindows(id).filter((e) => !isMin(e)).sort((a, b) => zOf(a) - zOf(b)).forEach((e) => {
@@ -540,20 +750,23 @@
     const d = store(); const many = d.list.length > 1;
     const tw = window.innerWidth < 700 ? 110 : 150, th = Math.round(tw * 0.58);
     d.list.forEach((x, i) => {
-      const t = el(`<div class="wx-tv-desk${x.id === d.active ? " on" : ""}" role="listitem" data-id="${esc(x.id)}" tabindex="0" title="Switch to ${esc(x.name)} — double-click the name to rename">
-        <div class="wx-tv-deskbtns"><button class="wx-tv-ren" title="Rename" aria-label="Rename ${esc(x.name)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>${many ? `<button class="wx-tv-close" title="Close desktop" aria-label="Close ${esc(x.name)}">&times;</button>` : ""}</div>
+      const t = el(`<div class="wx-tv-desk${x.id === d.active ? " on" : ""}" role="listitem" data-id="${esc(x.id)}" tabindex="0" title="Switch to ${esc(x.name)} — double-click the name to rename, drag to reorder">
+        <div class="wx-tv-deskbtns"><button class="wx-tv-ren" title="Rename" aria-label="Rename ${esc(x.name)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="wx-tv-bg" title="Change background" aria-label="Change background for ${esc(x.name)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.4"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg></button>${many ? `<button class="wx-tv-close" title="Close desktop" aria-label="Close ${esc(x.name)}">&times;</button>` : ""}</div>
         <div class="wx-tv-name">${esc(x.name)}</div></div>`);
       t.insertBefore(deskMini(x.id, tw, th), t.querySelector(".wx-tv-name"));
       t.onclick = (ev) => {
+        if (t.__dragged) { t.__dragged = false; return; } // drop that reordered, don't switch
         if (ev.target.closest(".wx-tv-deskbtns") || ev.target.closest("input")) return;
         closeTaskView(); switchTo(x.id);
       };
       t.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target === t) { closeTaskView(); switchTo(x.id); } });
       t.addEventListener("pointerenter", (ev) => { if (ev.pointerType === "mouse" && tv && !tv.el.classList.contains("wx-tv-dragging")) { tv.shown = x.id; renderTvGrid(x.id); } });
       t.querySelector(".wx-tv-ren").onclick = (ev) => { ev.stopPropagation(); startRename(t, x); };
+      t.querySelector(".wx-tv-bg").onclick = (ev) => { ev.stopPropagation(); openWallPick(t.querySelector(".wx-tv-bg"), x); };
       t.querySelector(".wx-tv-name").ondblclick = (ev) => { ev.stopPropagation(); startRename(t, x); };
       const cl = t.querySelector(".wx-tv-close");
       if (cl) cl.onclick = (ev) => { ev.stopPropagation(); closeDesktop(x.id); if (tv) { tv.shown = activeId(); renderTaskView(); } };
+      wireDeskReorder(t, x);
       strip.appendChild(t);
     });
     const nw = el(`<button class="wx-tv-new" title="New desktop (drop a window here to move it to a new desktop)"><div class="wx-tv-plus" style="width:${tw}px;height:${th}px"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><div class="wx-tv-name">New desktop</div></button>`);
@@ -561,6 +774,77 @@
     strip.appendChild(nw);
     strip.onpointerleave = (ev) => { if (ev.pointerType === "mouse" && tv && tv.shown !== activeId() && !tv.el.classList.contains("wx-tv-dragging")) { tv.shown = activeId(); renderTvGrid(tv.shown); } };
   }
+  // Drag a desktop tile left/right in the strip to reorder desktops (persisted).
+  function reorderDesktops(orderIds) {
+    const d = store();
+    const map = {}; d.list.forEach((x) => { map[x.id] = x; });
+    const next = orderIds.map((id) => map[id]).filter(Boolean);
+    d.list.forEach((x) => { if (next.indexOf(x) < 0) next.push(x); });
+    if (next.length === d.list.length) { d.list = next; State.save(); applyDesktop(); }
+  }
+  function wireDeskReorder(tile, x) {
+    tile.style.touchAction = "none";
+    tile.addEventListener("pointerdown", (ev) => {
+      if (ev.button || ev.target.closest(".wx-tv-deskbtns") || ev.target.closest("input")) return;
+      const strip = tile.parentNode; const sx = ev.clientX, sy = ev.clientY; let dragging = false;
+      try { tile.setPointerCapture(ev.pointerId); } catch (err) {}
+      const move = (m) => {
+        const dx = m.clientX - sx, dy = m.clientY - sy;
+        if (!dragging && Math.hypot(dx, dy) > 10) { dragging = true; tile.classList.add("wx-desk-dragging"); if (tv) tv.el.classList.add("wx-tv-dragging"); }
+        if (!dragging) return;
+        if (m.cancelable) m.preventDefault();
+        tile.style.transform = `translate(${dx}px, ${dy}px)`;
+        let target = null;
+        [...strip.querySelectorAll(".wx-tv-desk")].forEach((o) => { if (target || o === tile) return; const r = o.getBoundingClientRect(); if (m.clientX < r.left + r.width / 2) target = o; });
+        if (target) { if (target !== tile.nextSibling) strip.insertBefore(tile, target); }
+        else { const nb = strip.querySelector(".wx-tv-new"); if (nb) strip.insertBefore(tile, nb); else strip.appendChild(tile); }
+      };
+      const up = () => {
+        tile.removeEventListener("pointermove", move); tile.removeEventListener("pointerup", up); tile.removeEventListener("pointercancel", up);
+        if (!dragging) return;
+        tile.classList.remove("wx-desk-dragging"); tile.style.transform = "";
+        if (tv) tv.el.classList.remove("wx-tv-dragging");
+        tile.__dragged = true; // swallow the click that follows the drop
+        reorderDesktops([...strip.querySelectorAll(".wx-tv-desk")].map((n) => n.dataset.id));
+      };
+      tile.addEventListener("pointermove", move); tile.addEventListener("pointerup", up); tile.addEventListener("pointercancel", up);
+    });
+  }
+
+  // Per-desktop "Change background": pick from the built-in wallpapers, a few solid
+  // colours, or "Global" (no custom wallpaper → use the system wallpaper).
+  const WALL_PRESETS = [
+    { wp: "default", label: "Global (system wallpaper)" },
+    { wp: "assets/wall1.jpg" }, { wp: "assets/wall2.jpg" }, { wp: "assets/wall3.jpg" },
+    { wp: "assets/wall4.jpg" }, { wp: "assets/wall5.jpg" }, { wp: "assets/wall6.jpg" },
+    { wp: "#0067c0" }, { wp: "#107c10" }, { wp: "#5c2d91" }, { wp: "#c239b3" }, { wp: "#1f1f1f" },
+  ];
+  let wallPick = null, wallPickDoc = null;
+  function hideWallPick() { if (wallPickDoc) { document.removeEventListener("pointerdown", wallPickDoc, true); wallPickDoc = null; } if (wallPick) { wallPick.remove(); wallPick = null; } }
+  function openWallPick(anchor, x) {
+    hideWallPick();
+    const cur = (deskById(x.id) && deskById(x.id).wallpaper) || "default";
+    const p = wallPick = el(`<div class="wx-wallpick" role="menu" aria-label="Change background for ${esc(x.name)}"><div class="wx-wallpick-h">Background · ${esc(x.name)}</div><div class="wx-wallpick-grid"></div></div>`);
+    p.style.zIndex = OVERLAY_Z + 500;
+    const grid = p.querySelector(".wx-wallpick-grid");
+    WALL_PRESETS.forEach((opt) => {
+      const on = cur === opt.wp || (opt.wp === "default" && cur === "default");
+      const sw = el(`<button class="wx-wallsw${on ? " on" : ""}" role="menuitemradio" aria-checked="${on}" title="${esc(opt.label || opt.wp)}" aria-label="${esc(opt.label || opt.wp)}"></button>`);
+      if (opt.wp === "default") { sw.classList.add("wx-wall-default"); sw.textContent = "Global"; }
+      else if (isImgWp(opt.wp)) sw.style.background = `url(${opt.wp}) center/cover`;
+      else sw.style.background = opt.wp;
+      sw.onclick = (ev) => { ev.stopPropagation(); setDeskWallpaper(x.id, opt.wp); hideWallPick(); if (tv) renderTvStrip(); };
+      grid.appendChild(sw);
+    });
+    scr().appendChild(p);
+    const r = anchor.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
+    let left = r.left + r.width / 2 - pw / 2; left = Math.max(8, Math.min(window.innerWidth - pw - 8, left));
+    let top = r.bottom + 6; if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+    p.style.left = left + "px"; p.style.top = top + "px";
+    wallPickDoc = (ev) => { if (wallPick && !wallPick.contains(ev.target) && !anchor.contains(ev.target)) hideWallPick(); };
+    setTimeout(() => document.addEventListener("pointerdown", wallPickDoc, true), 0);
+  }
+
   function startRename(tile, x) {
     const nm = tile.querySelector(".wx-tv-name");
     const inp = el(`<input class="wx-tv-input" maxlength="40" aria-label="Desktop name">`); inp.value = x.name;
@@ -582,7 +866,7 @@
   function closeAll(except) {
     if (except !== "alttab") closeAltTab();
     if (except !== "tv") closeTaskView();
-    hideFly(); closeAssist();
+    hideFly(); closeAssist(); hideGrpFly(); hideWallPick();
     document.querySelectorAll(".jumplist").forEach((m) => m.remove());
   }
 
@@ -611,8 +895,16 @@
     // Task View: Win+Tab, Ctrl+Alt+Up (Ctrl+Alt+Down closes)
     if ((k === "Tab" && e.metaKey) || (e.ctrlKey && e.altKey && k === "ArrowUp")) { own(); toggleTaskView(); return; }
     if (tv && e.ctrlKey && e.altKey && k === "ArrowDown") { own(); closeTaskView(); return; }
-    // Switch desktops: Ctrl+Alt+Left/Right, Ctrl+Win+Left/Right
-    if (e.ctrlKey && (e.altKey || e.metaKey) && (k === "ArrowLeft" || k === "ArrowRight")) {
+    // Keyboard window snapping (halves / thirds / two-thirds / quarters): Win+Arrow,
+    // or Ctrl+Alt+Shift+Arrow as the no-Win-key alternative. Not while a switcher /
+    // Task View is up (arrows drive those). See the SNAP SCHEME comment above.
+    if (!tv && !at && (k === "ArrowLeft" || k === "ArrowRight" || k === "ArrowUp" || k === "ArrowDown")) {
+      const winCombo = e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
+      const altCombo = e.ctrlKey && e.altKey && e.shiftKey && !e.metaKey;
+      if (winCombo || altCombo) { const ent = focusedEntry(); if (ent) { own(); kbSnap(ent, k); return; } }
+    }
+    // Switch desktops: Ctrl+Alt+Left/Right, Ctrl+Win+Left/Right (Shift is reserved for snapping)
+    if (e.ctrlKey && (e.altKey || e.metaKey) && !e.shiftKey && (k === "ArrowLeft" || k === "ArrowRight")) {
       own(); const wasTv = !!tv; closeTaskView(); switchRelative(k === "ArrowLeft" ? -1 : 1); if (wasTv) openTaskView(); return;
     }
     if (tv) {
@@ -638,6 +930,12 @@
     layouts: LAYOUTS, zones: Z, showSnapLayouts: (win) => { const b = win && win.querySelector(".ctl-max"); if (b) showFly(b); },
     desktops: () => JSON.parse(JSON.stringify(store())),
     addDesktop, closeDesktop, renameDesktop, moveWindow, switchRelative, applyDesktop,
+    // desktop reorder + per-desktop wallpaper (Task View)
+    reorderDesktops: (ids) => reorderDesktops(ids), setDeskWallpaper: (id, wp) => setDeskWallpaper(id, wp),
+    // snap groups + keyboard snapping
+    snapGroups: () => JSON.parse(JSON.stringify(pruneGroups())),
+    restoreSnapGroup: (id) => { const g = groupStore().find((x) => x.id === id); if (g) restoreGroup(g); },
+    kbSnap: (entry, key) => kbSnap(entry, key),
   };
   // Apply saved desktops once the taskbar exists.
   const boot = setInterval(() => { if (document.querySelector(".taskbar .wx-tv-btn")) { clearInterval(boot); applyDesktop(); } }, 500);
