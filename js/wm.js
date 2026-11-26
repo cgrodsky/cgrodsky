@@ -144,14 +144,13 @@
     function close() {
       const idx = openWindows.indexOf(entry);
       if (idx >= 0) openWindows.splice(idx, 1);
-      if (entry.taskBtn && entry.taskBtn.parentNode && !entry.pinned) entry.taskBtn.remove();
-      else if (entry.taskBtn && entry.pinned) {
-        // A pinned button's click was repointed at this window when it opened;
-        // now that it's closing, point it at another open window of the same app
-        // if one remains, otherwise back to launching the app (so it still opens).
-        const btn = entry.taskBtn, id = entry.appId;
+      if (entry.taskBtn) {
+        // A button can be shared by several windows (pinned, or combined). Remove an unpinned
+        // button only with its last window; a pinned one goes back to launching the app.
+        const btn = entry.taskBtn;
         const other = openWindows.find((e) => e.taskBtn === btn);
-        btn.onclick = other ? () => toggleWindow(other) : () => open(id);
+        if (!entry.pinned) { if (!other && btn.parentNode) btn.remove(); }
+        else { btn.onclick = () => groupClick(btn); if (!other) unlabelBtn(btn); }
       }
       win.remove();
       if (opts.onClose) opts.onClose();
@@ -630,6 +629,8 @@
         const overBin = bin.getBoundingClientRect();
         const on = pt.clientX >= overBin.left && pt.clientX <= overBin.right && pt.clientY >= overBin.top && pt.clientY <= overBin.bottom;
         bin.classList.toggle("drop-hover", on);
+        // Drag an app shortcut onto the taskbar to pin it there.
+        if (s.kind !== "group") tbDrop.over(pt.clientX, pt.clientY, s.id);
       }
     };
     const onUp = (e) => {
@@ -641,7 +642,8 @@
         const on = pt.clientX >= r.left && pt.clientX <= r.right && pt.clientY >= r.top && pt.clientY <= r.bottom;
         if (ghost) ghost.remove();
         ic.classList.remove("dragging"); bin.classList.remove("drop-hover");
-        if (on) deleteDeskItem(s);
+        if (on) { tbDrop.cancel(); deleteDeskItem(s); }
+        else if (s.kind !== "group" && tbDrop.drop(pt.clientX, pt.clientY, s.id)) { /* pinned */ }
       } else {
         // Tap: first tap selects (blue); tapping the blue icon opens the dropdown.
         if (deskSel.has(s.key) && deskSel.size <= 1) { deskIconMenu(s, ic); }
@@ -657,6 +659,8 @@
     };
     ic.addEventListener("mousedown", onDown);
     ic.addEventListener("touchstart", onDown, { passive: true });
+    // The icon is an <img>: stop the browser's own image drag, which would swallow the mouse moves.
+    ic.addEventListener("dragstart", (e) => e.preventDefault());
     // Mouse double-click opens the app straight away, like real Windows (tap → select → menu still works on touch).
     ic.addEventListener("dblclick", (e) => { e.preventDefault(); document.querySelectorAll(".desk-ctx").forEach((m) => m.remove()); clearDeskSel(); launchDeskItem(s); });
     ic.addEventListener("contextmenu", (e) => { e.preventDefault(); if (!deskSel.has(s.key)) { clearDeskSel(); deskSel.add(s.key); ic.classList.add("selected"); } deskIconMenu(s, ic); });
@@ -815,6 +819,13 @@
   }
 
   function applyWallpaper() {
+    if (!desktop) return;
+    // js/personalize.js resolves slideshow / Windows spotlight / time-of-day wallpapers and the
+    // picture fit (Fill, Fit, Stretch, Tile, Center); it returns null for a plain picture or color.
+    try {
+      const pz = window.Personalize && Personalize.wallpaperCss && Personalize.wallpaperCss();
+      if (pz) { if (Personalize.crossfade) Personalize.crossfade(desktop, pz); else desktop.style.background = pz; return; }
+    } catch (e) { /* fall back to the plain wallpaper */ }
     const wp = S().desktop.wallpaper;
     if (!wp || wp === "default") {
       desktop.style.background = "url(assets/wall3.jpg) center/cover"; // Windows 12 default
@@ -1176,7 +1187,11 @@
     let fx = document.getElementById("displayFx");
     if (!fx) { fx = el(`<div id="displayFx"></div>`); screen().appendChild(fx); }
     const dim = Math.max(0, (100 - st.brightness) / 100 * 0.55);
-    fx.style.background = st.night ? "rgba(255,170,80,0.18)" : "transparent";
+    // Night light really removes blue light: a multiply layer keeps red, trims green a little and blue a lot.
+    // Strength (0–100) comes from Settings › Display › Night light (js/personalize.js); 50 if never set.
+    const k = Math.max(0, Math.min(100, st.nightStrength != null ? +st.nightStrength : 50)) / 100;
+    fx.style.background = st.night ? `rgb(255,${Math.round(255 - 100 * k)},${Math.round(255 - 195 * k)})` : "transparent";
+    fx.style.mixBlendMode = st.night ? "multiply" : "";
     fx.style.boxShadow = "none";
     fx.style.opacity = "1";
     let dimEl = document.getElementById("displayDim");
@@ -1392,6 +1407,40 @@
     ["pointerup", "pointercancel"].forEach((ev) => taskbar.addEventListener(ev, () => { lpCancel(); if (lpFired) { lpFired = false; lpSwallowUntil = Date.now() + 600; } }));
     // The tap that ends a long-press must not also launch / toggle the app.
     taskbar.addEventListener("click", (e) => { if (Date.now() < lpSwallowUntil) { lpSwallowUntil = 0; e.stopPropagation(); e.preventDefault(); } }, true);
+    // Drag an app button to reorder the pins (dropping a running, unpinned app pins it).
+    // Mouse: press and drag. Touch: press and hold (~½ s), then drag — a quick swipe does nothing.
+    let rd = null;
+    taskbar.addEventListener("dragstart", (e) => e.preventDefault());   // no native <img> drag
+    taskbar.addEventListener("pointerdown", (e) => {
+      if (e.button) return;
+      const b = e.target.closest(".tb-apps .tb-btn"); if (!b) return;
+      const info = taskBtnApp(b); if (!info || !info.appId) return;
+      rd = { b, id: info.appId, x: e.clientX, y: e.clientY, t: Date.now(), touch: e.pointerType !== "mouse", pid: e.pointerId, on: false, ghost: null };
+    });
+    const rdMove = (e) => {
+      if (!rd || e.pointerId !== rd.pid) return;
+      if (!rd.on) {
+        if (Math.hypot(e.clientX - rd.x, e.clientY - rd.y) < 8) return;
+        if (rd.touch && Date.now() - rd.t < 420) { rd = null; return; }
+        rd.on = true; lpCancel(); lpFired = false;
+        document.querySelectorAll(".jumplist,.tb-layoutmenu").forEach((m) => m.remove());
+        rd.b.classList.remove("tb-pressed"); rd.b.classList.add("pz-dragging");
+        rd.ghost = el(`<div class="dicon-ghost pz-tb-ghost"></div>`); rd.ghost.innerHTML = (rd.b.querySelector(":scope > .pz-tb-ic") || rd.b).innerHTML; screen().appendChild(rd.ghost);
+      }
+      if (e.cancelable) e.preventDefault();
+      rd.ghost.style.left = e.clientX + "px"; rd.ghost.style.top = e.clientY + "px";
+      tbDrop.over(e.clientX, e.clientY, rd.id, rd.b);
+    };
+    const rdEnd = (e) => {
+      if (!rd || e.pointerId !== rd.pid) return;
+      const r = rd; rd = null; if (!r.on) return;
+      r.b.classList.remove("pz-dragging"); if (r.ghost) r.ghost.remove();
+      if (e.type === "pointerup") tbDrop.drop(e.clientX, e.clientY, r.id, r.b); else tbDrop.cancel();
+      lpSwallowUntil = Date.now() + 500;
+    };
+    window.addEventListener("pointermove", rdMove, { passive: false });
+    window.addEventListener("pointerup", rdEnd);
+    window.addEventListener("pointercancel", rdEnd);
     applyTaskbarLayout();
     buildStartMenu();
     buildSearchPanel();
@@ -1420,25 +1469,123 @@
   }
   function pinTitle(id) { return PIN_TITLES[id] || appDisplayName(id); }
   function pinBtnHtml(id) { const t = escAttr(pinTitle(id)); return `<div class="tb-btn" data-open="${escAttr(id)}" title="${t}">${Icon.mini(id === "duolingo" ? duoIconKey(false) : id, pinTitle(id))}</div>`; }
-  function pinToTaskbar(appId) {
-    const pins = taskbarPins(); if (!appId || pins.includes(appId)) return;
-    pins.push(appId); State.save();
+  // Pinned buttons in the taskbar, in order (same order as taskbarPins()).
+  function pinsDom() { return taskbar ? [...taskbar.querySelectorAll(".tb-apps .tb-btn[data-open]")] : []; }
+  function pinToTaskbar(appId, index) {
+    const pins = taskbarPins(); if (!appId || !taskbar) return;
+    if (pins.includes(appId)) { if (index != null) movePin(appId, index); return; }
+    const at = index == null ? pins.length : Math.max(0, Math.min(pins.length, index));
+    const dom = pinsDom();
+    pins.splice(at, 0, appId); State.save();
     const apps = taskbar.querySelector(".tb-apps") || taskbar;
-    const btn = el(pinBtnHtml(appId)); btn.onclick = () => open(appId);
-    const lastPinned = [...apps.querySelectorAll(".tb-btn[data-open]")].pop();
-    if (lastPinned) lastPinned.after(btn); else apps.appendChild(btn);
+    const btn = el(pinBtnHtml(appId)); btn.onclick = () => groupClick(btn);
+    if (dom[at]) dom[at].before(btn);
+    else if (dom.length) dom[dom.length - 1].after(btn);
+    else { const tv = apps.querySelector(".wx-tv-btn"); if (tv) tv.after(btn); else apps.appendChild(btn); }
     // Fold the app's running windows into the new pinned button.
-    openWindows.filter((e) => e.appId === appId).forEach((e) => { if (e.taskBtn && !e.pinned) e.taskBtn.remove(); e.taskBtn = null; addTaskButton(e); });
+    openWindows.filter((e) => e.appId === appId).forEach((e) => { if (e.taskBtn && !e.pinned && e.taskBtn.parentNode) e.taskBtn.remove(); e.taskBtn = null; e.pinned = false; });
+    openWindows.filter((e) => e.appId === appId).forEach((e) => addTaskButton(e));
     refreshTaskbarActive();
+    try { window.dispatchEvent(new CustomEvent("taskbar-pins-change")); } catch (_) {}
+  }
+  // Reorder a pinned app (index = position among the other pins).
+  function movePin(appId, index) {
+    const pins = taskbarPins(); const i = pins.indexOf(appId); if (i < 0 || !taskbar) return;
+    pins.splice(i, 1); const at = Math.max(0, Math.min(pins.length, index)); pins.splice(at, 0, appId); State.save();
+    const btn = taskbar.querySelector(`.tb-apps .tb-btn[data-open="${escAttr(appId)}"]`);
+    if (btn) {
+      const others = pinsDom().filter((b) => b !== btn);
+      if (others[at]) others[at].before(btn); else if (others.length) others[others.length - 1].after(btn);
+    }
+    if (!combining()) rebuildTaskButtons(); else refreshTaskbarActive();
+    try { window.dispatchEvent(new CustomEvent("taskbar-pins-change")); } catch (_) {}
   }
   function unpinFromTaskbar(appId) {
     const pins = taskbarPins(); const i = pins.indexOf(appId); if (i < 0) return;
     pins.splice(i, 1); State.save();
-    const btn = taskbar.querySelector(`.tb-btn[data-open="${appId}"]`); if (btn) btn.remove();
+    const btn = taskbar.querySelector(`.tb-btn[data-open="${escAttr(appId)}"]`); if (btn) btn.remove();
     // Running windows keep a (now unpinned) button of their own.
     openWindows.filter((e) => e.taskBtn === btn).forEach((e) => { e.pinned = false; e.taskBtn = null; addTaskButton(e); });
     refreshTaskbarActive();
+    try { window.dispatchEvent(new CustomEvent("taskbar-pins-change")); } catch (_) {}
   }
+
+  // ---- Combine taskbar buttons (Settings › Personalization › Taskbar, js/personalize.js) ----
+  // "always": one button per app; "never": one labelled button per window;
+  // "full": like "never" until the taskbar runs out of room (js/personalize.js calls setCombineFull).
+  let combineFull = false;
+  function combineSetting() { const m = S().appData && S().appData.taskbarCombine; return m === "never" || m === "full" ? m : "always"; }
+  function combining() { const m = combineSetting(); return m === "always" || (m === "full" && combineFull); }
+  function labelBtn(btn) {
+    if (btn.classList.contains("pz-lbl")) return;
+    btn.classList.add("pz-lbl");
+    const ic = document.createElement("span"); ic.className = "pz-tb-ic";
+    [...btn.childNodes].forEach((n) => { if (!(n.classList && /^pz-(badge|prog)/.test(n.className))) ic.appendChild(n); });
+    btn.prepend(ic); btn.appendChild(el(`<span class="pz-tb-lbl"></span>`));
+  }
+  function unlabelBtn(btn) {
+    if (!btn.classList.contains("pz-lbl")) return;
+    btn.classList.remove("pz-lbl");
+    const ic = btn.querySelector(":scope > .pz-tb-ic"), lb = btn.querySelector(":scope > .pz-tb-lbl");
+    if (lb) lb.remove();
+    if (ic) { while (ic.firstChild) btn.insertBefore(ic.firstChild, ic); ic.remove(); }
+  }
+  // Click on a taskbar button: no window → launch; one → show/minimize; several → bring the next one forward.
+  function groupClick(btn) {
+    const ents = openWindows.filter((e) => e.taskBtn === btn);
+    if (!ents.length) { const id = btn.dataset.open || btn.dataset.app; if (id) open(id); return; }
+    if (ents.length === 1) { toggleWindow(ents[0]); return; }
+    const here = ents.filter((e) => !window.WinX || WinX.onActive(e));
+    const list = (here.length ? here : ents).slice().sort((a, b) => (+b.win.style.zIndex || 0) - (+a.win.style.zIndex || 0));
+    const top = list[0];
+    if (top.win.style.display !== "none" && +top.win.style.zIndex === zCounter) focusWindow(list[list.length - 1].win);
+    else toggleWindow(top);
+    refreshTaskbarActive();
+  }
+  function rebuildTaskButtons() {
+    if (!taskbar) return;
+    openWindows.forEach((e) => { if (e.taskBtn && !e.pinned && e.taskBtn.parentNode) e.taskBtn.remove(); e.taskBtn = null; e.pinned = false; });
+    pinsDom().forEach((b) => { unlabelBtn(b); b.onclick = () => groupClick(b); });
+    openWindows.slice().forEach((e) => addTaskButton(e));
+    refreshTaskbarActive();
+  }
+  function setCombineFull(v) { v = !!v; if (v === combineFull) return; combineFull = v; if (combineSetting() === "full") rebuildTaskButtons(); }
+
+  // ---- Drag to pin / reorder: desktop shortcuts, Start apps and taskbar buttons ----
+  const tbDrop = (function () {
+    let mark = null;
+    function dockRect() { const d = taskbar && taskbar.querySelector(".tb-dock"); return d && d.offsetParent ? d.getBoundingClientRect() : null; }
+    function isOver(x, y) {
+      const r = dockRect(); if (!r) return false;
+      return y >= r.top - 16 && y <= r.bottom + 16 && x >= r.left - 24 && x <= r.right + 24;
+    }
+    // Insertion index into taskbarPins() for a drop at x (ignoring `skip`, the button being dragged).
+    function slot(x, skip) {
+      const all = pinsDom().filter((b) => b !== skip), vis = all.filter((b) => b.offsetParent);
+      for (const b of vis) { const r = b.getBoundingClientRect(); if (x < r.left + r.width / 2) return { index: all.indexOf(b), before: b }; }
+      const last = vis[vis.length - 1];
+      return { index: last ? all.indexOf(last) + 1 : all.length, after: last || (taskbar.querySelector(".tb-apps .wx-tv-btn") || taskbar.querySelector(".tb-apps .start")) };
+    }
+    function hide() { if (mark) { mark.remove(); mark = null; } if (taskbar) taskbar.classList.remove("pz-drop-on"); }
+    function show(x, skip) {
+      const s = slot(x, skip), ref = s.before || s.after; if (!ref) return;
+      const r = ref.getBoundingClientRect();
+      if (!mark) { mark = el(`<div class="pz-drop-mark" style="position:fixed;width:3px;border-radius:2px;background:var(--accent,#0067c0);z-index:99998;pointer-events:none"></div>`); screen().appendChild(mark); }
+      mark.style.left = (s.before ? r.left - 4 : r.right + 1) + "px"; mark.style.top = (r.top + 4) + "px"; mark.style.height = Math.max(20, r.height - 8) + "px";
+      taskbar.classList.add("pz-drop-on");
+    }
+    return {
+      isOver,
+      over(x, y, appId, skip) { if (!taskbar || !appId) return false; const on = isOver(x, y); if (on) show(x, skip); else hide(); return on; },
+      drop(x, y, appId, skip) {
+        const on = !!(taskbar && appId && isOver(x, y)); const idx = on ? slot(x, skip).index : -1; hide();
+        if (!on) return false;
+        if (taskbarPins().includes(appId)) movePin(appId, idx); else pinToTaskbar(appId, idx);
+        return true;
+      },
+      cancel: hide,
+    };
+  })();
   // What app a taskbar button stands for: its pinned id, or the running windows behind it.
   function taskBtnApp(btn) {
     if (!btn || btn.classList.contains("start") || btn.classList.contains("wx-tv-btn")) return null;
@@ -1462,6 +1609,10 @@
     const acts = (appId && JUMP_ACTIONS[appId]) || [];
     const jl = el(`<div class="jumplist wx-jl"></div>`);
     const add = (label, fn, cls) => { const b = el(`<button class="${cls || ""}">${label}</button>`); b.onclick = () => { jl.remove(); fn(); }; jl.appendChild(b); return b; };
+    // Pinned + Recent files for this app (js/personalize.js), above the tasks like Windows.
+    if (appId && window.Personalize && Personalize.jumpListSection) {
+      try { if (Personalize.jumpListSection(jl, appId, () => jl.remove())) jl.appendChild(el(`<div class="jl-sep"></div>`)); } catch (err) { console.error("[taskbar] jump list", err); }
+    }
     if (acts.length) { jl.appendChild(el(`<div class="jl-head">Tasks</div>`)); acts.forEach((a) => add(a.label, a.act)); jl.appendChild(el(`<div class="jl-sep"></div>`)); }
     const head = add(`<span class="wx-jl-ic">${iconHtml}</span><span class="wx-jl-name">${escAttr(name)}</span>`, () => { if (appId) open(appId); }, "wx-jl-app");
     head.title = appId ? "Open a new window" : name;
@@ -1476,7 +1627,10 @@
     if (all.length) add("End task", () => all.slice().forEach((e) => { try { e.close && e.close(); } catch (err) { e.win.remove(); } }), "wx-jl-end");
     screen().appendChild(jl);
     jl.style.zIndex = 9600; // above toasts (#notifications is 9500)
-    const r = btn.getBoundingClientRect();
+    // A button hidden in the overflow flyout anchors to the "…" button instead.
+    const anchor = btn.offsetParent ? btn : (taskbar.querySelector(".pz-ovf-btn") || btn);
+    const r = anchor.getBoundingClientRect();
+    jl.style.maxHeight = Math.max(160, r.top - 16) + "px"; jl.style.overflowY = "auto";
     jl.style.left = Math.max(8, Math.min(r.left, window.innerWidth - jl.offsetWidth - 8)) + "px";
     jl.style.bottom = (window.innerHeight - r.top + 6) + "px";
     setTimeout(() => document.addEventListener("click", function h(ev) { if (!jl.contains(ev.target)) { jl.remove(); document.removeEventListener("click", h); } }), 0);
@@ -1505,18 +1659,30 @@
   }
 
   function addTaskButton(entry) {
-    // reuse existing pinned button if app matches
-    const existing = taskbar.querySelector(`.tb-btn[data-open="${entry.appId}"]`);
-    if (existing) {
+    const comb = combining();
+    // Reuse the app's pinned button (when not combining, only for its first window).
+    const existing = entry.appId ? taskbar.querySelector(`.tb-apps .tb-btn[data-open="${escAttr(entry.appId)}"]`) : null;
+    if (existing && (comb || !openWindows.some((e) => e !== entry && e.taskBtn === existing))) {
       entry.taskBtn = existing; entry.pinned = true;
-      existing.onclick = () => toggleWindow(entry);
+      existing.onclick = () => groupClick(existing);
+      if (!comb) labelBtn(existing);
       refreshTaskbarActive();
       return;
     }
-    const btn = el(`<div class="tb-btn" title="${entry.title}">${entry.icon || Icon.mini(entry.appId || "app", entry.title)}</div>`);
-    btn.onclick = () => toggleWindow(entry);
-    (taskbar.querySelector(".tb-apps") || taskbar).appendChild(btn);
-    entry.taskBtn = btn;
+    // Combine: share the button of another running window of the same app.
+    if (comb && entry.appId) {
+      const sib = openWindows.find((e) => e !== entry && e.appId === entry.appId && e.taskBtn && !e.pinned && e.taskBtn.isConnected);
+      if (sib) { entry.taskBtn = sib.taskBtn; entry.pinned = false; refreshTaskbarActive(); return; }
+    }
+    const btn = el(`<div class="tb-btn" title="${escAttr(entry.title || "")}">${entry.icon || Icon.mini(entry.appId || "app", entry.title)}</div>`);
+    if (entry.appId) btn.dataset.app = entry.appId;
+    btn.onclick = () => groupClick(btn);
+    if (!comb) labelBtn(btn);
+    // Keep an app's buttons together (after its pinned button / its other windows).
+    const apps = taskbar.querySelector(".tb-apps") || taskbar;
+    const same = entry.appId ? [...apps.querySelectorAll(":scope > .tb-btn")].filter((b) => b.dataset.open === entry.appId || b.dataset.app === entry.appId) : [];
+    if (same.length) same[same.length - 1].after(btn); else apps.appendChild(btn);
+    entry.taskBtn = btn; entry.pinned = false;
     refreshTaskbarActive();
   }
 
@@ -1542,6 +1708,15 @@
       const here = !window.WinX || WinX.onActive(e);
       if (!e.pinned) e.taskBtn.classList.toggle("wx-offdesk", !here);
       if (here && e.win.style.display !== "none") e.taskBtn.classList.add("active");
+    });
+    // Labels (never-combine mode) follow the newest window's title; "pz-multi" marks a combined group.
+    taskbar.querySelectorAll(".tb-apps .tb-btn[data-open], .tb-apps .tb-btn[data-app]").forEach((b) => {
+      const ents = openWindows.filter((e) => e.taskBtn === b);
+      b.classList.toggle("pz-multi", ents.length > 1);
+      if (!b.classList.contains("pz-lbl")) return;
+      const top = ents[ents.length - 1];
+      const t = top ? ((top.win.querySelector(".win-titlebar .t-text") || {}).textContent || top.title || "") : "";
+      const l = b.querySelector(":scope > .pz-tb-lbl"); if (l && l.textContent !== t) l.textContent = t;
     });
   }
 
@@ -1584,7 +1759,11 @@
     startMenu.querySelector(".start-power").onclick = (e) => { e.stopPropagation(); showPowerMenu(); };
     startMenu.querySelector(".sm12-expand").onclick = () => startMenu.classList.toggle("sm12-big");
     startMenu.querySelector(".sm12-all").onclick = () => { startMenu.classList.toggle("sm12-showall"); renderStartApps(search.value); };
-    startMenu.querySelector(".sm12-more").onclick = () => { startMenu.classList.remove("open"); window.FilesStartPath = "quick"; open("fileexplorer"); };
+    // "More" opens the full Recommended list (js/personalize.js); without it, File Explorer's Quick access.
+    startMenu.querySelector(".sm12-more").onclick = () => {
+      if (window.Personalize && Personalize.showMoreRecommended) { Personalize.showMoreRecommended(startMenu); return; }
+      startMenu.classList.remove("open"); window.FilesStartPath = "quick"; open("fileexplorer");
+    };
     renderStartApps("");
     setInterval(() => { if (startMenu.classList.contains("open")) paintStartClock(); }, 1000);
     document.addEventListener("click", (e) => {
@@ -1615,6 +1794,14 @@
     menu.querySelector('[data-a="open"]').onclick = () => { menu.remove(); startMenu.classList.remove("open"); open(a.id); };
     menu.querySelector('[data-a="pin"]').onclick = () => { menu.remove(); if (pinned) pins.splice(pins.indexOf(a.id), 1); else pins.push(a.id); State.save(); renderStartApps(startMenu.querySelector(".search").value); };
     const f = menu.querySelector('[data-a="first"]'); if (f) f.onclick = () => { menu.remove(); pins.splice(pins.indexOf(a.id), 1); pins.unshift(a.id); State.save(); renderStartApps(""); };
+    // Pin to taskbar, plus the app's Jump List (pinned + recent files) like Windows 11 Start.
+    const onTb = taskbarPins().includes(a.id);
+    const tbb = el(`<button data-a="tb">${onTb ? "Unpin from taskbar" : "Pin to taskbar"}</button>`);
+    tbb.onclick = () => { menu.remove(); onTb ? unpinFromTaskbar(a.id) : pinToTaskbar(a.id); };
+    menu.appendChild(tbb);
+    if (window.Personalize && Personalize.jumpListSection) {
+      try { Personalize.jumpListSection(menu, a.id, () => { menu.remove(); startMenu.classList.remove("open"); }); } catch (err) { console.error("[start] jump list", err); }
+    }
     placeCtx(menu, e);
   }
 
@@ -1853,7 +2040,7 @@
     shown.forEach((a, i) => {
       if (!f) { const L = /[a-z]/i.test(a.name[0]) ? a.name[0].toUpperCase() : "#"; if (L !== letter) { letter = L; left.appendChild(el(`<div class="sm12-letter">${L}</div>`)); } }
       else if (i === 1) left.appendChild(el(`<div class="sm12-letter">Apps</div>`));
-      const row = el(`<button class="sm12-app"><span class="sm12-app-ic">${Icon.mini(ikey(a), a.name)}</span><span>${a.name}</span></button>`);
+      const row = el(`<button class="sm12-app" data-app="${escq(a.id)}"><span class="sm12-app-ic">${Icon.mini(ikey(a), a.name)}</span><span>${a.name}</span></button>`);
       row.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
       row.oncontextmenu = (e) => { e.preventDefault(); startAppMenu(a, e); };
       left.appendChild(row);
@@ -1886,12 +2073,16 @@
     const grid = startMenu.querySelector(".pinned-grid"); grid.innerHTML = "";
     const pins = all ? list : startPins().map((id) => list.find((a) => a.id === id)).filter(Boolean);
     pins.forEach((a) => {
-      const t = el(`<button class="sm12-tile"><span class="sm12-tile-ic">${Icon.md(ikey(a), a.name)}</span><span class="sm12-tile-n">${a.name}</span></button>`);
+      const t = el(`<button class="sm12-tile" data-app="${escq(a.id)}"><span class="sm12-tile-ic">${Icon.md(ikey(a), a.name)}</span><span class="sm12-tile-n">${a.name}</span></button>`);
       t.onclick = () => { startMenu.classList.remove("open"); open(a.id); };
       t.oncontextmenu = (e) => { e.preventDefault(); startAppMenu(a, e); };
       grid.appendChild(t);
     });
     if (!pins.length) grid.appendChild(el(`<div class="sm12-empty">Right-click an app and choose “Pin to Start”.</div>`));
+    // ---- Recommended: recently opened files + newly installed apps (js/personalize.js) ----
+    if (window.Personalize && Personalize.renderRecommended) {
+      try { Personalize.renderRecommended(startMenu); return; } catch (e) { console.error("[start] recommended", e); }
+    }
     // ---- suggested files (falls back to recently opened apps) ----
     const box = startMenu.querySelector(".sm12-files"); box.innerHTML = "";
     const recent = window.FilesHelper ? FilesHelper.recent(6) : [];
@@ -2049,7 +2240,11 @@
     const tbIcon = win.querySelector(".win-titlebar .title span");
     if (tbIcon) tbIcon.innerHTML = iconHtml;
     const entry = openWindows.find((e) => e.win === win);
-    if (entry) { entry.icon = iconHtml; if (entry.taskBtn) entry.taskBtn.innerHTML = iconHtml; }
+    if (entry) {
+      entry.icon = iconHtml;
+      // Keep a labelled button's label and any badge (js/personalize.js) — only swap the icon.
+      if (entry.taskBtn) { const ic = entry.taskBtn.querySelector(":scope > .pz-tb-ic"); if (ic) ic.innerHTML = iconHtml; else entry.taskBtn.innerHTML = iconHtml; }
+    }
   }
 
   window.WM = {
@@ -2063,10 +2258,26 @@
     focusWindow: (win) => focusWindow(win),
     refreshTaskbarActive: () => refreshTaskbarActive(),
     topZ: () => zCounter,
-    pinToTaskbar: (id) => pinToTaskbar(id),
+    pinToTaskbar: (id, index) => pinToTaskbar(id, index),
     unpinFromTaskbar: (id) => unpinFromTaskbar(id),
+    movePin: (id, index) => movePin(id, index),
     taskbarPins: () => taskbarPins().slice(),
     showTaskbarMenu: (btn) => showJumpList(btn),
+    // Taskbar / Start hooks used by js/personalize.js (badges, overflow, combine, drag-to-pin, Recommended).
+    taskbarEl: () => taskbar || null,
+    startMenuEl: () => startMenu || null,
+    taskBtnApp: (btn) => taskBtnApp(btn),
+    taskButtonClick: (btn) => groupClick(btn),
+    taskbarDrop: tbDrop,
+    rebuildTaskButtons: () => rebuildTaskButtons(),
+    combineMode: () => combineSetting(),
+    combining: () => combining(),
+    setCombineFull: (v) => setCombineFull(v),
+    appName: (id) => pinTitle(id),
+    installedApps: () => allInstalledApps(),
+    refreshStart: () => { if (startMenu && startMenu.classList.contains("open")) renderStartApps(startMenu.querySelector(".search").value); },
+    applyDisplayFx: () => applyDisplayFx(),
+    applyWallpaper: () => applyWallpaper(),
     // Shell flyout hooks used by js/widgets12.js and js/notifcenter.js.
     weather: () => weatherToday(),
     weatherIcon: (k) => WX_SVG[k] || WX_SVG.sun,
