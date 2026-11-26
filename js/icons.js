@@ -31,10 +31,65 @@
   // Alias one icon key to another (e.g. the store's "app_3" -> its builtin "maps").
   const aliases = {};
   function alias(from, to) { aliases[String(from).toLowerCase().replace(/[^a-z0-9_-]/g, "")] = String(to).toLowerCase().replace(/[^a-z0-9_-]/g, ""); }
-  // Icons that have a classic variant when the Windows XP theme is enabled.
-  const XP_ICONS = { paint: "paint_xp", outlook: "outlook_xp", winflag: "xpstart" };
+  // Era icon packs: when a theme pack is applied the app/system icons swap to the
+  // matching era's artwork. Each map is { appKey: "assetName" } and points at a
+  // file in assets/<assetName>.png. Keys not listed keep their normal icon, so
+  // every map is a safe, additive overlay. resolveKey() picks the pack:
+  //   Windows XP   — State.data.desktop.xpTheme === true          (highest priority)
+  //   Windows 10   — State.data.desktop.taskbarStyle === "win10"
+  //   Windows 11   — State.data.desktop.taskbarStyle === "win11"
+  // Non-era themes (default / light / dark) match none and show the normal icons.
+
+  // Windows XP (classic Luna) icons. The paint/outlook/winflag entries already
+  // existed; the rest were sliced from the XP icon collage. winflag -> xpstart
+  // (the XP start logo) must stay intact.
+  const XP_ICONS = {
+    paint: "paint_xp", outlook: "outlook_xp", winflag: "xpstart",
+    calculator: "calc_xp", mail: "mail_xp", fileexplorer: "folder_xp",
+    printers: "printer_xp", edge: "ie_xp", camera: "camera_xp", terminal: "cmd_xp",
+  };
+
+  // Windows 10 (flat/Fluent) icons sliced from the Windows 10 icon collage.
+  const WIN10_ICONS = {
+    clock: "clock_w10", store__: "store_w10", calculator: "calculator_w10",
+    calendar: "calendar_w10", people: "people_w10", fileexplorer: "fileexplorer_w10",
+    mediaplayer: "mediaplayer_w10", mail: "mail_w10", maps: "maps_w10",
+    remotedesktop: "remotedesktop_w10", edge: "edge_w10", solitaire: "solitaire_w10",
+    paint: "paint_w10", todo: "todo_w10", moviestv: "moviestv_w10", news: "news_w10",
+    notepad: "notepad_w10", ms365: "ms365_w10", onenote: "onenote_w10",
+    photos: "photos_w10", codeeditor: "codeeditor_w10", snip: "snip_w10",
+    settings: "settings_w10", skype: "skype_w10", stickynotes: "stickynotes_w10",
+    recorder: "voicerec_w10", soundrec: "voicerec_w10", weather: "weather_w10",
+    whiteboard: "whiteboard_w10", phonelink: "phonelink_w10",
+  };
+
+  // Windows 11 (rounded/Fluent 2) icons sliced from the Windows 11 icon collage.
+  const WIN11_ICONS = {
+    calculator: "calculator_w11", calendar: "calendar_w11", camera: "camera_w11",
+    clock: "clock_w11", security: "security_w11", defender: "security_w11",
+    edge: "edge_w11", mediaplayer: "mediaplayer_w11", mail: "mail_w11",
+    maps: "maps_w11", store__: "store_w11", todo: "todo_w11", onenote: "onenote_w11",
+    outlook: "outlook_w11", paint: "paint_w11", paint3d: "paint3d_w11",
+    people: "people_w11", photos: "photos_w11", remotedesktop: "remotedesktop_w11",
+    settings: "settings_w11", skype: "skype_w11", snip: "snip_w11",
+    solitaire: "solitaire_w11", stickynotes: "stickynotes_w11", moviestv: "moviestv_w11",
+    recorder: "voicerec_w11", soundrec: "voicerec_w11", weather: "weather_w11",
+    whiteboard: "whiteboard_w11", terminal: "terminal_w11",
+  };
+
   function xpOn() { try { return !!(window.State && State.data.desktop && State.data.desktop.xpTheme); } catch (e) { return false; } }
-  function resolveKey(k) { let key = k; if (aliases[key]) key = aliases[key]; if (xpOn() && XP_ICONS[key]) key = XP_ICONS[key]; return key; }
+  function win10On() { try { return !!(window.State && State.data.desktop && State.data.desktop.taskbarStyle === "win10"); } catch (e) { return false; } }
+  function win11On() { try { return !!(window.State && State.data.desktop && State.data.desktop.taskbarStyle === "win11"); } catch (e) { return false; } }
+  function resolveKey(k) {
+    let key = k;
+    if (aliases[key]) key = aliases[key];
+    // XP takes priority (it's a full classic theme); otherwise the Win10/Win11
+    // taskbar style selects the era pack. Unmapped keys fall through unchanged.
+    if (xpOn()) { if (XP_ICONS[key]) key = XP_ICONS[key]; }
+    else if (win10On()) { if (WIN10_ICONS[key]) key = WIN10_ICONS[key]; }
+    else if (win11On()) { if (WIN11_ICONS[key]) key = WIN11_ICONS[key]; }
+    return key;
+  }
 
   function getCustomSrc(key) {
     try { return (window.State && State.data.appData && State.data.appData.customIcons && State.data.appData.customIcons[key]) || null; }
@@ -536,6 +591,17 @@
     new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) scanPw(n); }))).observe(document.body, { childList: true, subtree: true });
   }
   if (document.body) startPwEyes(); else document.addEventListener("DOMContentLoaded", startPwEyes);
+
+  // Live theme swap: personalize.js dispatches "theme-change" when a theme pack is
+  // applied. resolveKey() already returns the right era asset on any later render,
+  // but the icons already painted on screen need a nudge to re-render so they swap
+  // without a reload. Every call is guarded so a missing WM method is harmless.
+  window.addEventListener("theme-change", function () {
+    try { if (window.WM && typeof WM.refreshTaskbar === "function") WM.refreshTaskbar(); } catch (e) {}
+    try { if (window.WM && typeof WM.refreshDesktopIcons === "function") WM.refreshDesktopIcons(); } catch (e) {}
+    try { if (window.WM && typeof WM.refreshStart === "function") WM.refreshStart(); } catch (e) {}
+    try { if (window.WM && typeof WM.refreshTaskbarActive === "function") WM.refreshTaskbarActive(); } catch (e) {}
+  });
 
   window.Icon = {
     mini: (key, label) => box(key, label, 26),
