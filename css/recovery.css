@@ -1,0 +1,269 @@
+/* Accounts, Safe Mode, Advanced Startup (WinRE), System Restore, UEFI — js/accounts.js + js/recovery.js.
+   Every class starts with rc-. Desktop dialogs follow the light/dark theme (body.dark); WinRE, the
+   firmware screen and the boot screens keep Windows' fixed colors on purpose. */
+:root {
+  --rc-surface: #ffffff;
+  --rc-surface-2: #f3f3f3;
+  --rc-text: #1b1b1b;
+  --rc-dim: #5c5c5c;
+  --rc-line: #e1e1e1;
+  --rc-hover: rgba(0, 0, 0, 0.05);
+  --rc-err: #c42b1c;
+  --rc-winre: #0b5ea8;
+}
+body.dark {
+  --rc-surface: #2b2b2b;
+  --rc-surface-2: #202020;
+  --rc-text: #f3f3f3;
+  --rc-dim: #b5b5b5;
+  --rc-line: #3d3d3d;
+  --rc-hover: rgba(255, 255, 255, 0.07);
+  --rc-err: #ff99a4;
+}
+
+/* ---------- avatars ---------- */
+.rc-ava { display: inline-flex; flex: none; border-radius: 50%; overflow: hidden; background: #c8d3e3; color: #fff; align-items: center; justify-content: center; }
+.rc-ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rc-ava-def { background: linear-gradient(135deg, #b061d6, #3b7fd8); }
+.rc-ava svg { flex: none; margin-top: 18%; }
+
+/* ---------- dialogs (Windows 11 ContentDialog) ---------- */
+.rc-modal-dim { position: fixed; inset: 0; z-index: 2147482000; background: rgba(0, 0, 0, 0.38); display: flex; align-items: center; justify-content: center; padding: 16px; animation: rc-fade 0.14s ease; }
+.rc-modal-dim.rc-out { opacity: 0; transition: opacity 0.15s ease; }
+.rc-modal { width: min(440px, 100%); max-height: calc(100% - 32px); display: flex; flex-direction: column; background: var(--rc-surface); color: var(--rc-text); border: 1px solid var(--rc-line); border-radius: 8px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32); overflow: hidden; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; animation: rc-pop 0.18s ease; }
+.rc-modal-wide { width: min(560px, 100%); }
+.rc-modal-body { padding: 22px 24px 18px; overflow: auto; }
+.rc-modal-title { margin: 0 0 12px; font-size: 1.2rem; font-weight: 600; line-height: 1.3; }
+.rc-modal-content { font-size: 0.9rem; line-height: 1.45; }
+.rc-modal-content p { margin: 0 0 10px; }
+.rc-modal-content ul { margin: 4px 0 12px; padding-left: 20px; }
+.rc-modal-foot { display: flex; gap: 8px; padding: 18px 24px; background: var(--rc-surface-2); border-top: 1px solid var(--rc-line); flex-wrap: wrap; }
+.rc-modal-foot .rc-btn { flex: 1 1 0; min-width: 110px; }
+.rc-btn { font: inherit; font-size: 0.86rem; min-height: 34px; padding: 6px 16px; border-radius: 5px; border: 1px solid var(--rc-line); background: var(--rc-surface); color: var(--rc-text); cursor: pointer; touch-action: manipulation; }
+.rc-btn:hover { background: var(--rc-hover); }
+.rc-btn:disabled { opacity: 0.5; cursor: default; }
+.rc-btn-primary { background: var(--accent, #0067c0); border-color: transparent; color: #fff; }
+.rc-btn-primary:hover { background: var(--accent, #0067c0); filter: brightness(1.08); }
+.rc-btn:focus-visible, .rc-input:focus-visible { outline: 2px solid var(--accent, #0067c0); outline-offset: 1px; }
+.rc-dim { color: var(--rc-dim); font-size: 0.84rem; }
+.rc-err { color: var(--rc-err); font-size: 0.84rem; min-height: 1.2em; margin-top: 6px; }
+.rc-field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px; font-size: 0.84rem; }
+.rc-field > span { color: var(--rc-dim); }
+.rc-input { font: inherit; font-size: 0.92rem; width: 100%; box-sizing: border-box; min-height: 36px; padding: 6px 10px; border-radius: 5px; border: 1px solid var(--rc-line); border-bottom: 2px solid var(--rc-dim); background: var(--rc-surface-2); color: var(--rc-text); -webkit-user-select: text; user-select: text; }
+.rc-busy { display: flex; align-items: center; gap: 14px; color: var(--accent, #0067c0); }
+.rc-busy span { color: var(--rc-text); }
+.rc-ok-row { display: flex; gap: 14px; align-items: flex-start; }
+.rc-ok-ic { flex: none; width: 30px; height: 30px; border-radius: 50%; background: #0f7b0f; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* ---------- User Account Control ---------- */
+.rc-uac-dim { background: rgba(0, 0, 0, 0.55); }
+.rc-uac { width: min(460px, 100%); }
+.rc-uac-band { padding: 10px 24px; font-size: 0.8rem; background: #0f4c81; color: #fff; }
+.rc-uac-app { display: flex; gap: 12px; align-items: center; margin: 4px 0 14px; padding: 10px 12px; border-radius: 6px; background: var(--rc-surface-2); }
+.rc-uac-app div > b { display: block; }
+.rc-uac-app div > span { display: block; font-size: 0.8rem; color: var(--rc-dim); }
+.rc-uac-shield { flex: none; display: flex; }
+
+/* ---------- lock screen: other users (bottom-left) ---------- */
+.rc-users { position: absolute; left: max(16px, 2.5vw); bottom: max(16px, 4vh); display: flex; flex-direction: column; gap: 4px; max-height: 45vh; overflow: auto; z-index: 2; }
+.rc-user { display: flex; align-items: center; gap: 12px; min-height: 48px; min-width: 200px; max-width: min(320px, 80vw); padding: 6px 14px 6px 8px; border: 0; border-radius: 6px; background: transparent; color: #fff; font: inherit; font-size: 0.95rem; text-align: left; cursor: pointer; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); touch-action: manipulation; }
+.rc-user:hover { background: rgba(255, 255, 255, 0.14); }
+.rc-user.on { background: rgba(255, 255, 255, 0.22); }
+.rc-user-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Start menu: account flyout ---------- */
+.rc-usermenu { position: absolute; z-index: 50; width: 280px; max-width: calc(100% - 16px); padding: 6px; background: var(--rc-surface); color: var(--rc-text); border: 1px solid var(--rc-line); border-radius: 8px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28); animation: rc-pop 0.14s ease; }
+.rc-um-head { display: flex; gap: 12px; align-items: center; padding: 10px 10px 12px; }
+.rc-um-head b { display: block; font-size: 1rem; }
+.rc-um-head div > span { display: block; font-size: 0.78rem; color: var(--rc-dim); }
+.rc-usermenu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 6px 12px; border: 0; border-radius: 5px; background: transparent; color: inherit; font: inherit; font-size: 0.88rem; text-align: left; cursor: pointer; }
+.rc-usermenu button:hover { background: var(--rc-hover); }
+.rc-um-sep { height: 1px; margin: 6px 4px; background: var(--rc-line); }
+.rc-um-sub { padding: 4px 12px; font-size: 0.75rem; color: var(--rc-dim); }
+
+/* ---------- signing out / restarting / Hi ---------- */
+.rc-signing, .rc-restarting { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #08356a; color: #fff; font-family: "Segoe UI", system-ui, sans-serif; font-size: 1.4rem; font-weight: 300; animation: rc-fade 0.2s ease; text-align: center; padding: 16px; }
+.rc-restarting { background: #000; }
+.rc-restoring { background: #0b5ea8; font-size: 1.1rem; }
+.rc-hi { position: fixed; inset: 0; z-index: 2147482500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: linear-gradient(135deg, #0b3d7a, #1b6fc6); color: #fff; font-family: "Segoe UI", system-ui, sans-serif; transition: opacity 0.45s ease; }
+.rc-hi-1 { font-size: 3.4rem; font-weight: 200; }
+.rc-hi-2 { font-size: 1.3rem; font-weight: 300; opacity: 0; transition: opacity 0.4s ease; }
+.rc-hi.rc-hi-2on .rc-hi-2 { opacity: 1; }
+.rc-hi.rc-out { opacity: 0; }
+
+/* Windows dot spinner */
+.rc-spin { position: relative; width: 44px; height: 44px; color: #fff; flex: none; }
+.rc-busy .rc-spin { width: 30px; height: 30px; color: var(--accent, #0067c0); }
+.rc-spin i { position: absolute; inset: 0; animation: rc-orbit 4.4s infinite; }
+.rc-spin i::before { content: ""; position: absolute; left: 50%; top: 0; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: currentColor; }
+.rc-spin i:nth-child(2) { animation-delay: 0.24s; }
+.rc-spin i:nth-child(3) { animation-delay: 0.48s; }
+.rc-spin i:nth-child(4) { animation-delay: 0.72s; }
+.rc-spin i:nth-child(5) { animation-delay: 0.96s; }
+@keyframes rc-orbit {
+  0% { transform: rotate(225deg); opacity: 1; animation-timing-function: ease-out; }
+  7% { transform: rotate(345deg); animation-timing-function: linear; }
+  30% { transform: rotate(455deg); animation-timing-function: ease-in-out; }
+  39% { transform: rotate(690deg); animation-timing-function: linear; }
+  70% { transform: rotate(815deg); opacity: 1; animation-timing-function: ease-out; }
+  75% { transform: rotate(945deg); animation-timing-function: ease-out; }
+  76% { transform: rotate(945deg); opacity: 0; }
+  100% { transform: rotate(945deg); opacity: 0; }
+}
+@keyframes rc-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rc-pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ---------- fast boot (restarts) ---------- */
+.rc-fastboot { position: fixed; inset: 0; z-index: 2147482800; background: #000; color: #ddd; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12vh; transition: opacity 0.3s ease; font-family: "Segoe UI", system-ui, sans-serif; }
+.rc-fastboot.rc-out { opacity: 0; }
+.rc-fb-lines { position: absolute; left: 16px; top: 16px; font: 14px/1.5 Consolas, "Courier New", monospace; color: #c0c0c0; }
+.rc-fb-logo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 96px; height: 96px; opacity: 0; transition: opacity 0.25s ease; }
+.rc-fb-logo i { background: #0078d4; }
+.rc-fastboot .rc-spin { opacity: 0; transition: opacity 0.25s ease; }
+.rc-fastboot.rc-fb-show .rc-fb-logo, .rc-fastboot.rc-fb-show .rc-spin { opacity: 1; }
+.rc-poweroff { position: fixed; inset: 0; z-index: 2147483600; background: #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8vh; color: #444; font: 0.9rem "Segoe UI", system-ui, sans-serif; cursor: pointer; }
+
+/* ---------- Safe Mode ---------- */
+body.rc-safemode .desktop { background: #000 !important; }
+body.rc-safemode .lock-bg { background: #000 !important; }
+body.rc-safemode .lock-bg::after { display: none; }
+body.rc-safemode .spw { display: none !important; }
+body.rc-safemode *, body.rc-safemode *::before, body.rc-safemode *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; transition: none !important; }
+body.rc-safemode .win, body.rc-safemode .start-menu, body.rc-safemode .taskbar { border-radius: 0 !important; box-shadow: none !important; }
+.rc-safe-corners { position: fixed; inset: 0; z-index: 7001; pointer-events: none; color: #fff; font: 600 15px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: 0.02em; }
+.rc-safe-corners span { position: absolute; text-shadow: 0 0 2px #000; white-space: nowrap; }
+.rc-safe-corners .rc-c-tl { left: 8px; top: 8px; }
+.rc-safe-corners .rc-c-tr { right: 8px; top: 8px; }
+.rc-safe-corners .rc-c-bl { left: 8px; bottom: 60px; }
+.rc-safe-corners .rc-c-br { right: 8px; bottom: 60px; }
+.rc-safe-corners .rc-c-tc { left: 50%; top: 8px; transform: translateX(-50%); font-weight: 400; font-size: 12px; opacity: 0.85; }
+html.rc-lowres, html.rc-lowres body { font-size: calc(18px * var(--scale)) !important; }
+body.rc-lowres { -webkit-font-smoothing: none; text-rendering: optimizeSpeed; }
+body.rc-lowres img, body.rc-lowres .desktop { image-rendering: pixelated; }
+@media (max-width: 700px) { .rc-safe-corners .rc-c-tc { display: none; } .rc-safe-corners { font-size: 12px; } }
+
+/* ---------- Settings → Other users ---------- */
+.w12s-card.rc-s-me, .w12s-card.rc-s-add { flex-direction: row; align-items: center; gap: 14px; text-align: left; flex-wrap: wrap; }
+.w12s-card.rc-s-user { gap: 0; }
+.rc-s-add > div { flex: 1; min-width: 0; }
+.rc-s-h { margin: 18px 2px 8px; font-weight: 600; font-size: 0.9rem; }
+.rc-s-user { padding: 0 !important; overflow: hidden; }
+.rc-s-uhead { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 16px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rc-s-uhead:hover { background: var(--rc-hover); }
+.rc-s-utx { flex: 1; min-width: 0; }
+.rc-s-chev { font-size: 1.3rem; color: var(--rc-dim); transition: transform 0.15s ease; }
+.rc-s-user.open .rc-s-chev { transform: rotate(90deg); }
+.rc-s-ubody { border-top: 1px solid var(--rc-line); padding: 4px 16px 10px 70px; }
+.rc-s-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 0.86rem; flex-wrap: wrap; }
+.rc-s-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 560px) { .rc-s-ubody { padding-left: 16px; } }
+
+/* ---------- Windows Recovery Environment ---------- */
+.rc-winre { position: fixed; inset: 0; z-index: 2147482900; background: var(--rc-winre); color: #fff; overflow: auto; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-user-select: none; user-select: none; }
+.rc-winre.rc-black { background: #000; }
+.rc-wr-in { padding: max(24px, 9vh) max(16px, 8vw) 40px; max-width: 1120px; }
+.rc-wr-head { display: flex; align-items: center; gap: 14px; margin-bottom: 4vh; }
+.rc-wr-head h1 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 300; }
+.rc-wr-back { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; background: transparent; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.rc-wr-back:hover { background: rgba(255, 255, 255, 0.15); }
+.rc-wr-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px 28px; }
+.rc-wr-tile { display: flex; gap: 16px; align-items: flex-start; min-height: 76px; padding: 12px; border: 2px solid transparent; background: transparent; color: #fff; font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; }
+.rc-wr-tile:hover, .rc-wr-tile:focus-visible { background: rgba(255, 255, 255, 0.12); outline: none; border-color: rgba(255, 255, 255, 0.35); }
+.rc-wr-ic { flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+.rc-wr-tx b { display: block; font-size: 1.2rem; font-weight: 400; margin-bottom: 3px; }
+.rc-wr-tx span { display: block; font-size: 0.86rem; opacity: 0.85; line-height: 1.35; }
+.rc-wr-text { max-width: 760px; font-size: 1rem; line-height: 1.5; }
+.rc-wr-text h2 { font-weight: 300; font-size: 1.6rem; margin: 0 0 10px; }
+.rc-wr-text ul { padding-left: 22px; }
+.rc-wr-p { font-size: 1rem; margin: 0 0 12px; max-width: 760px; }
+.rc-dim2 { opacity: 0.75; font-size: 0.86rem; }
+.rc-wr-btns { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+.rc-wr-btn { min-width: 130px; min-height: 40px; padding: 8px 20px; border: 2px solid #fff; background: transparent; color: #fff; font: inherit; font-size: 0.95rem; cursor: pointer; touch-action: manipulation; }
+.rc-wr-btn.primary { background: #fff; color: var(--rc-winre); }
+.rc-wr-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.rc-wr-btn.primary:hover { background: #e8f1fb; }
+.rc-wr-btn:disabled { opacity: 0.4; }
+.rc-wr-working { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; font-size: 1.3rem; font-weight: 300; text-align: center; white-space: pre-line; }
+.rc-wr-numlist { display: flex; flex-direction: column; gap: 2px; max-width: 640px; margin: 8px 0 12px; }
+.rc-wr-num { display: flex; gap: 10px; align-items: baseline; min-height: 40px; padding: 6px 12px; border: 0; background: transparent; color: #fff; font: inherit; font-size: 1.05rem; text-align: left; cursor: pointer; }
+.rc-wr-num:hover { background: rgba(255, 255, 255, 0.14); }
+.rc-wr-num b { min-width: 2ch; font-weight: 600; }
+.rc-wr-results { list-style: none; padding: 0; margin: 16px 0 0; max-width: 820px; }
+.rc-wr-results li { padding: 8px 12px; margin-bottom: 4px; background: rgba(255, 255, 255, 0.08); font-size: 0.9rem; }
+.rc-wr-results li.rc-fix { background: rgba(255, 255, 255, 0.18); }
+.rc-wr-log { max-width: 900px; max-height: 60vh; overflow: auto; padding: 14px; background: rgba(0, 0, 0, 0.3); font: 13px/1.45 Consolas, "Courier New", monospace; white-space: pre-wrap; -webkit-user-select: text; user-select: text; }
+.rc-wr-accts { display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
+.rc-wr-acct { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 12px; border: 2px solid transparent; background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; text-align: left; cursor: pointer; }
+.rc-wr-acct:hover { background: rgba(255, 255, 255, 0.16); }
+.rc-wr-acct b { display: block; font-size: 1.1rem; font-weight: 400; }
+.rc-wr-acct span span { font-size: 0.84rem; opacity: 0.8; }
+.rc-wr-form { max-width: 420px; }
+.rc-wr-input { width: 100%; box-sizing: border-box; min-height: 42px; padding: 8px 12px; border: 2px solid #fff; background: rgba(255, 255, 255, 0.95); color: #111; font: inherit; font-size: 1rem; -webkit-user-select: text; user-select: text; }
+.rc-wr-err { min-height: 1.4em; margin-top: 8px; color: #ffe08a; }
+.rc-wr-points { display: flex; flex-direction: column; gap: 2px; max-width: 900px; }
+.rc-wr-pt { display: grid; grid-template-columns: minmax(140px, 1.2fr) 2fr minmax(90px, 1fr) minmax(70px, 0.6fr); gap: 12px; align-items: center; min-height: 44px; padding: 8px 12px; border: 2px solid transparent; background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; }
+.rc-wr-pt.on { border-color: #fff; background: rgba(255, 255, 255, 0.18); }
+@media (max-width: 620px) { .rc-wr-pt { grid-template-columns: 1fr 1fr; } }
+.rc-wr-cmd { position: fixed; inset: max(12px, 6vh) max(12px, 6vw); z-index: 5; display: flex; flex-direction: column; background: #0c0c0c; border: 1px solid #555; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
+.rc-wr-cmdbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 12px; background: #fff; color: #000; font-size: 0.8rem; }
+.rc-wr-cmdbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-wr-cmdbar button { width: 40px; height: 30px; border: 0; background: transparent; font-size: 1rem; cursor: pointer; }
+.rc-wr-cmdbar button:hover { background: #e81123; color: #fff; }
+.rc-wr-cmdbody { flex: 1; min-height: 0; -webkit-user-select: text; user-select: text; }
+
+/* ---------- UEFI firmware settings ---------- */
+.rc-fw { position: fixed; inset: 0; z-index: 2147482950; display: flex; flex-direction: column; background: #1c2a4a; color: #dfe6f0; font: 15px/1.4 Consolas, "Courier New", monospace; -webkit-user-select: none; user-select: none; }
+.rc-fw-top { padding: 10px 16px; text-align: center; background: #2b5797; color: #fff; }
+.rc-fw-tabs { display: flex; flex-wrap: wrap; background: #2b5797; padding: 0 8px; }
+.rc-fw-tabs button { padding: 8px 14px; border: 0; background: transparent; color: #cfdcf0; font: inherit; cursor: pointer; }
+.rc-fw-tabs button.on { background: #dfe6f0; color: #1c2a4a; }
+.rc-fw-main { flex: 1; min-height: 0; display: flex; gap: 0; margin: 12px; border: 1px solid #5d77a8; }
+.rc-fw-list { flex: 2; overflow: auto; padding: 8px; }
+.rc-fw-it { display: flex; justify-content: space-between; gap: 16px; width: 100%; min-height: 36px; padding: 6px 10px; border: 0; background: transparent; color: #9fb3d1; font: inherit; text-align: left; cursor: default; }
+.rc-fw-it.act { color: #ffffff; cursor: pointer; }
+.rc-fw-it.on { background: #dfe6f0; color: #1c2a4a; }
+.rc-fw-it span:last-child { text-align: right; }
+.rc-fw-help { flex: 1; min-width: 180px; border-left: 1px solid #5d77a8; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; color: #cfdcf0; }
+.rc-fw-keys { border-top: 1px solid #5d77a8; padding-top: 10px; font-size: 13px; color: #9fb3d1; }
+.rc-fw-foot { padding: 6px; text-align: center; font-size: 12px; color: #9fb3d1; }
+@media (max-width: 700px) { .rc-fw-main { flex-direction: column; } .rc-fw-help { border-left: 0; border-top: 1px solid #5d77a8; } .rc-fw-it { flex-direction: column; gap: 2px; } .rc-fw-it span:last-child { text-align: left; } }
+
+/* ---------- desktop apps: System Restore, System Configuration, System Properties ---------- */
+.rc-app { background: var(--rc-surface); color: var(--rc-text); font-family: "Segoe UI", system-ui, sans-serif; }
+.rc-wiz, .rc-props { height: 100%; display: flex; flex-direction: column; font-size: 0.88rem; }
+.rc-wiz-head { display: flex; gap: 14px; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--rc-line); }
+.rc-wiz-head svg { width: 42px; height: 42px; flex: none; }
+.rc-wiz-head h2 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+.rc-wiz-head p { margin: 2px 0 0; color: var(--rc-dim); font-size: 0.8rem; }
+.rc-wiz-body, .rc-props-body { flex: 1; min-height: 0; overflow: auto; padding: 14px 20px; line-height: 1.45; }
+.rc-wiz-body p { margin: 0 0 10px; }
+.rc-wiz-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; background: var(--rc-surface-2); border-top: 1px solid var(--rc-line); flex-wrap: wrap; }
+.rc-wiz-tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.rc-radio, .rc-check { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+.rc-radio input, .rc-check input { margin-top: 3px; accent-color: var(--accent, #0067c0); width: 16px; height: 16px; flex: none; }
+.rc-indent { padding-left: 26px; }
+.rc-table { border: 1px solid var(--rc-line); border-radius: 4px; overflow: hidden; }
+.rc-tr { display: grid; grid-template-columns: 1.3fr 2fr 1fr 0.7fr; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-top: 1px solid var(--rc-line); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rc-tr:first-child { border-top: 0; }
+.rc-props .rc-tr { grid-template-columns: 1fr 1.4fr; }
+.rc-tr:hover { background: var(--rc-hover); }
+.rc-tr.on { background: var(--accent, #0067c0); color: #fff; }
+.rc-th { cursor: default; font-weight: 600; font-size: 0.8rem; color: var(--rc-dim); background: var(--rc-surface-2) !important; }
+.rc-kv td { padding: 3px 12px 3px 0; vertical-align: top; }
+.rc-kv td:first-child { color: var(--rc-dim); }
+.rc-tabs { display: flex; flex-wrap: wrap; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--rc-line); }
+.rc-tabs > * { padding: 7px 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--rc-dim); font: inherit; font-size: 0.82rem; cursor: pointer; }
+.rc-tabs > .on { color: var(--rc-text); border-bottom-color: var(--accent, #0067c0); font-weight: 600; }
+.rc-props fieldset { border: 1px solid var(--rc-line); border-radius: 6px; margin: 0 0 12px; padding: 8px 12px 10px; }
+.rc-props legend { padding: 0 6px; color: var(--rc-dim); font-size: 0.8rem; }
+.rc-flex { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.rc-flex p { margin: 6px 0; flex: 1; }
+.rc-flex .rc-btn { flex: none; }
+.rc-row-ic { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.rc-row-ic svg { width: 36px; height: 36px; flex: none; }
+.rc-row-ic p { margin: 0; }
+.rc-oslist { border: 1px solid var(--rc-line); padding: 6px; margin-bottom: 12px; }
+.rc-oslist .on { padding: 4px 8px; background: var(--accent, #0067c0); color: #fff; }
+.rc-msc code { font-size: 0.8rem; }
+.rc-held { box-shadow: inset 0 0 0 2px var(--accent, #0067c0) !important; }
+@media (max-width: 560px) { .rc-tr { grid-template-columns: 1fr 1fr; } .rc-flex { flex-direction: column; align-items: stretch; } }

@@ -1,0 +1,8 @@
+contact_sheet.png
+node_modules/
+
+# iPad app build outputs (generated in CI)
+ios/Web/
+ios/build/
+ios/*.xcodeproj/
+ios/Sources/Info.plist

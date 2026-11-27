@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="referrer" content="no-referrer" />
+<meta name="theme-color" content="#0067c0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Phone Link" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<link rel="manifest" href="phone.webmanifest" />
+<link rel="apple-touch-icon" href="assets/phonelink.png" />
+<link rel="icon" href="assets/phonelink.png" />
+<title>Phone Link</title>
+<!-- Phone Link companion app. Opened on the phone from the QR code in Windows 12's Phone Link
+     (phone.html#CODE), or from the home screen once added. It connects straight to that PC over
+     WebRTC (PeerJS's free broker only introduces the two devices), agrees an end-to-end key and
+     shows a 6-digit number to compare. Messages with reactions, photos both ways, notifications to
+     the PC, remote desktop (view, and with permission control, the PC), and device details both
+     ways (Devices tab: the PC's battery and more, and what this phone shares — only what each
+     browser really reports). No analytics, no accounts, no other network requests. -->
+<style>
+  :root { --bg: #f3f3f3; --card: #fff; --text: #1b1b1b; --dim: #5d5d5d; --line: #e3e3e3; --accent: #0067c0; --me: #0067c0; --them: #e9e9ef; --ok: #0f7b0f; --bad: #c42b1c; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1c1c; --card: #2b2b2b; --text: #f3f3f3; --dim: #b3b3b3; --line: #3c3c3c; --accent: #4cc2ff; --me: #0a5aa8; --them: #3a3a3a; --ok: #6ccb5f; --bad: #ff99a4; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 16px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); -webkit-text-size-adjust: 100%; }
+  header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+  header img { width: 28px; height: 28px; border-radius: 7px; }
+  header h1 { font-size: 1.05rem; margin: 0; flex: 1; }
+  header .pc { font-size: .8rem; color: var(--dim); text-align: right; }
+  main { flex: 1; overflow: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .dim { color: var(--dim); font-size: .88rem; }
+  .sas { display: block; font: 600 2.2rem/1.2 ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: .12em; text-align: center; margin: 14px 0; color: var(--accent); }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 10px 16px; min-height: 44px; cursor: pointer; }
+  button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.primary, .btn.primary { color: #000; } }
+  button:disabled { opacity: .5; }
+  input, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); min-height: 44px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row > input { flex: 1; }
+  .tabs { display: flex; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .tabs button { flex: 1; border: 0; border-radius: 0; background: none; padding: 8px 2px 6px; font-size: .74rem; color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 52px; }
+  .tabs button svg { width: 22px; height: 22px; }
+  .tabs button.on { color: var(--accent); font-weight: 600; }
+  .chat { display: flex; flex-direction: column; gap: 10px; padding: 14px 4px 8px; }
+  .bub { position: relative; max-width: 80%; padding: 8px 12px; border-radius: 16px; white-space: pre-wrap; word-wrap: break-word; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .bub.me { align-self: flex-end; background: var(--me); color: #fff; border-bottom-right-radius: 4px; }
+  .bub.them { align-self: flex-start; background: var(--them); border-bottom-left-radius: 4px; }
+  .bub.ph { padding: 3px; background: transparent !important; }
+  .bub.ph img { display: block; min-width: 150px; max-width: 230px; max-height: 260px; object-fit: cover; border-radius: 14px; background: var(--them); }
+  .bub.ph time { padding: 0 6px; color: var(--dim); }
+  .bub time { display: block; font-size: .7rem; opacity: .75; margin-top: 2px; }
+  .tb { position: absolute; top: -13px; display: flex; gap: 2px; }
+  .bub.me .tb { left: -10px; } .bub.them .tb { right: -10px; }
+  .tb i { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--card); color: var(--dim); border: 2px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,.25); font-style: normal; }
+  .tb i.mine { background: var(--accent); color: #fff; }
+  .tb svg { width: 15px; height: 15px; }
+  .pick { position: fixed; z-index: 50; display: flex; gap: 2px; padding: 6px; border-radius: 999px; background: var(--card); box-shadow: 0 10px 30px rgba(0,0,0,.3); border: 1px solid var(--line); }
+  .pick button { width: 42px; height: 42px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--dim); display: inline-flex; align-items: center; justify-content: center; }
+  .pick button.on { background: var(--accent); color: #fff; }
+  .pick button svg { width: 22px; height: 22px; }
+  .pick .sv { width: auto; padding: 0 12px; border-radius: 999px; font-size: .82rem; font-weight: 600; color: var(--text); }
+  .compose { display: flex; gap: 8px; padding: 10px 12px; background: var(--card); border-top: 1px solid var(--line); align-items: center; }
+  .compose input[type=text] { flex: 1; }
+  .compose .att { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .status { display: flex; gap: 10px; align-items: center; }
+  .spin { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; flex: none; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .err { color: var(--bad); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin-top: 12px; }
+  .grid figure { margin: 0; position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--them); }
+  .grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .grid figcaption { position: absolute; left: 0; right: 0; bottom: 0; font-size: .7rem; padding: 2px 4px; background: rgba(0,0,0,.55); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .grid a { color: inherit; }
+  progress { width: 100%; height: 6px; accent-color: var(--accent); }
+  .hidden { display: none !important; }
+  .note { font-size: .8rem; color: var(--dim); margin-top: 10px; }
+  label.f { display: block; margin: 10px 0 4px; font-size: .88rem; color: var(--dim); }
+  .file-btn { display: block; text-align: center; }
+  .file-btn input { display: none; }
+  h3.sub { font-size: .9rem; margin: 18px 0 0; color: var(--dim); }
+  /* PC screen viewer */
+  #vScreen { padding: 0; }
+  .vbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .vbar .st { flex: 1 1 100%; font-size: .85rem; color: var(--dim); }
+  .vbar button { padding: 8px 12px; min-height: 40px; font-size: .88rem; }
+  .stage { position: relative; background: #000; touch-action: none; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+  .stage canvas { display: block; width: 100%; height: auto; }
+  .stage.zoom { overflow: auto; touch-action: pan-x pan-y; display: block; }
+  .stage.zoom canvas { width: 200%; }
+  .stage .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #ddd; font-size: .95rem; }
+  .stage.ctl { box-shadow: inset 0 0 0 3px #ff4b4b; }
+  #kbin { position: absolute; left: -9999px; top: 0; width: 10px; opacity: 0; }
+  /* Devices tab: the PC's details and what this phone shares */
+  header .pc { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
+  header h1 { white-space: nowrap; }
+  #pcName { overflow-wrap: anywhere; }
+  .pcb { display: inline-flex; align-items: center; gap: 4px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pcb .sim { font-size: .72rem; font-weight: 600; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; line-height: 1.5; }
+  .pcb.is-sim .cn-batt-g { opacity: .6; }
+  .cn-batt-g { flex: none; overflow: visible; color: var(--text); }
+  .dhero { display: flex; flex-direction: column; gap: 8px; }
+  .dhero .top { display: flex; align-items: center; gap: 12px; }
+  .dhero .pcic { flex: none; color: var(--accent); display: inline-flex; }
+  .dhero .pcic svg { width: 40px; height: 40px; }
+  .dhero .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dhero .who b { font-size: 1.1rem; overflow-wrap: anywhere; }
+  .dhero .top button { padding: 8px 14px; min-height: 40px; font-size: .88rem; flex: none; }
+  .dhero .big { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dhero .big .cn-batt-g { width: 48px; height: 24px; }
+  .dhero .big .pct { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .dpriv { display: flex; gap: 10px; align-items: flex-start; font-size: .82rem; color: var(--dim); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 0 0 14px; }
+  .dpriv svg { flex: none; width: 20px; height: 20px; color: var(--accent); margin-top: 1px; }
+  .dgrid { columns: 300px; column-gap: 12px; }
+  .cn-di-g { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 8px; min-width: 0; display: inline-block; width: 100%; vertical-align: top; margin: 0 0 12px; break-inside: avoid; -webkit-column-break-inside: avoid; }
+  .cn-di-g h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font-size: .95rem; }
+  .cn-di-g h4 svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+  .cn-di-g dl { margin: 0; }
+  .cn-di-r { display: grid; grid-template-columns: minmax(92px, 40%) 1fr; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: .86rem; line-height: 1.35; }
+  .cn-di-r:first-child { border-top: 0; }
+  .cn-di-r dt { color: var(--dim); }
+  .cn-di-r dd { margin: 0; min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cn-di-nr { color: var(--dim); font-style: italic; }
+  .cn-di-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); }
+  [data-tick="clock"], [data-tick="up"], [data-tick="ago"] { font-variant-numeric: tabular-nums; }
+  #vInfo h3.sub { margin: 20px 0 4px; }
+  .install { display: flex; gap: 12px; align-items: center; }
+  .install img { width: 44px; height: 44px; border-radius: 10px; }
+</style>
+</head>
+<body>
+  <header><img src="assets/phonelink.png" alt="" /><h1>Phone Link</h1><span class="pc"><span id="pcName"></span><span id="pcBatt" class="pcb hidden" role="img"></span></span></header>
+  <main id="main">
+    <section id="vConnect" class="card">
+      <h2>Connect to your PC</h2>
+      <p class="dim">Open <b>Phone Link</b> on your Windows 12 PC and scan its QR code, or type the 5-character code it shows.</p>
+      <div class="row"><input id="code" maxlength="5" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Code" aria-label="Pairing code"><button class="primary" id="go">Connect</button></div>
+      <label class="f" for="devName">This phone's name (shown on the PC)</label>
+      <input id="devName" maxlength="40" autocomplete="off">
+      <div class="status" id="st" role="status" aria-live="polite"></div>
+      <p class="note">End-to-end encrypted. Your phone connects directly to the PC (WebRTC). PeerJS's free broker only introduces the two devices; it never sees your photos, messages or screen. Nothing is uploaded or stored anywhere else. Once paired, your phone and PC also see each other's battery and basic device details (in Devices), only while they're connected.</p>
+    </section>
+    <section id="vInstall" class="card hidden">
+      <div class="install"><img src="assets/phonelink.png" alt=""><div><b>Add Phone Link to your home screen</b><div class="dim" id="instTxt"></div></div></div>
+      <div class="row" style="margin-top:10px"><button class="primary hidden" id="instBtn">Install</button></div>
+    </section>
+    <section id="vConfirm" class="card hidden">
+      <h2>Check the number</h2>
+      <p class="dim">Make sure your PC shows the same number, then select <b>Yes, they match</b> on the PC.</p>
+      <span class="sas" id="sas"></span>
+      <div class="status"><span class="spin"></span><span>Waiting for the PC…</span></div>
+    </section>
+    <section id="vMsgs" class="hidden">
+      <p class="dim" style="margin-top:0">Messages and photos between this phone and your PC. Tap a message to react. These aren't SMS.</p>
+      <div class="chat" id="chat" role="log" aria-live="polite"></div>
+    </section>
+    <section id="vPhotos" class="card hidden">
+      <h2>Photos</h2>
+      <p class="dim">Send photos to <b>Pictures</b> on your PC. Photos your PC sends show up here and in Messages — tap one to save it.</p>
+      <label class="btn primary file-btn">Send photos to PC<input id="pick" type="file" accept="image/*" multiple></label>
+      <div id="prog"></div>
+      <h3 class="sub">From your PC</h3><div class="grid" id="recv"></div><p class="dim hidden" id="recvNone">Nothing yet.</p>
+      <h3 class="sub">Sent to your PC</h3><div class="grid" id="sent"></div>
+    </section>
+    <section id="vScreen" class="hidden">
+      <div class="vbar"><span class="st" id="vst">See and use your PC from here.</span><button class="primary" id="vGo">View my PC</button><button id="vCtl" class="hidden">Request control</button><button id="vKbd" class="hidden">Keyboard</button><button id="vZoom" class="hidden">Zoom</button><button id="vStop" class="hidden">Stop</button></div>
+      <div class="stage" id="stage"><canvas id="cv"></canvas><div class="msg" id="vmsg">Tap <b>&nbsp;View my PC&nbsp;</b> — your PC will ask you to allow it.</div><input id="kbin" aria-label="Type on the PC" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+      <p class="note" style="padding:0 16px">With control: tap to click, drag to move, press and hold to right-click. Turn your phone sideways for a bigger view.</p>
+    </section>
+    <section id="vInfo" class="hidden">
+      <div class="card dhero" id="diHero"></div>
+      <p class="dpriv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Shared only between this phone and your paired PC, end-to-end encrypted, and only while they're connected. Nothing is stored online, and it's cleared when you disconnect. Anything a browser doesn't report shows as <i>Not reported</i> — nothing is guessed.</span></p>
+      <div class="dgrid" id="diPc"></div>
+      <h3 class="sub">This phone — what it shares with your PC</h3>
+      <div class="dgrid" id="diMe"></div>
+    </section>
+    <section id="vNotify" class="card hidden">
+      <h2>Send a notification</h2>
+      <p class="dim">It pops up on your PC and appears in Phone Link › Notifications. (A web page can't read your other apps' notifications.)</p>
+      <label class="f" for="nTitle">Title</label><input id="nTitle" maxlength="120" placeholder="Reminder">
+      <label class="f" for="nBody">Message</label><textarea id="nBody" rows="3" maxlength="400" placeholder="Pick up milk on the way home"></textarea>
+      <div style="margin-top:12px"><button class="primary" id="nSend">Send to PC</button> <span id="nSt" class="dim"></span></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <p class="dim" id="battLine"></p>
+      <button id="disc">Disconnect</button>
+    </section>
+  </main>
+  <form class="compose hidden" id="compose"><button type="button" class="att" id="att" aria-label="Send photos" title="Send photos"></button><input id="attIn" type="file" accept="image/*" multiple hidden><input type="text" id="msg" placeholder="Message your PC" aria-label="Message" maxlength="4000" autocomplete="off"><button class="primary" type="submit">Send</button></form>
+  <nav class="tabs hidden" id="tabs" role="tablist"></nav>
+<script src="js/p2p12.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const VIEWS = ["vConnect", "vConfirm", "vMsgs", "vPhotos", "vScreen", "vInfo", "vNotify"];
+  const show = (id) => VIEWS.forEach((v) => $(v).classList.toggle("hidden", v !== id));
+  const st = $("st");
+  const status = (txt, spin) => { st.innerHTML = (spin ? '<span class="spin"></span>' : "") + "<span></span>"; st.lastChild.textContent = txt; };
+  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const clock = (ts) => new Date(ts || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ---- icons (SVG, never emoji) ----
+  const I = {
+    msg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 8"/></svg>',
+    pc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+    devices: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="4.5" width="12.5" height="9" rx="1.2"/><path d="M1.5 17h11.5"/><rect x="15.8" y="8" width="6.7" height="12.5" rx="1.5"/><path d="M18.4 18h1.5"/></svg>',
+    cam: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>',
+  };
+  const TAP_IDS = ["heart", "like", "dislike", "laugh", "emph", "question"];
+  const TAP_LABEL = { heart: "Love", like: "Like", dislike: "Dislike", laugh: "Ha ha", emph: "Emphasize", question: "Question" };
+  const TAP = {
+    heart: '<svg viewBox="0 0 24 24"><path d="M12 20.5C5.5 16 2.5 12.4 2.5 8.7 2.5 6 4.6 4 7.2 4c1.9 0 3.6 1 4.8 2.7C13.2 5 14.9 4 16.8 4c2.6 0 4.7 2 4.7 4.7 0 3.7-3 7.3-9.5 11.8z" fill="#ff4d6d"/></svg>',
+    like: '<svg viewBox="0 0 24 24"><path d="M7 10v10H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1zm2 0 4.2-7.1a1.6 1.6 0 0 1 2.9 1.2L15 9h5a2 2 0 0 1 2 2.3l-1.3 7.2A2 2 0 0 1 18.7 20H9z" fill="currentColor"/></svg>',
+    dislike: '<svg viewBox="0 0 24 24"><path d="M17 14V4h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm-2 0-4.2 7.1a1.6 1.6 0 0 1-2.9-1.2L9 15H4a2 2 0 0 1-2-2.3l1.3-7.2A2 2 0 0 1 5.3 4H15z" fill="currentColor"/></svg>',
+    laugh: '<svg viewBox="0 0 24 24"><text x="12" y="11" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text><text x="12" y="20" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="8.5" fill="currentColor">HA</text></svg>',
+    emph: '<svg viewBox="0 0 24 24"><path d="M8 3h3l-.6 12H8.6zM13 3h3l-.6 12h-1.8z" fill="#ff6b3d"/><circle cx="9.5" cy="19" r="1.7" fill="#ff6b3d"/><circle cx="14.5" cy="19" r="1.7" fill="#ff6b3d"/></svg>',
+    question: '<svg viewBox="0 0 24 24"><path d="M8.5 8.5a3.5 3.5 0 1 1 5.4 2.9c-1.1.8-1.9 1.5-1.9 3V15" fill="none" stroke="#3b82f6" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="19.5" r="1.6" fill="#3b82f6"/></svg>',
+  };
+  $("att").innerHTML = I.cam;
+  const TABS = [["vMsgs", "Messages", I.msg], ["vPhotos", "Photos", I.photo], ["vScreen", "PC screen", I.pc], ["vInfo", "Devices", I.devices], ["vNotify", "Notify PC", I.bell]];
+  $("tabs").innerHTML = TABS.map(([v, n, ic]) => `<button data-v="${v}" role="tab">${ic}<span>${n}</span></button>`).join("");
+
+  // ---- device details collector + display: the same code as the PC's (js/connect12.js, Phone Link) ----
+  // Collects only what this browser actually reports; anything it doesn't stays null ("Not reported").
+  const DevInfo = (function () {
+    const fin = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? v : null);
+    const mq = (q) => { try { return matchMedia(q).matches; } catch (_) { return null; } };
+    const within = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
+    function parseUA(ua, touch) {
+      ua = String(ua || "");
+      const r = { type: null, model: null, os: null, osVer: null, browser: null, browserVer: null, arch: null, bits: null };
+      const g = (re) => { const m = ua.match(re); return m ? m[1] : null; };
+      const cmpVer = (a, b) => { const x = a.split("."), y = b.split("."); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (+x[i] || 0) - (+y[i] || 0); if (d) return d; } return 0; };
+      // Safari's Version/ token tracks the OS version. Without it (Home Screen app, Chrome/Firefox on
+      // iOS, in-app browsers) only the "OS 18_6 like Mac OS X" token is left, and iOS 26+ freezes that
+      // at 18_6 (like macOS's 10_15_7), so 18.6 there only means "18.6 or later".
+      const appleVer = () => { const o = g(/\bOS (\d+(?:_\d+)*) like Mac OS X/), v = o ? o.replace(/_/g, ".") : null, sv = g(/Version\/(\d+(?:\.\d+)*)/); if (sv && (!v || cmpVer(sv, v) >= 0)) return sv; return v === "18.6" ? "18.6 or later" : v; };
+      // Apple doesn't tell web pages which iPhone / iPad model it is, so model stays null there.
+      if (/iPhone|iPod/.test(ua)) { r.type = /iPod/.test(ua) ? "iPod touch" : "iPhone"; r.os = "iOS"; r.osVer = appleVer(); }
+      else if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touch > 1)) { r.type = "iPad"; r.os = "iPadOS"; r.osVer = appleVer(); }
+      else if (/Android/.test(ua)) {
+        r.os = "Android"; r.osVer = g(/Android (\d+(?:\.\d+)*)/); r.type = /Mobile/.test(ua) ? "Android phone" : "Android tablet";
+        const m = g(/Android[^;)]*;\s*(?:[a-z]{2}[-_][a-z]{2};\s*)?([^;)]+?)(?:\s+Build\/[^;)]*)?\)/i);
+        if (m && !/^(K|wv|Linux|U|Mobile)$/i.test(m.trim())) r.model = m.trim();
+      } else if (/CrOS/.test(ua)) { r.type = "Chromebook"; r.os = "ChromeOS"; r.osVer = g(/CrOS \S+ (\d+(?:\.\d+)*)/); }
+      else if (/Windows NT/.test(ua)) { r.type = "PC"; r.os = "Windows"; const nt = g(/Windows NT (\d+\.\d+)/); r.osVer = ({ "10.0": "10 or 11", "6.3": "8.1", "6.2": "8", "6.1": "7" })[nt] || nt; if (/Win64|x64|WOW64/.test(ua)) r.bits = "64"; if (/ARM64/i.test(ua)) r.arch = "arm"; }
+      else if (/Macintosh|Mac OS X/.test(ua)) { r.type = "Mac"; r.os = "macOS"; const v = g(/Mac OS X (\d+(?:[_.]\d+)*)/); r.osVer = v ? v.replace(/_/g, ".") : null; if (r.osVer === "10.15.7") r.osVer = "10.15.7 or later"; }
+      else if (/Linux/.test(ua)) { r.type = "Computer"; r.os = "Linux"; if (/x86_64|amd64/i.test(ua)) { r.arch = "x86"; r.bits = "64"; } else if (/aarch64|arm/i.test(ua)) r.arch = "arm"; }
+      const B = [["Edge", /\b(?:Edg|EdgA|EdgiOS)\/([\d.]+)/], ["Opera", /\b(?:OPR|OPT)\/([\d.]+)/], ["Samsung Internet", /SamsungBrowser\/([\d.]+)/], ["Firefox", /\b(?:Firefox|FxiOS)\/([\d.]+)/], ["Chrome (headless)", /HeadlessChrome\/([\d.]+)/], ["Chrome", /\b(?:Chrome|CriOS)\/([\d.]+)/], ["Safari", /Version\/([\d.]+).*Safari\//]];
+      for (const [n, re] of B) { const v = g(re); if (v) { r.browser = n; r.browserVer = v; break; } }
+      if (!r.browser && /AppleWebKit/.test(ua)) { r.browser = "WebKit (Home Screen app or in-app browser)"; r.browserVer = null; }
+      return r;
+    }
+    let hev = null; // userAgentData's high-entropy values (asked once; Chromium browsers only)
+    function highEntropy() {
+      if (!hev) hev = (async () => { try { const d = navigator.userAgentData; if (!d || !d.getHighEntropyValues) return null; return await within(d.getHighEntropyValues(["platform", "platformVersion", "model", "architecture", "bitness", "fullVersionList"]), 1500); } catch (_) { return null; } })();
+      return hev;
+    }
+    function refine(r, h) {
+      if (!h || typeof h !== "object") return r;
+      const s = (v, n) => (typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null);
+      const plat = s(h.platform, 30), pv = s(h.platformVersion, 30);
+      if (plat === "Windows" && pv) { const maj = parseInt(pv, 10); r.os = "Windows"; if (maj >= 13) r.osVer = "11"; else if (maj > 0) r.osVer = "10"; }
+      else if (plat === "macOS" && pv) { r.os = "macOS"; r.osVer = pv; }
+      else if ((plat === "Android" || plat === "Chrome OS") && pv) r.osVer = pv;
+      const model = s(h.model, 40); if (model) r.model = model;
+      const arch = s(h.architecture, 12); if (arch) r.arch = arch;
+      const bits = s(h.bitness, 4); if (bits) r.bits = bits;
+      if (Array.isArray(h.fullVersionList)) {
+        const all = h.fullVersionList.filter((b) => b && typeof b.brand === "string" && !/Not.?A.?Brand/i.test(b.brand));
+        const list = all.filter((b) => !/^Chromium$/i.test(b.brand));
+        const pick = list.find((b) => /Edge|Opera|Samsung|Brave|Vivaldi|Yandex/i.test(b.brand)) || list.find((b) => /Chrome/i.test(b.brand)) || list[0] || (r.browser ? null : all[0]);
+        if (pick) { r.browser = pick.brand.replace(/^(Google|Microsoft) /, ""); r.browserVer = s(pick.version, 24) || r.browserVer; }
+      }
+      return r;
+    }
+    // WebGL renderer string. A successful answer is remembered per browser, so a throwaway WebGL
+    // context is made only until one works (lots of open 3D apps + one more context could push the
+    // oldest out). A failure isn't remembered: it's tried again, at most every 5 minutes.
+    let gpu, gpuTry = 0;
+    function gpuName() {
+      if (gpu) return gpu;
+      if (gpu === null && Date.now() - gpuTry < 300000) return null;
+      gpuTry = Date.now(); gpu = null;
+      try { const c = JSON.parse(localStorage.getItem("w12pl_gpu") || "null"); if (c && c.ua === navigator.userAgent && typeof c.gpu === "string" && c.gpu) return (gpu = c.gpu.slice(0, 120)); } catch (_) {}
+      try {
+        const c = document.createElement("canvas"), gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+        if (gl) {
+          const x = gl.getExtension("WEBGL_debug_renderer_info");
+          const v = x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+          if (typeof v === "string" && v.trim()) gpu = v.trim().slice(0, 120);
+          const lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
+        }
+      } catch (_) { gpu = null; }
+      if (gpu) { try { localStorage.setItem("w12pl_gpu", JSON.stringify({ ua: navigator.userAgent, gpu })); } catch (_) {} }
+      return gpu;
+    }
+    let battP = null;
+    const realBattery = () => battP || (battP = (async () => { try { return navigator.getBattery ? await within(navigator.getBattery(), 2000) : null; } catch (_) { return null; } })());
+    // This phone's battery, when the browser reports it (Safari on iPhone/iPad doesn't).
+    async function battery() {
+      const b = await realBattery();
+      if (b && typeof b.level === "number") return { level: b.level, charging: !!b.charging, chargingTime: fin(b.chargingTime), dischargingTime: fin(b.dischargingTime), src: "browser" };
+      return null;
+    }
+    // Real battery events → fn; the simulated battery has none, so the caller polls battery() too.
+    function onBattery(fn) { realBattery().then((b) => { if (b && b.addEventListener) ["levelchange", "chargingchange"].forEach((e) => b.addEventListener(e, fn)); }); }
+    function buildToken() {
+      const pick = (sel) => { const s = document.querySelector(sel); const m = s && (s.getAttribute("src") || "").match(/[?&]v=([^&#]+)/); return m ? decodeURIComponent(m[1]).slice(0, 30) : null; };
+      return pick('script[src*="js/connect12.js"]') || pick('script[src*="js/main.js"]') || (typeof window.BUILD === "string" ? window.BUILD.slice(0, 30) : null);
+    }
+    async function collect(extra) {
+      const nav = navigator, touch = fin(nav.maxTouchPoints);
+      const dev = refine(parseUA(nav.userAgent, touch || 0), await highEntropy());
+      const bat = await battery();
+      let sto = null;
+      try { if (nav.storage && nav.storage.estimate) { const e = await within(nav.storage.estimate(), 1500); if (e) sto = { used: fin(e.usage), quota: fin(e.quota) }; } } catch (_) {}
+      let orient = null, angle = null;
+      try { if (screen.orientation && screen.orientation.type) { orient = screen.orientation.type; angle = screen.orientation.angle; } } catch (_) {}
+      if (orient == null && typeof window.orientation === "number") { angle = window.orientation; orient = Math.abs(angle) === 90 ? "landscape" : "portrait"; }
+      const c = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+      let tz = null, h12 = null;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
+      try { const o = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions(); h12 = o.hourCycle ? /h1[12]/.test(o.hourCycle) : typeof o.hour12 === "boolean" ? o.hour12 : null; } catch (_) {}
+      const vv = window.visualViewport;
+      const x = {
+        t: "info", v: 2, ts: Date.now(), up: Math.round(performance.now()),
+        // the original fields, still read by older Phone Link pages
+        battery: bat ? bat.level : undefined, charging: bat ? bat.charging : undefined, platform: String(nav.platform || "").slice(0, 40),
+        bat,
+        dev,
+        hw: { cores: fin(nav.hardwareConcurrency), ram: fin(nav.deviceMemory), gpu: gpuName(), touch },
+        scr: { w: fin(screen.width), h: fin(screen.height), dpr: fin(window.devicePixelRatio), depth: fin(screen.colorDepth), orient, angle: typeof angle === "number" ? angle : null, vw: Math.round(vv ? vv.width : innerWidth), vh: Math.round(vv ? vv.height : innerHeight) },
+        sto,
+        net: { online: typeof nav.onLine === "boolean" ? nav.onLine : null, eff: c ? c.effectiveType || null : null, type: c ? c.type || null : null, down: c ? fin(c.downlink) : null, rtt: c ? fin(c.rtt) : null, save: c && typeof c.saveData === "boolean" ? c.saveData : null },
+        loc: { langs: (nav.languages && nav.languages.length ? [...nav.languages] : nav.language ? [nav.language] : []).slice(0, 6), tz, off: -new Date().getTimezoneOffset(), h12 },
+        pref: { dark: mq("(prefers-color-scheme: dark)"), reduce: mq("(prefers-reduced-motion: reduce)"), app: mq("(display-mode: standalone)") || nav.standalone === true, vis: document.visibilityState || null },
+      };
+      return Object.assign(x, extra || {});
+    }
+
+    // ---- receiving: keep only known fields, with sane types, lengths and ranges ----
+    const INFO_MAX = 12000; // characters of JSON; anything bigger is ignored
+    const CTRL = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g;
+    const str = (v, n) => { if (typeof v !== "string") return null; const s = v.replace(CTRL, " ").replace(/\s+/g, " ").trim().slice(0, n || 60); return s || null; };
+    const num = (v, lo, hi) => (typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null);
+    const bool = (v) => (typeof v === "boolean" ? v : null);
+    const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
+    function clean(m) {
+      if (!obj(m)) return null;
+      let size = 0; try { size = JSON.stringify(m).length; } catch (_) { return null; }
+      if (size > INFO_MAX) return null;
+      const b = obj(m.bat), d = obj(m.dev) || {}, h = obj(m.hw) || {}, s = obj(m.scr) || {}, so = obj(m.sto), n = obj(m.net) || {}, l = obj(m.loc) || {}, p = obj(m.pref) || {}, k = obj(m.link) || {}, pc = obj(m.pc);
+      const x = {
+        v: num(m.v, 0, 99) || 1, ts: num(m.ts, 0, 1e14), up: num(m.up, 0, 1e11),
+        name: str(m.name, 60), platform: str(m.platform, 40),
+        bat: b ? { level: num(b.level, 0, 1), charging: bool(b.charging), chargingTime: num(b.chargingTime, 0, 1e7), dischargingTime: num(b.dischargingTime, 0, 1e7), src: b.src === "simulated" ? "simulated" : "browser" }
+          : num(m.battery, 0, 1) != null ? { level: num(m.battery, 0, 1), charging: bool(m.charging), chargingTime: null, dischargingTime: null, src: "browser" } : null,
+        dev: { type: str(d.type, 30), model: str(d.model, 40), os: str(d.os, 24), osVer: str(d.osVer, 24), browser: str(d.browser, 48), browserVer: str(d.browserVer, 24), arch: str(d.arch, 12), bits: str(d.bits, 4) },
+        hw: { cores: num(h.cores, 1, 4096), ram: num(h.ram, 0.01, 4096), gpu: str(h.gpu, 120), touch: num(h.touch, 0, 256) },
+        scr: { w: num(s.w, 1, 1e5), h: num(s.h, 1, 1e5), dpr: num(s.dpr, 0.1, 20), depth: num(s.depth, 1, 64), orient: str(s.orient, 24), angle: num(s.angle, -360, 360), vw: num(s.vw, 1, 1e5), vh: num(s.vh, 1, 1e5) },
+        sto: so ? { used: num(so.used, 0, 1e16), quota: num(so.quota, 0, 1e16) } : null,
+        net: { online: bool(n.online), eff: str(n.eff, 10), type: str(n.type, 16), down: num(n.down, 0, 1e6), rtt: num(n.rtt, 0, 1e6), save: bool(n.save) },
+        loc: { langs: Array.isArray(l.langs) ? l.langs.slice(0, 8).map((z) => str(z, 20)).filter(Boolean) : [], tz: typeof l.tz === "string" && /^[A-Za-z0-9_+\-/]{1,64}$/.test(l.tz) ? l.tz : null, off: num(l.off, -960, 960), h12: bool(l.h12) },
+        pref: { dark: bool(p.dark), reduce: bool(p.reduce), app: bool(p.app), vis: p.vis === "visible" || p.vis === "hidden" ? p.vis : null },
+        link: { rtt: num(k.rtt, 0, 6e5) },
+        pc: pc ? { name: str(pc.name, 60), user: str(pc.user, 60), os: str(pc.os, 30), build: str(pc.build, 30), theme: ["auto", "light", "dark"].includes(pc.theme) ? pc.theme : null, dark: bool(pc.dark), accent: typeof pc.accent === "string" && /^#[0-9a-f]{3,8}$/i.test(pc.accent) ? pc.accent : null } : null,
+      };
+      if (x.ts != null) x.skew = x.ts - Date.now(); // the other device's clock minus ours (ignores transit time)
+      return x;
+    }
+    return { collect, clean, parseUA, battery, onBattery, buildToken, str };
+  })();
+
+  // ---------------- showing device details ----------------
+  const fmtBytes = (n) => n == null ? null : n >= 1e12 ? (n / 1e12).toFixed(1) + " TB" : n >= 1e9 ? (n / 1e9).toFixed(1) + " GB" : n >= 1e6 ? (n / 1e6).toFixed(1) + " MB" : n >= 1e3 ? Math.round(n / 1e3) + " KB" : Math.round(n) + " B";
+  function fmtDur(sec) {
+    if (sec == null) return null; sec = Math.max(0, Math.round(sec));
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return d ? d + " d " + h + " h" : h ? h + " h " + m + " min" : m ? m + " min" + (m < 10 && s ? " " + s + " s" : "") : s + " s";
+  }
+  const fmtOff = (off) => { if (off == null) return null; const a = Math.abs(off); return "UTC" + (off < 0 ? "−" : "+") + String(Math.floor(a / 60)).padStart(2, "0") + ":" + String(a % 60).padStart(2, "0"); };
+  // The other device's wall clock, now (by its time zone, else its UTC offset).
+  function remoteClock(tz, off, h12) {
+    const o = { weekday: "short", hour: "numeric", minute: "2-digit", second: "2-digit" }; if (h12 != null) o.hour12 = h12;
+    try { if (tz) return new Date().toLocaleTimeString(undefined, Object.assign({ timeZone: tz }, o)); } catch (_) {}
+    try { if (off != null) return new Date(Date.now() + off * 60000).toLocaleTimeString(undefined, Object.assign({ timeZone: "UTC" }, o)); } catch (_) {}
+    return null;
+  }
+  const agoTxt = (at) => { const s = Math.max(0, Math.round((Date.now() - at) / 1000)); return s < 3 ? "just now" : fmtDur(s) + " ago"; };
+  // Small battery gauge with an optional charging bolt (SVG, never emoji).
+  function battGauge(level, charging) {
+    const L = level == null ? null : Math.max(0, Math.min(1, level));
+    const col = L == null ? "" : L <= 0.15 && !charging ? "#d13438" : L <= 0.3 && !charging ? "#c38a00" : "#13a10e";
+    const lbl = L == null ? "Battery not reported" : "Battery " + Math.round(L * 100) + "%" + (charging ? ", charging" : "");
+    return `<svg class="cn-batt-g" viewBox="0 0 26 13" width="26" height="13" role="img" aria-label="${lbl}"><rect x=".75" y=".75" width="21.5" height="11.5" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".7"/><rect x="23" y="4" width="2.2" height="5" rx="1" fill="currentColor" opacity=".7"/>${L == null ? `<path d="M8.5 6.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>` : `<rect x="2.25" y="2.25" width="${Math.max(1.6, 18.5 * L).toFixed(1)}" height="8.5" rx="1.4" fill="${col}"/>`}${charging ? `<path d="M12.9 .9 7.4 7.1h3.4l-1.5 5 6-6.3h-3.5z" fill="#ffd21e" stroke="#1b1b1b" stroke-width=".8" stroke-linejoin="round"/>` : ""}</svg>`;
+  }
+  const DI_IC = {
+    battery: '<rect x="2.5" y="7" width="16.5" height="10" rx="2"/><path d="M21.5 10.5v3M6 10v4M9.5 10v4"/>',
+    device: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M10.5 18.5h3"/>',
+    pc: '<rect x="2.5" y="4" width="19" height="12.5" rx="1.5"/><path d="M8 20h8M12 16.5V20"/>',
+    hardware: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".6"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+    screen: '<rect x="3" y="3.5" width="18" height="13" rx="1.5"/><path d="M7 20.5h10"/><path d="M7 7.5h4M7 7.5v3"/>',
+    network: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 15.8a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor"/>',
+    storage: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/>',
+    locale: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2"/>',
+  };
+  const diIc = (k) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${DI_IC[k] || DI_IC.device}</svg>`;
+  const CARRIER = { loop: "This device — two tabs or windows (BroadcastChannel)", peer: "Direct device-to-device connection (WebRTC)" };
+  // x: a cleaned info object. o: { who: "phone"|"pc", self, link: { rtt, avg, kind, since, lost }, sas, at (received) }
+  // → [{ id, title, rows: [[label, html|null(not reported)]] }]. Every string from x is escaped here.
+  function infoGroups(x, o) {
+    o = o || {};
+    const e = (s) => (s == null || s === "" ? null : esc(s));
+    const nr = (why) => `<span class="cn-di-nr">${esc(why)}</span>`;
+    const both = (a, b, sep) => (a == null && b == null ? null : esc([a, b].filter((z) => z != null).join(sep == null ? " " : sep)));
+    const d = x.dev || {}, h = x.hw || {}, s = x.scr || {}, n = x.net || {}, l = x.loc || {}, p = x.pref || {}, b = x.bat;
+    const apple = /^(iOS|iPadOS)$/.test(d.os || "");
+    // Every browser on iPhone / iPad is WebKit underneath, so Chrome or Firefox there doesn't share these either.
+    const appleNo = "Not reported — " + (d.browser === "Safari" ? "Safari doesn't" : "browsers on iPhone and iPad don't") + " share ";
+    const ref = o.at || x.ts || Date.now(); // when x.up was true (receipt time; or, for our own details, when collected)
+    const G = [];
+    // Battery
+    let brows;
+    if (!b) brows = [["Battery", nr(apple ? appleNo + "the battery level with web pages" : x.v < 2 && !o.self ? "Not reported" : "Not reported by this browser")]];
+    else {
+      const tl = b.charging ? (b.chargingTime === 0 ? "Fully charged" : b.chargingTime != null ? "Full in about " + fmtDur(b.chargingTime) : null) : (b.dischargingTime != null ? "About " + fmtDur(b.dischargingTime) + " left" : null);
+      brows = [["Level", b.level == null ? null : battGauge(b.level, b.charging) + " " + Math.round(b.level * 100) + "%"],
+        ["Power", b.charging == null ? null : b.charging ? "Charging" : "On battery"],
+        [b.charging ? "Time to full" : "Time left", e(tl)],
+        ["Source", b.src === "simulated" ? "Simulated by Windows 12 — this browser has no real battery reading" : "Reported by the browser"]];
+    }
+    G.push({ id: "battery", title: "Battery", rows: brows });
+    // Device (the PC also says what Windows 12 is running on)
+    const drows = [];
+    if (x.pc) {
+      drows.push(["System", e((x.pc.os || "Windows 12") + " (runs in a web browser)")], ["Build", e(x.pc.build)], ["PC name", e(x.pc.name)], ["User", e(x.pc.user)],
+        ["Theme", x.pc.theme == null ? null : esc({ auto: "Auto", light: "Light", dark: "Dark" }[x.pc.theme] + (x.pc.dark == null ? "" : x.pc.dark ? " (dark now)" : " (light now)")) + (x.pc.accent ? ` <i class="cn-di-sw" style="background:${esc(x.pc.accent)}"></i>` : "")],
+        ["Real device", both(d.type, d.model && d.model !== d.type ? "(" + d.model + ")" : null)]);
+    } else drows.push(["Name", e(x.name)], ["Type", e(d.type)], ["Model", d.model ? e(d.model) : d.type && /iPhone|iPad/.test(d.type) ? nr("Not reported — Apple doesn't tell web pages the exact model") : null]);
+    drows.push([x.pc ? "Real system" : "System", both(d.os, d.osVer)], ["Browser", both(d.browser, d.browserVer)],
+      ["Architecture", d.arch || d.bits ? esc([d.arch, d.bits ? d.bits + "-bit" : null].filter(Boolean).join(", ")) : null],
+      ["Platform", e(x.platform)],
+      [x.pc ? "Installed as an app" : "Phone Link app", p.app == null ? null : p.app ? "Installed (opened from the Home Screen)" : "Open in the browser"],
+      [x.pc ? "Browser appearance" : "Appearance", p.dark == null ? null : p.dark ? "Dark mode" : "Light mode"], ["Reduce motion", p.reduce == null ? null : p.reduce ? "On" : "Off"],
+      ["On screen", p.vis == null ? null : p.vis === "visible" ? "Yes" : "No — in the background"],
+      ["Page open for", x.up == null ? null : `<span data-tick="up" data-up="${x.up}" data-at="${ref}">${esc(fmtDur((x.up + Date.now() - ref) / 1000))}</span>`]);
+    G.push({ id: "device", title: "Device", pc: !!x.pc, rows: drows });
+    // Hardware
+    G.push({ id: "hardware", title: "Hardware", rows: [["Processor", h.cores == null ? null : esc(h.cores + " logical core" + (h.cores === 1 ? "" : "s"))],
+      ["Memory", h.ram == null ? (apple ? nr(appleNo + "it") : null) : esc(h.ram >= 8 ? "8 GB or more (browsers stop at 8)" : "About " + h.ram + " GB")],
+      ["Graphics", e(h.gpu)], ["Touch", h.touch == null ? null : h.touch > 0 ? esc("Touch screen, up to " + h.touch + " points") : "No touch screen"]] });
+    // Screen
+    const px = s.w && s.h && s.dpr ? Math.round(s.w * s.dpr) + " × " + Math.round(s.h * s.dpr) + " pixels" : null;
+    const or = s.orient ? s.orient.replace(/-(primary|secondary)$/, "").replace(/^./, (c) => c.toUpperCase()) + (s.angle != null ? " (" + s.angle + "°)" : "") : null;
+    G.push({ id: "screen", title: "Screen", rows: [["Size", s.w && s.h ? esc(s.w + " × " + s.h + " points") : null], ["Resolution", e(px)], ["Pixel ratio", s.dpr == null ? null : esc(+s.dpr.toFixed(2) + "×")],
+      ["Color depth", s.depth == null ? null : esc(s.depth + "-bit")], ["Orientation", e(or)], ["Visible area", s.vw && s.vh ? esc(s.vw + " × " + s.vh) : null]] });
+    // Network
+    const noConn = n.eff == null && n.type == null && n.down == null && n.rtt == null;
+    const TYPES = { wifi: "Wi-Fi", cellular: "Cellular", ethernet: "Ethernet", bluetooth: "Bluetooth", wimax: "WiMAX", none: "None", other: "Other", unknown: "Unknown" };
+    G.push({ id: "network", title: "Network", rows: [["Status", n.online == null ? null : n.online ? "Online" : "Offline"],
+      ["Connection", n.type ? e(TYPES[n.type] || n.type) : noConn ? nr(apple ? appleNo + "connection details" : "Not reported by this browser") : null],
+      ["Speed class", e(n.eff && n.eff.toUpperCase())], ["Downlink", n.down == null ? null : esc(n.down + " Mbps")],
+      ["Latency (browser estimate)", n.rtt == null ? null : esc(n.rtt + " ms")], ["Data saver", n.save == null ? null : n.save ? "On" : "Off"]].filter((r, i) => !(noConn && i >= 2)) });
+    // Storage
+    const so = x.sto;
+    G.push({ id: "storage", title: "Storage", rows: so ? [["Used by this page", e(fmtBytes(so.used))], ["Available to this page", e(fmtBytes(so.quota))], ["Note", "Browser storage for this page — not the whole device's disk"]] : [["Storage", null]] });
+    // Locale
+    const clk = remoteClock(l.tz, l.off, l.h12);
+    const skew = !o.self && x.skew != null && o.link && o.link.rtt != null ? x.skew : null;
+    G.push({ id: "locale", title: "Locale", rows: [["Local time", clk == null ? null : `<span data-tick="clock" data-tz="${esc(l.tz || "")}" data-off="${l.off == null ? "" : l.off}" data-h12="${l.h12 == null ? "" : l.h12}">${esc(clk)}</span>`],
+      ["Time zone", l.tz || l.off != null ? esc([l.tz ? l.tz.replace(/_/g, " ") : null, fmtOff(l.off)].filter(Boolean).join(" · ")) : null],
+      ["Languages", l.langs && l.langs.length ? esc(l.langs.join(", ")) : null], ["Clock", l.h12 == null ? null : l.h12 ? "12-hour" : "24-hour"]]
+      .concat(skew == null ? [] : [["Clock difference", esc(Math.abs(skew) < 2500 ? "In sync with this " + (o.who === "phone" ? "PC" : "phone") : fmtDur(Math.abs(skew) / 1000) + (skew > 0 ? " ahead of" : " behind") + " this " + (o.who === "phone" ? "PC" : "phone"))]]) });
+    // This link (only about the other device)
+    if (!o.self) {
+      const k = o.link || {};
+      G.push({ id: "link", title: "This link", rows: [["Round trip", k.rtt != null ? esc(Math.round(k.rtt) + " ms" + (k.avg != null && k.n > 1 ? " (average " + Math.round(k.avg) + " ms)" : "")) : k.lost ? nr("No reply — the other device may be an older version") : nr("Measuring…")],
+        ["Measured from the " + (o.who === "phone" ? "phone" : "PC"), x.link && x.link.rtt != null ? esc(Math.round(x.link.rtt) + " ms") : null],
+        ["Carrier", k.kind ? e(CARRIER[k.kind] || k.kind) : null], ["Encryption", "AES-GCM 256-bit, end to end (keys agreed with ECDH P-256)"],
+        ["Confirmation number", e(o.sas)], ["Connected since", k.since ? esc(clock(k.since)) : null],
+        ["Last update", o.at ? `<span data-tick="ago" data-at="${o.at}">${esc(agoTxt(o.at))}</span>` : null]] });
+    }
+    return G;
+  }
+  function infoGroupsHtml(G) {
+    return G.map((g) => `<section class="cn-di-g" data-g="${g.id}"><h4>${diIc(g.id === "device" && g.pc ? "pc" : g.id)}<span>${esc(g.title)}</span></h4><dl>${g.rows.map(([k, v]) => `<div class="cn-di-r"><dt>${esc(k)}</dt><dd>${v == null ? `<span class="cn-di-nr">Not reported</span>` : v}</dd></div>`).join("")}</dl></section>`).join("");
+  }
+  // Update every ticking value under root (local time, "updated … ago", page uptime).
+  function infoTick(root) {
+    root.querySelectorAll("[data-tick]").forEach((n) => {
+      const k = n.dataset.tick;
+      if (k === "clock") { const t = remoteClock(n.dataset.tz || null, n.dataset.off === "" ? null : +n.dataset.off, n.dataset.h12 === "" ? null : n.dataset.h12 === "true"); if (t) n.textContent = t; }
+      else if (k === "ago") n.textContent = agoTxt(+n.dataset.at);
+      else if (k === "up") n.textContent = fmtDur((+n.dataset.up + Date.now() - +n.dataset.at) / 1000);
+    });
+  }
+
+  function guessName() {
+    const ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) return "iPhone";
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && "ontouchend" in document)) return "iPad";
+    const m = ua.match(/Android[^;)]*;\s*([^;)]+?)(?:\s+Build|\))/);
+    if (m && m[1] && !/^(K|wv|Linux|U)$/i.test(m[1].trim())) return m[1].trim().slice(0, 30);
+    if (/Android/.test(ua)) return "Android phone";
+    return "Phone";
+  }
+  const LS = { get: (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
+  $("devName").value = LS.get("w12phone_name") || guessName();
+  $("devName").addEventListener("change", () => LS.set("w12phone_name", $("devName").value.trim()));
+  const hashCode = P2P12.normCode(decodeURIComponent((location.hash || "").slice(1)));
+  const savedCode = P2P12.normCode(LS.get("w12phone_code") || "");
+  $("code").value = hashCode || savedCode;
+  $("code").addEventListener("input", () => { $("code").value = P2P12.normCode($("code").value); });
+
+  // ---- install as an app ----
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; paintInstall(); });
+  function paintInstall() {
+    if (standalone) { $("vInstall").classList.add("hidden"); return; }
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && "ontouchend" in document);
+    $("instTxt").textContent = installEvt ? "Install it like an app and reconnect to your PC with one tap." : ios ? "In Safari, tap Share, then Add to Home Screen. It opens like an app and reconnects to your PC with one tap." : "Use your browser's menu → Install app / Add to Home screen.";
+    $("instBtn").classList.toggle("hidden", !installEvt);
+    $("vInstall").classList.toggle("hidden", paired || $("vConnect").classList.contains("hidden"));
+  }
+  $("instBtn").onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch (_) {} installEvt = null; paintInstall(); };
+
+  let sess = null, paired = false;
+  const msgs = new Map(); // id → { from, react: { pc, phone }, el }
+  async function connect() {
+    const code = P2P12.normCode($("code").value);
+    if (!P2P12.validCode(code)) { status("Type the 5-character code shown in Phone Link on your PC."); return; }
+    $("go").disabled = true; status("Connecting…", true);
+    const name = ($("devName").value.trim() || guessName()).slice(0, 40);
+    try {
+      sess = await P2P12.join("pl", code, { name, role: "phone", info: { platform: navigator.platform || "", touch: true } });
+    } catch (e) { status((e.message || String(e)) + (code === savedCode && !hashCode ? " Make sure Phone Link is open on your PC." : "")); $("go").disabled = false; return; }
+    $("sas").textContent = sess.sas; show("vConfirm"); $("vInstall").classList.add("hidden");
+    LS.set("w12phone_code", code);
+    sess.onMessage(onMsg);
+    sess.onClose(() => {
+      const was = paired; paired = false; sess = null; infoEnd(); viewerEnd("The connection to your PC ended.");
+      $("tabs").classList.add("hidden"); $("compose").classList.add("hidden"); show("vConnect"); $("go").disabled = false; paintInstall();
+      status(was ? "Disconnected from your PC. Select Connect to link again." : "The PC closed the connection.");
+    });
+  }
+  function onMsg(m, bytes) {
+    if (m.rd) { viewerMsg(m, bytes); return; }
+    if (m.t === "paired") {
+      paired = true; $("pcName").textContent = (m.pc || "PC") + (m.user ? " · " + m.user : "");
+      pcLabel = { pc: typeof m.pc === "string" ? m.pc.slice(0, 60) : null, user: typeof m.user === "string" ? m.user.slice(0, 60) : null };
+      $("tabs").classList.remove("hidden"); tab("vMsgs"); infoBegin();
+    } else if (m.t === "reject" || m.t === "busy") {
+      status(m.t === "busy" ? "Another phone is already linked to this PC." : "The PC said the numbers didn't match. Try again.");
+      show("vConnect"); $("go").disabled = false; try { sess && sess.close(); } catch (_) {}
+    } else if (!paired) return;
+    else if (m.t === "info" || m.t === "ping" || m.t === "pong" || m.t === "info-req") onInfoMsg(m);
+    else if (m.t === "msg") { bubble({ id: String(m.id), from: "pc", text: String(m.text || "") }); buzz(); }
+    else if (m.t === "react") { const x = msgs.get(String(m.id)); if (x) { if (TAP[m.r]) x.react.pc = m.r; else delete x.react.pc; paintReact(x); if (m.r) buzz(); } }
+    else if (m.t === "photo-saved") { const f = document.querySelector('#sent [data-pid="' + m.id + '"] figcaption'); if (f) f.textContent = "Saved · " + m.name; const x = msgs.get(String(m.id)); if (x && x.timeEl) x.timeEl.textContent = clock(x.ts) + " · Saved to Pictures"; }
+    else if (m.t === "photo-begin") { inc.set(m.id, { name: String(m.name || "photo.jpg"), mime: m.mime || "image/jpeg", size: m.size || 0, parts: [], got: 0, bar: progBar("From PC: " + (m.name || "photo")) }); }
+    else if (m.t === "photo-chunk" && bytes) { const f = inc.get(m.id); if (!f) return; f.parts.push(bytes); f.got += bytes.length; if (f.size) f.bar.value = f.got / f.size; }
+    else if (m.t === "photo-end") {
+      const f = inc.get(m.id); if (!f) return; inc.delete(m.id); f.bar.parentNode && f.bar.parentNode.remove();
+      const blob = new Blob(f.parts, { type: f.mime }), url = URL.createObjectURL(blob);
+      bubble({ id: String(m.id), from: "pc", photo: { url, name: f.name } }); addRecv(url, f.name); buzz();
+      sess && sess.send({ t: "photo-got", id: m.id });
+    }
+    else if (m.t === "rd-end") viewerEnd("Your PC stopped sharing.");
+    else if (m.t === "bye") { try { sess.close(); } catch (_) {} }
+  }
+  const inc = new Map();
+  const buzz = () => { if (navigator.vibrate) try { navigator.vibrate(40); } catch (_) {} };
+  function progBar(label) { const w = document.createElement("div"); w.className = "dim"; w.textContent = label; const b = document.createElement("progress"); b.max = 1; b.value = 0; w.appendChild(b); $("prog").appendChild(w); return b; }
+
+  // ---- messages, photo bubbles, reactions ----
+  function bubble(o) {
+    const x = { id: o.id, from: o.from, react: {}, ts: Date.now(), photo: o.photo };
+    const b = document.createElement("div"); b.className = "bub " + (o.from === "me" ? "me" : "them") + (o.photo ? " ph" : ""); b.dataset.id = o.id;
+    b.setAttribute("role", "button"); b.tabIndex = 0;
+    if (o.photo) { const im = document.createElement("img"); im.alt = o.photo.name || "Photo"; im.src = o.photo.url; b.appendChild(im); }
+    else { const s = document.createElement("span"); s.textContent = o.text; b.appendChild(s); }
+    const t = document.createElement("time"); t.textContent = clock(x.ts) + (o.note ? " · " + o.note : ""); b.appendChild(t); x.timeEl = t;
+    b.onclick = (e) => { e.stopPropagation(); openPick(b, x); };
+    x.el = b; msgs.set(o.id, x);
+    $("chat").appendChild(b); $("main").scrollTop = $("main").scrollHeight;
+    return x;
+  }
+  function paintReact(x) {
+    const old = x.el.querySelector(".tb"); if (old) old.remove();
+    const rs = [["me", x.react.phone], ["pc", x.react.pc]].filter((p) => TAP[p[1]]);
+    if (!rs.length) return;
+    const w = document.createElement("span"); w.className = "tb";
+    w.innerHTML = rs.map((p) => `<i class="${p[0] === "me" ? "mine" : ""}">${TAP[p[1]]}</i>`).join("");
+    x.el.appendChild(w);
+  }
+  function closePick() { document.querySelectorAll(".pick").forEach((p) => p.remove()); }
+  function openPick(b, x) {
+    closePick();
+    const pk = document.createElement("div"); pk.className = "pick"; pk.setAttribute("role", "menu");
+    pk.innerHTML = TAP_IDS.map((r) => `<button type="button" data-r="${r}" class="${x.react.phone === r ? "on" : ""}" aria-label="${TAP_LABEL[r]}">${TAP[r]}</button>`).join("") + (x.photo && x.from === "pc" ? `<button type="button" class="sv">Save</button>` : "");
+    pk.querySelectorAll("[data-r]").forEach((btn) => (btn.onclick = (e) => {
+      e.stopPropagation(); closePick(); if (!sess || !paired) return;
+      const nr = x.react.phone === btn.dataset.r ? null : btn.dataset.r;
+      if (nr) x.react.phone = nr; else delete x.react.phone;
+      paintReact(x); sess.send({ t: "react", id: x.id, r: nr });
+    }));
+    const sv = pk.querySelector(".sv"); if (sv) sv.onclick = (e) => { e.stopPropagation(); closePick(); savePhoto(x.photo.url, x.photo.name); };
+    document.body.appendChild(pk);
+    const r = b.getBoundingClientRect();
+    let left = x.from === "me" ? r.right - pk.offsetWidth : r.left; left = Math.max(8, Math.min(left, innerWidth - pk.offsetWidth - 8));
+    let top = r.top - pk.offsetHeight - 8; if (top < 8) top = r.bottom + 8;
+    pk.style.left = left + "px"; pk.style.top = top + "px";
+  }
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest(".pick")) closePick(); }, true);
+  $("main").addEventListener("scroll", closePick);
+  async function savePhoto(url, name) {
+    try {
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], name || "photo.jpg", { type: blob.type || "image/jpeg" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } // iPhone: Save Image
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = url; a.download = name || "photo.jpg"; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function addRecv(url, name) {
+    $("recvNone").classList.add("hidden");
+    const fig = document.createElement("figure"); const img = document.createElement("img"); img.alt = ""; img.src = url; fig.appendChild(img);
+    const cap = document.createElement("figcaption"); cap.textContent = "Tap to save"; fig.appendChild(cap);
+    fig.onclick = () => savePhoto(url, name);
+    $("recv").prepend(fig);
+  }
+
+  function tab(v) {
+    document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.v === v));
+    show(v); $("compose").classList.toggle("hidden", v !== "vMsgs");
+    $("main").style.padding = v === "vScreen" ? "0" : "";
+    if (v === "vPhotos") $("recvNone").classList.toggle("hidden", $("recv").children.length > 0);
+    if (v === "vMsgs") $("main").scrollTop = $("main").scrollHeight;
+    if (v === "vInfo") { renderInfo(); $("main").scrollTop = 0; }
+  }
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) tab(b.dataset.v); });
+  // ---- device details: shared only with the paired PC, inside the encrypted session, only while connected ----
+  let pcInfo = null, pcInfoAt = 0, mine = null, link = null, pcLabel = null;
+  const INFO = { lastSent: 0, timer: 0, iv: 0, hooked: false };
+  const linked = () => !!(sess && paired && !sess.closed);
+  // At most once every 2 s: whatever changed is collected fresh when the timer fires.
+  function infoQueue() {
+    if (!linked() || INFO.timer) return;
+    INFO.timer = setTimeout(async () => {
+      INFO.timer = 0; if (!linked()) return;
+      const s = sess; INFO.lastSent = Date.now();
+      let x; try { x = await DevInfo.collect({ name: ($("devName").value.trim() || guessName()).slice(0, 40), link: { rtt: link && link.rtt != null ? Math.round(link.rtt) : null } }); }
+      catch (e) { console.warn("Phone Link device info", e); return; }
+      if (s !== sess || !linked()) return;
+      mine = DevInfo.clean(x); s.send(x); paintInfo();
+    }, Math.max(0, 2000 - (Date.now() - INFO.lastSent)));
+  }
+  function ping() {
+    if (!linked() || !link) return;
+    const ts = performance.now(); link.out = ts; sess.send({ t: "ping", ts });
+    setTimeout(() => { if (link && link.out === ts) { link.out = null; link.lost = (link.lost || 0) + 1; paintInfo(); } }, 10000);
+  }
+  function infoHook() {
+    if (INFO.hooked) return; INFO.hooked = true;
+    const q = () => infoQueue();
+    ["online", "offline", "resize", "orientationchange"].forEach((e) => window.addEventListener(e, q));
+    document.addEventListener("visibilitychange", q);
+    try { if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", q); } catch (_) {}
+    try { const c = navigator.connection; if (c && c.addEventListener) c.addEventListener("change", q); } catch (_) {}
+    try { ["(prefers-color-scheme: dark)", "(prefers-reduced-motion: reduce)", "(display-mode: standalone)"].forEach((m) => { const l = matchMedia(m); if (l.addEventListener) l.addEventListener("change", q); }); } catch (_) {}
+    DevInfo.onBattery(q);
+    $("devName").addEventListener("change", q);
+  }
+  function infoBegin() {
+    infoEnd();
+    link = { kind: (sess && sess.kind) || null, since: Date.now(), rtt: null, avg: null, n: 0, lost: 0, out: null };
+    infoHook(); INFO.lastSent = 0; infoQueue(); ping();
+    INFO.iv = setInterval(() => { infoQueue(); ping(); }, 30000);
+  }
+  function infoEnd() {
+    clearInterval(INFO.iv); INFO.iv = 0; clearTimeout(INFO.timer); INFO.timer = 0;
+    pcInfo = null; pcInfoAt = 0; mine = null; link = null; paintInfo();
+  }
+  function onInfoMsg(m) {
+    if (m.t === "info") { const x = DevInfo.clean(m); if (!x) return; pcInfo = x; pcInfoAt = Date.now(); paintInfo(); }
+    else if (m.t === "ping") { if (typeof m.ts === "number" && isFinite(m.ts)) sess.send({ t: "pong", ts: m.ts }); }
+    else if (m.t === "pong") {
+      const k = link, rtt = performance.now() - m.ts;
+      if (k && typeof m.ts === "number" && rtt >= 0 && rtt < 15000) { if (k.out === m.ts) k.out = null; k.rtt = rtt; k.n++; k.avg = k.avg == null ? rtt : k.avg + (rtt - k.avg) / Math.min(k.n, 8); k.lost = 0; paintInfo(); }
+    }
+    else if (m.t === "info-req") infoQueue();
+  }
+  // Header (the PC's battery next to its name), the Notify tab's battery line, and the Devices tab.
+  function paintInfo() {
+    const pb = $("pcBatt"), b = pcInfo && pcInfo.bat;
+    if (linked() && b && b.level != null) {
+      const t = "PC battery " + Math.round(b.level * 100) + "%" + (b.charging ? ", charging" : "") + (b.src === "simulated" ? " (simulated)" : "");
+      // A simulated reading says so on screen too (touch screens have no hover for the title).
+      const sim = b.src === "simulated";
+      pb.innerHTML = battGauge(b.level, b.charging) + "<span>" + Math.round(b.level * 100) + "%</span>" + (sim ? '<span class="sim">simulated</span>' : ""); pb.classList.toggle("is-sim", sim);
+      pb.title = t; pb.setAttribute("aria-label", t); pb.classList.remove("hidden");
+    } else pb.classList.add("hidden");
+    const mb = mine && mine.bat;
+    $("battLine").textContent = !mine ? "" : mb && mb.level != null ? "This phone's battery (" + Math.round(mb.level * 100) + "%" + (mb.charging ? ", charging" : "") + ") is shared with your PC — see Devices." : "This browser doesn't report the battery level, so your PC won't see it. Other details are in Devices.";
+    if (!$("vInfo").classList.contains("hidden")) renderInfo();
+  }
+  function renderInfo() {
+    const x = pcInfo, pc = (x && x.pc) || {}, b = x && x.bat;
+    const nm = pc.name || (pcLabel && pcLabel.pc) || "Your PC", user = pc.user || (pcLabel && pcLabel.user) || "";
+    const sub = [user, x && x.pc ? (pc.os || "Windows 12") + (pc.build ? " · build " + pc.build : "") : null].filter(Boolean).join(" · ");
+    const refocus = document.activeElement && document.activeElement.id === "diRefresh"; // rebuilt below: keep keyboard focus on it
+    $("diHero").innerHTML = `<div class="top"><span class="pcic">${I.pc}</span><div class="who"><b>${esc(nm)}</b><span class="dim">${esc(sub)}</span></div><button type="button" id="diRefresh">Refresh</button></div>
+      ${!x ? "" : `<div class="big">${b && b.level != null ? battGauge(b.level, b.charging) + `<span class="pct">${Math.round(b.level * 100)}%</span><span class="dim">${esc((b.charging ? "Charging" : "On battery") + (b.src === "simulated" ? " · simulated by Windows 12 (no real battery reading on the PC)" : ""))}</span>` : battGauge(null, false) + `<span class="dim">The PC's browser doesn't report a battery</span>`}</div>`}
+      <div class="dim">${x ? `Updated <span data-tick="ago" data-at="${pcInfoAt}">${esc(agoTxt(pcInfoAt))}</span>` : !linked() ? "Not connected." : link && link.oldShown ? "No details from your PC." : "Waiting for your PC to share its details…"}</div>`;
+    $("diRefresh").onclick = () => { if (!linked()) return; sess.send({ t: "info-req" }); ping(); infoQueue(); };
+    if (refocus) { try { $("diRefresh").focus({ preventScroll: true }); } catch (_) {} }
+    $("diPc").innerHTML = x ? (x.v < 2 ? `<p class="dim">Your PC is running an older Phone Link that only shares its name.</p>` : "") + infoGroupsHtml(infoGroups(x, { who: "pc", link, sas: sess && sess.sas, at: pcInfoAt }))
+      : linked() && link && Date.now() - link.since > 6000 ? `<p class="dim">Your PC hasn't shared its details. It may be running an older version of Windows 12 — reload Windows 12 on the PC to update it.</p>` : "";
+    $("diMe").innerHTML = mine ? infoGroupsHtml(infoGroups(mine, { who: "phone", self: true })) : `<p class="dim">${linked() ? "Collecting…" : "Shared once you're connected."}</p>`;
+  }
+  setInterval(() => {
+    const v = $("vInfo"); if (v.classList.contains("hidden")) return;
+    if (!pcInfo && linked() && link && !link.oldShown && Date.now() - link.since > 6000) { link.oldShown = true; renderInfo(); }
+    infoTick(v);
+  }, 1000);
+  // Read-only view of what's been exchanged (used by tests; stays on this phone).
+  window.PhoneLinkInfo = () => ({ pc: pcInfo, at: pcInfoAt, mine, link: link && Object.assign({}, link) });
+  $("compose").onsubmit = (e) => {
+    e.preventDefault(); const t = $("msg").value.trim(); if (!t || !sess || !paired) return;
+    const id = newId("p");
+    sess.send({ t: "msg", id, text: t }); bubble({ id, from: "me", text: t }); $("msg").value = "";
+  };
+  $("att").onclick = () => $("attIn").click();
+  $("attIn").onchange = () => { const fs = [...$("attIn").files]; $("attIn").value = ""; sendPhotos(fs); };
+  $("nSend").onclick = () => {
+    if (!sess || !paired) return;
+    const title = $("nTitle").value.trim(), body = $("nBody").value.trim();
+    if (!title && !body) { $("nSt").textContent = "Type a title or a message."; return; }
+    sess.send({ t: "notif", app: "Phone", title, body }); $("nSt").textContent = "Sent."; $("nBody").value = "";
+    setTimeout(() => { $("nSt").textContent = ""; }, 2500);
+  };
+  $("disc").onclick = () => { if (sess) { sess.send({ t: "bye" }); setTimeout(() => sess && sess.close(), 200); } };
+
+  // Photos to the PC: HEIC (iPhone) is converted to JPEG when the browser can decode it.
+  async function toSendable(file) {
+    if (/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)) {
+      try {
+        const bmp = await createImageBitmap(file); const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height; c.getContext("2d").drawImage(bmp, 0, 0);
+        const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.9));
+        if (blob) return { blob, name: file.name.replace(/\.(heic|heif)$/i, "") + ".jpg", mime: "image/jpeg" };
+      } catch (_) {}
+    }
+    return { blob: file, name: file.name || "photo.jpg", mime: file.type || "image/jpeg" };
+  }
+  async function sendPhotos(files) {
+    for (const f of files) {
+      if (!sess || !paired) break;
+      const it = await toSendable(f), id = newId("p"), url = URL.createObjectURL(it.blob);
+      const x = bubble({ id, from: "me", photo: { url, name: it.name }, note: "Sending…" });
+      const fig = document.createElement("figure"); fig.dataset.pid = id;
+      const img = document.createElement("img"); img.alt = ""; img.src = url; fig.appendChild(img);
+      const cap = document.createElement("figcaption"); cap.textContent = "Sending…"; fig.appendChild(cap); $("sent").prepend(fig);
+      const bar = progBar("To PC: " + it.name);
+      const bytes = new Uint8Array(await it.blob.arrayBuffer());
+      sess.send({ t: "photo-begin", id, name: it.name, mime: it.mime, size: bytes.length });
+      const CH = 64 * 1024;
+      for (let o = 0; o < bytes.length; o += CH) { if (!sess) break; await sess.send({ t: "photo-chunk", id }, bytes.subarray(o, o + CH)); bar.value = Math.min(1, (o + CH) / bytes.length); }
+      if (sess) await sess.send({ t: "photo-end", id });
+      bar.parentNode && bar.parentNode.remove(); cap.textContent = "Sent"; x.timeEl.textContent = clock(x.ts) + " · Sent";
+    }
+  }
+  $("pick").onchange = () => { const fs = [...$("pick").files]; $("pick").value = ""; sendPhotos(fs); };
+
+  // ---- remote desktop: view (and with permission, control) the PC ----
+  const V = { on: false, sharing: false, ctl: "none", frames: 0, zoom: false };
+  const cv = $("cv"), g = cv.getContext("2d"), stage = $("stage");
+  function vpaint(msg) {
+    $("vGo").classList.toggle("hidden", V.on);
+    $("vStop").classList.toggle("hidden", !V.on);
+    $("vCtl").classList.toggle("hidden", !V.sharing);
+    $("vZoom").classList.toggle("hidden", !V.sharing);
+    $("vKbd").classList.toggle("hidden", V.ctl !== "on");
+    $("vCtl").textContent = V.ctl === "on" ? "Stop controlling" : V.ctl === "asking" ? "Waiting…" : "Request control";
+    $("vCtl").disabled = V.ctl === "asking";
+    $("vZoom").textContent = V.zoom ? "Fit" : "Zoom";
+    stage.classList.toggle("ctl", V.ctl === "on");
+    stage.classList.toggle("zoom", V.zoom);
+    $("vst").textContent = !V.on ? "See and use your PC from here." : !V.sharing ? "Waiting for your PC to allow it…" : V.paused ? "Your PC paused sharing." : V.ctl === "on" ? "You're controlling your PC." : "Viewing your PC's screen.";
+    const m = $("vmsg");
+    if (msg != null) m.textContent = msg;
+    else if (V.frames) m.textContent = "";
+    m.classList.toggle("hidden", !m.textContent);
+  }
+  $("vGo").onclick = () => { if (!sess || !paired) return; V.on = true; V.sharing = false; V.frames = 0; V.ctl = "none"; sess.send({ t: "rd-req" }); vpaint("Asking your PC — allow it there."); };
+  $("vStop").onclick = () => { if (sess) sess.send({ t: "leave", rd: 1 }); viewerEnd("You stopped viewing your PC."); };
+  $("vCtl").onclick = () => { if (!sess) return; if (V.ctl === "on") { V.ctl = "none"; sess.send({ t: "ctl-release", rd: 1 }); } else { V.ctl = "asking"; sess.send({ t: "ctl-req", rd: 1 }); } vpaint(); };
+  $("vZoom").onclick = () => { V.zoom = !V.zoom; vpaint(); };
+  function viewerEnd(msg) { if (!V.on && !V.sharing) return; V.on = false; V.sharing = false; V.ctl = "none"; vpaint(msg || ""); }
+  let drawing = false, pending = null;
+  async function draw(m, bytes) {
+    if (drawing) { pending = [m, bytes]; return; }
+    drawing = true;
+    try {
+      const bmp = await createImageBitmap(new Blob([bytes], { type: "image/jpeg" }));
+      if (cv.width !== m.w || cv.height !== m.h) { cv.width = m.w; cv.height = m.h; }
+      g.drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
+      V.frames++; if (V.frames === 1) vpaint();
+    } catch (_) {}
+    drawing = false;
+    if (pending) { const p = pending; pending = null; draw(p[0], p[1]); }
+  }
+  function viewerMsg(m, bytes) {
+    if (m.t === "share-start") { V.on = true; V.sharing = true; V.frames = 0; tab("vScreen"); vpaint("Loading your PC's screen…"); }
+    else if (m.t === "frame" && bytes) { if (V.on) draw(m, bytes); }
+    else if (m.t === "share-paused") { V.paused = !!m.paused; vpaint(); }
+    else if (m.t === "ctl-ok") { V.ctl = "on"; vpaint(); buzz(); }
+    else if (m.t === "ctl-no") { V.ctl = "none"; vpaint(); $("vst").textContent = "Your PC declined control."; }
+    else if (m.t === "ctl-revoked") { V.ctl = "none"; vpaint(); $("vst").textContent = "Your PC took back control."; }
+    else if (m.t === "share-declined") viewerEnd("Your PC declined to share its screen.");
+    else if (m.t === "share-error") viewerEnd(m.msg || "Your PC couldn't share its screen.");
+    else if (m.t === "share-stop") viewerEnd("Your PC stopped sharing.");
+  }
+  const norm = (e) => {
+    const r = cv.getBoundingClientRect(); if (!cv.width || !r.width) return null;
+    const nx = (e.clientX - r.left) / r.width, ny = (e.clientY - r.top) / r.height;
+    if (nx < 0 || ny < 0 || nx > 1 || ny > 1) return null;
+    return { nx, ny };
+  };
+  const sendIn = (o) => { if (sess && V.ctl === "on") sess.send(Object.assign({ t: "in", rd: 1 }, o)); };
+  let tp = null;
+  stage.addEventListener("pointerdown", (e) => {
+    if (V.ctl !== "on" || V.zoom) return; const p = norm(e); if (!p) return; e.preventDefault();
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+    tp = { x: e.clientX, y: e.clientY, p, drag: false, long: false, last: 0 };
+    tp.timer = setTimeout(() => { if (!tp || tp.drag) return; tp.long = true; sendIn({ e: "down", b: 2, nx: p.nx, ny: p.ny }); sendIn({ e: "up", b: 2, nx: p.nx, ny: p.ny }); buzz(); }, 550);
+  });
+  stage.addEventListener("pointermove", (e) => {
+    if (!tp || V.ctl !== "on") return; const p = norm(e); if (!p) return;
+    if (!tp.drag && Math.hypot(e.clientX - tp.x, e.clientY - tp.y) > 10) { tp.drag = true; clearTimeout(tp.timer); sendIn({ e: "down", b: 0, nx: tp.p.nx, ny: tp.p.ny }); }
+    const now = performance.now(); if (tp.drag && now - tp.last > 40) { tp.last = now; sendIn({ e: "move", nx: p.nx, ny: p.ny }); }
+  });
+  const endTouch = (e) => {
+    if (!tp) return; clearTimeout(tp.timer); const p = norm(e) || tp.p;
+    if (tp.drag) sendIn({ e: "up", b: 0, nx: p.nx, ny: p.ny });
+    else if (!tp.long) { sendIn({ e: "move", nx: tp.p.nx, ny: tp.p.ny }); sendIn({ e: "down", b: 0, nx: tp.p.nx, ny: tp.p.ny }); sendIn({ e: "up", b: 0, nx: tp.p.nx, ny: tp.p.ny }); }
+    tp = null;
+  };
+  stage.addEventListener("pointerup", endTouch);
+  stage.addEventListener("pointercancel", () => { if (tp) clearTimeout(tp.timer); tp = null; });
+  stage.addEventListener("contextmenu", (e) => e.preventDefault());
+  const kbin = $("kbin");
+  $("vKbd").onclick = () => { kbin.value = ""; kbin.focus(); };
+  kbin.addEventListener("keydown", (e) => { if (V.ctl !== "on" || !sess) return; if (["Enter", "Backspace", "Tab", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) { e.preventDefault(); sess.send({ t: "key", rd: 1, key: e.key, code: e.code }); } });
+  kbin.addEventListener("input", (e) => { if (V.ctl !== "on" || !sess) return; const d = e.data || kbin.value; for (const ch of d || "") sess.send({ t: "key", rd: 1, key: ch }); kbin.value = ""; });
+
+  $("go").onclick = connect;
+  $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+  paintInstall();
+  // From the QR code, or opened as an app with a remembered PC: connect straight away.
+  if (hashCode && P2P12.validCode(hashCode)) connect();
+  else if (standalone && P2P12.validCode(savedCode)) connect();
+  else status(savedCode ? "Your PC's code is filled in — select Connect." : "");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+/* =====================================================================
+   Windows 11 Accessibility for Windows 12 (js/a11y-*.js) — every class is
+   prefixed ax-. Load this early (in <head>) so contrast themes apply before
+   the first paint; js/a11y-vision.js sets the html classes and CSS variables.
+   Our floating UI lives in #ax-layer, a child of <html> (outside <body>), so
+   the Magnifier (which scales <body>) never scales it.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Contrast themes  (html.ax-hc + --ax-* palette set by js/a11y.js)
+   --------------------------------------------------------------------- */
+html.ax-hc { color-scheme: dark; }
+html.ax-hc.ax-hc-light { color-scheme: light; }
+html.ax-hc, html.ax-hc body { background: var(--ax-bg) !important; color: var(--ax-fg) !important; }
+/* Every element with content: solid theme background, theme text, no pictures,
+   no transparency, no shadows. Media, canvases, SVG drawings, and empty
+   decorative boxes (color swatches, progress fills, overlays) are left alone. */
+html.ax-hc body :not(img, video, canvas, iframe, object, embed, picture, svg, svg *, .ax-keep, .ax-keep *):not(:empty:not(button, input, textarea, select, a)) {
+  background-color: var(--ax-bg) !important;
+  background-image: none !important;
+  color: var(--ax-fg) !important;
+  -webkit-text-fill-color: currentColor !important;
+  border-color: var(--ax-fg) !important;
+  outline-color: var(--ax-fg);
+  box-shadow: none !important;
+  text-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.ax-hc body :is(input, textarea, select):not(.ax-keep, .ax-keep *) { background-color: var(--ax-bg) !important; color: var(--ax-fg) !important; border: 1px solid var(--ax-fg) !important; }
+html.ax-hc body :is(input[type="checkbox"], input[type="radio"], input[type="range"], progress, meter) { accent-color: var(--ax-sel-bg); }
+html.ax-hc body input[type="range"]:not(.ax-keep, .ax-keep *) { border: 0 !important; }
+html.ax-hc body input[type="color"] { background-color: var(--ax-btn-bg) !important; }
+/* Buttons */
+html.ax-hc body :is(button, input[type="button"], input[type="submit"], input[type="reset"], [role="button"], .w12s-btn, .pill-btn, .qs-tile):not(.ax-keep, .ax-keep *) {
+  background-color: var(--ax-btn-bg) !important; color: var(--ax-btn-fg) !important; border-color: var(--ax-btn-fg) !important;
+}
+html.ax-hc body :is(.w12s-btn, .pill-btn, .qs-tile, input[type="button"], input[type="submit"]):not(.ax-keep, .ax-keep *) { border-width: 1px !important; border-style: solid !important; }
+/* Links */
+html.ax-hc body :is(a[href], a.w12s-link, .w12s-link, .w12s-crumb, [role="link"]):not(.ax-keep, .ax-keep *) { color: var(--ax-link) !important; text-decoration: underline !important; }
+/* Selected / on / current items, and hover on interactive things */
+html.ax-hc body :is(.on, .sel, .selected, .active, .checked, [aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current="page"], [aria-current="true"], .w12s-nav-it.on, option:checked):not(.ax-keep *, .ax-keep, :empty, .win, [class*="page"]:not([class*="nav"]), [class*="panel"], [class*="pane"], [class*="view"], [class*="content"], [class*="body"], [class*="screen"], [class*="wrap"], [class*="layer"], [class*="list"], [role="tabpanel"], [role="dialog"]),
+html.ax-hc body :is(button, a[href], [role="button"], [role="menuitem"], [role="option"], [role="tab"], .w12s-click, .w12s-nav-it, .w12s-btn, .qs-tile, li[tabindex], .sm12-app, .dicon):not(.ax-keep *, :disabled):hover {
+  background-color: var(--ax-sel-bg) !important; color: var(--ax-sel-fg) !important; border-color: var(--ax-sel-fg) !important;
+}
+html.ax-hc body :is(.on, .sel, .selected, .active, [aria-selected="true"], .w12s-click, .w12s-nav-it, button, [role="button"], a[href], [role="tab"], [role="option"], [role="menuitem"], li[tabindex], .sm12-app, .dicon):not(.ax-keep *, .win, [class*="page"]:not([class*="nav"]), [class*="panel"], [class*="pane"], [class*="view"], [class*="content"], [class*="body"], [class*="screen"], [class*="wrap"], [class*="layer"], [class*="list"], [role="tabpanel"], [role="dialog"]):is(.on, .sel, .selected, .active, [aria-selected="true"], :hover) :not(input, textarea, select, .ax-keep, .ax-keep *) { color: inherit !important; border-color: currentColor !important; background-color: transparent !important; }
+/* Disabled */
+html.ax-hc body :is(:disabled, [aria-disabled="true"], .disabled):not(.ax-keep, .ax-keep *) { color: var(--ax-dis) !important; border-color: var(--ax-dis) !important; opacity: 1 !important; }
+html.ax-hc body :is(:disabled, [aria-disabled="true"], .disabled):not(.ax-keep, .ax-keep *) * { color: var(--ax-dis) !important; }
+/* Muted helper text is still full theme text (Windows shows it at full contrast) */
+html.ax-hc body :is(.muted, .w12s-row-s, .dim, .st-dim, .ptz-dim):not(.ax-keep, .ax-keep *) { opacity: 1 !important; }
+html.ax-hc ::placeholder { color: var(--ax-dis) !important; -webkit-text-fill-color: var(--ax-dis) !important; opacity: 1 !important; }
+html.ax-hc ::selection { background: var(--ax-sel-bg) !important; color: var(--ax-sel-fg) !important; -webkit-text-fill-color: var(--ax-sel-fg) !important; }
+html.ax-hc :focus-visible { outline: 2px solid var(--ax-fg) !important; outline-offset: 1px !important; }
+/* Line-art icons drawn with gradients follow the theme text color */
+html.ax-hc body svg :is([stroke^="url"]) { stroke: currentColor; }
+html.ax-hc body svg :is([fill^="url"]):not(.ax-keep, .ax-keep *) { fill: currentColor; }
+/* Windows-specific chrome */
+html.ax-hc body .win { border: 1px solid var(--ax-fg) !important; }
+html.ax-hc body .win-titlebar { border-bottom: 1px solid var(--ax-fg) !important; }
+html.ax-hc body .win-controls button.close:hover { background-color: var(--ax-sel-bg) !important; color: var(--ax-sel-fg) !important; }
+html.ax-hc body .taskbar { border-top: 1px solid var(--ax-fg) !important; }
+html.ax-hc body .lock-bg { background: var(--ax-bg) !important; }
+html.ax-hc body .lock-bg::after { display: none; }
+html.ax-hc body .w12s-sw span { border-color: var(--ax-fg) !important; background: var(--ax-bg) !important; }
+html.ax-hc body .w12s-sw span::after { background: var(--ax-fg) !important; }
+html.ax-hc body .w12s-sw input:checked + span { background: var(--ax-sel-bg) !important; border-color: var(--ax-sel-bg) !important; }
+html.ax-hc body .w12s-sw input:checked + span::after { background: var(--ax-sel-fg) !important; }
+html.ax-hc body .w12s-sw input:disabled + span { border-color: var(--ax-dis) !important; }
+html.ax-hc body .w12s-focus { background: var(--ax-sel-bg) !important; }
+html.ax-hc body .modal-mask:empty { background: rgba(0,0,0,.6) !important; }
+
+/* Accessibility mode (existing) keeps its focus ring but in theme colors */
+html.ax-hc body.a11y-mode :focus-visible { outline-color: var(--ax-fg) !important; }
+
+/* ---------------------------------------------------------------------
+   2. Color filters  (filter set inline on <html> by js/a11y-vision.js)
+   --------------------------------------------------------------------- */
+.ax-svgdefs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+/* ---------------------------------------------------------------------
+   Shared look for our own floating UI (themes with the OS)
+   --------------------------------------------------------------------- */
+#ax-layer { position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: 2147482900; pointer-events: none; overflow: visible; }
+#ax-layer > * { pointer-events: auto; }
+#ax-layer > :is(.ax-touch, .ax-caretind, .ax-caretbar, .ax-nar-box, .ax-nar-cap, .ax-toast, .ax-mk-ptr, .ax-mirror) { pointer-events: none; }
+.ax-ui {
+  --axu-bg: rgba(249, 249, 249, .97); --axu-fg: #1b1b1b; --axu-dim: #5d5d5d; --axu-line: rgba(0,0,0,.14);
+  --axu-key: #fff; --axu-key-hi: #e9e9e9; --axu-acc: var(--accent, #0067c0); --axu-acc-fg: #fff;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--axu-fg); box-sizing: border-box; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html.ax-dark .ax-ui, body.dark .ax-ui { --axu-bg: rgba(40, 40, 40, .97); --axu-fg: #f3f3f3; --axu-dim: #b8b8b8; --axu-line: rgba(255,255,255,.14); --axu-key: #3a3a3a; --axu-key-hi: #4a4a4a; }
+html.ax-hc .ax-ui { --axu-bg: var(--ax-bg); --axu-fg: var(--ax-fg); --axu-dim: var(--ax-fg); --axu-line: var(--ax-fg); --axu-key: var(--ax-btn-bg); --axu-key-hi: var(--ax-sel-bg); --axu-acc: var(--ax-sel-bg); --axu-acc-fg: var(--ax-sel-fg); }
+.ax-ui *, .ax-ui *::before, .ax-ui *::after { box-sizing: border-box; }
+.ax-ui button { font: inherit; color: inherit; }
+
+/* ---------------------------------------------------------------------
+   3. Magnifier
+   --------------------------------------------------------------------- */
+/* fixed: a scaled <body> must not widen the (mobile) layout viewport */
+body.ax-mag-on { will-change: transform; position: fixed !important; left: 0; top: 0; width: 100%; height: 100%; margin: 0; }
+body.ax-mag-on.ax-mag-anim { transition: transform .09s linear; }
+body.ax-mag-invert, .ax-mirror.ax-mag-invert { filter: invert(1) hue-rotate(180deg); }
+.ax-magbar .ax-mag-vn { font-size: 13px; }
+.ax-magbar .ax-mag-pan { cursor: move; touch-action: none; }
+.ax-mag-edges i { position: fixed; z-index: 2147482985; background: rgba(0, 103, 192, .16); touch-action: none; }
+.ax-mag-edges i:active { background: rgba(0, 103, 192, .35); }
+.ax-mag-edges i[data-e="t"] { left: 40px; right: 40px; top: 0; height: 22px; }
+.ax-mag-edges i[data-e="b"] { left: 40px; right: 40px; bottom: 0; height: 22px; }
+.ax-mag-edges i[data-e="l"] { top: 40px; bottom: 40px; left: 0; width: 22px; }
+.ax-mag-edges i[data-e="r"] { top: 40px; bottom: 40px; right: 0; width: 22px; }
+.ax-magbar {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147482990;
+  display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 10px;
+  background: var(--axu-bg); border: 1px solid var(--axu-line); box-shadow: 0 8px 28px rgba(0,0,0,.28);
+  touch-action: none;
+}
+.ax-magbar button { min-width: 36px; height: 34px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; font-size: 14px; }
+.ax-magbar button:hover, .ax-magbar button:focus-visible { background: var(--axu-key-hi); outline: none; }
+.ax-magbar .ax-mag-pct { min-width: 64px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ax-magbar .ax-grip { width: 14px; height: 30px; cursor: grab; display: inline-flex; align-items: center; justify-content: center; color: var(--axu-dim); }
+.ax-magbar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ax-magbar.ax-collapsed > :not(.ax-mag-expand) { display: none; }
+.ax-magbar .ax-mag-expand { display: none; }
+.ax-magbar.ax-collapsed .ax-mag-expand { display: inline-flex; }
+.ax-menu { position: fixed; z-index: 2147482995; min-width: 180px; padding: 4px; border-radius: 8px; background: var(--axu-bg); border: 1px solid var(--axu-line); box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+.ax-menu button { display: flex; width: 100%; text-align: left; align-items: center; gap: 8px; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.ax-menu button:hover, .ax-menu button:focus-visible { background: var(--axu-key-hi); outline: none; }
+.ax-menu button[aria-checked="true"]::before { content: "\2713"; width: 14px; }
+.ax-menu button[aria-checked="false"]::before { content: ""; width: 14px; }
+/* Lens / docked views show a live copy of the screen */
+.ax-mirror { position: fixed; z-index: 2147482980; overflow: hidden; pointer-events: none; background: var(--bg, #222); }
+.ax-mirror.ax-lens { border: 3px solid var(--accent, #0067c0); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+.ax-mirror.ax-dock { left: 0; right: 0; top: 0; border-bottom: 3px solid var(--accent, #0067c0); }
+.ax-mirror-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.ax-mirror-stage > .ax-mirror-screen { position: absolute !important; inset: auto !important; left: 0 !important; top: 0 !important; overflow: hidden; }
+.ax-mirror-stage .ax-mirror-cursor { position: absolute; width: 18px; height: 26px; pointer-events: none; }
+html.ax-hc .ax-mirror.ax-lens, html.ax-hc .ax-mirror.ax-dock { border-color: var(--ax-fg); }
+
+/* ---------------------------------------------------------------------
+   4. Narrator
+   --------------------------------------------------------------------- */
+.ax-nar-box { position: fixed; z-index: 2147482970; pointer-events: none; border: 3px solid #0a64d8; border-radius: 4px; box-shadow: 0 0 0 1px #fff, inset 0 0 0 1px #fff; transition: left .12s, top .12s, width .12s, height .12s; display: none; }
+html.ax-hc .ax-nar-box { border-color: var(--ax-sel-bg); }
+.ax-nar-cap {
+  position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147482975; max-width: min(720px, calc(100vw - 32px));
+  padding: 8px 14px; border-radius: 10px; background: rgba(10, 30, 70, .94); color: #fff; font-size: 15px; line-height: 1.35; pointer-events: none;
+  box-shadow: 0 6px 22px rgba(0,0,0,.35);
+}
+.ax-nar-cap b { color: #8fd0ff; font-weight: 600; margin-right: 6px; }
+html.ax-hc .ax-nar-cap { background: var(--ax-bg); color: var(--ax-fg); border: 2px solid var(--ax-fg); }
+html.ax-hc .ax-nar-cap b { color: var(--ax-link); }
+.ax-nar-gate { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 2147482999; padding: 10px 18px; border-radius: 22px; border: 0; background: #0a64d8; color: #fff; font: 600 15px system-ui, sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,.35); cursor: pointer; }
+html.ax-hc .ax-nar-gate { background: var(--ax-btn-bg); color: var(--ax-btn-fg); border: 2px solid var(--ax-btn-fg); }
+
+/* ---------------------------------------------------------------------
+   5. On-screen keyboard
+   --------------------------------------------------------------------- */
+.ax-osk {
+  position: fixed; z-index: 2147482960; --ax-u: 44px;
+  display: flex; flex-direction: column; border-radius: 12px; overflow: hidden;
+  background: var(--axu-bg); border: 1px solid var(--axu-line); box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  touch-action: none; font-size: calc(var(--ax-u) * .34);
+}
+.ax-osk-head { display: flex; align-items: center; gap: 6px; height: calc(var(--ax-u) * .72); padding: 0 4px 0 12px; cursor: grab; border-bottom: 1px solid var(--axu-line); font-size: 13px; }
+.ax-osk-head b { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ax-osk-head button { border: 0; background: transparent; height: 26px; min-width: 32px; border-radius: 6px; cursor: pointer; font-size: 13px; padding: 0 8px; }
+.ax-osk-head button:hover { background: var(--axu-key-hi); }
+.ax-osk-pred { display: flex; gap: 4px; padding: 4px 6px 0; min-height: calc(var(--ax-u) * .7); }
+.ax-osk-pred button { flex: 1; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: calc(var(--ax-u) * .34); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ax-osk-pred button:hover { background: var(--axu-key-hi); }
+.ax-osk-pred button:empty { visibility: hidden; }
+.ax-osk-body { display: flex; gap: 8px; padding: 6px; }
+.ax-osk-main, .ax-osk-num { display: flex; flex-direction: column; gap: 4px; }
+.ax-osk-num, .ax-osk-nav { border-left: 1px solid var(--axu-line); padding-left: 8px; }
+.ax-osk-num[hidden], .ax-osk-nav[hidden] { display: none; }
+.ax-osk-head button.ax-on { background: var(--axu-acc); color: var(--axu-acc-fg); }
+.ax-key { font: inherit; color: inherit; -webkit-user-select: none; user-select: none; touch-action: none; }
+.ax-key.ax-num { font-weight: 600; }
+.ax-osk-row { display: flex; gap: 4px; }
+.ax-key {
+  flex: 0 0 auto; width: var(--ax-u); height: var(--ax-u); border: 1px solid var(--axu-line); border-radius: 6px;
+  background: var(--axu-key); display: flex; align-items: center; justify-content: center; position: relative;
+  cursor: pointer; padding: 0 2px; line-height: 1; white-space: nowrap; overflow: hidden;
+}
+.ax-key small { position: absolute; left: 4px; top: 3px; font-size: .62em; color: var(--axu-dim); }
+.ax-key.ax-fn { font-size: .78em; color: var(--axu-dim); }
+.ax-key.ax-down, .ax-key:active { background: var(--axu-key-hi); }
+.ax-key.ax-latched { background: var(--axu-acc); color: var(--axu-acc-fg); border-color: var(--axu-acc); }
+.ax-key.ax-latched small, .ax-key.ax-latched.ax-fn { color: var(--axu-acc-fg); }
+.ax-osk-grip { position: absolute; right: 0; bottom: 0; width: 22px; height: 22px; cursor: nwse-resize; background: linear-gradient(135deg, transparent 55%, var(--axu-dim) 55%, var(--axu-dim) 62%, transparent 62%, transparent 72%, var(--axu-dim) 72%, var(--axu-dim) 79%, transparent 79%); }
+html.ax-hc .ax-key { border-color: var(--ax-btn-fg); color: var(--ax-btn-fg); }
+
+/* ---------------------------------------------------------------------
+   6. Keyboard features: sticky-keys tray indicator, prompts, mouse keys
+   --------------------------------------------------------------------- */
+.ax-tray { display: inline-flex; align-items: center; gap: 3px; margin-right: 4px; cursor: pointer; padding: 0 4px; border-radius: 6px; height: 30px; align-self: center; }
+.ax-tray:hover { background: rgba(127,127,127,.18); }
+.ax-tray i { font-style: normal; font-size: 10px; line-height: 1; padding: 3px 4px; border-radius: 3px; border: 1px solid currentColor; opacity: .45; font-family: system-ui, sans-serif; }
+.ax-tray i.ax-lat { opacity: 1; background: var(--accent, #0067c0); color: #fff; border-color: transparent; }
+.ax-tray i.ax-lock { opacity: 1; background: var(--accent, #0067c0); color: #fff; border-color: transparent; text-decoration: underline; }
+.ax-tray svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+html.ax-hc .ax-tray i.ax-lat, html.ax-hc .ax-tray i.ax-lock { background: var(--ax-sel-bg) !important; color: var(--ax-sel-fg) !important; }
+.ax-prompt-mask { position: fixed; inset: 0; z-index: 2147482998; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.ax-prompt { width: min(460px, 100%); border-radius: 10px; background: var(--axu-bg); border: 1px solid var(--axu-line); box-shadow: 0 16px 48px rgba(0,0,0,.4); overflow: hidden; }
+.ax-prompt-h { padding: 12px 16px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--axu-line); }
+.ax-prompt-b { padding: 16px; font-size: 14px; line-height: 1.45; -webkit-user-select: text; user-select: text; }
+.ax-prompt-b a { color: var(--axu-acc); cursor: pointer; text-decoration: underline; }
+.ax-prompt-f { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; background: rgba(127,127,127,.08); }
+.ax-prompt-f button { min-width: 90px; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--axu-line); background: var(--axu-key); cursor: pointer; font-size: 14px; }
+.ax-prompt-f button.ax-primary { background: var(--axu-acc); color: var(--axu-acc-fg); border-color: transparent; }
+.ax-mk-ptr { position: fixed; left: 0; top: 0; z-index: 2147483000; width: 22px; height: 32px; pointer-events: none; display: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.ax-mk-ptr.ax-on { display: block; }
+.ax-mk-ptr.ax-press path { fill: #ffd400; }
+.ax-toast { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 2147482997; padding: 9px 16px; border-radius: 10px; background: var(--axu-bg); border: 1px solid var(--axu-line); box-shadow: 0 8px 26px rgba(0,0,0,.3); font-size: 14px; pointer-events: none; max-width: calc(100vw - 32px); }
+
+/* Big / inverted pointer drawn by js/a11y-vision.js (a child of <html> so
+   mix-blend-mode reaches the page) */
+.ax-bigptr { position: fixed; left: 0; top: 0; z-index: 2147483003; pointer-events: none; will-change: transform; line-height: 0; }
+.ax-bigptr svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+.ax-bigptr.ax-inv { mix-blend-mode: difference; }
+.ax-bigptr.ax-inv svg { filter: none; }
+
+/* ---------------------------------------------------------------------
+   7. Pointer, touch indicator, text cursor
+   --------------------------------------------------------------------- */
+.ax-touch { position: fixed; z-index: 2147483001; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; pointer-events: none; background: rgba(120,120,120,.28); border: 2px solid rgba(255,255,255,.75); box-shadow: 0 0 0 1px rgba(0,0,0,.25); transition: opacity .35s, transform .35s; }
+.ax-touch.ax-dark { width: 54px; height: 54px; margin: -27px 0 0 -27px; background: rgba(0,0,0,.5); border: 3px solid rgba(255,255,255,.9); }
+.ax-touch.ax-up { opacity: 0; transform: scale(.6); }
+.ax-caretind { position: fixed; z-index: 2147482950; pointer-events: none; display: none; }
+.ax-caretind i { position: absolute; left: 50%; width: 0; height: 0; transform: translateX(-50%); border-left: var(--ax-ci) solid transparent; border-right: var(--ax-ci) solid transparent; }
+.ax-caretind i:first-child { top: 0; border-top: calc(var(--ax-ci) * 1.25) solid var(--ax-cic); }
+.ax-caretind i:last-child { bottom: 0; border-bottom: calc(var(--ax-ci) * 1.25) solid var(--ax-cic); }
+.ax-caretind b { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--ax-cic); opacity: .55; border-radius: 1px; }
+.ax-caretbar { position: fixed; z-index: 2147482951; pointer-events: none; display: none; animation: ax-blink 1.06s steps(1) infinite; }
+@keyframes ax-blink { 50% { opacity: 0; } }
+html.ax-thickcaret :is(input, textarea, [contenteditable=""], [contenteditable="true"]):focus { caret-color: transparent !important; }
+html.ax-thickcaret.ax-caret-native :is(input, textarea, [contenteditable=""], [contenteditable="true"]):focus { caret-color: auto !important; }
+
+/* ---------------------------------------------------------------------
+   8. Settings pages + Quick Settings additions
+   --------------------------------------------------------------------- */
+.ax-s-h { font-size: .82rem; font-weight: 600; margin: 18px 2px 6px; opacity: .9; }
+.ax-s-h:first-child { margin-top: 4px; }
+.ax-s-note { font-size: .78rem; line-height: 1.45; opacity: .85; margin: 4px 4px 10px; }
+.ax-s-note kbd, .ax-kbd { font: inherit; font-size: .74rem; padding: 1px 6px; border-radius: 4px; border: 1px solid currentColor; opacity: .9; white-space: nowrap; }
+.ax-s-panel { display: flex; flex-direction: column; gap: 8px; }
+.ax-s-opts { display: flex; flex-direction: column; gap: 6px; padding: 8px 14px 12px 52px; margin-top: -4px; border-radius: 0 0 8px 8px; background: var(--w12s-card, rgba(255,255,255,.6)); }
+.ax-s-opts label { display: flex; align-items: center; gap: 8px; font-size: .86rem; }
+.ax-s-opts .ax-line { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; font-size: .86rem; }
+.ax-s-opts .ax-line > span { min-width: 0; flex: 1 1 200px; }
+.ax-swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ax-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(127,127,127,.45); cursor: pointer; padding: 0; }
+.ax-sw.sel { outline: 3px solid var(--accent, #0067c0); outline-offset: 2px; }
+.ax-ptrs { display: flex; gap: 10px; flex-wrap: wrap; }
+.ax-ptrs button { width: 64px; height: 64px; border-radius: 8px; border: 1px solid rgba(127,127,127,.4); background: rgba(127,127,127,.08); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.ax-ptrs button.sel { outline: 3px solid var(--accent, #0067c0); outline-offset: 1px; }
+.ax-ptrs svg { width: 30px; height: 40px; }
+.ax-hc-prev { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid rgba(127,127,127,.4); min-height: 150px; }
+.ax-hc-prev > div { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.ax-hc-prev .ax-hp-side { flex: 0 0 34%; }
+.ax-hc-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ax-hc-thumb { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 10px 12px; border-radius: 8px; border: 1px solid; font: inherit; font-size: .8rem; text-align: left; cursor: pointer; min-height: 104px; }
+.ax-hc-thumb b { font-size: .9rem; }
+.ax-hc-thumb.sel { outline: 3px solid var(--accent, #0067c0); outline-offset: 2px; }
+html.ax-hc .ax-hc-thumb.sel { outline-color: var(--ax-fg); }
+.ax-hc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.ax-hc-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(127,127,127,.08); font-size: .86rem; }
+.ax-hc-item input[type="color"] { width: 40px; height: 30px; padding: 0; border: 1px solid rgba(127,127,127,.5); border-radius: 6px; background: none; cursor: pointer; }
+.ax-hc-item span { flex: 1; }
+.ax-ratio { font-size: .74rem; font-variant-numeric: tabular-nums; padding: 2px 6px; border-radius: 4px; }
+.ax-ratio.ax-bad { background: #c42b1c; color: #fff; }
+.ax-ratio.ax-ok { background: #0f7b0f; color: #fff; }
+.ax-cf-prev { height: 70px; border-radius: 8px; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); position: relative; overflow: hidden; }
+.ax-cf-prev::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0,0,0,.0) 40%, #000); }
+.ax-cf-dots { display: flex; gap: 6px; margin-top: 6px; }
+.ax-cf-dots i { flex: 1; height: 22px; border-radius: 4px; }
+.ax-radio-list { display: flex; flex-direction: column; gap: 4px; }
+.ax-radio-list label { display: flex; align-items: center; gap: 10px; padding: 6px 4px; font-size: .9rem; cursor: pointer; }
+.ax-preview-input { width: 100%; font: inherit; font-size: 1rem; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(127,127,127,.5); background: rgba(255,255,255,.7); color: inherit; }
+body.dark .ax-preview-input { background: rgba(0,0,0,.25); }
+.ax-cmds { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.ax-cmds td { padding: 5px 6px; border-bottom: 1px solid rgba(127,127,127,.25); vertical-align: top; }
+.ax-cmds td:first-child { white-space: nowrap; width: 1%; padding-right: 14px; }
+.ax-qs-a11y { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.ax-qs-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ax-qs-head button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 18px; width: 30px; height: 30px; border-radius: 6px; }
+.ax-qs-head button:hover { background: rgba(127,127,127,.2); }
+.ax-qs-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(127,140,180,.12); font-size: .82rem; }
+.ax-qs-row span { flex: 1; }
+.ax-qs-sub { display: flex; flex-direction: column; }
+.ax-qs-row .w12s-sw { position: relative; display: inline-block; width: 40px; height: 20px; flex: none; }
+.ax-qs-row .w12s-sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.ax-qs-row .w12s-sw span { position: absolute; inset: 0; border-radius: 10px; border: 1.5px solid currentColor; opacity: .85; pointer-events: none; }
+.ax-qs-row .w12s-sw span::after { content: ""; position: absolute; left: 3px; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: currentColor; transform: translateY(-50%); transition: left .15s; }
+.ax-qs-row .w12s-sw input:checked + span { background: var(--accent, #0067c0); border-color: transparent; opacity: 1; }
+.ax-qs-row .w12s-sw input:checked + span::after { left: 23px; background: #fff; }
+.ax-qs-row .w12s-sw input:focus-visible + span { outline: 2px solid var(--accent, #0067c0); outline-offset: 2px; }
+.ax-lock-btn { position: absolute; right: 24px; bottom: 24px; z-index: 5; width: 44px; height: 44px; border-radius: 8px; border: 0; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.ax-lock-btn:hover, .ax-lock-btn:focus-visible { background: rgba(255,255,255,.26); outline: none; }
+.ax-lock-menu { position: absolute; right: 24px; bottom: 78px; z-index: 6; width: 290px; padding: 12px; border-radius: 10px; background: rgba(32,32,32,.94); color: #fff; box-shadow: 0 12px 40px rgba(0,0,0,.45); text-align: left; }
+.ax-lock-menu .ax-qs-row { background: rgba(255,255,255,.08); }
+html.ax-hc .ax-lock-menu { background: var(--ax-bg) !important; color: var(--ax-fg) !important; border: 2px solid var(--ax-fg) !important; }
+html.ax-scrollbars * { scrollbar-width: auto !important; }
+html.ax-scrollbars ::-webkit-scrollbar { width: 14px !important; height: 14px !important; display: block !important; }
+html.ax-scrollbars ::-webkit-scrollbar-thumb { background: rgba(127,127,127,.75) !important; border-radius: 7px; border: 3px solid transparent; background-clip: padding-box; }
+html.ax-scrollbars ::-webkit-scrollbar-track { background: rgba(127,127,127,.12) !important; }
+.ax-qs-more { border: 0; background: transparent; color: inherit; text-align: left; padding: 8px 10px; cursor: pointer; font-size: .8rem; text-decoration: underline; }
+@media (max-width: 600px) {
+  .ax-s-opts { padding-left: 14px; }
+  .ax-hc-prev { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.ax-mag-on.ax-mag-anim { transition: none; }
+  .ax-nar-box, .ax-touch { transition: none; }
+}

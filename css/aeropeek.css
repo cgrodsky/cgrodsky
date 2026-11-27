@@ -1,0 +1,75 @@
+/* AeroPeek — "Peek / Show desktop" sliver + peek-through styling.
+   All selectors are namespaced (ap-) so they never collide with the shell. */
+
+/* ---- Show desktop sliver: thin vertical bar at the far-right edge of the taskbar ---- */
+.taskbar .ap-showdesktop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, .22);
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s ease, width .15s ease, box-shadow .15s ease;
+}
+.taskbar .ap-showdesktop:hover,
+.taskbar .ap-showdesktop:focus-visible {
+  background: rgba(255, 255, 255, .18);
+  box-shadow: inset 2px 0 0 rgba(255, 255, 255, .45);
+  outline: none;
+}
+.taskbar .ap-showdesktop:active { background: rgba(255, 255, 255, .28); }
+/* A faint grip hint so the sliver is discoverable without taking real width. */
+.taskbar .ap-showdesktop .ap-sd-grip {
+  width: 2px;
+  height: 46%;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .35);
+  transition: background .15s ease;
+}
+.taskbar .ap-showdesktop:hover .ap-sd-grip { background: rgba(255, 255, 255, .7); }
+
+/* Classic (non-floating) taskbar: keep the sliver readable on a lighter bar. */
+.taskbar.tb-classic .ap-showdesktop { border-left-color: var(--border, rgba(0, 0, 0, .15)); }
+
+/* ---- Peek: make open windows outline-only so the desktop shows through ---- */
+body.ap-peek .win {
+  background: rgba(255, 255, 255, .04) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(120, 170, 255, .75),
+              0 0 0 1px rgba(0, 0, 0, .12) !important;
+  transition: box-shadow .14s ease, background .14s ease;
+}
+body.ap-peek .win > .win-titlebar,
+body.ap-peek .win > .win-body {
+  opacity: .07;
+  transition: opacity .14s ease;
+}
+/* Don't dim the window the pointer is actively shaking (it's still being dragged). */
+body.ap-peek .win.ap-shaking { box-shadow: none !important; }
+
+body.dark.ap-peek .win {
+  background: rgba(255, 255, 255, .03) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(130, 180, 255, .7),
+              0 0 0 1px rgba(0, 0, 0, .3) !important;
+}
+
+/* Respect reduced motion: no fade, just an instant outline. */
+body.ap-peek-instant .win,
+body.ap-peek-instant .win > .win-titlebar,
+body.ap-peek-instant .win > .win-body { transition: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .taskbar .ap-showdesktop,
+  .taskbar .ap-showdesktop .ap-sd-grip,
+  body.ap-peek .win,
+  body.ap-peek .win > .win-titlebar,
+  body.ap-peek .win > .win-body { transition: none !important; }
+}

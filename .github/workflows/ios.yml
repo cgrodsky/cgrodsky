@@ -1,0 +1,76 @@
+name: Build iPad app (IPA)
+
+# Builds the Windows 12 iPad app (ios/) on a GitHub macOS runner and publishes
+# Windows12.ipa as a GitHub Release download, tag "ios-latest".
+# The IPA is unsigned: install it with AltStore / SideStore / Sideloadly, which
+# sign it with your own Apple ID on install.
+
+on:
+  push:
+    branches:
+      - claude/windows-12-setup-experience-FsKgd
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          brew install xcodegen
+          xcodegen --version
+          xcodebuild -version
+
+      - name: Copy the web app into the app bundle
+        run: |
+          mkdir -p ios/Web
+          git archive --format=tar HEAD index.html auth0-test.html frontegg-callback.html js css assets vendor | tar -x -C ios/Web
+          BUILD=$(grep -m1 -o 'var BUILD = "v=[0-9a-z]*"' index.html | head -1 | sed 's/.*v=//;s/"//')
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          du -sh ios/Web
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned, device)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project Windows12.xcodeproj -scheme Windows12 -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tail -n 60
+
+      - name: Package IPA
+        run: |
+          APP=ios/build/Build/Products/Release-iphoneos/Windows12.app
+          test -d "$APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+          test -f "$APP/Web/index.html"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$RUNNER_TEMP/Windows12.ipa" Payload)
+          ls -la "$RUNNER_TEMP/Windows12.ipa"
+          shasum -a 256 "$RUNNER_TEMP/Windows12.ipa" | tee "$RUNNER_TEMP/Windows12.ipa.sha256"
+
+      - name: Publish release "ios-latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ios-latest --yes --cleanup-tag || true
+          gh release create ios-latest \
+            "$RUNNER_TEMP/Windows12.ipa" "$RUNNER_TEMP/Windows12.ipa.sha256" \
+            --target "$GITHUB_SHA" \
+            --title "Windows 12 iPad app (latest, build v=$BUILD)" \
+            --notes "Windows 12 as an iPad app with real Touch ID / Face ID (no passkey). Unsigned: install Windows12.ipa with AltStore, SideStore or Sideloadly using your Apple ID. Built automatically from commit ${GITHUB_SHA::7}."

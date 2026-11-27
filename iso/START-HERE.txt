@@ -1,0 +1,30 @@
+WINDOWS 12 (fan simulation) - disc image
+=========================================
+
+This disc holds a browser-based "Windows 12" desktop. It is NOT a real
+operating system and does not boot by itself: run it inside your VM like a
+web page.
+
+BEST WAY (everything works) - run the tiny local server:
+  Windows:  double-click  RUN-Windows.bat
+  macOS:    double-click  RUN-macOS.command    (or: python3 serve.py)
+  Linux:    run           ./RUN-Linux.sh        (or: python3 serve.py)
+  Your browser opens http://localhost:8000
+  (Needs Python - it ships with macOS and most Linux; on Windows get it from
+   python.org, or use the quick way below.)
+
+QUICK WAY - open index.html in Chrome or Edge. Most of the desktop works;
+a few things need the local server or the internet (3D apps, maps, sign-in).
+
+DOES IT SAVE / CHANGE?
+  * Your files, settings, generated images, etc. DO save - in the browser
+    inside your VM, not on this read-only disc.
+  * In the Windows 12 Terminal, type  update  to pull the newest version from
+    the live site when you're online.
+  * Touch ID only contacts the simulated Windows Hello driver (no passkey),
+    so it works in a VM.
+
+Live version:   https://cgrodsky.github.io/cgrodsky/
+Newest disc:    https://github.com/cgrodsky/cgrodsky/releases/tag/iso-latest
+
+Not affiliated with Microsoft. Made for fun and learning.

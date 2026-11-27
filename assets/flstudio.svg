@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#434c53"/>
+      <stop offset="1" stop-color="#1c2124"/>
+    </linearGradient>
+    <radialGradient id="f" cx="0.36" cy="0.32" r="0.78">
+      <stop offset="0" stop-color="#ffe09a"/>
+      <stop offset="0.35" stop-color="#ffb247"/>
+      <stop offset="0.75" stop-color="#f57f1c"/>
+      <stop offset="1" stop-color="#c94a0b"/>
+    </radialGradient>
+    <linearGradient id="l1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6ec6a"/>
+      <stop offset="1" stop-color="#4f9e2a"/>
+    </linearGradient>
+    <linearGradient id="l2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ad957"/>
+      <stop offset="1" stop-color="#3f8a22"/>
+    </linearGradient>
+    <radialGradient id="g" cx="0.5" cy="0.58" r="0.5">
+      <stop offset="0" stop-color="#ff9a30" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#ff9a30" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#t)"/>
+  <rect x="4.75" y="4.75" width="118.5" height="118.5" rx="26.25" fill="none" stroke="#ffffff" stroke-opacity=".1" stroke-width="1.5"/>
+  <circle cx="64" cy="74" r="50" fill="url(#g)"/>
+  <!-- leaves -->
+  <path d="M66 33c9-15 26-17 33-15-2 9-13 23-31 21z" fill="url(#l1)"/>
+  <path d="M68.5 36.5c7-6 16-10 23.5-13" fill="none" stroke="#2f6b17" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+  <path d="M61 35c-6-12-18-16-26-15 1 9 10 19 25 20z" fill="url(#l2)"/>
+  <path d="M59.5 38c-5-5-12-9-19-11" fill="none" stroke="#2f6b17" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+  <path d="M63.5 41.5c0-5 1-9 3-12" fill="none" stroke="#6a3b12" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- fruit -->
+  <path d="M64 40c22 0 35 15 35 35 0 21-16 37-35 37S29 96 29 75c0-20 13-35 35-35z" fill="url(#f)"/>
+  <path d="M64 40c22 0 35 15 35 35 0 21-16 37-35 37S29 96 29 75c0-20 13-35 35-35z" fill="none" stroke="#8a3306" stroke-opacity=".45" stroke-width="1.5"/>
+  <ellipse cx="50" cy="56" rx="9" ry="5.5" transform="rotate(-30 50 56)" fill="#fff6dc" opacity=".55"/>
+  <!-- FL monogram -->
+  <g fill="none" stroke="#3a1c05" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".88">
+    <path d="M47 63h17M47 63v32M47 78h13"/>
+    <path d="M72 63v32h12"/>
+  </g>
+</svg>

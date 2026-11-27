@@ -1,0 +1,175 @@
+/* Desktop surface extras: gadgets, sticky notes, view options.
+   All classes are prefixed dx-. The layer lives inside .desktop (z:100) and
+   below app windows (z:200+). */
+
+/* ---- layer + items --------------------------------------------------- */
+.dx-layer {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+}
+.dx-layer.dx-hidden { display: none !important; }
+body.kiosk-mode .dx-layer, body.kiosk-mode .dx-fab { display: none !important; }
+
+.dx-item {
+  position: absolute; pointer-events: auto; box-sizing: border-box;
+  touch-action: none; user-select: none;
+}
+.dx-item.dx-dragging { opacity: .95; }
+.dx-item.dx-in { animation: dx-pop .24s ease; }
+@keyframes dx-pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---- shared gadget chrome (glass on wallpaper) ----------------------- */
+.dx-gadget {
+  border-radius: 16px; color: #fff; overflow: hidden;
+  background: rgba(20, 22, 32, .52); backdrop-filter: blur(22px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .32);
+}
+.dx-head {
+  display: flex; align-items: center; gap: 6px; padding: 7px 8px 6px;
+  cursor: grab; touch-action: none;
+}
+.dx-item.dx-dragging .dx-head { cursor: grabbing; }
+.dx-grip { opacity: .5; font-size: .8rem; letter-spacing: -1px; line-height: 1; }
+.dx-title { flex: 1; font-size: .78rem; font-weight: 600; text-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+.dx-btn {
+  all: unset; cursor: pointer; width: 22px; height: 22px; display: grid; place-items: center;
+  border-radius: 6px; font-size: 1.1rem; line-height: 1; opacity: 0; transition: opacity .12s, background .12s;
+}
+.dx-gadget:hover .dx-btn, .dx-sticky:hover .dx-btn, .dx-btn:focus-visible { opacity: .85; }
+.dx-btn:hover { background: rgba(255, 255, 255, .18); opacity: 1; }
+.dx-body { padding: 0 12px 12px; }
+
+/* ---- Clock ----------------------------------------------------------- */
+.dx-g-clock .dx-body { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.dx-clock { width: 112px; height: 112px; }
+.dx-cl-face { fill: rgba(255, 255, 255, .06); }
+.dx-cl-ring { fill: none; stroke: rgba(255, 255, 255, .28); stroke-width: 2; }
+.dx-cl-tick { stroke: rgba(255, 255, 255, .5); stroke-width: 1.4; }
+.dx-cl-tick.maj { stroke: rgba(255, 255, 255, .85); stroke-width: 2.2; }
+.dx-cl-h { stroke: #fff; stroke-width: 3.4; stroke-linecap: round; }
+.dx-cl-m { stroke: #fff; stroke-width: 2.4; stroke-linecap: round; }
+.dx-cl-s { stroke: var(--accent, #4aa3ff); stroke-width: 1.4; stroke-linecap: round; }
+.dx-cl-pin { fill: var(--accent, #4aa3ff); }
+.dx-cl-digi { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.dx-cl-time { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dx-cl-date { font-size: .68rem; opacity: .75; }
+
+/* ---- Weather --------------------------------------------------------- */
+.dx-g-weather .dx-wx-main { display: flex; align-items: center; gap: 8px; }
+.dx-wx-ico { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; }
+.dx-wx-ico svg, .dx-wx-ico img { width: 34px; height: 34px; }
+.dx-wx-temp { font-size: 1.9rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.dx-wx-cond { font-size: .82rem; margin-top: 3px; }
+.dx-wx-meta { display: flex; justify-content: space-between; gap: 8px; font-size: .7rem; opacity: .8; margin-top: 5px; }
+.dx-wx-place { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-wx-empty { font-size: .82rem; opacity: .7; padding: 14px 0 6px; text-align: center; }
+
+/* ---- System meter ---------------------------------------------------- */
+.dx-sys-row { display: flex; gap: 10px; justify-content: center; }
+.dx-gauge { text-align: center; }
+.dx-gauge svg { width: 72px; height: 72px; }
+.dx-g-track { fill: none; stroke: rgba(255, 255, 255, .15); stroke-width: 7; }
+.dx-g-arc {
+  fill: none; stroke: var(--accent, #4aa3ff); stroke-width: 7; stroke-linecap: round;
+  transition: stroke-dashoffset .8s ease, stroke .4s;
+}
+.dx-g-arc.hot { stroke: #ff6a5c; }
+.dx-g-num { fill: #fff; font-size: 16px; font-weight: 700; text-anchor: middle; font-family: inherit; }
+.dx-g-lbl { font-size: .68rem; opacity: .78; margin-top: 2px; letter-spacing: .04em; }
+
+/* ---- Notes gadget ---------------------------------------------------- */
+.dx-notes-ta {
+  width: 100%; height: 108px; resize: none; border: 0; outline: none; border-radius: 8px;
+  background: rgba(255, 255, 255, .1); color: #fff; padding: 8px; font: inherit; font-size: .82rem;
+  box-sizing: border-box;
+}
+.dx-notes-ta::placeholder { color: rgba(255, 255, 255, .55); }
+
+/* ---- Sticky notes ---------------------------------------------------- */
+.dx-sticky {
+  display: flex; flex-direction: column; border-radius: 4px; overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .28); color: #2a2208;
+}
+.dx-sk-head { padding: 5px 6px; }
+.dx-sk-head .dx-grip { color: rgba(0, 0, 0, .35); }
+.dx-sk-colors { display: flex; gap: 4px; flex: 1; }
+.dx-sk-dot {
+  all: unset; width: 14px; height: 14px; border-radius: 50%; cursor: pointer;
+  border: 1.5px solid rgba(0, 0, 0, .25); box-sizing: border-box; opacity: .55; transition: opacity .12s, transform .12s;
+}
+.dx-sk-dot:hover { opacity: 1; transform: scale(1.12); }
+.dx-sk-dot.on { opacity: 1; box-shadow: 0 0 0 2px rgba(0, 0, 0, .3); }
+.dx-dot-yellow { background: #ffd34e; }
+.dx-dot-pink { background: #ff9ec4; }
+.dx-dot-blue { background: #8fc9ff; }
+.dx-dot-green { background: #a8e39b; }
+.dx-sticky .dx-close { color: rgba(0, 0, 0, .55); }
+.dx-sticky .dx-close:hover { background: rgba(0, 0, 0, .12); color: #000; }
+.dx-sk-ta {
+  flex: 1; width: 100%; resize: none; border: 0; outline: none; background: transparent;
+  color: inherit; padding: 4px 10px 10px; font: inherit; font-size: .86rem; line-height: 1.35; box-sizing: border-box;
+}
+.dx-sk-ta::placeholder { color: rgba(0, 0, 0, .4); }
+.dx-resize {
+  position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, .28) 50%); border-radius: 0 0 4px 0; touch-action: none;
+}
+.dx-sk-yellow { background: #fff0a6; }
+.dx-sk-yellow .dx-sk-head { background: #ffe879; }
+.dx-sk-pink { background: #ffd4e6; }
+.dx-sk-pink .dx-sk-head { background: #ffb8d6; }
+.dx-sk-blue { background: #d4ecff; }
+.dx-sk-blue .dx-sk-head { background: #b4ddff; }
+.dx-sk-green { background: #d9f5d1; }
+.dx-sk-green .dx-sk-head { background: #bfeeb0; }
+
+/* ---- "+" affordance -------------------------------------------------- */
+.dx-fab {
+  position: absolute; left: 14px; bottom: 70px; z-index: 7; pointer-events: auto;
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(20, 22, 32, .5); backdrop-filter: blur(18px); color: #fff; font-size: 1.5rem; line-height: 1;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); opacity: .5; transition: opacity .15s, transform .15s;
+  display: grid; place-items: center;
+}
+.dx-fab:hover, .dx-fab:focus-visible { opacity: 1; transform: scale(1.06); outline: none; }
+.dx-fab.dx-hidden { display: none !important; }
+
+/* ---- standalone add menu (from the + affordance) --------------------- */
+.dx-menu {
+  position: fixed; z-index: 9605; min-width: 180px; padding: 6px; border-radius: 12px;
+  background: var(--window-bg, #fff); color: var(--text, #1c1c1e);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .32); border: 1px solid var(--border, rgba(0, 0, 0, .08)); backdrop-filter: blur(24px);
+}
+.dx-menu button {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: none;
+  color: inherit; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: .88rem;
+}
+.dx-menu button:hover { background: rgba(127, 140, 180, .16); }
+.dx-gic { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; vertical-align: middle; }
+.dx-gic img, .dx-gic svg { width: 100%; height: 100%; display: block; object-fit: contain; }
+.dx-submenu button .dx-gic, .desk-submenu button .dx-gic { margin-right: 8px; }
+.dx-menu-h { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .55; padding: 6px 12px 3px; }
+.dx-menu-sep { height: 1px; background: rgba(127, 140, 180, .2); margin: 5px 4px; }
+.dx-menu-colors { display: flex; gap: 10px; padding: 4px 12px 8px; }
+.dx-menu-colors .dx-sk-dot { width: 22px; height: 22px; opacity: .9; }
+
+/* ---- injected right-click items + submenu check marks ---------------- */
+.dx-submenu { min-width: 190px; }
+.dx-check { display: inline-flex; width: 16px; justify-content: center; color: var(--accent, #0067c0); font-weight: 700; }
+
+/* ---- Desktop View behaviours (affect the REAL icon layer) ------------ */
+/* Align to grid: give every icon a uniform cell height so labels line up in rows. */
+.desktop.icons-sm .desktop-icons.dx-align-grid .dicon { height: 76px; }
+.desktop-icons.dx-align-grid .dicon { height: 94px; box-sizing: border-box; }
+.desktop.icons-lg .desktop-icons.dx-align-grid .dicon { height: 116px; }
+/* Auto arrange off: looser, more spread-out packing. */
+.desktop-icons.dx-loose { gap: 16px 22px; }
+
+/* ---- dark mode ------------------------------------------------------- */
+body.dark .dx-menu { background: var(--window-bg, #2a2a2e); color: var(--text, #f2f2f2); border-color: rgba(255, 255, 255, .1); }
+body.dark .dx-menu button:hover { background: rgba(255, 255, 255, .1); }
+/* Gadgets already use light text on dark glass, so they read on both themes. */
+
+/* ---- reduced motion -------------------------------------------------- */
+body.a11y-reduce-motion .dx-item.dx-in { animation: none; }
+body.a11y-reduce-motion .dx-g-arc { transition: none; }

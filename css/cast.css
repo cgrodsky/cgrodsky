@@ -1,0 +1,44 @@
+/* Cast — flyout + the video player's Cast button. cast- / dv-cast prefixes. */
+.cast-flyout {
+  position: fixed; right: 12px; bottom: 60px; z-index: 2147483300; width: 300px; max-width: calc(100vw - 20px);
+  background: var(--bg-elev, #fbfbfe); color: var(--text, #1b1b1f);
+  border: 1px solid var(--border, #e3e3ea); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .34); overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif; animation: castIn .16s ease-out;
+}
+@keyframes castIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.cast-head { display: flex; align-items: center; gap: 9px; padding: 12px 12px 8px; }
+.cast-head b { font-size: 15px; flex: 1; }
+.cast-head-ic { color: var(--accent, #2d6cdf); display: inline-flex; }
+.cast-x { border: 0; background: transparent; color: var(--text-dim, #70707a); font-size: 20px; line-height: 1; cursor: pointer; width: 28px; height: 28px; border-radius: 7px; }
+.cast-x:hover { background: var(--window-bg, #ececf2); }
+.cast-body { padding: 4px 12px 14px; }
+.cast-status { background: var(--bg, #f1f1f6); border-radius: 10px; padding: 11px 12px; margin-bottom: 11px; border-left: 3px solid var(--border, #d6d6de); }
+.cast-status.ok { border-left-color: var(--accent, #2d6cdf); }
+.cast-status-t { font-size: 13.5px; font-weight: 650; }
+.cast-status-s { font-size: 12px; color: var(--text-dim, #65656f); margin-top: 3px; line-height: 1.45; }
+.cast-actions { display: flex; flex-direction: column; gap: 8px; }
+.cast-go {
+  display: flex; align-items: center; justify-content: center; gap: 9px; height: 44px; border: 0; border-radius: 10px;
+  background: linear-gradient(var(--accent, #2d6cdf), var(--accent-dark, #1f58c4)); color: #fff; cursor: pointer;
+  font-size: 14px; font-weight: 650; box-shadow: 0 2px 0 rgba(0, 0, 0, .12);
+}
+.cast-go:active { transform: translateY(1px); }
+.cast-go svg { width: 20px; height: 20px; }
+.cast-sec { height: 40px; border: 1px solid var(--border, #d6d6de); border-radius: 10px; background: var(--bg-elev, #fff); color: inherit; cursor: pointer; font-size: 13.5px; font-weight: 600; }
+.cast-sec:hover { background: var(--window-bg, #f0f0f5); }
+.cast-foot { font-size: 11px; color: var(--text-dim, #86868f); line-height: 1.5; margin-top: 11px; }
+
+body.dark .cast-flyout, .dark .cast-flyout { --bg-elev: #26262c; --bg: #1d1d22; --border: #3a3a42; --window-bg: #313139; --text: #f1f1f4; --text-dim: #a2a2ad; }
+
+/* The player's inline Cast button */
+.dv-cast {
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 8px;
+  border: 1px solid var(--border, #d6d6de); background: var(--bg-elev, #fff); color: inherit; cursor: pointer;
+  font: 600 13px/1 "Segoe UI", system-ui, sans-serif;
+}
+.dv-cast svg { width: 18px; height: 18px; }
+.dv-cast:hover { background: var(--window-bg, #f0f0f5); }
+.dv-cast.avail { border-color: var(--accent, #2d6cdf); color: var(--accent, #2d6cdf); }
+.dv-cast.on { background: var(--accent, #2d6cdf); color: #fff; border-color: var(--accent, #2d6cdf); }
+.dv-castrow { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
