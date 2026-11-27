@@ -39,6 +39,7 @@
       doom: "id Software", cafe: "Sip & Bite Inc.", messenger: "Microsoft Corporation", xbox: "Microsoft Corporation",
       grammarly: "Grammarly, Inc.", spotify: "Spotify AB", netflix: "Netflix, Inc.", discord: "Discord Inc.", whatsapp: "WhatsApp LLC",
       zoom: "Zoom Video Communications", slack: "Slack Technologies", notion: "Notion Labs", figma: "Figma, Inc.", audacity: "Audacity Team",
+      flstudio: "Image-Line",
     };
     const publisher = (a) => PUB[a.id] || (a.game ? "Windows 12 Game Studios" : a.decorative ? "Contoso Ltd." : "Microsoft Corporation");
     const age = (a) => (a.id === "doom" ? ["M", "MATURE 17+"] : a.id === "sims" ? ["T", "TEEN"] : ["minecraft", "mclauncher", "stardew", "curseforge"].includes(a.id) ? ["E10+", "EVERYONE 10+"] : ["E", "EVERYONE"]);

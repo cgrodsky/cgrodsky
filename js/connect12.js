@@ -8,8 +8,11 @@
    - Phone Link pairs a real phone: the QR code opens phone.html#CODE on the phone; the two connect
      over WebRTC (PeerJS broker only introduces them), keys are agreed with ECDH and confirmed with a
      6-digit number shown on both screens; then photos (file input on the phone) land in Pictures,
-     "Phone Link messages" go both ways, and the phone's name / battery (when its browser reports it)
-     and notifications from the phone page show here. It is NOT SMS and NOT calls — browsers can't.
+     "Phone Link messages" go both ways, and the phone's name and notifications from the phone page
+     show here. Both ends also share device details (battery, device/OS/browser, hardware, screen,
+     network, storage, locale, link ping) with each other — only what each browser really reports,
+     only to the paired device, only while connected (Device info tab here; Devices tab on the phone).
+     It is NOT SMS and NOT calls — browsers can't.
    - Nearby Sharing sends files between two Windows 12 devices (or two tabs) the same way: the
      receiver shows a 5-character code (no Bluetooth proximity — the code IS the discovery), the
      receiver accepts or declines, progress on both sides, files saved to Downloads byte-for-byte.
@@ -158,10 +161,291 @@
   // ================================================================================================
   //  PHONE LINK
   // ================================================================================================
+  // ---------------- device details shared with the paired phone ----------------
+  // Collects only what this browser actually reports; anything it doesn't stays null and is shown
+  // as "Not reported" — nothing is guessed. phone.html has its own copy of the collector (it can't
+  // load the sim's code). Sent only to the paired, confirmed phone, inside the encrypted session.
+  const DevInfo = (function () {
+    const fin = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? v : null);
+    const mq = (q) => { try { return matchMedia(q).matches; } catch (_) { return null; } };
+    const within = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
+    function parseUA(ua, touch) {
+      ua = String(ua || "");
+      const r = { type: null, model: null, os: null, osVer: null, browser: null, browserVer: null, arch: null, bits: null };
+      const g = (re) => { const m = ua.match(re); return m ? m[1] : null; };
+      const cmpVer = (a, b) => { const x = a.split("."), y = b.split("."); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (+x[i] || 0) - (+y[i] || 0); if (d) return d; } return 0; };
+      // Safari's Version/ token tracks the OS version. Without it (Home Screen app, Chrome/Firefox on
+      // iOS, in-app browsers) only the "OS 18_6 like Mac OS X" token is left, and iOS 26+ freezes that
+      // at 18_6 (like macOS's 10_15_7), so 18.6 there only means "18.6 or later".
+      const appleVer = () => { const o = g(/\bOS (\d+(?:_\d+)*) like Mac OS X/), v = o ? o.replace(/_/g, ".") : null, sv = g(/Version\/(\d+(?:\.\d+)*)/); if (sv && (!v || cmpVer(sv, v) >= 0)) return sv; return v === "18.6" ? "18.6 or later" : v; };
+      // Apple doesn't tell web pages which iPhone / iPad model it is, so model stays null there.
+      if (/iPhone|iPod/.test(ua)) { r.type = /iPod/.test(ua) ? "iPod touch" : "iPhone"; r.os = "iOS"; r.osVer = appleVer(); }
+      else if (/iPad/.test(ua) || (/Macintosh/.test(ua) && touch > 1)) { r.type = "iPad"; r.os = "iPadOS"; r.osVer = appleVer(); }
+      else if (/Android/.test(ua)) {
+        r.os = "Android"; r.osVer = g(/Android (\d+(?:\.\d+)*)/); r.type = /Mobile/.test(ua) ? "Android phone" : "Android tablet";
+        const m = g(/Android[^;)]*;\s*(?:[a-z]{2}[-_][a-z]{2};\s*)?([^;)]+?)(?:\s+Build\/[^;)]*)?\)/i);
+        if (m && !/^(K|wv|Linux|U|Mobile)$/i.test(m.trim())) r.model = m.trim();
+      } else if (/CrOS/.test(ua)) { r.type = "Chromebook"; r.os = "ChromeOS"; r.osVer = g(/CrOS \S+ (\d+(?:\.\d+)*)/); }
+      else if (/Windows NT/.test(ua)) { r.type = "PC"; r.os = "Windows"; const nt = g(/Windows NT (\d+\.\d+)/); r.osVer = ({ "10.0": "10 or 11", "6.3": "8.1", "6.2": "8", "6.1": "7" })[nt] || nt; if (/Win64|x64|WOW64/.test(ua)) r.bits = "64"; if (/ARM64/i.test(ua)) r.arch = "arm"; }
+      else if (/Macintosh|Mac OS X/.test(ua)) { r.type = "Mac"; r.os = "macOS"; const v = g(/Mac OS X (\d+(?:[_.]\d+)*)/); r.osVer = v ? v.replace(/_/g, ".") : null; if (r.osVer === "10.15.7") r.osVer = "10.15.7 or later"; }
+      else if (/Linux/.test(ua)) { r.type = "Computer"; r.os = "Linux"; if (/x86_64|amd64/i.test(ua)) { r.arch = "x86"; r.bits = "64"; } else if (/aarch64|arm/i.test(ua)) r.arch = "arm"; }
+      const B = [["Edge", /\b(?:Edg|EdgA|EdgiOS)\/([\d.]+)/], ["Opera", /\b(?:OPR|OPT)\/([\d.]+)/], ["Samsung Internet", /SamsungBrowser\/([\d.]+)/], ["Firefox", /\b(?:Firefox|FxiOS)\/([\d.]+)/], ["Chrome (headless)", /HeadlessChrome\/([\d.]+)/], ["Chrome", /\b(?:Chrome|CriOS)\/([\d.]+)/], ["Safari", /Version\/([\d.]+).*Safari\//]];
+      for (const [n, re] of B) { const v = g(re); if (v) { r.browser = n; r.browserVer = v; break; } }
+      if (!r.browser && /AppleWebKit/.test(ua)) { r.browser = "WebKit (Home Screen app or in-app browser)"; r.browserVer = null; }
+      return r;
+    }
+    let hev = null; // userAgentData's high-entropy values (asked once; Chromium browsers only)
+    function highEntropy() {
+      if (!hev) hev = (async () => { try { const d = navigator.userAgentData; if (!d || !d.getHighEntropyValues) return null; return await within(d.getHighEntropyValues(["platform", "platformVersion", "model", "architecture", "bitness", "fullVersionList"]), 1500); } catch (_) { return null; } })();
+      return hev;
+    }
+    function refine(r, h) {
+      if (!h || typeof h !== "object") return r;
+      const s = (v, n) => (typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null);
+      const plat = s(h.platform, 30), pv = s(h.platformVersion, 30);
+      if (plat === "Windows" && pv) { const maj = parseInt(pv, 10); r.os = "Windows"; if (maj >= 13) r.osVer = "11"; else if (maj > 0) r.osVer = "10"; }
+      else if (plat === "macOS" && pv) { r.os = "macOS"; r.osVer = pv; }
+      else if ((plat === "Android" || plat === "Chrome OS") && pv) r.osVer = pv;
+      const model = s(h.model, 40); if (model) r.model = model;
+      const arch = s(h.architecture, 12); if (arch) r.arch = arch;
+      const bits = s(h.bitness, 4); if (bits) r.bits = bits;
+      if (Array.isArray(h.fullVersionList)) {
+        const all = h.fullVersionList.filter((b) => b && typeof b.brand === "string" && !/Not.?A.?Brand/i.test(b.brand));
+        const list = all.filter((b) => !/^Chromium$/i.test(b.brand));
+        const pick = list.find((b) => /Edge|Opera|Samsung|Brave|Vivaldi|Yandex/i.test(b.brand)) || list.find((b) => /Chrome/i.test(b.brand)) || list[0] || (r.browser ? null : all[0]);
+        if (pick) { r.browser = pick.brand.replace(/^(Google|Microsoft) /, ""); r.browserVer = s(pick.version, 24) || r.browserVer; }
+      }
+      return r;
+    }
+    // WebGL renderer string. A successful answer is remembered per browser, so a throwaway WebGL
+    // context is made only until one works (lots of open 3D apps + one more context could push the
+    // oldest out). A failure isn't remembered: it's tried again, at most every 5 minutes.
+    let gpu, gpuTry = 0;
+    function gpuName() {
+      if (gpu) return gpu;
+      if (gpu === null && Date.now() - gpuTry < 300000) return null;
+      gpuTry = Date.now(); gpu = null;
+      try { const c = JSON.parse(localStorage.getItem("w12pl_gpu") || "null"); if (c && c.ua === navigator.userAgent && typeof c.gpu === "string" && c.gpu) return (gpu = c.gpu.slice(0, 120)); } catch (_) {}
+      try {
+        const c = document.createElement("canvas"), gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+        if (gl) {
+          const x = gl.getExtension("WEBGL_debug_renderer_info");
+          const v = x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+          if (typeof v === "string" && v.trim()) gpu = v.trim().slice(0, 120);
+          const lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
+        }
+      } catch (_) { gpu = null; }
+      if (gpu) { try { localStorage.setItem("w12pl_gpu", JSON.stringify({ ua: navigator.userAgent, gpu })); } catch (_) {} }
+      return gpu;
+    }
+    let battP = null;
+    const realBattery = () => battP || (battP = (async () => { try { return navigator.getBattery ? await within(navigator.getBattery(), 2000) : null; } catch (_) { return null; } })());
+    // This PC's battery: the browser's real reading when it has one, else the simulation's (WM.battery()).
+    async function battery() {
+      const b = await realBattery();
+      if (b && typeof b.level === "number") return { level: b.level, charging: !!b.charging, chargingTime: fin(b.chargingTime), dischargingTime: fin(b.dischargingTime), src: "browser" };
+      if (window.WM && WM.battery) { const w = WM.battery(); if (w && typeof w.level === "number") return { level: w.level, charging: !!w.charging, chargingTime: null, dischargingTime: null, src: w.real ? "browser" : "simulated" }; }
+      return null;
+    }
+    // Real battery events → fn; the simulated battery has none, so the caller polls battery() too.
+    function onBattery(fn) { realBattery().then((b) => { if (b && b.addEventListener) ["levelchange", "chargingchange"].forEach((e) => b.addEventListener(e, fn)); }); }
+    function buildToken() {
+      const pick = (sel) => { const s = document.querySelector(sel); const m = s && (s.getAttribute("src") || "").match(/[?&]v=([^&#]+)/); return m ? decodeURIComponent(m[1]).slice(0, 30) : null; };
+      return pick('script[src*="js/connect12.js"]') || pick('script[src*="js/main.js"]') || (typeof window.BUILD === "string" ? window.BUILD.slice(0, 30) : null);
+    }
+    async function collect(extra) {
+      const nav = navigator, touch = fin(nav.maxTouchPoints);
+      const dev = refine(parseUA(nav.userAgent, touch || 0), await highEntropy());
+      const bat = await battery();
+      let sto = null;
+      try { if (nav.storage && nav.storage.estimate) { const e = await within(nav.storage.estimate(), 1500); if (e) sto = { used: fin(e.usage), quota: fin(e.quota) }; } } catch (_) {}
+      let orient = null, angle = null;
+      try { if (screen.orientation && screen.orientation.type) { orient = screen.orientation.type; angle = screen.orientation.angle; } } catch (_) {}
+      if (orient == null && typeof window.orientation === "number") { angle = window.orientation; orient = Math.abs(angle) === 90 ? "landscape" : "portrait"; }
+      const c = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+      let tz = null, h12 = null;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch (_) {}
+      try { const o = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions(); h12 = o.hourCycle ? /h1[12]/.test(o.hourCycle) : typeof o.hour12 === "boolean" ? o.hour12 : null; } catch (_) {}
+      const vv = window.visualViewport;
+      const x = {
+        t: "info", v: 2, ts: Date.now(), up: Math.round(performance.now()),
+        // the original fields, still read by older Phone Link pages
+        battery: bat ? bat.level : undefined, charging: bat ? bat.charging : undefined, platform: String(nav.platform || "").slice(0, 40),
+        bat,
+        dev,
+        hw: { cores: fin(nav.hardwareConcurrency), ram: fin(nav.deviceMemory), gpu: gpuName(), touch },
+        scr: { w: fin(screen.width), h: fin(screen.height), dpr: fin(window.devicePixelRatio), depth: fin(screen.colorDepth), orient, angle: typeof angle === "number" ? angle : null, vw: Math.round(vv ? vv.width : innerWidth), vh: Math.round(vv ? vv.height : innerHeight) },
+        sto,
+        net: { online: typeof nav.onLine === "boolean" ? nav.onLine : null, eff: c ? c.effectiveType || null : null, type: c ? c.type || null : null, down: c ? fin(c.downlink) : null, rtt: c ? fin(c.rtt) : null, save: c && typeof c.saveData === "boolean" ? c.saveData : null },
+        loc: { langs: (nav.languages && nav.languages.length ? [...nav.languages] : nav.language ? [nav.language] : []).slice(0, 6), tz, off: -new Date().getTimezoneOffset(), h12 },
+        pref: { dark: mq("(prefers-color-scheme: dark)"), reduce: mq("(prefers-reduced-motion: reduce)"), app: mq("(display-mode: standalone)") || nav.standalone === true, vis: document.visibilityState || null },
+      };
+      return Object.assign(x, extra || {});
+    }
+
+    // ---- receiving: keep only known fields, with sane types, lengths and ranges ----
+    const INFO_MAX = 12000; // characters of JSON; anything bigger is ignored
+    const CTRL = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g;
+    const str = (v, n) => { if (typeof v !== "string") return null; const s = v.replace(CTRL, " ").replace(/\s+/g, " ").trim().slice(0, n || 60); return s || null; };
+    const num = (v, lo, hi) => (typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null);
+    const bool = (v) => (typeof v === "boolean" ? v : null);
+    const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : null);
+    function clean(m) {
+      if (!obj(m)) return null;
+      let size = 0; try { size = JSON.stringify(m).length; } catch (_) { return null; }
+      if (size > INFO_MAX) return null;
+      const b = obj(m.bat), d = obj(m.dev) || {}, h = obj(m.hw) || {}, s = obj(m.scr) || {}, so = obj(m.sto), n = obj(m.net) || {}, l = obj(m.loc) || {}, p = obj(m.pref) || {}, k = obj(m.link) || {}, pc = obj(m.pc);
+      const x = {
+        v: num(m.v, 0, 99) || 1, ts: num(m.ts, 0, 1e14), up: num(m.up, 0, 1e11),
+        name: str(m.name, 60), platform: str(m.platform, 40),
+        bat: b ? { level: num(b.level, 0, 1), charging: bool(b.charging), chargingTime: num(b.chargingTime, 0, 1e7), dischargingTime: num(b.dischargingTime, 0, 1e7), src: b.src === "simulated" ? "simulated" : "browser" }
+          : num(m.battery, 0, 1) != null ? { level: num(m.battery, 0, 1), charging: bool(m.charging), chargingTime: null, dischargingTime: null, src: "browser" } : null,
+        dev: { type: str(d.type, 30), model: str(d.model, 40), os: str(d.os, 24), osVer: str(d.osVer, 24), browser: str(d.browser, 48), browserVer: str(d.browserVer, 24), arch: str(d.arch, 12), bits: str(d.bits, 4) },
+        hw: { cores: num(h.cores, 1, 4096), ram: num(h.ram, 0.01, 4096), gpu: str(h.gpu, 120), touch: num(h.touch, 0, 256) },
+        scr: { w: num(s.w, 1, 1e5), h: num(s.h, 1, 1e5), dpr: num(s.dpr, 0.1, 20), depth: num(s.depth, 1, 64), orient: str(s.orient, 24), angle: num(s.angle, -360, 360), vw: num(s.vw, 1, 1e5), vh: num(s.vh, 1, 1e5) },
+        sto: so ? { used: num(so.used, 0, 1e16), quota: num(so.quota, 0, 1e16) } : null,
+        net: { online: bool(n.online), eff: str(n.eff, 10), type: str(n.type, 16), down: num(n.down, 0, 1e6), rtt: num(n.rtt, 0, 1e6), save: bool(n.save) },
+        loc: { langs: Array.isArray(l.langs) ? l.langs.slice(0, 8).map((z) => str(z, 20)).filter(Boolean) : [], tz: typeof l.tz === "string" && /^[A-Za-z0-9_+\-/]{1,64}$/.test(l.tz) ? l.tz : null, off: num(l.off, -960, 960), h12: bool(l.h12) },
+        pref: { dark: bool(p.dark), reduce: bool(p.reduce), app: bool(p.app), vis: p.vis === "visible" || p.vis === "hidden" ? p.vis : null },
+        link: { rtt: num(k.rtt, 0, 6e5) },
+        pc: pc ? { name: str(pc.name, 60), user: str(pc.user, 60), os: str(pc.os, 30), build: str(pc.build, 30), theme: ["auto", "light", "dark"].includes(pc.theme) ? pc.theme : null, dark: bool(pc.dark), accent: typeof pc.accent === "string" && /^#[0-9a-f]{3,8}$/i.test(pc.accent) ? pc.accent : null } : null,
+      };
+      if (x.ts != null) x.skew = x.ts - Date.now(); // the other device's clock minus ours (ignores transit time)
+      return x;
+    }
+    return { collect, clean, parseUA, battery, onBattery, buildToken, str };
+  })();
+
+  // ---------------- showing device details ----------------
+  const fmtBytes = (n) => n == null ? null : n >= 1e12 ? (n / 1e12).toFixed(1) + " TB" : n >= 1e9 ? (n / 1e9).toFixed(1) + " GB" : n >= 1e6 ? (n / 1e6).toFixed(1) + " MB" : n >= 1e3 ? Math.round(n / 1e3) + " KB" : Math.round(n) + " B";
+  function fmtDur(sec) {
+    if (sec == null) return null; sec = Math.max(0, Math.round(sec));
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return d ? d + " d " + h + " h" : h ? h + " h " + m + " min" : m ? m + " min" + (m < 10 && s ? " " + s + " s" : "") : s + " s";
+  }
+  const fmtOff = (off) => { if (off == null) return null; const a = Math.abs(off); return "UTC" + (off < 0 ? "−" : "+") + String(Math.floor(a / 60)).padStart(2, "0") + ":" + String(a % 60).padStart(2, "0"); };
+  // The other device's wall clock, now (by its time zone, else its UTC offset).
+  function remoteClock(tz, off, h12) {
+    const o = { weekday: "short", hour: "numeric", minute: "2-digit", second: "2-digit" }; if (h12 != null) o.hour12 = h12;
+    try { if (tz) return new Date().toLocaleTimeString(undefined, Object.assign({ timeZone: tz }, o)); } catch (_) {}
+    try { if (off != null) return new Date(Date.now() + off * 60000).toLocaleTimeString(undefined, Object.assign({ timeZone: "UTC" }, o)); } catch (_) {}
+    return null;
+  }
+  const agoTxt = (at) => { const s = Math.max(0, Math.round((Date.now() - at) / 1000)); return s < 3 ? "just now" : fmtDur(s) + " ago"; };
+  // Small battery gauge with an optional charging bolt (SVG, never emoji).
+  function battGauge(level, charging) {
+    const L = level == null ? null : Math.max(0, Math.min(1, level));
+    const col = L == null ? "" : L <= 0.15 && !charging ? "#d13438" : L <= 0.3 && !charging ? "#c38a00" : "#13a10e";
+    const lbl = L == null ? "Battery not reported" : "Battery " + Math.round(L * 100) + "%" + (charging ? ", charging" : "");
+    return `<svg class="cn-batt-g" viewBox="0 0 26 13" width="26" height="13" role="img" aria-label="${lbl}"><rect x=".75" y=".75" width="21.5" height="11.5" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".7"/><rect x="23" y="4" width="2.2" height="5" rx="1" fill="currentColor" opacity=".7"/>${L == null ? `<path d="M8.5 6.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>` : `<rect x="2.25" y="2.25" width="${Math.max(1.6, 18.5 * L).toFixed(1)}" height="8.5" rx="1.4" fill="${col}"/>`}${charging ? `<path d="M12.9 .9 7.4 7.1h3.4l-1.5 5 6-6.3h-3.5z" fill="#ffd21e" stroke="#1b1b1b" stroke-width=".8" stroke-linejoin="round"/>` : ""}</svg>`;
+  }
+  const DI_IC = {
+    battery: '<rect x="2.5" y="7" width="16.5" height="10" rx="2"/><path d="M21.5 10.5v3M6 10v4M9.5 10v4"/>',
+    device: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M10.5 18.5h3"/>',
+    pc: '<rect x="2.5" y="4" width="19" height="12.5" rx="1.5"/><path d="M8 20h8M12 16.5V20"/>',
+    hardware: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".6"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+    screen: '<rect x="3" y="3.5" width="18" height="13" rx="1.5"/><path d="M7 20.5h10"/><path d="M7 7.5h4M7 7.5v3"/>',
+    network: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 15.8a5 5 0 0 1 6.8 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor"/>',
+    storage: '<ellipse cx="12" cy="6" rx="7.5" ry="2.8"/><path d="M4.5 6v12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8V6M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/>',
+    locale: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2"/>',
+  };
+  const diIc = (k) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${DI_IC[k] || DI_IC.device}</svg>`;
+  const CARRIER = { loop: "This device — two tabs or windows (BroadcastChannel)", peer: "Direct device-to-device connection (WebRTC)" };
+  // x: a cleaned info object. o: { who: "phone"|"pc", self, link: { rtt, avg, kind, since, lost }, sas, at (received) }
+  // → [{ id, title, rows: [[label, html|null(not reported)]] }]. Every string from x is escaped here.
+  function infoGroups(x, o) {
+    o = o || {};
+    const e = (s) => (s == null || s === "" ? null : esc(s));
+    const nr = (why) => `<span class="cn-di-nr">${esc(why)}</span>`;
+    const both = (a, b, sep) => (a == null && b == null ? null : esc([a, b].filter((z) => z != null).join(sep == null ? " " : sep)));
+    const d = x.dev || {}, h = x.hw || {}, s = x.scr || {}, n = x.net || {}, l = x.loc || {}, p = x.pref || {}, b = x.bat;
+    const apple = /^(iOS|iPadOS)$/.test(d.os || "");
+    // Every browser on iPhone / iPad is WebKit underneath, so Chrome or Firefox there doesn't share these either.
+    const appleNo = "Not reported — " + (d.browser === "Safari" ? "Safari doesn't" : "browsers on iPhone and iPad don't") + " share ";
+    const ref = o.at || x.ts || Date.now(); // when x.up was true (receipt time; or, for our own details, when collected)
+    const G = [];
+    // Battery
+    let brows;
+    if (!b) brows = [["Battery", nr(apple ? appleNo + "the battery level with web pages" : x.v < 2 && !o.self ? "Not reported" : "Not reported by this browser")]];
+    else {
+      const tl = b.charging ? (b.chargingTime === 0 ? "Fully charged" : b.chargingTime != null ? "Full in about " + fmtDur(b.chargingTime) : null) : (b.dischargingTime != null ? "About " + fmtDur(b.dischargingTime) + " left" : null);
+      brows = [["Level", b.level == null ? null : battGauge(b.level, b.charging) + " " + Math.round(b.level * 100) + "%"],
+        ["Power", b.charging == null ? null : b.charging ? "Charging" : "On battery"],
+        [b.charging ? "Time to full" : "Time left", e(tl)],
+        ["Source", b.src === "simulated" ? "Simulated by Windows 12 — this browser has no real battery reading" : "Reported by the browser"]];
+    }
+    G.push({ id: "battery", title: "Battery", rows: brows });
+    // Device (the PC also says what Windows 12 is running on)
+    const drows = [];
+    if (x.pc) {
+      drows.push(["System", e((x.pc.os || "Windows 12") + " (runs in a web browser)")], ["Build", e(x.pc.build)], ["PC name", e(x.pc.name)], ["User", e(x.pc.user)],
+        ["Theme", x.pc.theme == null ? null : esc({ auto: "Auto", light: "Light", dark: "Dark" }[x.pc.theme] + (x.pc.dark == null ? "" : x.pc.dark ? " (dark now)" : " (light now)")) + (x.pc.accent ? ` <i class="cn-di-sw" style="background:${esc(x.pc.accent)}"></i>` : "")],
+        ["Real device", both(d.type, d.model && d.model !== d.type ? "(" + d.model + ")" : null)]);
+    } else drows.push(["Name", e(x.name)], ["Type", e(d.type)], ["Model", d.model ? e(d.model) : d.type && /iPhone|iPad/.test(d.type) ? nr("Not reported — Apple doesn't tell web pages the exact model") : null]);
+    drows.push([x.pc ? "Real system" : "System", both(d.os, d.osVer)], ["Browser", both(d.browser, d.browserVer)],
+      ["Architecture", d.arch || d.bits ? esc([d.arch, d.bits ? d.bits + "-bit" : null].filter(Boolean).join(", ")) : null],
+      ["Platform", e(x.platform)],
+      [x.pc ? "Installed as an app" : "Phone Link app", p.app == null ? null : p.app ? "Installed (opened from the Home Screen)" : "Open in the browser"],
+      [x.pc ? "Browser appearance" : "Appearance", p.dark == null ? null : p.dark ? "Dark mode" : "Light mode"], ["Reduce motion", p.reduce == null ? null : p.reduce ? "On" : "Off"],
+      ["On screen", p.vis == null ? null : p.vis === "visible" ? "Yes" : "No — in the background"],
+      ["Page open for", x.up == null ? null : `<span data-tick="up" data-up="${x.up}" data-at="${ref}">${esc(fmtDur((x.up + Date.now() - ref) / 1000))}</span>`]);
+    G.push({ id: "device", title: "Device", pc: !!x.pc, rows: drows });
+    // Hardware
+    G.push({ id: "hardware", title: "Hardware", rows: [["Processor", h.cores == null ? null : esc(h.cores + " logical core" + (h.cores === 1 ? "" : "s"))],
+      ["Memory", h.ram == null ? (apple ? nr(appleNo + "it") : null) : esc(h.ram >= 8 ? "8 GB or more (browsers stop at 8)" : "About " + h.ram + " GB")],
+      ["Graphics", e(h.gpu)], ["Touch", h.touch == null ? null : h.touch > 0 ? esc("Touch screen, up to " + h.touch + " points") : "No touch screen"]] });
+    // Screen
+    const px = s.w && s.h && s.dpr ? Math.round(s.w * s.dpr) + " × " + Math.round(s.h * s.dpr) + " pixels" : null;
+    const or = s.orient ? s.orient.replace(/-(primary|secondary)$/, "").replace(/^./, (c) => c.toUpperCase()) + (s.angle != null ? " (" + s.angle + "°)" : "") : null;
+    G.push({ id: "screen", title: "Screen", rows: [["Size", s.w && s.h ? esc(s.w + " × " + s.h + " points") : null], ["Resolution", e(px)], ["Pixel ratio", s.dpr == null ? null : esc(+s.dpr.toFixed(2) + "×")],
+      ["Color depth", s.depth == null ? null : esc(s.depth + "-bit")], ["Orientation", e(or)], ["Visible area", s.vw && s.vh ? esc(s.vw + " × " + s.vh) : null]] });
+    // Network
+    const noConn = n.eff == null && n.type == null && n.down == null && n.rtt == null;
+    const TYPES = { wifi: "Wi-Fi", cellular: "Cellular", ethernet: "Ethernet", bluetooth: "Bluetooth", wimax: "WiMAX", none: "None", other: "Other", unknown: "Unknown" };
+    G.push({ id: "network", title: "Network", rows: [["Status", n.online == null ? null : n.online ? "Online" : "Offline"],
+      ["Connection", n.type ? e(TYPES[n.type] || n.type) : noConn ? nr(apple ? appleNo + "connection details" : "Not reported by this browser") : null],
+      ["Speed class", e(n.eff && n.eff.toUpperCase())], ["Downlink", n.down == null ? null : esc(n.down + " Mbps")],
+      ["Latency (browser estimate)", n.rtt == null ? null : esc(n.rtt + " ms")], ["Data saver", n.save == null ? null : n.save ? "On" : "Off"]].filter((r, i) => !(noConn && i >= 2)) });
+    // Storage
+    const so = x.sto;
+    G.push({ id: "storage", title: "Storage", rows: so ? [["Used by this page", e(fmtBytes(so.used))], ["Available to this page", e(fmtBytes(so.quota))], ["Note", "Browser storage for this page — not the whole device's disk"]] : [["Storage", null]] });
+    // Locale
+    const clk = remoteClock(l.tz, l.off, l.h12);
+    const skew = !o.self && x.skew != null && o.link && o.link.rtt != null ? x.skew : null;
+    G.push({ id: "locale", title: "Locale", rows: [["Local time", clk == null ? null : `<span data-tick="clock" data-tz="${esc(l.tz || "")}" data-off="${l.off == null ? "" : l.off}" data-h12="${l.h12 == null ? "" : l.h12}">${esc(clk)}</span>`],
+      ["Time zone", l.tz || l.off != null ? esc([l.tz ? l.tz.replace(/_/g, " ") : null, fmtOff(l.off)].filter(Boolean).join(" · ")) : null],
+      ["Languages", l.langs && l.langs.length ? esc(l.langs.join(", ")) : null], ["Clock", l.h12 == null ? null : l.h12 ? "12-hour" : "24-hour"]]
+      .concat(skew == null ? [] : [["Clock difference", esc(Math.abs(skew) < 2500 ? "In sync with this " + (o.who === "phone" ? "PC" : "phone") : fmtDur(Math.abs(skew) / 1000) + (skew > 0 ? " ahead of" : " behind") + " this " + (o.who === "phone" ? "PC" : "phone"))]]) });
+    // This link (only about the other device)
+    if (!o.self) {
+      const k = o.link || {};
+      G.push({ id: "link", title: "This link", rows: [["Round trip", k.rtt != null ? esc(Math.round(k.rtt) + " ms" + (k.avg != null && k.n > 1 ? " (average " + Math.round(k.avg) + " ms)" : "")) : k.lost ? nr("No reply — the other device may be an older version") : nr("Measuring…")],
+        ["Measured from the " + (o.who === "phone" ? "phone" : "PC"), x.link && x.link.rtt != null ? esc(Math.round(x.link.rtt) + " ms") : null],
+        ["Carrier", k.kind ? e(CARRIER[k.kind] || k.kind) : null], ["Encryption", "AES-GCM 256-bit, end to end (keys agreed with ECDH P-256)"],
+        ["Confirmation number", e(o.sas)], ["Connected since", k.since ? esc(clock(k.since)) : null],
+        ["Last update", o.at ? `<span data-tick="ago" data-at="${o.at}">${esc(agoTxt(o.at))}</span>` : null]] });
+    }
+    return G;
+  }
+  function infoGroupsHtml(G) {
+    return G.map((g) => `<section class="cn-di-g" data-g="${g.id}"><h4>${diIc(g.id === "device" && g.pc ? "pc" : g.id)}<span>${esc(g.title)}</span></h4><dl>${g.rows.map(([k, v]) => `<div class="cn-di-r"><dt>${esc(k)}</dt><dd>${v == null ? `<span class="cn-di-nr">Not reported</span>` : v}</dd></div>`).join("")}</dl></section>`).join("");
+  }
+  // Update every ticking value under root (local time, "updated … ago", page uptime).
+  function infoTick(root) {
+    root.querySelectorAll("[data-tick]").forEach((n) => {
+      const k = n.dataset.tick;
+      if (k === "clock") { const t = remoteClock(n.dataset.tz || null, n.dataset.off === "" ? null : +n.dataset.off, n.dataset.h12 === "" ? null : n.dataset.h12 === "true"); if (t) n.textContent = t; }
+      else if (k === "ago") n.textContent = agoTxt(+n.dataset.at);
+      else if (k === "up") n.textContent = fmtDur((+n.dataset.up + Date.now() - +n.dataset.at) / 1000);
+    });
+  }
+
   const PL = (function () {
-    const st = { phase: "off", code: null, hostRef: null, sess: null, phone: null, err: "", carriers: [], incoming: new Map(), sending: new Map(), rd: null };
-    const listeners = new Set();
+    const st = { phase: "off", code: null, hostRef: null, sess: null, phone: null, err: "", carriers: [], incoming: new Map(), sending: new Map(), rd: null, link: null };
+    const listeners = new Set(), infoListeners = new Set();
     const emit = () => listeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
+    const emitInfo = () => infoListeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
     let emitT = 0; const emitSoon = () => { if (emitT) return; emitT = setTimeout(() => { emitT = 0; emit(); }, 120); };
     const data = () => store().phone;
     const phoneUrl = (code) => new URL("phone.html#" + code, document.baseURI).href;
@@ -184,11 +468,14 @@
     function stop() { if (st.hostRef) { st.hostRef.stop(); st.hostRef = null; } }
     function onSession(sess) {
       if (st.sess && !st.sess.closed) { sess.send({ t: "busy" }); setTimeout(() => sess.close(), 300); return; }
-      st.sess = sess; st.phase = "confirm"; st.phone = Object.assign({ name: sess.peer.name }, sess.peer.info || {});
+      // Only known handshake fields, cleaned (info could carry a "name" or anything else otherwise).
+      const pi = sess.peer.info && typeof sess.peer.info === "object" ? sess.peer.info : {};
+      st.sess = sess; st.phase = "confirm"; st.phone = { name: DevInfo.str(sess.peer.name, 60) || "Phone", platform: DevInfo.str(pi.platform, 40), touch: typeof pi.touch === "boolean" ? pi.touch : null };
       sess.onMessage(onMsg);
       sess.onClose(() => {
         if (st.sess !== sess) return;
         if (st.rd) { const r = st.rd; st.rd = null; try { r.sub._end(); } catch (_) {} }
+        infoEnd();
         st.sess = null; st.incoming.clear(); st.sending.clear();
         const was = st.phase; st.phase = st.hostRef ? "waiting" : "off";
         if (was === "paired") { toast.ic = "phonelink"; toast("Phone Link", phoneName() + " disconnected."); log("Information", "PhoneLink", 210, "Phone disconnected."); }
@@ -203,14 +490,76 @@
       s.send({ t: "paired", pc: pcName(), user: userName(), code: st.code });
       st.phase = "paired"; data().last = { name: st.phone.name, at: Date.now() }; save();
       log("Information", "PhoneLink", 200, "Paired with " + st.phone.name + " (end-to-end encrypted, confirmation " + s.sas + ").");
+      infoBegin();
       emit();
     }
+
+    // ---- device details both ways: right after pairing, on changes (at most every 2 s), and every 30 s ----
+    const INFO = { lastSent: 0, timer: 0, iv: 0, ticks: 0, hooked: false, mine: null, battKey: "" };
+    const linked = () => st.phase === "paired" && st.sess && !st.sess.closed;
+    function infoQueue() {
+      if (!linked() || INFO.timer) return;
+      INFO.timer = setTimeout(async () => {
+        INFO.timer = 0; if (!linked()) return;
+        const s = st.sess; INFO.lastSent = Date.now();
+        let x; try { x = await DevInfo.collect({ name: pcName(), pc: { name: pcName(), user: userName(), os: "Windows 12", build: DevInfo.buildToken(), theme: S().theme === "light" || S().theme === "dark" ? S().theme : "auto", dark: document.body.classList.contains("dark"), accent: typeof S().accent === "string" ? S().accent : null }, link: { rtt: st.link && st.link.rtt != null ? Math.round(st.link.rtt) : null } }); }
+        catch (e) { console.warn("Phone Link device info", e); return; }
+        if (st.sess !== s || !linked()) return;
+        INFO.mine = DevInfo.clean(x); INFO.battKey = x.bat ? x.bat.level + "|" + x.bat.charging : "";
+        s.send(x); emitInfo();
+      }, Math.max(0, 2000 - (Date.now() - INFO.lastSent)));
+    }
+    function ping() {
+      if (!linked() || !st.link) return;
+      const ts = performance.now(); st.link.out = ts; st.sess.send({ t: "ping", ts });
+      setTimeout(() => { if (st.link && st.link.out === ts) { st.link.out = null; st.link.lost = (st.link.lost || 0) + 1; emitInfo(); } }, 10000);
+    }
+    function infoHook() {
+      if (INFO.hooked) return; INFO.hooked = true;
+      const q = () => infoQueue();
+      ["online", "offline", "resize", "orientationchange"].forEach((e) => window.addEventListener(e, q));
+      document.addEventListener("visibilitychange", q);
+      try { if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", q); } catch (_) {}
+      try { const c = navigator.connection; if (c && c.addEventListener) c.addEventListener("change", q); } catch (_) {}
+      try { ["(prefers-color-scheme: dark)", "(prefers-reduced-motion: reduce)"].forEach((m) => { const l = matchMedia(m); if (l.addEventListener) l.addEventListener("change", q); }); } catch (_) {}
+      DevInfo.onBattery(q);
+      let dark = document.body.classList.contains("dark"); // the Windows 12 theme
+      try { new MutationObserver(() => { const d = document.body.classList.contains("dark"); if (d !== dark) { dark = d; q(); } }).observe(document.body, { attributes: true, attributeFilter: ["class"] }); } catch (_) {}
+    }
+    function infoBegin() {
+      infoEnd();
+      st.link = { kind: st.sess && st.sess.kind || (st.carriers.length === 1 ? st.carriers[0] : null), since: Date.now(), rtt: null, avg: null, n: 0, lost: 0, out: null };
+      infoHook(); INFO.lastSent = 0; infoQueue(); ping();
+      INFO.iv = setInterval(async () => {
+        if (!linked()) return;
+        // the simulated battery has no events: send when it moves
+        const b = await DevInfo.battery(); const key = b ? b.level + "|" + b.charging : "";
+        if (key !== INFO.battKey) infoQueue();
+        if (++INFO.ticks % 3 === 0) { infoQueue(); ping(); }
+      }, 10000);
+    }
+    function infoEnd() {
+      clearInterval(INFO.iv); INFO.iv = 0; clearTimeout(INFO.timer); INFO.timer = 0; INFO.ticks = 0; INFO.mine = null;
+      st.link = null; if (st.phone) { st.phone.meta = null; st.phone.metaAt = 0; }
+    }
+    function refreshInfo() { if (!linked()) return; st.sess.send({ t: "info-req" }); ping(); infoQueue(); }
+
     function onMsg(m, bytes) {
       if (st.phase !== "paired") return; // nothing is accepted before you confirm the number
       if (m.rd) { if (st.rd) st.rd.sub._in(m, bytes); return; } // remote-desktop traffic → the screen-share session
       if (m.t === "rd-req") { startScreen("phone"); return; }
       const d = data();
-      if (m.t === "info") { st.phone = Object.assign(st.phone || {}, { name: String(m.name || phoneName()).slice(0, 60), battery: m.battery, charging: m.charging, platform: m.platform }); emit(); }
+      if (m.t === "info") {
+        const x = DevInfo.clean(m); if (!x) return; // malformed or oversized: ignored
+        st.phone = Object.assign(st.phone || {}, { name: x.name || phoneName(), battery: x.bat ? x.bat.level : undefined, charging: x.bat ? x.bat.charging : undefined, platform: x.platform, meta: x, metaAt: Date.now() });
+        emitInfo();
+      }
+      else if (m.t === "ping") { if (typeof m.ts === "number" && isFinite(m.ts)) st.sess.send({ t: "pong", ts: m.ts }); }
+      else if (m.t === "pong") {
+        const k = st.link, rtt = performance.now() - m.ts;
+        if (k && typeof m.ts === "number" && rtt >= 0 && rtt < 15000) { if (k.out === m.ts) k.out = null; k.rtt = rtt; k.n++; k.avg = k.avg == null ? rtt : k.avg + (rtt - k.avg) / Math.min(k.n, 8); k.lost = 0; emitInfo(); }
+      }
+      else if (m.t === "info-req") infoQueue();
       else if (m.t === "msg") {
         const x = { id: String(m.id || newId("p")), from: "phone", text: String(m.text || "").slice(0, 4000), ts: Date.now() };
         pushMsg(x);
@@ -324,13 +673,13 @@
       if (a && a.sess === r.sub) a.stop("user"); else r.sub.close();
       st.rd = null; emit();
     }
-    function disconnect() { stopScreen(); if (st.sess) { st.sess.send({ t: "bye" }); st.sess.close(); st.sess = null; } stop(); st.phase = "off"; st.code = null; emit(); }
+    function disconnect() { stopScreen(); infoEnd(); if (st.sess) { st.sess.send({ t: "bye" }); st.sess.close(); st.sess = null; } stop(); st.phase = "off"; st.code = null; emit(); }
 
     // ---------------- app window ----------------
     let win = null;
     function open(tab) {
       if (win && win.body.isConnected) { win.focus(); win.win.style.display = ""; if (tab) win.setTab(tab); return; }
-      const ref = WM.createWindow({ title: "Phone Link", icon: Icon.mini("phonelink", "Phone Link"), width: Math.min(920, innerWidth - 30), height: Math.min(640, innerHeight - 90), appId: "phonelink", onClose: () => { listeners.delete(paint); win = null; } });
+      const ref = WM.createWindow({ title: "Phone Link", icon: Icon.mini("phonelink", "Phone Link"), width: Math.min(920, innerWidth - 30), height: Math.min(640, innerHeight - 90), appId: "phonelink", onClose: () => { listeners.delete(paint); infoListeners.delete(paintInfo); clearInterval(tick); win = null; } });
       win = ref; let cur = tab || "messages"; let draft = "";
       ref.body.classList.add("cn-app", "cn-pl");
       ref.setTab = (t) => { cur = t; paint(); };
@@ -359,7 +708,7 @@
         const pct = st.sending.get(x.id);
         const t = document.createElement("time"); t.textContent = clock(x.ts) + (pct != null ? " · Sending " + Math.round(pct * 100) + "%" : x.from === "pc" && x.photo && x.delivered ? " · Delivered" : ""); b.appendChild(t);
         const rs = x.react ? [["pc", x.react.pc], ["phone", x.react.phone]].filter((p) => TAP[p[1]]) : [];
-        if (rs.length) b.appendChild(el(`<span class="cn-tb" aria-label="${rs.map((p) => (p[0] === "pc" ? "You: " : phoneName() + ": ") + TAP_LABEL[p[1]]).join(", ")}">${rs.map((p) => `<i class="cn-tb-i ${p[0] === "pc" ? "mine" : ""}">${TAP[p[1]]}</i>`).join("")}</span>`));
+        if (rs.length) { const tb = el(`<span class="cn-tb">${rs.map((p) => `<i class="cn-tb-i ${p[0] === "pc" ? "mine" : ""}">${TAP[p[1]]}</i>`).join("")}</span>`); tb.setAttribute("aria-label", rs.map((p) => (p[0] === "pc" ? "You: " : phoneName() + ": ") + TAP_LABEL[p[1]]).join(", ")); b.appendChild(tb); }
         b.onclick = () => openPicker(b, x);
         b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPicker(b, x); } });
         return b;
@@ -383,16 +732,14 @@
         const keepDraft = ref.body.querySelector(".cn-chat-in .cn-input"); if (keepDraft) draft = keepDraft.value;
         const hadFocus = keepDraft && document.activeElement === keepDraft;
         closePicker();
-        const batt = ph.battery == null ? "Battery not reported by the phone's browser" : Math.round(ph.battery * 100) + "%" + (ph.charging ? " · charging" : "");
         ref.body.innerHTML = `<div class="cn-pl-wrap">
           <aside class="cn-pl-side">
-            <div class="cn-pl-phone"><div class="cn-pl-phone-ic">${PHONE_SVG}</div><b class="cn-pl-name"></b><span class="cn-pl-batt"></span><span class="cn-ok-dot">Connected · end-to-end encrypted</span></div>
-            <nav class="cn-tabs" role="tablist">${[["messages", "Messages"], ["photos", "Photos"], ["screen", "Remote desktop"], ["notifs", "Notifications"], ["calls", "Calls"]].map(([k, n]) => `<button role="tab" data-t="${k}" class="${cur === k ? "on" : ""}" aria-selected="${cur === k}">${n}${k === "notifs" && d.notifs.length ? ` <i class="cn-badge">${d.notifs.length}</i>` : ""}${k === "screen" && st.rd ? ` <i class="cn-badge cn-live">Live</i>` : ""}</button>`).join("")}</nav>
+            <div class="cn-pl-phone"><div class="cn-pl-phone-ic">${PHONE_SVG}</div><b class="cn-pl-name"></b><span class="cn-pl-model"></span><span class="cn-pl-batt"></span><span class="cn-ok-dot">Connected · end-to-end encrypted</span></div>
+            <nav class="cn-tabs" role="tablist">${[["messages", "Messages"], ["photos", "Photos"], ["screen", "Remote desktop"], ["notifs", "Notifications"], ["device", "Device info"], ["calls", "Calls"]].map(([k, n]) => `<button role="tab" data-t="${k}" class="${cur === k ? "on" : ""}" aria-selected="${cur === k}">${n}${k === "notifs" && d.notifs.length ? ` <i class="cn-badge">${d.notifs.length}</i>` : ""}${k === "screen" && st.rd ? ` <i class="cn-badge cn-live">Live</i>` : ""}</button>`).join("")}</nav>
             <button class="cn-btn cn-pl-disc">Disconnect</button>
           </aside>
           <main class="cn-pl-main"></main></div>`;
-        ref.body.querySelector(".cn-pl-name").textContent = ph.name || "Phone";
-        ref.body.querySelector(".cn-pl-batt").textContent = batt;
+        paintSide();
         ref.body.querySelectorAll(".cn-tabs [data-t]").forEach((b) => (b.onclick = () => { cur = b.dataset.t; paint(); }));
         ref.body.querySelector(".cn-pl-disc").onclick = () => disconnect();
         const main = ref.body.querySelector(".cn-pl-main");
@@ -442,10 +789,45 @@
           d.notifs.forEach((n) => { const r = el(`<div class="cn-ncard"><b></b><span></span><time></time></div>`); r.children[0].textContent = n.app + (n.title ? " · " + n.title : ""); r.children[1].textContent = n.body; r.children[2].textContent = clock(n.ts); L.appendChild(r); });
           if (!d.notifs.length) L.appendChild(el(`<div class="cn-empty">No notifications.</div>`));
           const c = main.querySelector(".cn-clear"); if (c) c.onclick = () => { d.notifs = []; save(); paint(); };
+        } else if (cur === "device") {
+          paintDevice(main);
         } else {
           main.innerHTML = `<div class="cn-chat-h"><b>Calls</b><span>Not available.</span></div><div class="cn-note">Calling needs a Bluetooth link to your phone's cellular radio, which web browsers can't use. Phone Link here does messages, photos both ways, reactions, notifications and remote desktop.</div>`;
         }
       }
+      // Left card: the phone's name, what it is, and its battery (gauge + bolt when charging).
+      function paintSide() {
+        const ph = st.phone || {}, x = ph.meta, side = ref.body.querySelector(".cn-pl-side"); if (!side) return;
+        side.querySelector(".cn-pl-name").textContent = ph.name || "Phone";
+        const dv = x && x.dev, model = dv ? [dv.model && dv.model !== dv.type ? dv.model : dv.type, [dv.os, dv.osVer].filter(Boolean).join(" ")].filter(Boolean).join(" · ") : "";
+        side.querySelector(".cn-pl-model").textContent = model; side.querySelector(".cn-pl-model").hidden = !model;
+        const lvl = x && x.bat ? x.bat.level : typeof ph.battery === "number" ? ph.battery : null, chg = x && x.bat ? x.bat.charging : !!ph.charging;
+        const bt = side.querySelector(".cn-pl-batt");
+        bt.innerHTML = lvl == null ? `${battGauge(null, false)}<span>Battery not reported by the phone's browser</span>` : `${battGauge(lvl, chg)}<span>${Math.round(lvl * 100)}%${chg ? " · charging" : ""}</span>`;
+        bt.title = lvl == null ? "" : "Battery " + Math.round(lvl * 100) + "%" + (chg ? ", charging" : "");
+      }
+      // Device info tab: everything the phone shares, then what this PC shares with it.
+      function paintDevice(main) {
+        const ph = st.phone || {}, x = ph.meta, mine = INFO.mine, name = ph.name || "your phone";
+        const keep = main.scrollTop, openSelf = !!(main.querySelector(".cn-di-self") && main.querySelector(".cn-di-self").open);
+        // the tab is rebuilt on every update: put keyboard focus back where it was
+        const fa = document.activeElement, refocus = fa && main.contains(fa) ? [".cn-di-refresh", ".cn-di-self summary"].find((s) => fa.matches(s)) : null;
+        const sum = (y) => { if (!y) return ""; const b = y.bat, d = y.dev || {}, s = y.scr || {}, l = y.loc || {}; return [b && b.level != null ? "Battery " + Math.round(b.level * 100) + "%" + (b.charging ? " charging" : "") + (b.src === "simulated" ? " (simulated)" : "") : null, y.pc ? (y.pc.os || "Windows 12") + (y.pc.build ? " build " + y.pc.build : "") : null, d.browser ? d.browser + (d.os ? " on " + d.os : "") : null, y.hw && y.hw.cores ? y.hw.cores + " cores" : null, s.w && s.h ? s.w + "\u00d7" + s.h + " screen" : null, l.tz].filter(Boolean).join(" \u00b7 "); };
+        main.innerHTML = `<div class="cn-di-head"><div class="cn-chat-h"><b>Device info</b><span>What ${esc(name)} shares with this PC. ${ph.metaAt ? `Updated <span data-tick="ago" data-at="${ph.metaAt}">${esc(agoTxt(ph.metaAt))}</span>.` : "Nothing received yet."}</span></div><button class="cn-btn cn-di-refresh">Refresh</button></div>
+          <div class="cn-di-priv">${LOCK_SVG}<span>Shared only between this PC and your paired phone, end-to-end encrypted, and only while they're connected. Nothing is stored online, and it's cleared when you disconnect. Anything a browser doesn't report shows as <i>Not reported</i> — nothing is guessed.</span></div>
+          ${x ? (x.v < 2 ? `<div class="cn-warn">${esc(name)} is running an older Phone Link page that only shares its name and battery. Reload Phone Link on the phone to share more.</div>` : "") + `<div class="cn-di-grid">${infoGroupsHtml(infoGroups(x, { who: "phone", link: st.link, sas: st.sess && st.sess.sas, at: ph.metaAt }))}</div>` : `<div class="cn-empty">Waiting for ${esc(name)} to share its details\u2026</div>`}
+          <details class="cn-di-self"${openSelf ? " open" : ""}><summary><span class="cn-di-self-t">${diIc("pc")}<b>This PC as your phone sees it</b></span><span class="cn-di-self-s">${mine ? esc(sum(mine)) : "Sending\u2026"}</span></summary>${mine ? `<div class="cn-di-grid">${infoGroupsHtml(infoGroups(mine, { who: "pc", self: true }))}</div>` : ""}</details>`;
+        main.querySelector(".cn-di-refresh").onclick = () => refreshInfo();
+        if (refocus) { const n = main.querySelector(refocus); if (n) { try { n.focus({ preventScroll: true }); } catch (_) {} } }
+        main.scrollTop = keep;
+      }
+      // New details / ping results: update the side card, and the Device info tab if it's showing (no full repaint).
+      function paintInfo() {
+        if (!ref.body.isConnected || st.phase !== "paired" || !ref.body.querySelector(".cn-pl-side")) return;
+        paintSide();
+        if (cur === "device") { const main = ref.body.querySelector(".cn-pl-main"); if (main) paintDevice(main); }
+      }
+      const tick = setInterval(() => { if (!ref.body.isConnected) { clearInterval(tick); return; } if (cur === "device" && st.phase === "paired") infoTick(ref.body); }, 1000);
       function paintPair() {
         const url = st.code ? phoneUrl(st.code) : "";
         ref.body.innerHTML = `<div class="cn-pair">
@@ -453,7 +835,7 @@
             <h2>Link your phone</h2>
             <ol class="cn-steps"><li>On your phone, open the camera and scan this QR code (or visit the link below).</li><li>The Phone Link app opens in the phone's browser and connects directly to this PC. Add it to your home screen to reconnect with one tap next time.</li><li>Check that both screens show the same 6-digit number, then select <b>Yes, they match</b>.</li></ol>
             <div class="cn-pair-status" role="status"></div>
-            <div class="cn-privacy">${LOCK_SVG}<span>End-to-end encrypted. The phone connects straight to this PC (WebRTC); PeerJS's free broker only introduces the two devices and never sees your photos, messages or screen. Nothing is stored online.</span></div>
+            <div class="cn-privacy">${LOCK_SVG}<span>End-to-end encrypted. The phone connects straight to this PC (WebRTC); PeerJS's free broker only introduces the two devices and never sees your photos, messages or screen. Nothing is stored online. Once paired, this PC and your phone also see each other's battery and basic device details (shown in Device info), only while they're connected.</span></div>
           </div>
           <div class="cn-pair-r"><div class="cn-qr"></div><div class="cn-code-row">Code <b class="cn-code"></b></div><a class="cn-link cn-url" target="_blank" rel="noopener"></a></div></div>`;
         const status = ref.body.querySelector(".cn-pair-status"), qr = ref.body.querySelector(".cn-qr");
@@ -471,11 +853,11 @@
         else status.innerHTML = `<div class="cn-wait"><span class="cn-spin sm"></span>${st.phase === "starting" ? "Getting a pairing code…" : "Waiting for your phone…"}</div>${st.err ? `<div class="cn-warn">${esc(st.err)}</div>` : ""}${data().last ? `<div class="cn-sub">Last paired: ${esc(data().last.name)} · ${new Date(data().last.at).toLocaleDateString()}</div>` : ""}`;
         const r = status.querySelector(".cn-retry"); if (r) r.onclick = () => { stop(); data().code = null; st.phase = "off"; start(); };
       }
-      listeners.add(paint);
+      listeners.add(paint); infoListeners.add(paintInfo);
       paint();
       if (!st.hostRef && st.phase !== "paired") start();
     }
-    return { open, start, stop, disconnect, sendText, sendPhotos, react, startScreen, stopScreen, confirm, state: () => st, on: (f) => { listeners.add(f); return () => listeners.delete(f); }, phoneUrl };
+    return { open, start, stop, disconnect, sendText, sendPhotos, react, startScreen, stopScreen, confirm, refreshInfo, info: () => ({ phone: st.phone && st.phone.meta || null, at: st.phone && st.phone.metaAt || 0, mine: INFO.mine, link: st.link }), state: () => st, on: (f) => { listeners.add(f); return () => listeners.delete(f); }, onInfo: (f) => { infoListeners.add(f); return () => infoListeners.delete(f); }, phoneUrl };
   })();
 
   // Tapback reactions (like Messages) — drawn as SVG so they look the same everywhere.
